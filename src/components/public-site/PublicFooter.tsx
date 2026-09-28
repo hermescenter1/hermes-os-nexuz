@@ -26,6 +26,7 @@ import { TechnicalValue } from "@/components/ds";
 import { HermesLogoMark } from "@/components/HermesLogo";
 import { FooterLangSwitch } from "@/components/FooterLangSwitch";
 import { TrustBadgesSection } from "@/components/trust/TrustBadgesSection";
+import { ORG_NAME, ORG_URL } from "@/lib/seo/config";
 import { PUBLIC_FOOTER_COLUMNS } from "./nav";
 import { PublicPageContainer } from "./PublicPageContainer";
 
@@ -129,6 +130,35 @@ export function PublicFooter({ visualMode = "standard" }: PublicFooterProps = {}
         <div className="hf-closure">
           <ClosureSeal />
           <p className="text-caption text-text-muted">{t("copyright")}</p>
+          {/*
+            PHASE 113 — publisher attribution.
+
+            The copyright line beside this already NAMES the company; this is the
+            one place the reader can go and verify it. It sits in the closure row
+            as attribution, deliberately NOT in the navigation registry: ZHARFA is
+            the company that operates Hermes OS, and listing its website among the
+            product's own destinations would read as though it were another Hermes
+            capability.
+
+            The visible text is `ORG_NAME` from `lib/seo/config` — a proper noun,
+            so it is not a catalog leaf, for the same reason the product name is
+            not. The accessible name IS localized, and carries the company through
+            an ICU argument so all three locales stay genuinely different.
+
+            `rel="noopener noreferrer"` because it leaves the origin. The href is
+            the HTTP-verified canonical apex, not the `www` alias that 301s to it.
+          */}
+          <p className="text-caption text-text-muted">
+            <a
+              href={ORG_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={t("companyWebsiteAria", { company: ORG_NAME })}
+              className="ds-focus rounded-xs underline decoration-border-subtle underline-offset-4 transition-colors hover:text-text-primary"
+            >
+              {ORG_NAME}
+            </a>
+          </p>
           <p className="text-caption text-text-muted ms-auto">
             <TechnicalValue mono={false}>{t("domain")}</TechnicalValue>
           </p>

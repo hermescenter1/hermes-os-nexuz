@@ -3643,3 +3643,501 @@ html:has(.hermes-ops-navy) {
 html:has(.hermes-ops-navy) body {
   background-color: #121D26;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 113-A — CORPORATE EDITORIAL LEGAL DOCUMENT  (prefix: hz-)
+   ═══════════════════════════════════════════════════════════════════════════
+
+   WHY THIS BLOCK EXISTS
+   The Cookie Policy shipped as a stack of rounded cards: every category and
+   every third party sat in its own 8px-radius panel, the controls were large
+   pills, and fourteen sections of legal text arrived as a dozen separate
+   bubbles. That reads as a SaaS dashboard, not as a legal instrument, and the
+   owner rejected it.
+
+   This is a DOCUMENT surface: one reading column, hairline rules instead of
+   containers, numbered sections, and a real table for the inventory.
+
+   PROVENANCE OF THE PALETTE AND THE CORNER LANGUAGE
+   Read read-only from the owner's own ZHARFA corporate repository
+   ('hermescenter1/zharfa-corporate', 'src/styles/tokens.css' and
+   'semantic.css'). Nothing is invented and nothing is guessed:
+
+     forest-950 #061813   forest-900 #08221a   forest-800 #0b3025
+     brand      #0b5d46   signal     #46d79a   signal-soft #a5e8cc
+     ice        #f7faf8   white      #ffffff
+     mist-100   #e7efeb   mist-300   #cbd9d2   graphite   #15221d
+
+   That repository's own contrast law is reproduced here verbatim, because it
+   is what makes the accent choice safe rather than decorative:
+
+     #46D79A on #FFFFFF = 1.83:1  -> fails AA, NEVER used for text
+     #46D79A on #061813 = 9.97:1  -> the dark-surface accent
+     #0B5D46 on #FFFFFF = 7.87:1  -> the light-surface accent
+
+   This document is a LIGHT surface, so every accent below is Brand Green
+   #0b5d46, never Signal Green. Signal Green appears only as a 2px rule on the
+   dark masthead, where it measures 9.97:1.
+
+   Corner language, quoted from that repository: "Architectural, not SaaS.
+   Nothing in the system exceeds 8px." Hence 3px buttons, 5px cards, 8px
+   panels — and no pill anywhere except a genuinely tiny semantic status chip.
+
+   WHAT THIS IS NOT
+   It is not a port of the ZHARFA site into Hermes OS. No ZHARFA component,
+   layout, logo, wordmark, photograph or copy is reproduced. What crosses over
+   is a colour scale, a corner limit and a contrast law — the measurable part
+   of a design system, applied to a Hermes page that keeps the Hermes shell,
+   the Hermes header and the Hermes footer.
+
+   SCOPE: every rule is nested under '.hz-legal'. No global token, no design
+   system primitive and no other route is touched.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.hz-legal {
+  /* ── verified brand scale ─────────────────────────────────────────────── */
+  --hz-forest-950: #061813;
+  --hz-forest-900: #08221a;
+  --hz-brand:      #0b5d46;
+  --hz-signal:     #46d79a;
+  --hz-ice:        #f7faf8;
+  --hz-white:      #ffffff;
+  --hz-mist-100:   #e7efeb;
+  --hz-mist-300:   #cbd9d2;
+  --hz-graphite:   #15221d;
+
+  /* ── light-surface semantics (the document sheet) ─────────────────────── */
+  --hz-surface:        var(--hz-ice);
+  --hz-surface-raised: var(--hz-white);
+  --hz-surface-sunken: var(--hz-mist-100);
+  --hz-text:           var(--hz-graphite);
+  --hz-text-2:         rgba(21, 34, 29, 0.68);
+  --hz-text-3:         rgba(21, 34, 29, 0.64);
+  --hz-border:         rgba(8, 34, 26, 0.10);
+  --hz-border-strong:  rgba(8, 34, 26, 0.18);
+  --hz-accent:         var(--hz-brand);
+
+  /* ── corner language: nothing exceeds 8px ────────────────────────────── */
+  --hz-radius-button: 3px;
+  --hz-radius-card:   5px;
+  --hz-radius-panel:  8px;
+
+  /* ── measured rhythm ─────────────────────────────────────────────────── */
+  --hz-rule: 1px;
+  --hz-motion: 200ms;
+  --hz-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  background: var(--hz-surface);
+  color: var(--hz-text);
+  /* The sheet keeps the panel radius only at its own outer edge. */
+  border-radius: var(--hz-radius-panel);
+  border: var(--hz-rule) solid var(--hz-border);
+  overflow: clip;
+}
+
+/* ── MASTHEAD ──────────────────────────────────────────────────────────────
+   The only dark region: a forest plate carrying the title, the lede, the
+   version stamp and the single preference control. No oval container — the
+   plate is a full-bleed band closed by a 2px Signal rule. */
+.hz-masthead {
+  background: var(--hz-forest-950);
+  color: var(--hz-ice);
+  border-block-end: 2px solid var(--hz-signal);
+  padding: clamp(1.75rem, 1rem + 3vw, 3.5rem) clamp(1.25rem, 0.5rem + 3vw, 4rem);
+}
+
+.hz-eyebrow {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  /* 9.97:1 on forest-950 — the one place Signal Green is legal for text. */
+  color: var(--hz-signal);
+}
+
+.hz-title {
+  margin: 0.6rem 0 0;
+  font-size: clamp(1.75rem, 1.2rem + 2.4vw, 3rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  /* German compounds ("Cookie-Richtlinie") must never overflow the plate. */
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.hz-lede {
+  margin: 0.9rem 0 0;
+  max-width: 60ch;
+  font-size: clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);
+  line-height: 1.65;
+  color: rgba(247, 250, 248, 0.70);
+}
+
+/* Version stamp + control share one baseline row, wrapping on small screens. */
+.hz-masthead-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-start: 1.75rem;
+  padding-block-start: 1.25rem;
+  border-block-start: var(--hz-rule) solid rgba(255, 255, 255, 0.12);
+}
+
+.hz-stamp {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba(247, 250, 248, 0.58);
+}
+
+.hz-stamp dt { display: inline; font-weight: 500; }
+.hz-stamp dd { display: inline; margin: 0 0 0 0.4rem; color: rgba(247, 250, 248, 0.82); }
+.hz-stamp div { white-space: nowrap; }
+
+/* ── CONTROLS ──────────────────────────────────────────────────────────────
+   3px radius, not a capsule. Both variants keep a 44px target. */
+.hz-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding-inline: 1.15rem;
+  border-radius: var(--hz-radius-button);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--hz-motion) var(--hz-ease),
+              border-color var(--hz-motion) var(--hz-ease),
+              color var(--hz-motion) var(--hz-ease);
+}
+
+/* On the dark masthead: ice fill, forest text. 15.4:1. */
+.hz-btn-primary {
+  background: var(--hz-ice);
+  color: var(--hz-forest-950);
+  border: var(--hz-rule) solid var(--hz-ice);
+}
+.hz-btn-primary:hover { background: var(--hz-signal); border-color: var(--hz-signal); }
+
+/* On the light sheet: hairline box, graphite text. */
+.hz-btn-secondary {
+  background: transparent;
+  color: var(--hz-text);
+  border: var(--hz-rule) solid var(--hz-border-strong);
+}
+.hz-btn-secondary:hover { border-color: var(--hz-accent); color: var(--hz-accent); }
+
+/* A visible ring on BOTH surfaces, independent of the ds focus utility. */
+.hz-legal :where(a, button, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--hz-accent);
+  outline-offset: 2px;
+  border-radius: var(--hz-radius-button);
+}
+.hz-masthead :where(a, button):focus-visible { outline-color: var(--hz-signal); }
+
+/* ── BODY GRID ─────────────────────────────────────────────────────────────
+   One reading column. From 1024px a margin column carries the contents list;
+   'start'/'end' keep Persian RTL correct without a mirrored stylesheet. */
+.hz-body {
+  padding: clamp(1.5rem, 0.75rem + 2.5vw, 3.5rem) clamp(1.25rem, 0.5rem + 3vw, 4rem);
+}
+
+@media (min-width: 1024px) {
+  .hz-body {
+    display: grid;
+    grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr);
+    gap: clamp(2rem, 1rem + 3vw, 4.5rem);
+    align-items: start;
+  }
+}
+
+.hz-doc { max-width: 68ch; }
+
+/* ── CONTENTS ──────────────────────────────────────────────────────────────
+   Desktop: a sticky margin index. Mobile: a <details> disclosure, which is
+   keyboard- and screen-reader-native — no JavaScript, no ARIA to get wrong. */
+.hz-toc {
+  border: var(--hz-rule) solid var(--hz-border);
+  border-radius: var(--hz-radius-card);
+  background: var(--hz-surface-raised);
+}
+
+.hz-toc > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hz-text-2);
+  list-style: none;
+}
+.hz-toc > summary::-webkit-details-marker { display: none; }
+
+.hz-toc > summary::after {
+  content: "";
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-inline-end: 1.5px solid currentColor;
+  border-block-end: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform var(--hz-motion) var(--hz-ease);
+}
+.hz-toc[open] > summary::after { transform: rotate(-135deg); }
+
+.hz-toc ol {
+  margin: 0;
+  padding: 0.25rem 0.9rem 0.9rem;
+  list-style: none;
+  counter-reset: hz-toc;
+}
+
+.hz-toc li { counter-increment: hz-toc; }
+
+.hz-toc a {
+  display: grid;
+  grid-template-columns: 2.1rem minmax(0, 1fr);
+  gap: 0.5rem;
+  padding-block: 0.4rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--hz-text-2);
+  text-decoration: none;
+  border-block-start: var(--hz-rule) solid var(--hz-border);
+}
+.hz-toc li:first-child a { border-block-start: 0; }
+.hz-toc a::before {
+  content: counter(hz-toc, decimal-leading-zero);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--hz-text-3);
+}
+.hz-toc a:hover { color: var(--hz-accent); }
+
+@media (min-width: 1024px) {
+  .hz-toc {
+    position: sticky;
+    /* Clears the sticky public header. */
+    top: 5.5rem;
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+  }
+  /* The disclosure is a mobile affordance only: pinned open on desktop. */
+  .hz-toc > summary { cursor: default; }
+  .hz-toc > summary::after { display: none; }
+}
+
+/* ── SECTIONS ──────────────────────────────────────────────────────────────
+   A numbered heading over a hairline rule. No card, no bubble, no shadow. */
+.hz-section { padding-block-start: clamp(1.75rem, 1rem + 2vw, 2.75rem); }
+.hz-section + .hz-section { border-block-start: var(--hz-rule) solid var(--hz-border); }
+
+.hz-section > h2 {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  gap: 0.5rem;
+  margin: 0 0 0.85rem;
+  font-size: clamp(1.0625rem, 1rem + 0.45vw, 1.375rem);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.hz-ord {
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  line-height: 1.9;
+  color: var(--hz-accent);
+}
+
+.hz-section h3 {
+  margin: 1.35rem 0 0.4rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--hz-text);
+}
+
+.hz-section p { margin: 0 0 0.85rem; line-height: 1.75; color: var(--hz-text-2); }
+.hz-section p:last-child { margin-bottom: 0; }
+.hz-section a { color: var(--hz-accent); text-decoration: underline; text-underline-offset: 0.18em; }
+
+/* A genuinely small semantic status chip — the one permitted pill. */
+.hz-chip {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border: var(--hz-rule) solid var(--hz-border-strong);
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--hz-text-2);
+}
+.hz-chip[data-locked="true"] { border-color: var(--hz-accent); color: var(--hz-accent); }
+
+/* ── DEFINITION ROWS (the responsible-company block) ─────────────────────── */
+.hz-facts { margin: 0; display: grid; gap: 0; }
+.hz-facts > div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr);
+  gap: 0.5rem 1rem;
+  padding-block: 0.6rem;
+  border-block-start: var(--hz-rule) solid var(--hz-border);
+  font-size: 0.875rem;
+}
+.hz-facts dt { color: var(--hz-text-3); }
+.hz-facts dd { margin: 0; color: var(--hz-text); overflow-wrap: anywhere; }
+
+@media (max-width: 420px) {
+  .hz-facts > div { grid-template-columns: minmax(0, 1fr); gap: 0.15rem; }
+}
+
+/* ── INVENTORY TABLE ───────────────────────────────────────────────────────
+   Desktop: a real table with a ruled header.
+   Below 768px the same markup re-flows into labelled stacked rows via
+   'data-label', so nothing is hidden and nothing overflows horizontally. */
+.hz-table-wrap { margin-block-start: 1rem; }
+
+.hz-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  text-align: start;
+}
+
+.hz-table caption {
+  caption-side: top;
+  padding-block-end: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--hz-text-3);
+  text-align: start;
+}
+
+.hz-table th,
+.hz-table td {
+  padding: 0.6rem 0.75rem;
+  text-align: start;
+  vertical-align: top;
+  border-block-end: var(--hz-rule) solid var(--hz-border);
+}
+
+.hz-table thead th {
+  border-block-end: var(--hz-rule) solid var(--hz-border-strong);
+  background: var(--hz-surface-sunken);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hz-text-2);
+  white-space: nowrap;
+}
+
+.hz-table tbody th { font-weight: 500; }
+.hz-table td { color: var(--hz-text-2); }
+
+.hz-code {
+  display: inline-block;
+  padding: 0.05rem 0.3rem;
+  border: var(--hz-rule) solid var(--hz-border);
+  border-radius: 2px;
+  background: var(--hz-surface-sunken);
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-size: 0.75rem;
+  color: var(--hz-brand);
+  /* A technical identifier stays LTR inside a Persian document. */
+  direction: ltr;
+  unicode-bidi: isolate;
+  overflow-wrap: anywhere;
+}
+
+.hz-medium { display: block; margin-block-start: 0.15rem; font-size: 0.6875rem; color: var(--hz-text-3); }
+
+@media (max-width: 767px) {
+  .hz-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .hz-table tr {
+    display: block;
+    padding-block: 0.65rem;
+    border-block-end: var(--hz-rule) solid var(--hz-border-strong);
+  }
+  .hz-table tbody tr:last-child { border-block-end: 0; }
+  .hz-table th,
+  .hz-table td {
+    display: grid;
+    grid-template-columns: minmax(5.5rem, 7.5rem) minmax(0, 1fr);
+    gap: 0.5rem 0.75rem;
+    padding: 0.25rem 0;
+    border: 0;
+  }
+  .hz-table td::before,
+  .hz-table tbody th::before {
+    content: attr(data-label);
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--hz-text-3);
+  }
+}
+
+/* 320px: the label column would squeeze the value to nothing. */
+@media (max-width: 360px) {
+  .hz-table th,
+  .hz-table td { grid-template-columns: minmax(0, 1fr); gap: 0.1rem; }
+}
+
+/* ── CLOSING RELATED-LINKS ROW ─────────────────────────────────────────────
+   Localized, unlike the shared legal shell's English link row. */
+.hz-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  margin-block-start: clamp(1.75rem, 1rem + 2vw, 2.75rem);
+  padding-block-start: 1.25rem;
+  border-block-start: var(--hz-rule) solid var(--hz-border-strong);
+  font-size: 0.8125rem;
+}
+
+/* ── REDUCED MOTION ───────────────────────────────────────────────────────
+   Nothing here animates position, but the three colour/rotation transitions
+   are still stood down for a reader who asked for that. */
+@media (prefers-reduced-motion: reduce) {
+  .hz-legal *,
+  .hz-legal *::before,
+  .hz-legal *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── FORCED COLORS ────────────────────────────────────────────────────────
+   Hairlines are the whole structure here, so they must survive a high-contrast
+   mode that discards author colours. */
+@media (forced-colors: active) {
+  .hz-legal,
+  .hz-toc,
+  .hz-table th,
+  .hz-table td,
+  .hz-section + .hz-section { border-color: CanvasText; }
+  .hz-eyebrow, .hz-ord, .hz-legal a { color: LinkText; }
+}

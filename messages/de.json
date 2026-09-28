@@ -1,4 +1,114 @@
 {
+  "cookiePolicy": {
+    "eyebrow": "HERMES OS · RECHTLICHES",
+    "title": "Cookie-Richtlinie",
+    "versionLabel": "Fassung",
+    "effectiveLabel": "Gültig ab",
+    "effective": "27. September 2026",
+    "toc": {
+      "heading": "Auf dieser Seite",
+      "mobileLabel": "Inhalt"
+    },
+    "updates": {
+      "heading": "Änderungen dieser Richtlinie",
+      "body": "Ändert sich die hier beschriebene Speicherung, wird diese Richtlinie überarbeitet und die Fassung samt Datum oben ändert sich mit. Bei wesentlichen Änderungen an den optionalen Kategorien wird die Einwilligung neu erfragt, statt Ihre bereits gegebene Antwort stillschweigend neu auszulegen."
+    },
+    "intro": {
+      "heading": "Was Cookies und Browserspeicher sind",
+      "body": "Cookies sind kleine Textdateien, die eine Website Ihren Browser auf Ihrem Gerät ablegen und bei späteren Besuchen zurücksenden lässt. Dadurch kann eine Plattform eine angemeldete Sitzung wiedererkennen, eine gewählte Sprache behalten und eine bereits getroffene Entscheidung festhalten, statt erneut zu fragen.",
+      "storageBody": "Diese Richtlinie erfasst auch Browserspeicher, der technisch kein Cookie ist. Hermes OS legt einen Eintrag im lokalen Speicher Ihres Browsers ab, damit Ihre Cookie-Entscheidung auch dann gilt, wenn unsere Datenbank kurzzeitig nicht erreichbar ist. Lokaler Speicher wird nicht wie ein Cookie bei jeder Anfrage mitgesendet und hat kein Verfallsdatum — er bleibt, bis Sie ihn löschen oder Ihre Wahl ändern."
+    },
+    "controller": {
+      "heading": "Wer verantwortlich ist",
+      "body": "Hermes OS ist eine Plattform für industrielle Intelligenz. Das Unternehmen, das sie entwickelt und betreibt und für die hier beschriebene Speicherung verantwortlich ist, lautet:",
+      "companyLabel": "Unternehmen",
+      "productLabel": "Plattform",
+      "contactLabel": "Kontakt"
+    },
+    "basis": {
+      "heading": "Worauf sich die Speicherung stützt",
+      "necessaryTitle": "Unbedingt erforderliche Speicherung",
+      "necessaryBody": "Notwendige Einträge werden gesetzt, weil Sie eine Leistung angefordert haben, die ohne sie nicht funktioniert: Anmelden, angemeldet bleiben, die gewählte Organisation behalten und die Cookie-Entscheidung selbst festhalten. Für sie gibt es keinen Einwilligungsschalter, denn sie abzuschalten hieße, die Leistung abzuschalten.",
+      "optionalTitle": "Optionale Speicherung",
+      "optionalBody": "Speicherung für Analyse, Marketing und Voreinstellungen erfolgt erst nach Ihrer Einwilligung und nur für die Kategorien, die Sie gewählt haben. Die Einwilligung ist eine freie Entscheidung: vor Ihrer Antwort wird nichts gesetzt, eine Ablehnung kostet Sie keine Funktion, und Sie dürfen es sich jederzeit anders überlegen."
+    },
+    "categories": {
+      "intro": "Jeder Eintrag, den Hermes OS oder eine seiner Einbindungen in Ihrem Browser ablegen kann, gehört zu genau einer der vier folgenden Kategorien — denselben vier, die der Einwilligungsdialog anbietet.",
+      "alwaysOn": "Immer aktiv — nicht abschaltbar",
+      "optIn": "Erst nach Ihrer Zustimmung",
+      "noneStored": "Hermes OS selbst speichert in dieser Kategorie nichts. Nur die unten aufgeführten Dienste Dritter tun das, und nur mit Ihrer Einwilligung."
+    },
+    "table": {
+      "caption": "Einträge dieser Kategorie",
+      "colName": "Bezeichner",
+      "colPurpose": "Zweck",
+      "colRetention": "Speicherdauer",
+      "colCategory": "Kategorie",
+      "colProvider": "Gesetzt von",
+      "colScope": "Gilt für"
+    },
+    "storage": {
+      "heading": "Was gespeichert wird und wie lange",
+      "body": "Die folgenden Bezeichner sind genau die Namen, die Ihr Browser anzeigt. Jede Speicherdauer ist der Wert, den die Plattform tatsächlich setzt, keine Schätzung.",
+      "session": "Hält Sie auf dem älteren Sitzungspfad angemeldet.",
+      "accessToken": "Weist Ihre Identität bei jeder Anfrage während einer Arbeitssitzung gegenüber der Plattform nach.",
+      "refreshToken": "Erlaubt die Verlängerung Ihrer Sitzung, ohne Sie erneut zur Anmeldung aufzufordern.",
+      "consentId": "Ein undurchsichtiger Bezeichner, der Ihren Browser mit Ihrer gespeicherten Cookie-Entscheidung verknüpft. Er enthält kein Konto, keinen Namen und keine Berechtigung und entsteht erst, wenn Sie den Einwilligungsdialog beantworten.",
+      "tenantSelection": "Merkt sich, in welcher Ihrer Organisationen Sie gerade arbeiten. Er gewährt niemals Zugriff — der Server prüft Ihre Mitgliedschaft bei jeder Anfrage erneut.",
+      "locale": "Merkt sich, ob Sie die Website auf Persisch, Englisch oder Deutsch lesen.",
+      "consentMirror": "Eine Kopie Ihrer Cookie-Entscheidung im lokalen Speicher Ihres Browsers, damit Ihre Wahl auch dann beachtet wird, wenn unsere Datenbank nicht erreichbar ist.",
+      "scopeAuthenticated": "Nur angemeldete Personen",
+      "scopeAll": "Alle Besucher",
+      "mediumCookie": "Cookie-Datei",
+      "mediumLocalStorage": "Lokaler Speicher",
+      "retentionHours": "{count, number} Stunden",
+      "retentionDays": "{count, number} Tage",
+      "retentionExtended": "verlängert auf {count, number} Tage, wenn Sie angemeldet bleiben wollten",
+      "retentionUntilCleared": "Kein Verfall — bis Sie ihn löschen oder Ihre Wahl ändern",
+      "retentionProviderDefined": "Vom Anbieter festgelegt — siehe dessen Datenschutzhinweise"
+    },
+    "thirdParty": {
+      "heading": "Dienste Dritter",
+      "body": "Die folgenden Dienste können eigene Einträge in Ihrem Browser ablegen. Keiner von ihnen wird geladen oder überhaupt kontaktiert, bevor Sie die daneben genannte Einwilligung erteilt haben.",
+      "googleAnalytics": {
+        "name": "Google Analytics 4 und Google Tag Manager",
+        "purpose": "Zusammengefasste Messung, wie Besucher die öffentliche Website erreichen und durchlaufen."
+      },
+      "microsoftClarity": {
+        "name": "Microsoft Clarity (Sitzungsanalyse)",
+        "purpose": "Zusammengefasste Auswertung von Interaktionen, um Bedienprobleme auf öffentlichen Seiten zu finden."
+      },
+      "provenExpert": {
+        "name": "ProvenExpert (Kundenbewertungssiegel)",
+        "purpose": "Zeigt das unabhängige Kundenbewertungssiegel im Fußbereich der Website."
+      },
+      "gateLabel": "Lädt nur bei Einwilligung für: {categories}",
+      "configurationNote": "Dieser Dienst ist zusätzlich vollständig abgeschaltet, solange die Installation nicht dafür eingerichtet ist — er kann also selbst bei erteilter Einwilligung fehlen.",
+      "privacyLinkLabel": "Datenschutzhinweise des Anbieters",
+      "badgeNote": "Das eNAMAD-Gütesiegel und das SaaSHub-Abzeichen sind einfache Bilder. Sie setzen kein Cookie und führen kein Skript aus, brauchen daher keine Einwilligung und stehen nicht in der Liste oben."
+    },
+    "withdrawal": {
+      "heading": "Einwilligung ändern oder zurückziehen",
+      "body": "Sie können den Einwilligungsdialog hier jederzeit erneut öffnen, Ihre Wahl prüfen und eine andere Antwort speichern. Der Dialog öffnet sich mit Ihrer aktuellen Entscheidung bereits eingetragen.",
+      "manageButton": "Cookie-Einstellungen verwalten",
+      "effectNote": "Das Zurückziehen der Einwilligung für Analyse oder Marketing beschädigt die Plattform nie. Anmeldung, Sprache, Organisation und sämtliche technischen Funktionen arbeiten unverändert weiter; nur die optionale Speicherung endet.",
+      "repeatNote": "Wie oft Sie Ihre Antwort ändern, ist nicht begrenzt."
+    },
+    "browserControls": {
+      "heading": "Steuerung in Ihrem Browser",
+      "body": "Unabhängig von dieser Website können Sie in jedem aktuellen Browser gespeicherte Cookies und lokalen Speicher ansehen, einzeln oder vollständig löschen und für eine Website ablehnen. Diese Steuerung finden Sie in den Datenschutz- oder Websitedaten-Einstellungen Ihres Browsers.",
+      "resetNote": "Löschen Sie die Daten dieser Website, verschwindet damit auch Ihre gespeicherte Entscheidung, und der Einwilligungsdialog fragt beim nächsten Besuch erneut."
+    },
+    "contact": {
+      "heading": "Fragen zu dieser Richtlinie",
+      "body": "Schreiben Sie uns und erwähnen Sie, dass Ihre Frage Cookies oder Browserspeicher betrifft, damit sie die zuständigen Personen erreicht:"
+    },
+    "privacyPolicy": {
+      "heading": "Zugehörige Richtlinie",
+      "body": "Diese Richtlinie behandelt ausschließlich die Speicherung in Ihrem Browser. Wie wir personenbezogene Daten allgemein verarbeiten — was wir erheben, warum, wie lange wir es aufbewahren und welche Rechte Sie haben — steht in der Datenschutzerklärung.",
+      "cta": "Datenschutzerklärung lesen"
+    }
+  },
   "trustBadges": {
     "sectionTitle": "Vertrauen & Verifizierung",
     "enamadHeading": "Vertrauenssiegel",
@@ -1340,7 +1450,7 @@
   "footer": {
     "tagline": "Enterprise-Plattform für industrielle Intelligenz",
     "description": "Hermes ist eine industrielle Intelligenzplattform für Automatisierung, Instandhaltung, Anlagenmanagement, Engineering-Dokumente und Expertenwissen.",
-    "copyright": "© 2026 Hermes Novin Mehr IRIC. Alle Rechte vorbehalten.",
+    "copyright": "© 2026 ZHARFA Vira Pouyesh Fanavari. Alle Rechte vorbehalten.",
     "navAbout": "Über uns",
     "navPlatform": "Plattform",
     "navDocs": "Dokumentation",
@@ -4107,11 +4217,11 @@
     "invalidResponseHint": "Der Server hat in einem Format geantwortet, das diese Seite nicht kennt. Es werden daher keine Daten angezeigt statt ungeprüfte Zahlen darzustellen."
   },
   "about": {
-    "eyebrow": "Über Hermes Novin Mehr IRIC",
+    "eyebrow": "Über ZHARFA Vira Pouyesh Fanavari",
     "title": "Wir gestalten die Zukunft der industriellen Intelligenz",
     "lede": "Auf der Produktionsebene entstanden. Gebaut für die Ingenieure, die sie betreiben.",
     "companyEyebrow": "Das Unternehmen",
-    "companyTitle": "Hermes Novin Mehr IRIC",
+    "companyTitle": "ZHARFA Vira Pouyesh Fanavari",
     "companyDesc": "Wir entwickeln industrielle Intelligenzsoftware auf Unternehmensniveau für Automatisierungsingenieure, Anlagenfahrer und technische Führungsteams. Unsere Plattform verbindet KI-gestütztes Schließen, Engineering-Gedächtnis und Wissensgraphen, um Industrieteams beispiellose Klarheit und Entscheidungsunterstützung zu geben.",
     "website": "www.hermesnovin.com",
     "locationIran": "Isfahan, Iran",
@@ -4151,7 +4261,7 @@
     "supportEmail": "hamidreza.forozandeh1@gmail.com",
     "generalTitle": "Allgemein",
     "generalDesc": "Allgemeine Anfragen, Partnerschaftsgespräche und Kooperationsmöglichkeiten.",
-    "generalEmail": "hermesnovinmehriric@gmail.com",
+    "generalEmail": "info@hermesnovin.com",
     "phoneTitle": "Telefon",
     "phoneIran": "+98 913 411 6492",
     "phoneUK": "+44 796 054 5833",
@@ -7084,7 +7194,7 @@
         },
         "careers": {
           "name": "Karriere",
-          "desc": "Stellen und Bewerbungen bei Hermes Novin Mehr.",
+          "desc": "Stellen und Bewerbungen bei ZHARFA Vira Pouyesh Fanavari.",
           "cta": "Offene Stellen ansehen"
         }
       }
@@ -7166,8 +7276,9 @@
     },
     "footer": {
       "tagline": "Industrielle Intelligenz. Entwickelt für sicheres Handeln.",
-      "copyright": "© 2026 Hermes Novin Mehr IRIC. Alle Rechte vorbehalten.",
+      "copyright": "© 2026 ZHARFA Vira Pouyesh Fanavari. Alle Rechte vorbehalten.",
       "domain": "hermesnovin.com",
+      "companyWebsiteAria": "Unternehmenswebsite von {company} (öffnet in einem neuen Tab)",
       "columns": {
         "platform": "Plattform",
         "intelligence": "Industrielle Intelligenz",

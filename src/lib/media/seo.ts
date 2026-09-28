@@ -358,7 +358,7 @@ export function buildMediaVideoObject(
   const keywords = keywordString(content.keywords);
   if (keywords !== null) schema.keywords = keywords;
 
-  // The publisher of a tenant's video is the TENANT, not Hermes Novin — this is an
+  // The publisher of a tenant's video is the TENANT, not the platform operator — this is an
   // organization-owned record (ADR §3). When the page did not resolve the owning
   // organization's display name, the property is omitted rather than defaulted to
   // the platform operator, which would be a false attribution.

@@ -127,9 +127,9 @@ export function ContactSection() {
                 }}
                 onClick={() => {
                   const emailMap: Record<string, string> = {
-                    demo:    "mailto:hermesnovinmehriric@gmail.com?subject=Demo Request",
-                    sales:   "mailto:hermesnovinmehriric@gmail.com?subject=Sales Inquiry",
-                    partner: "mailto:hermesnovinmehriric@gmail.com?subject=Partnership Inquiry",
+                    demo:    "mailto:info@hermesnovin.com?subject=Demo Request",
+                    sales:   "mailto:info@hermesnovin.com?subject=Sales Inquiry",
+                    partner: "mailto:info@hermesnovin.com?subject=Partnership Inquiry",
                   };
                   window.location.href = emailMap[key] ?? "#";
                 }}

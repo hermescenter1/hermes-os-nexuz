@@ -71,13 +71,25 @@ export function TrustBadgesSection() {
           accessible name), `cursor:pointer`, and the non-standard lowercase
           `code` attribute. eNAMAD explicitly forbids `rel="noopener noreferrer"`
           here, so this anchor deliberately carries NO `rel` attribute at all.
+
+          PHASE 113 — the accessible name is PRODUCT-NEUTRAL ("Hermes OS") and
+          names no company. The seal is registered under eNAMAD id 761266, and
+          nothing in this repository proves which legal entity that
+          registration belongs to. Naming a company in the accessible name of a
+          trust seal is a legal claim about who is certified, so it is only
+          made from proven evidence. The previous label named the retired
+          company; replacing it with the current one would have asserted a
+          registration transfer this repository cannot evidence.
+
+          OPERATOR ACTION: once the eNAMAD registrant is confirmed in writing,
+          the accessible name may name that entity.
         */}
         <TrustSlot label={t("enamadHeading")}>
           <a
             referrerPolicy="origin"
             target="_blank"
             href="https://trustseal.enamad.ir/?id=761266&Code=MFGRdDzn6UCFPL3FOx24Dj5yabncQMST"
-            aria-label="eNAMAD Electronic Trust Seal — Hermes Novin"
+            aria-label="eNAMAD Electronic Trust Seal — Hermes OS"
             className="ds-focus inline-flex rounded-lg"
           >
             <span className="relative flex min-h-[76px] w-[80px] items-center justify-center overflow-hidden rounded-lg bg-white p-2">

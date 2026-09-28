@@ -13,17 +13,57 @@ export const BASE_URL =
 export const SITE_NAME    = "Hermes OS";
 
 /**
- * Canonical public organisation identity.
+ * Canonical public organisation identity — PHASE 113.
  *
  * `ORG_NAME` is the name published in every structured-data block and is the
- * full legal/public identity on purpose: retrieval systems must be able to
- * merge "Hermes Novin", "Hermes Novin Mehr" and "Hermes Novin Mehr IRIC" into
- * ONE organisation rather than treating them as unrelated companies. The short
- * brand is kept as an explicit `alternateName` instead of being a second,
- * competing primary name.
+ * full legal/public identity of the COMPANY that operates and develops the
+ * platform. The short brand is kept as an explicit `alternateName` instead of
+ * being a second, competing primary name.
+ *
+ * COMPANY AND PRODUCT ARE TWO ENTITIES, NOT ONE
+ * ---------------------------------------------
+ * This constant must never carry the product name, and `SITE_NAME` must never
+ * carry the company name:
+ *
+ *     ZHARFA Vira Pouyesh Fanavari  = company / platform operator / developer
+ *     Hermes OS                     = the industrial intelligence product
+ *
+ * The retired identity "Hermes Novin Mehr IRIC" (and its short forms) is no
+ * longer published on any public surface. It is deliberately NOT kept as an
+ * `alternateName`: a retired legal name is not an alias the current company
+ * trades under, and publishing it would keep merging the old entity into the
+ * new one in every retrieval system that reads this graph.
  */
-export const ORG_NAME       = "Hermes Novin Mehr IRIC";
-export const ORG_SHORT_NAME = "Hermes Novin";
+export const ORG_NAME       = "ZHARFA Vira Pouyesh Fanavari";
+export const ORG_SHORT_NAME = "ZHARFA";
+
+/**
+ * The company's own canonical website — PHASE 113, owner-confirmed evidence.
+ *
+ * WHY THE APEX WITH NO LOCALE PATH
+ * Measured, not assumed (2026-09-28):
+ *
+ *   https://www.zharfavira.com  -> 301 -> https://zharfavira.com/ -> 307 -> /fa
+ *   https://zharfavira.com      ->               307 -> /fa
+ *
+ * `www` is a PERMANENT (301) redirect to the apex, so the apex is the canonical
+ * host. The `/fa` hop is a 307 locale redirect — the same next-intl pattern this
+ * site uses — which selects a language, not a canonical identity.
+ *
+ * The decisive evidence is that ZHARFA's own structured data publishes exactly
+ * this value: its `Organization` node carries
+ * `url: "https://zharfavira.com"` while its per-page canonical is
+ * `https://zharfavira.com/fa`. Pointing at the apex therefore agrees with the
+ * company's own declaration of its entity URL rather than a locale variant of it.
+ *
+ * THIS BELONGS IN `url`, NOT IN `sameAs`
+ * `sameAs` is for OTHER external identities of an entity (a verified LinkedIn
+ * profile, for instance). An organisation's own principal website is its `url`.
+ * Putting it in `sameAs` as well would assert that the company and its website
+ * are two identities to be merged, which is exactly the kind of sloppy claim
+ * this phase removed elsewhere. `ORG_SAME_AS` therefore stays empty.
+ */
+export const ORG_URL = "https://zharfavira.com";
 
 /**
  * The canonical product category. Used verbatim by the product schema and the
@@ -77,24 +117,47 @@ export const CONTACT_EMAIL  = "info@hermesnovin.com";
  */
 
 /**
- * VERIFIED external profiles for the organisation (`sameAs`).
+ * VERIFIED external profiles for the ORGANISATION (`sameAs`).
  *
- * Entry criteria — every URL here must be provable from this repository, never
- * guessed from a plausible username:
+ * PHASE 113 — DELIBERATELY EMPTY.
  *
- *  - ProvenExpert: the profile embedded by `components/trust/ProvenExpertSeal`
- *    using this organisation's own profile id, and allow-listed in the
- *    middleware CSP. Tracking parameters are stripped: `sameAs` must be the
- *    canonical profile URL, not a campaign-tagged one.
- *  - GitHub: the account hosting this repository's own origin remote.
+ * `sameAs` is an identity claim: it tells a retrieval system "this URL IS this
+ * entity". Two URLs used to sit here and neither survives that test now that
+ * the company and the product are modelled as separate entities:
  *
- * A social handle is NOT listed unless an account is confirmed to exist and to
- * belong to the organisation. Nothing is added here on the strength of "the
- * name is probably taken by us".
+ *  - `https://www.provenexpert.com/hermes-os/` is a review profile for the
+ *    PRODUCT, Hermes OS. It moved to `PRODUCT_SAME_AS` below. Leaving it here
+ *    asserted that the review profile of a piece of software is the company,
+ *    which is the exact entity merge this phase exists to undo.
+ *  - `https://github.com/hermescenter1` is the account that HOSTS this
+ *    repository. Code hosting is not a corporate identity: an organisation's
+ *    `sameAs` must be a profile OF the organisation, and no repository in this
+ *    tree proves that account is operated as ZHARFA's official presence.
+ *
+ * An empty list is safer than a false entity merge. A ZHARFA LinkedIn or other
+ * corporate profile is added here only once the operator supplies the official
+ * URL, or once a verified one is provable from this repository — never on the
+ * strength of "the name is probably taken by us".
+ *
+ * OPERATOR ACTION: supply verified ZHARFA corporate profile URLs to populate
+ * this list.
  */
-export const ORG_SAME_AS: readonly string[] = [
+export const ORG_SAME_AS: readonly string[] = [];
+
+/**
+ * VERIFIED external profiles for the PRODUCT (`SoftwareApplication.sameAs`).
+ *
+ * ProvenExpert: the profile embedded by `components/trust/ProvenExpertSeal`
+ * using this product's own profile id, and allow-listed in the middleware CSP.
+ * Tracking parameters are stripped — `sameAs` must be the canonical profile
+ * URL, not a campaign-tagged one.
+ *
+ * NOTE: this publishes the profile's EXISTENCE, not its contents. No rating,
+ * review count or score is asserted anywhere in the graph; `aggregateRating`
+ * and `review` stay absent (see `softwareApplicationSchema`).
+ */
+export const PRODUCT_SAME_AS: readonly string[] = [
   "https://www.provenexpert.com/hermes-os/",
-  "https://github.com/hermescenter1",
 ];
 
 /**
