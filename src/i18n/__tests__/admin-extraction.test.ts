@@ -97,7 +97,9 @@ describe("admin namespaces — structural parity", () => {
     // 6-value status vocabulary and the 5 transition action labels under
     // adminOperations.leads. The account-access namespace (adminAccess) is
     // deliberately untouched — the two workflows keep separate vocabularies.
-    expect(adminKeys.length).toBe(279);
+    // F-2: +1 controlCenter.groups.organizationDocuments (279 -> 280) — the
+    // organization document pages left the platform "administration" group.
+    expect(adminKeys.length).toBe(280);
   });
 });
 

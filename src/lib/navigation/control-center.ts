@@ -48,13 +48,22 @@ export const CONTROL_CENTER: ControlCenterGroup[] = [
     items: [
       { key: "adminConsole",   href: "/admin",                   capability: "admin" },
       { key: "analytics",      href: "/admin/analytics",         capability: "admin" },
-      { key: "documents",      href: "/admin/documents",         capability: "admin" },
-      { key: "documentSearch", href: "/admin/documents/search",  capability: "admin" },
       { key: "customers",      href: "/admin/customers",         capability: "admin" },
       { key: "vendors",        href: "/admin/vendors",           capability: "admin" },
       { key: "leads",          href: "/admin/leads",             capability: "admin" },
       { key: "seo",            href: "/admin/seo",               capability: "admin" },
       { key: "academyAdmin",   href: "/academy/admin",           capability: "admin" },
+    ],
+  },
+  {
+    // F-2 — the organization document library. NOT platform administration:
+    // middleware admits the workspace ("dashboard") platform roles, and the
+    // pages then require an ACTIVE membership with view_documents in the
+    // resolved organization (src/lib/documents/page-access.ts).
+    key: "organizationDocuments",
+    items: [
+      { key: "documents",      href: "/admin/documents",         capability: "dashboard" },
+      { key: "documentSearch", href: "/admin/documents/search",  capability: "dashboard" },
     ],
   },
   {

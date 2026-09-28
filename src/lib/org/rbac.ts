@@ -141,7 +141,12 @@ export type OrgPermission =
   // than published training material.
   | "view_media"                   // read the org media library (incl. drafts)
   | "manage_media"                 // create/edit drafts, submit for review, archive/restore
-  | "review_media";                // SUBMITTED/IN_REVIEW → PUBLISHED or REJECTED
+  | "review_media"                 // SUBMITTED/IN_REVIEW → PUBLISHED or REJECTED
+  // F-2 — tenant-owned document pipeline (/api/documents*). Separate from
+  // `manage_knowledge` for the same reason media is: an uploaded document is
+  // opaque file bytes plus extracted chunks, not a text record.
+  | "view_documents"               // list / read / search the org's documents
+  | "manage_documents";            // upload, process and delete the org's documents
 
 const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   update_org:           ["OWNER", "ADMIN"],
@@ -253,6 +258,9 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   view_media:                     ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
   manage_media:                   ["OWNER", "ADMIN", "MANAGER", "ENGINEER"],
   review_media:                   ["OWNER", "ADMIN", "MANAGER"],
+  // F-2 — documents. READ mirrors `view_media`; AUTHORING mirrors `manage_media`.
+  view_documents:                 ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
+  manage_documents:               ["OWNER", "ADMIN", "MANAGER", "ENGINEER"],
 };
 
 /*

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { StorageIndicator } from "@/components/StorageIndicator";
+import { withTenantPrecondition } from "@/lib/client/resource-request";
 
 type DocumentStatus =
   | "uploaded"
@@ -59,6 +60,8 @@ const ERROR_KEY: Record<string, string> = {
   file_empty: "validation.fileRequired",
   file_too_large: "validation.fileTooLarge",
   unsupported_file_type: "validation.unsupportedType",
+  // F-2: the bytes do not match the extension (magic bytes / not UTF-8 text).
+  file_signature_mismatch: "validation.unsupportedType",
 };
 
 function statusTone(status: DocumentStatus): string {
@@ -71,7 +74,12 @@ function statusTone(status: DocumentStatus): string {
 const inputCls =
   "w-full rounded-lg border border-line bg-bg px-3 py-2 font-body text-sm text-ink focus:border-signal/50 focus:outline-none";
 
-export function AdminDocumentsClient() {
+/**
+ * F-2 — `canManage` is the page's server-side `manage_documents` decision.
+ * Without it the upload form and the per-row process/delete controls are not
+ * rendered at all. Presentation only: the API re-authorizes every request.
+ */
+export function AdminDocumentsClient({ canManage }: { canManage: boolean }) {
   const t = useTranslations("adminDocuments");
   const locale = useLocale();
   const nf = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
@@ -83,6 +91,11 @@ export function AdminDocumentsClient() {
   });
 
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  // F-2: whole-library figures from the server (first page only), never
+  // counted from the loaded rows — the list is paged.
+  const [stats, setStats] = useState<{ total: number; indexed: number; failed: number } | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [title, setTitle] = useState("");
   const [sourceType, setSourceType] = useState<DocumentSourceType | "">("");
   const [vendor, setVendor] = useState("");
@@ -97,14 +110,45 @@ export function AdminDocumentsClient() {
   // Phase 16B: persists through /api/documents. Session mode keeps drafts
   // in the same in-process store every other Studio uses; database mode
   // persists to PostgreSQL — local state mirrors the server either way.
+  // F-2: the list is paged (keyset cursor). refresh() reloads the FIRST page;
+  // loadMore() appends the next one.
   async function refresh() {
     try {
-      const r = await fetch("/api/documents", { cache: "no-store" });
+      const r = await fetch("/api/documents", withTenantPrecondition({ cache: "no-store" }));
       if (!r.ok) return;
       const j = await r.json();
-      if (Array.isArray(j.documents)) setDocuments(j.documents);
+      if (Array.isArray(j.documents)) {
+        setDocuments(j.documents);
+        setNextCursor(typeof j.nextCursor === "string" ? j.nextCursor : null);
+        setStats(isStats(j.stats) ? j.stats : null);
+      }
     } catch {
       /* best-effort; existing list remains */
+    }
+  }
+
+  async function loadMore() {
+    if (!nextCursor) return;
+    setLoadingMore(true);
+    try {
+      const r = await fetch(
+        `/api/documents?cursor=${encodeURIComponent(nextCursor)}`,
+        withTenantPrecondition({ cache: "no-store" })
+      );
+      if (!r.ok) return;
+      const j = await r.json();
+      if (Array.isArray(j.documents)) {
+        const page = j.documents as DocumentRow[];
+        setDocuments((current) => {
+          const seen = new Set(current.map((d) => d.id));
+          return [...current, ...page.filter((d) => !seen.has(d.id))];
+        });
+        setNextCursor(typeof j.nextCursor === "string" ? j.nextCursor : null);
+      }
+    } catch {
+      /* best-effort; the loaded pages remain */
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -137,7 +181,7 @@ export function AdminDocumentsClient() {
       if (tags) fd.set("tags", tags);
       fd.set("file", file);
 
-      const res = await fetch("/api/documents", { method: "POST", body: fd });
+      const res = await fetch("/api/documents", withTenantPrecondition({ method: "POST", body: fd }));
       if (!res.ok) {
         const j = await res.json().catch(() => null);
         const key = j?.error ? ERROR_KEY[j.error] : undefined;
@@ -163,7 +207,11 @@ export function AdminDocumentsClient() {
   async function remove(id: string) {
     setDocuments((d) => d.filter((x) => x.id !== id));
     try {
-      await fetch(`/api/documents/${id}`, { method: "DELETE" });
+      await fetch(`/api/documents/${id}`, withTenantPrecondition({ method: "DELETE" }));
+      // F-2: always re-read the server afterwards — a refused delete (foreign
+      // or unknown id, changed organization) must not leave the row hidden,
+      // and a successful one changes the library figures.
+      await refresh();
     } catch {
       /* optimistic removal already applied */
     }
@@ -176,7 +224,7 @@ export function AdminDocumentsClient() {
   async function process(id: string) {
     setProcessingId(id);
     try {
-      await fetch(`/api/documents/${id}/process`, { method: "POST" });
+      await fetch(`/api/documents/${id}/process`, withTenantPrecondition({ method: "POST" }));
       await refresh();
     } catch {
       /* best-effort; the document's own status reflects what happened
@@ -186,11 +234,8 @@ export function AdminDocumentsClient() {
     }
   }
 
-  const metrics = useMemo(() => {
-    const indexed = documents.filter((d) => d.status === "indexed").length;
-    const failed = documents.filter((d) => d.status === "failed").length;
-    return { total: documents.length, indexed, failed };
-  }, [documents]);
+  // "—" until the server has answered: an unknown figure is not zero.
+  const figure = (n: number | undefined) => (typeof n === "number" ? nf.format(n) : "—");
 
   const sourceTypeLabel = (s: DocumentSourceType) => t(`sourceTypes.${s}`);
 
@@ -202,13 +247,14 @@ export function AdminDocumentsClient() {
 
       {/* metrics */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Metric label={t("metrics.total")} value={nf.format(metrics.total)} />
-        <Metric label={t("metrics.indexed")} value={nf.format(metrics.indexed)} />
-        <Metric label={t("metrics.failed")} value={nf.format(metrics.failed)} />
+        <Metric label={t("metrics.total")} value={figure(stats?.total)} />
+        <Metric label={t("metrics.indexed")} value={figure(stats?.indexed)} />
+        <Metric label={t("metrics.failed")} value={figure(stats?.failed)} />
       </div>
 
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* upload form */}
+      <div className={`mt-8 grid grid-cols-1 gap-6 ${canManage ? "lg:grid-cols-2" : ""}`}>
+        {/* upload form — manage_documents only */}
+        {canManage && (
         <section className="rounded-xl border border-line bg-surface p-5">
           <h2 className="font-display text-lg font-bold text-ink">{t("upload.heading")}</h2>
           <div className="mt-4 space-y-4">
@@ -288,6 +334,7 @@ export function AdminDocumentsClient() {
             </div>
           </div>
         </section>
+        )}
 
         {/* document list */}
         <section>
@@ -321,6 +368,7 @@ export function AdminDocumentsClient() {
                         </span>
                       </div>
                     </div>
+                    {canManage && (
                     <div className="flex shrink-0 gap-2">
                       <button
                         onClick={() => process(d.id)}
@@ -336,6 +384,7 @@ export function AdminDocumentsClient() {
                         {t("list.delete")}
                       </button>
                     </div>
+                    )}
                   </div>
                   <p className="mt-2 font-mono text-[0.6rem] text-muted/60" dir="ltr">
                     {df.format(new Date(d.createdAt))} · {nf.format(Math.round(d.sizeBytes / 1024))} KB ·{" "}
@@ -357,10 +406,27 @@ export function AdminDocumentsClient() {
               {t("list.empty")}
             </p>
           )}
+          {nextCursor && (
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="rounded-lg border border-line px-4 py-2 font-body text-xs text-muted transition-colors hover:border-signal/40 hover:text-ink disabled:opacity-50"
+              >
+                {t("list.loadMore")}
+              </button>
+            </div>
+          )}
         </section>
       </div>
     </div>
   );
+}
+
+function isStats(v: unknown): v is { total: number; indexed: number; failed: number } {
+  if (typeof v !== "object" || v === null) return false;
+  const o = v as Record<string, unknown>;
+  return [o.total, o.indexed, o.failed].every((n) => typeof n === "number" && Number.isFinite(n) && n >= 0);
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

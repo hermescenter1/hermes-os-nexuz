@@ -66,6 +66,11 @@ const ENGINEERING           = localePathPattern("engineering");
 // tenant-scoped plant records, so omitting it would publish them anonymously.
 const LIVE_OPERATIONS       = localePathPattern("live-operations");
 const ADMIN                 = localePathPattern("admin");
+// F-2 — the tenant document library lives under /admin/documents for
+// historical reasons, but it is an ORGANIZATION surface, not a platform
+// administration one. It is still protected by ADMIN above (no new protected
+// prefix); only its ROLE rule differs — see isAuthorizedForPath.
+const ADMIN_DOCUMENTS       = localePathPattern("admin/documents");
 const KNOWLEDGE_CASE_STUDIO = localePathPattern("knowledge/case-studio");
 const KNOWLEDGE_STUDIO      = localePathPattern("knowledge/studio");
 const INTELLIGENCE_UNKNOWN  = localePathPattern("intelligence/unknown");
@@ -274,6 +279,15 @@ export function isAuthorizedForPath(
   // page — middleware proves a platform role, never a tenant.
   if (LIVE_OPERATIONS.test(pathname)) {
     return canAccessEngineering(role);
+  }
+  // F-2 — MUST be tested before ADMIN below. Middleware proves only a
+  // workspace platform role (the "dashboard" capability: superadmin/admin/
+  // engineer/customer/vendor), never a tenant. The page then requires an
+  // ACTIVE membership in the resolved organization plus view_documents, and
+  // every /api/documents* handler re-proves membership and permission. A
+  // platform admin who is not a member of the organization sees nothing.
+  if (ADMIN_DOCUMENTS.test(pathname)) {
+    return can(role, "dashboard");
   }
   if (ADMIN.test(pathname)) {
     return role === "admin" || role === "superadmin";

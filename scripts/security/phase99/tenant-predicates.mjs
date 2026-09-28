@@ -427,15 +427,6 @@ export const TENANT_REVIEW_ALLOWLIST = [
     mechanism:
       "Platform-admin authority (can(role, 'admin')) over the public vendor marketplace directory and its onboarding queue. These are platform-global records with no owning tenant.",
   })),
-  ...[
-    { apiPath: "/api/documents/[id]", method: "GET" },
-    { apiPath: "/api/documents/[id]", method: "DELETE" },
-  ].map((r) => ({
-    ...r,
-    dimension: "OBJECT_SCOPE",
-    mechanism:
-      "requireAdmin (auth configured plus can(role, 'admin')) over the platform Document model, which is global rather than tenant-owned. Reviewed at Phase 99; if Document ever becomes tenant-scoped this entry must be removed and a predicate added.",
-  })),
 
   // ── Records scoped by an organization predicate inside the data layer ─────
   {

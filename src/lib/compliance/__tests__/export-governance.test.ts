@@ -288,7 +288,7 @@ describe("executor (EXPORT_SECRET_LEAK=0)", () => {
       consentRecord: [{ userId: "u1", organizationId: "org-A", consentType: "analytics", consentVersion: "1.0", granted: true, locale: "en", createdAt: new Date("2026-01-01"), ipAddress: "10.0.0.9" }],
     });
     const stored: Record<string, string> = {};
-    const storage = { provider: "local" as const, put: async ({ key, body }: { key: string; body: unknown }) => { stored[key] = String(body); return { key, sizeBytes: String(body).length }; }, get: async () => null, delete: async () => {}, exists: async () => false };
+    const storage = { provider: "local" as const, put: async ({ key, body }: { key: string; body: unknown }) => { stored[key] = String(body); return { key, sizeBytes: String(body).length }; }, get: async () => null, delete: async () => {}, remove: async () => "absent" as const, exists: async () => false };
     const res = await runGovernedExport({ db, storage, exportRequestId: "e1", privacyRequestId: "p1", subject: { userId: "u1", candidateId: null, organizationId: "org-A" }, subjectClass: "USER", locale: "en", expiryConfig: null, now: new Date("2026-01-01") });
     expect(res.packageKey).toBe("exports/e1/package.json");
     expect(res.expiryStatus).toBe("CONFIGURATION_REQUIRED");

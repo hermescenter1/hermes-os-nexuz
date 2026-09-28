@@ -15,31 +15,31 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 396,
-    "handlers": 551,
+    "routeFiles": 397,
+    "handlers": 552,
     "byClassification": {
       "PUBLIC_READ": 36,
       "PUBLIC_WRITE": 14,
-      "AUTHENTICATED_USER": 217,
-      "TENANT_MEMBER": 148,
+      "AUTHENTICATED_USER": 216,
+      "TENANT_MEMBER": 147,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
-      "PLATFORM_ADMIN": 132,
+      "PLATFORM_ADMIN": 135,
       "WEBHOOK": 2,
       "INTERNAL_HEALTH": 2,
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 148,
+    "tenantBoundHandlers": 147,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 280,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 280,
-    "TENANT_IDENTITY_SERVER_DERIVED": 280,
+    "TENANT_BOUND_HANDLERS_TOTAL": 282,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 282,
+    "TENANT_IDENTITY_SERVER_DERIVED": 282,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 280,
+    "OBJECT_SCOPED_HANDLERS": 282,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -3955,8 +3955,9 @@
       "file": "src/app/api/documents/route.ts",
       "classification": "PLATFORM_ADMIN",
       "authEvidence": [
-        "getCurrentUser",
-        "requireAdmin"
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
       ],
       "declaredSurface": false,
       "tenantScoped": false,
@@ -3969,8 +3970,9 @@
       "file": "src/app/api/documents/route.ts",
       "classification": "PLATFORM_ADMIN",
       "authEvidence": [
-        "getCurrentUser",
-        "requireAdmin"
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
       ],
       "declaredSurface": false,
       "tenantScoped": false,
@@ -3983,12 +3985,13 @@
       "file": "src/app/api/documents/[id]/route.ts",
       "classification": "PLATFORM_ADMIN",
       "authEvidence": [
-        "getCurrentUser",
-        "requireAdmin"
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
       ],
       "declaredSurface": false,
       "tenantScoped": false,
-      "mutates": true,
+      "mutates": false,
       "senderAuthenticated": null
     },
     {
@@ -3997,8 +4000,9 @@
       "file": "src/app/api/documents/[id]/route.ts",
       "classification": "PLATFORM_ADMIN",
       "authEvidence": [
-        "getCurrentUser",
-        "requireAdmin"
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
       ],
       "declaredSurface": false,
       "tenantScoped": false,
@@ -4009,9 +4013,11 @@
       "apiPath": "/api/documents/[id]/process",
       "method": "POST",
       "file": "src/app/api/documents/[id]/process/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "PLATFORM_ADMIN",
       "authEvidence": [
-        "getCurrentUser"
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
       ],
       "declaredSurface": false,
       "tenantScoped": false,
@@ -4035,13 +4041,27 @@
       "apiPath": "/api/documents/search",
       "method": "POST",
       "file": "src/app/api/documents/search/route.ts",
-      "classification": "TENANT_MEMBER",
+      "classification": "PLATFORM_ADMIN",
       "authEvidence": [
-        "getCurrentUser",
-        "resolveBrainOwner"
+        "requireOrgActor",
+        "requirePermission",
+        "requirePlatformAuth"
       ],
       "declaredSurface": false,
-      "tenantScoped": true,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/documents/storage-cleanup",
+      "method": "POST",
+      "file": "src/app/api/documents/storage-cleanup/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "authorizeDocumentCleanupWorker"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
       "mutates": false,
       "senderAuthenticated": null
     },

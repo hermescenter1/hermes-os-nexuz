@@ -145,12 +145,60 @@ model Document {
   // changes on the upload flow's own internal storageKey-set step.
   lastProcessedAt   DateTime?
   uploadedBy        String?
+  // F-2: the owning organization. Written ONLY from the server-resolved org
+  // context at upload (never from the request body) and never changed by any
+  // route. An organization that still owns documents cannot be deleted
+  // (RESTRICT). NULL = unassigned: invisible to every tenant (F-1 fail-closed).
   tenantId          String?
+  tenant            Organization? @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
   @@index([status])
   @@index([sourceType])
+  @@index([tenantId, createdAt])
+}
+
+/// F-2 FU-F2-R2-3 — object-storage cleanup outbox for deleted documents.
+///
+/// Written in the SAME database transaction that deletes a Document and its
+/// DocumentTextChunk rows, so the intent to remove the stored files is durable
+/// even if the process dies right after the commit. The files themselves are
+/// removed AFTER the commit (object storage is not transactional); a failed
+/// removal leaves the row PENDING with a failure code and a back-off, and any
+/// later pass — inline on the next delete, or POST /api/documents/storage-cleanup
+/// — retries it. Removal is idempotent: an absent object counts as removed.
+///
+/// `objectKeys` only ever holds keys under `documents/<documentId>/`; the
+/// executor re-checks that before touching storage. No document content is
+/// stored here. `documentId` is unique: a document is deleted exactly once.
+model DocumentStorageCleanup {
+  id             String                       @id @default(cuid())
+  organizationId String
+  documentId     String                       @unique
+  objectKeys     String[]
+  status         DocumentStorageCleanupStatus @default(PENDING)
+  attempts       Int                          @default(0)
+  /// A stable failure CODE, never a driver or filesystem message.
+  lastErrorCode  String?                      @db.VarChar(64)
+  nextAttemptAt  DateTime                     @default(now())
+  claimedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
+
+  /// RESTRICT: an organization with cleanups still pending cannot be deleted —
+  /// deleting it would drop the only record of files that must be removed.
+  organization   Organization                 @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  /// The retry pass's claim query.
+  @@index([status, nextAttemptAt])
+  @@index([organizationId, status, nextAttemptAt])
+}
+
+enum DocumentStorageCleanupStatus {
+  PENDING
+  DONE
 }
 
 // ---- Phase 16C: pre-embedding chunk storage (additive) ----
@@ -728,6 +776,10 @@ model Organization {
   reasoningRuns           ReasoningRun[]
   reasoningRunArtifacts   ReasoningRunArtifact[]
   reasoningReplayAttempts ReasoningReplayAttempt[]
+  // F-2: tenant-owned document pipeline (Document.tenantId, ON DELETE RESTRICT)
+  documents               Document[]
+  // F-2 FU-F2-R2-3: pending object-storage cleanups of deleted documents (RESTRICT)
+  documentStorageCleanups DocumentStorageCleanup[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt

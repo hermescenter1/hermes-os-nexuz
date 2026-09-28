@@ -3071,6 +3071,7 @@
       "empty": "Noch keine Dokumente hochgeladen.",
       "delete": "Löschen",
       "process": "Verarbeiten",
+      "loadMore": "Weitere laden",
       "processing": "Wird verarbeitet…",
       "chunkCount": "{count} Abschnitte",
       "lastProcessed": "zuletzt verarbeitet {time}",
@@ -4922,6 +4923,7 @@
     "controlCenter": {
       "groups": {
         "administration": "Verwaltung",
+        "organizationDocuments": "Organisationsdokumente",
         "editorial": "Redaktion",
         "contributor": "Beitragswerkzeuge"
       },

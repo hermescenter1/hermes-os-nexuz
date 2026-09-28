@@ -68,6 +68,11 @@ scripts/
 # COPYies it; the runner and migrator stages copy no scripts at all.
 !scripts/ats/ai-review-worker.mjs
 
+# F-2 FU-F2-R4-1 — the document storage-cleanup worker. ONE FILE, same
+# ordering constraints as the line above; only the dedicated
+# `document-cleanup-worker` Dockerfile stage COPYies it.
+!scripts/documents/storage-cleanup-worker.mjs
+
 # Test files
 **/__tests__/
 **/*.test.ts

@@ -2,10 +2,28 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { promises as fs } from "fs";
 import os from "os";
 import path from "path";
+import type { Document } from "@/lib/documents/types";
+import {
+  ORG_A,
+  ORG_B,
+  USER_A,
+  member,
+  mockGuards,
+  unmockGuards,
+  docRequest,
+  resetAudit,
+  auditEvents,
+  type GuardState,
+} from "../../../__tests__/org-guard-harness";
+
+/**
+ * Phase 16C / F-2 — POST /api/documents/[id]/process route tests.
+ *
+ * Ownership is proven before `processDocument` runs: a foreign or unassigned
+ * document is answered 404 and is never extracted, chunked or embedded.
+ */
 
 const ENV_KEYS = [
-  "ADMIN_EMAIL",
-  "ADMIN_PASSWORD",
   "HERMES_STORAGE_MODE",
   "DATABASE_URL",
   "HERMES_LOCAL_DOCUMENT_STORAGE_DIR",
@@ -25,8 +43,7 @@ beforeEach(async () => {
   process.env.DOCUMENT_EMBEDDINGS_PROVIDER = "mock";
   (globalThis as unknown as { __hermesDocumentDrafts?: unknown[] }).__hermesDocumentDrafts = [];
   (globalThis as unknown as { __hermesDocumentTextChunks?: unknown[] }).__hermesDocumentTextChunks = [];
-  process.env.ADMIN_EMAIL = "a@test.com";
-  process.env.ADMIN_PASSWORD = "x";
+  resetAudit();
   vi.resetModules();
 });
 
@@ -36,114 +53,149 @@ afterEach(async () => {
     else process.env[k] = saved[k];
   }
   await fs.rm(tempDir, { recursive: true, force: true });
-  vi.doUnmock("@/lib/auth/session");
+  unmockGuards();
 });
 
-function mockUser(role: "admin" | "engineer" | "viewer" | null) {
-  vi.doMock("@/lib/auth/session", () => ({
-    getCurrentUser: async () =>
-      role ? { id: "u1", email: "u@test.com", name: "Test User", role } : null,
-  }));
-}
-
-async function createDocument(filename: string, content: string) {
-  const { documentRepository } = await import("@/lib/documents/document-repository");
+/** A stored document owned by `owner` (`null` = a legacy unassigned row). */
+async function createDocument(owner: string | null, filename: string, content: string) {
+  const { documentRepository, documentRepositoryForOrganization } = await import(
+    "@/lib/documents/document-repository"
+  );
   const { getDocumentObjectStorage } = await import("@/lib/documents/object-storage");
-  const repo = documentRepository();
-  const doc = await repo.create({
+  const fields = {
     title: "RT Doc",
-    sourceType: "manual",
+    sourceType: "manual" as const,
     originalFilename: filename,
     mimeType: "text/plain",
     sizeBytes: content.length,
-    storageProvider: "local",
+    storageProvider: "local" as const,
     storageKey: "",
     metadata: { tags: [] },
     chunkCount: 0,
-    status: "uploaded",
-  });
+    status: "uploaded" as const,
+  };
+  const doc =
+    owner === null
+      ? await documentRepository().create(fields)
+      : await documentRepositoryForOrganization(owner).create({ ...fields, uploadedBy: "seed-user" });
   const storageKey = `documents/${doc.id}/original${path.extname(filename)}`;
   await getDocumentObjectStorage().put({ key: storageKey, body: content });
-  await repo.update(doc.id, { storageKey });
+  await documentRepository().update(doc.id, { storageKey });
   return doc.id;
 }
 
-function processRequest(id: string): { req: Request; params: Promise<{ id: string }> } {
+function stored(id: string): Document | undefined {
+  return ((globalThis as unknown as { __hermesDocumentDrafts?: Document[] }).__hermesDocumentDrafts ?? []).find(
+    (d) => d.id === id
+  );
+}
+
+async function chunkCount(documentId: string): Promise<number> {
+  const { documentTextChunkRepository } = await import("@/lib/documents/chunk-repository");
+  return (await documentTextChunkRepository().listByDocumentId(documentId)).length;
+}
+
+function processRequest(id: string, origin?: string | null) {
   return {
-    req: new Request(`http://localhost/api/documents/${id}/process`, { method: "POST" }),
-    params: Promise.resolve({ id }),
+    req: docRequest(`/api/documents/${id}/process`, { method: "POST", origin }),
+    ctx: { params: Promise.resolve({ id }) },
   };
 }
 
-describe("/api/documents/[id]/process — authorization", () => {
-  it("rejects when auth is not configured", async () => {
-    delete process.env.ADMIN_EMAIL;
-    delete process.env.ADMIN_PASSWORD;
-    const { POST } = await import("../route");
-    const { req, params } = processRequest("whatever");
-    const res = await POST(req, { params });
-    expect(res.status).toBe(403);
-  });
+async function loadRoute(state: GuardState) {
+  await mockGuards(state);
+  return import("../route");
+}
 
-  it("rejects an unauthenticated request", async () => {
-    mockUser(null);
-    const { POST } = await import("../route");
-    const { req, params } = processRequest("whatever");
-    const res = await POST(req, { params });
-    expect(res.status).toBe(401);
-  });
+const TEXT = "Some manual content. ".repeat(30);
 
-  it("rejects a non-admin role", async () => {
-    mockUser("engineer");
-    const { POST } = await import("../route");
-    const { req, params } = processRequest("whatever");
-    const res = await POST(req, { params });
-    expect(res.status).toBe(403);
+describe("/api/documents/[id]/process — guard chain", () => {
+  const refusals: Array<[string, GuardState, number]> = [
+    ["unauthenticated", { kind: "refused", code: "AUTHENTICATION_REQUIRED" }, 401],
+    ["ambiguous organization", { kind: "refused", code: "ORGANIZATION_SELECTION_REQUIRED" }, 409],
+    ["no organization", { kind: "refused", code: "ORGANIZATION_CONTEXT_REQUIRED" }, 409],
+    ["write without the tenant precondition", { kind: "refused", code: "ORGANIZATION_PRECONDITION_REQUIRED" }, 428],
+    ["non-member", { kind: "nonMember" }, 403],
+    ["VIEWER (no manage_documents)", member("VIEWER"), 403],
+    ["BILLING_ADMIN (no manage_documents)", member("BILLING_ADMIN"), 403],
+  ];
+
+  for (const [name, state, status] of refusals) {
+    it(`${name} → ${status}; the document is not processed`, async () => {
+      const id = await createDocument(ORG_A, "notes.txt", TEXT);
+      const { POST } = await loadRoute(state);
+      const { req, ctx } = processRequest(id);
+      expect((await POST(req, ctx)).status).toBe(status);
+      expect(stored(id)?.status).toBe("uploaded");
+      expect(await chunkCount(id)).toBe(0);
+      expect(auditEvents()).toEqual([]);
+    });
+  }
+
+  it("a cross-site Origin is refused (403); the document is not processed", async () => {
+    const id = await createDocument(ORG_A, "notes.txt", TEXT);
+    const { POST } = await loadRoute(member("OWNER"));
+    const { req, ctx } = processRequest(id, "https://attacker.example");
+    expect((await POST(req, ctx)).status).toBe(403);
+    expect(await chunkCount(id)).toBe(0);
   });
 });
 
-describe("/api/documents/[id]/process — admin", () => {
+describe("/api/documents/[id]/process — tenant-scoped", () => {
+  for (const [name, owner] of [["another organization's", ORG_B], ["an unassigned (NULL tenant)", null]] as const) {
+    it(`${name} document → 404; never extracted, chunked or embedded; no audit`, async () => {
+      const id = await createDocument(owner, "notes.txt", TEXT);
+      const { POST } = await loadRoute(member("OWNER"));
+      const { req, ctx } = processRequest(id);
+      const res = await POST(req, ctx);
+      expect(res.status).toBe(404);
+      expect((await res.json()).error).toBe("not_found");
+      expect(stored(id)?.status).toBe("uploaded");
+      expect(await chunkCount(id)).toBe(0);
+      expect(auditEvents()).toEqual([]);
+    });
+  }
+
   it("returns 404 for an unknown document", async () => {
-    mockUser("admin");
-    const { POST } = await import("../route");
-    const { req, params } = processRequest("does-not-exist");
-    const res = await POST(req, { params });
-    expect(res.status).toBe(404);
+    const { POST } = await loadRoute(member("OWNER"));
+    const { req, ctx } = processRequest("does-not-exist");
+    expect((await POST(req, ctx)).status).toBe(404);
   });
 
-  it("processes a TXT document end-to-end and returns the resulting status/chunkCount", async () => {
-    mockUser("admin");
-    const id = await createDocument("notes.txt", "Some manual content. ".repeat(30));
-    const { POST } = await import("../route");
-    const { req, params } = processRequest(id);
-    const res = await POST(req, { params });
+  it("processes an owned TXT document end-to-end and audits in the organization", async () => {
+    const id = await createDocument(ORG_A, "notes.txt", TEXT);
+    const { POST } = await loadRoute(member("ENGINEER"));
+    const { req, ctx } = processRequest(id);
+    const res = await POST(req, ctx);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
     expect(body.document.status).toBe("indexed");
     expect(body.chunkCount).toBeGreaterThan(0);
+    const processed = auditEvents().filter((e) => e.action === "document.processed");
+    expect(processed).toHaveLength(1);
+    expect(processed[0]).toMatchObject({ organizationId: ORG_A, userId: USER_A, entityId: id });
   });
 
   it("returns 200 with a failed document status for an unsupported PDF — never a 5xx", async () => {
-    mockUser("admin");
-    const id = await createDocument("manual.pdf", "%PDF-1.4 fake");
-    const { POST } = await import("../route");
-    const { req, params } = processRequest(id);
-    const res = await POST(req, { params });
+    const id = await createDocument(ORG_A, "manual.pdf", "%PDF-1.4 fake");
+    const { POST } = await loadRoute(member("ADMIN"));
+    const { req, ctx } = processRequest(id);
+    const res = await POST(req, ctx);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(false);
     expect(body.document.status).toBe("failed");
     expect(body.document.error).toBe("unsupported_extraction_type");
+    const failed = auditEvents().filter((e) => e.action === "document.process_failed");
+    expect(failed[0]).toMatchObject({ organizationId: ORG_A });
   });
 
   it("never leaks raw internal error text in any response", async () => {
-    mockUser("admin");
-    const id = await createDocument("manual.pdf", "%PDF-1.4 fake");
-    const { POST } = await import("../route");
-    const { req, params } = processRequest(id);
-    const res = await POST(req, { params });
-    const text = JSON.stringify(await res.json());
+    const id = await createDocument(ORG_A, "manual.pdf", "%PDF-1.4 fake");
+    const { POST } = await loadRoute(member("ADMIN"));
+    const { req, ctx } = processRequest(id);
+    const text = JSON.stringify(await (await POST(req, ctx)).json());
     expect(text).not.toMatch(/stack|ENOENT|at Object\.|at processDocument/i);
   });
 });

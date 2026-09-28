@@ -38,6 +38,19 @@ async function cleanup(): Promise<void> {
   const c = await db();
   await c.$executeRawUnsafe(`DELETE FROM "DocumentTextChunk" WHERE id LIKE '${PREFIX}%'`);
   await c.$executeRawUnsafe(`DELETE FROM "Document" WHERE id LIKE '${PREFIX}%'`);
+  await c.$executeRawUnsafe(`DELETE FROM "Organization" WHERE id LIKE '${PREFIX}%'`);
+}
+
+/**
+ * F-2: `Document.tenantId` is a foreign key to `Organization` (ON DELETE
+ * RESTRICT), so a tenant-owned fixture needs a real organization row first.
+ */
+async function mkOrganization(id: string): Promise<void> {
+  const c = await db();
+  await c.$executeRawUnsafe(
+    `INSERT INTO "Organization" (id, name, slug, "updatedAt") VALUES ($1, $1, $1, now())`,
+    id
+  );
 }
 
 async function mkDocument(id: string, tenantId: string | null): Promise<void> {
@@ -88,6 +101,8 @@ describe.skipIf(!PG_ENABLED)("F-1 PG — DocumentTextChunk search is tenant-scop
 
   beforeEach(async () => {
     await cleanup();
+    await mkOrganization(ORG_A);
+    await mkOrganization(ORG_B);
     await mkDocument(`${PREFIX}doc-a`, ORG_A);
     await mkDocument(`${PREFIX}doc-b`, ORG_B);
     await mkDocument(`${PREFIX}doc-null`, null);

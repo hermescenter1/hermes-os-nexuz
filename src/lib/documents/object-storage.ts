@@ -40,7 +40,15 @@ export interface ObjectStorage {
   provider: DocumentStorageProvider;
   put(input: ObjectPutInput): Promise<ObjectPutResult>;
   get(key: string): Promise<Buffer | null>;
+  /** Best-effort delete: swallows EVERY error (kept for existing callers). */
   delete(key: string): Promise<void>;
+  /**
+   * F-2 FU-F2-R2-3 — strict delete for cleanup that must be verifiable.
+   * Resolves `"deleted"` or `"absent"` (already gone — idempotent success) and
+   * REJECTS on any other failure (permission, lock, I/O, unavailable provider),
+   * so a caller can retry instead of recording a removal that did not happen.
+   */
+  remove(key: string): Promise<"deleted" | "absent">;
   exists(key: string): Promise<boolean>;
 }
 
@@ -87,6 +95,15 @@ function createLocalObjectStorage(): ObjectStorage {
         /* already gone, or never existed — delete is idempotent */
       }
     },
+    async remove(key): Promise<"deleted" | "absent"> {
+      try {
+        await fs.unlink(resolvePath(key));
+        return "deleted";
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException)?.code === "ENOENT") return "absent";
+        throw err; // EACCES / EPERM / EBUSY / EISDIR … — NOT a removal
+      }
+    },
     async exists(key): Promise<boolean> {
       try {
         await fs.access(resolvePath(key));
@@ -120,6 +137,7 @@ function createUnimplementedObjectStorage(provider: "minio" | "s3"): ObjectStora
     put: async () => fail("put"),
     get: async () => fail("get"),
     delete: async () => fail("delete"),
+    remove: async () => fail("remove"),
     exists: async () => fail("exists"),
   };
 }

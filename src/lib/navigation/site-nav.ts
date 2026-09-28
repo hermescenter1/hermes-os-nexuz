@@ -58,8 +58,11 @@ export const SITE_NAV_GROUPS: NavGroup[] = [
       { labelKey: "compliance",      href: "/compliance",              capability: "admin" },
       { labelKey: "privacyCenter",   href: "/privacy-center" },
       { labelKey: "admin",           href: "/admin",                   capability: "admin" },
-      { labelKey: "documents",       href: "/admin/documents",         capability: "admin" },
-      { labelKey: "documentSearch",  href: "/admin/documents/search",  capability: "admin" },
+      // F-2: the organization document library. Workspace ("dashboard") roles
+      // pass middleware; the page itself requires view_documents in the
+      // resolved organization.
+      { labelKey: "documents",       href: "/admin/documents",         capability: "dashboard" },
+      { labelKey: "documentSearch",  href: "/admin/documents/search",  capability: "dashboard" },
       { labelKey: "assetRegistry",   href: "/assets/dashboard" },
     ],
   },

@@ -82,6 +82,61 @@ services:
         max-size: "20m"
         max-file: "5"
 
+  # ── F-2 FU-F2-R4-1 — the document storage-cleanup worker ────────────────────
+  #
+  # Deleting a document removes its Document row and chunks and records a
+  # DocumentStorageCleanup row in ONE transaction; the stored files (original +
+  # extracted text) are removed after the commit. When that removal fails the
+  # row stays PENDING. This service is what retries those rows on a schedule.
+  # Without it they are retried only when the same organization deletes another
+  # document — safe (nothing is lost, the rows wait), but not timely.
+  #
+  # SAME PATTERN AS hermes-ats-review-worker AND hermes-metering-worker BELOW. It
+  # is a THIN TRIGGER: it polls POST /api/documents/storage-cleanup on hermes-web,
+  # where the pass lives and is tested. Its own image stage
+  # (`document-cleanup-worker`) holds ONE .mjs file — no node_modules, no Prisma,
+  # no database credential, no object-storage mount, no volume, no ports.
+  #
+  # WHAT IT CAN CAUSE. Removal of objects under documents/<id>/ for documents
+  # that are ALREADY deleted, and nothing else. Logs are pass COUNTS only.
+  #
+  # SCALING. Safe with `--scale hermes-document-cleanup-worker=N`: every outbox
+  # row is claimed by an atomic conditional update, so no row is processed twice.
+  #
+  # REQUIRED CONFIGURATION. `DOCUMENT_CLEANUP_WORKER_TOKEN` in .env.production —
+  # its OWN secret, the same value hermes-web reads to authorise the endpoint.
+  # Deliberately NOT the metering or metrics token (see
+  # src/lib/documents/storage-cleanup-worker-auth.ts). Without it this container
+  # exits 2 at startup with a message that says why. No health check, exactly as
+  # for the other two workers.
+  #
+  # NOT STARTED BY THE DEPLOY WORKFLOW (it recreates hermes-web only, like the
+  # other workers): after the migration is applied and the token is set, an
+  # operator starts it once with
+  #   docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d hermes-document-cleanup-worker
+  hermes-document-cleanup-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: document-cleanup-worker
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      HERMES_WORKER_BASE_URL: http://hermes-web:3000
+    # Stated explicitly rather than relying on the stage CMD, so the thing this
+    # service runs is visible in the compose file an operator reads.
+    command: ["node", "scripts/documents/storage-cleanup-worker.mjs"]
+    depends_on:
+      hermes-web:
+        condition: service_healthy
+    networks:
+      - hermes_internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
   # ── ATS-S1 — the ATS AI-review worker ───────────────────────────────────────
   #
   # The public intake writes an application at AI_REVIEW_PENDING together with a

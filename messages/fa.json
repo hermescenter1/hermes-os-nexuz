@@ -3071,6 +3071,7 @@
       "empty": "هنوز سندی بارگذاری نشده است.",
       "delete": "حذف",
       "process": "پردازش",
+      "loadMore": "بارگذاری موارد بیشتر",
       "processing": "در حال پردازش…",
       "chunkCount": "{count} تکه",
       "lastProcessed": "آخرین پردازش {time}",
@@ -4922,6 +4923,7 @@
     "controlCenter": {
       "groups": {
         "administration": "مدیریت پلتفرم",
+        "organizationDocuments": "اسناد سازمان",
         "editorial": "هیئت تحریریه",
         "contributor": "ابزارهای مشارکت‌کنندگان"
       },
