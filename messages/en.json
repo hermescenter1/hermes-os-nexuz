@@ -1,4 +1,114 @@
 {
+  "cookiePolicy": {
+    "eyebrow": "HERMES OS · LEGAL",
+    "title": "Cookie Policy",
+    "versionLabel": "Version",
+    "effectiveLabel": "Effective",
+    "effective": "27 September 2026",
+    "toc": {
+      "heading": "On this page",
+      "mobileLabel": "Contents"
+    },
+    "updates": {
+      "heading": "Changes to this policy",
+      "body": "When the storage described here changes, this policy is revised and the version and effective date above change with it. Material changes to the optional categories are accompanied by a fresh request for consent rather than a silent reinterpretation of the answer you already gave."
+    },
+    "intro": {
+      "heading": "What cookies and browser storage are",
+      "body": "Cookies are small text files that a website asks your browser to keep on your device and to send back on later visits. They let a platform recognise a signed-in session, remember a chosen language, and record a decision you have already made instead of asking again.",
+      "storageBody": "This policy also covers browser storage that is not technically a cookie. Hermes OS keeps one entry in your browser's local storage so that your cookie decision survives even if our database is briefly unreachable. Local storage is not transmitted with every request the way a cookie is, and it has no expiry date — it stays until you clear it or change your choice."
+    },
+    "controller": {
+      "heading": "Who is responsible",
+      "body": "Hermes OS is an industrial intelligence platform. The company that develops and operates it, and which is responsible for the storage described here, is:",
+      "companyLabel": "Company",
+      "productLabel": "Platform",
+      "contactLabel": "Contact"
+    },
+    "basis": {
+      "heading": "Why we are allowed to store it",
+      "necessaryTitle": "Strictly necessary storage",
+      "necessaryBody": "Necessary entries are set because you asked for a service that cannot work without them — signing in, staying signed in, keeping a chosen organisation, and remembering the cookie decision itself. They carry no consent switch because switching them off would mean switching the service off.",
+      "optionalTitle": "Optional storage",
+      "optionalBody": "Analytics, marketing and preference storage is set only after you have given consent, and only for the categories you chose. Consent is a free decision: nothing is set before you answer, refusing costs you no functionality, and you may change your mind at any time."
+    },
+    "categories": {
+      "intro": "Every entry Hermes OS or one of its integrations can place in your browser belongs to exactly one of the four categories below, which are the same four the consent dialog offers.",
+      "alwaysOn": "Always active — cannot be switched off",
+      "optIn": "Only after you opt in",
+      "noneStored": "Hermes OS itself stores nothing in this category. Only the third-party services listed below do, and only with your consent."
+    },
+    "table": {
+      "caption": "Entries in this category",
+      "colName": "Identifier",
+      "colPurpose": "Purpose",
+      "colRetention": "Retention",
+      "colCategory": "Category",
+      "colProvider": "Set by",
+      "colScope": "Applies to"
+    },
+    "storage": {
+      "heading": "What is stored, and for how long",
+      "body": "The identifiers below are the exact names your browser will show. Every retention period is the value the platform actually sets, not an estimate.",
+      "session": "Keeps you signed in on the legacy session path.",
+      "accessToken": "Proves your identity to the platform on each request during a working session.",
+      "refreshToken": "Lets your session be renewed without asking you to sign in again.",
+      "consentId": "An opaque identifier that links your browser to your stored cookie decision. It carries no account, no name and no permission, and it is created only once you answer the consent dialog.",
+      "tenantSelection": "Remembers which of your organisations you are currently working in. It never grants access — the server re-checks your membership on every request.",
+      "locale": "Remembers whether you are reading the site in Persian, English or German.",
+      "consentMirror": "A copy of your cookie decision, kept in your browser's local storage so your choice is honoured even when our database cannot be reached.",
+      "scopeAuthenticated": "Signed-in users only",
+      "scopeAll": "All visitors",
+      "mediumCookie": "Cookie",
+      "mediumLocalStorage": "Local storage",
+      "retentionHours": "{count, number} hours",
+      "retentionDays": "{count, number} days",
+      "retentionExtended": "extended to {count, number} days if you chose to stay signed in",
+      "retentionUntilCleared": "No expiry — until you clear it or change your choice",
+      "retentionProviderDefined": "Set by the provider — see their privacy information"
+    },
+    "thirdParty": {
+      "heading": "Third-party services",
+      "body": "The services below can place their own storage in your browser. None of them loads, and none of them is contacted, until you have granted the consent shown beside it.",
+      "googleAnalytics": {
+        "name": "Google Analytics 4 and Google Tag Manager",
+        "purpose": "Aggregated measurement of how visitors reach and move through the public site."
+      },
+      "microsoftClarity": {
+        "name": "Microsoft Clarity (session analytics)",
+        "purpose": "Aggregated interaction analysis used to find usability problems on public pages."
+      },
+      "provenExpert": {
+        "name": "ProvenExpert (customer review seal)",
+        "purpose": "Displays the independent customer review seal in the site footer."
+      },
+      "gateLabel": "Loads only with consent for: {categories}",
+      "configurationNote": "This service is also switched off entirely unless the deployment has been configured for it, so it may be absent even where consent was given.",
+      "privacyLinkLabel": "Provider privacy information",
+      "badgeNote": "The eNAMAD trust seal and the SaaSHub badge are plain images. They set no cookie and run no script, so they need no consent and are not listed above."
+    },
+    "withdrawal": {
+      "heading": "Changing or withdrawing your consent",
+      "body": "You can reopen the consent dialog here at any time, review what you chose, and save a different answer. The dialog opens with your current decision already filled in.",
+      "manageButton": "Manage cookie preferences",
+      "effectNote": "Withdrawing analytics or marketing consent never breaks the platform. Signing in, your language, your organisation and every engineering function keep working exactly as before; only the optional storage stops.",
+      "repeatNote": "There is no limit on how often you may change your answer."
+    },
+    "browserControls": {
+      "heading": "Controls in your browser",
+      "body": "Independently of this site, every current browser lets you view stored cookies and local storage, delete them individually or in full, and refuse them for a site. Those controls are in your browser's privacy or site-data settings.",
+      "resetNote": "If you clear this site's data, your stored decision disappears with it and the consent dialog will ask again on your next visit."
+    },
+    "contact": {
+      "heading": "Questions about this policy",
+      "body": "Write to us and say that your question concerns cookies or browser storage, so it reaches the right people:"
+    },
+    "privacyPolicy": {
+      "heading": "Related policy",
+      "body": "This policy covers only storage in your browser. How we handle personal data more generally — what we collect, why, how long we keep it and what rights you have — is described in the Privacy Policy.",
+      "cta": "Read the Privacy Policy"
+    }
+  },
   "trustBadges": {
     "sectionTitle": "Trust & Verification",
     "enamadHeading": "Trust Seal",
@@ -1340,7 +1450,7 @@
   "footer": {
     "tagline": "Enterprise Industrial Intelligence Platform",
     "description": "Hermes is an industrial intelligence platform for automation, maintenance, asset management, engineering documents, and expert knowledge.",
-    "copyright": "© 2026 Hermes Novin Mehr IRIC. All Rights Reserved.",
+    "copyright": "© 2026 ZHARFA Vira Pouyesh Fanavari. All Rights Reserved.",
     "navAbout": "About",
     "navPlatform": "Platform",
     "navDocs": "Documentation",
@@ -4108,11 +4218,11 @@
     "invalidResponseHint": "The server replied in a format this page does not recognize, so nothing is displayed rather than showing unverified figures."
   },
   "about": {
-    "eyebrow": "About Hermes Novin Mehr IRIC",
+    "eyebrow": "About ZHARFA Vira Pouyesh Fanavari",
     "title": "Engineering the Future of Industrial Intelligence",
     "lede": "Born on the plant floor. Built for the engineers who run it.",
     "companyEyebrow": "The Company",
-    "companyTitle": "Hermes Novin Mehr IRIC",
+    "companyTitle": "ZHARFA Vira Pouyesh Fanavari",
     "companyDesc": "We build enterprise-grade industrial intelligence software for automation engineers, plant operators, and engineering leadership teams. Our platform combines AI-powered reasoning, engineering memory, and knowledge graphs to give industrial teams unprecedented clarity and decision support.",
     "website": "www.hermesnovin.com",
     "locationIran": "Isfahan, Iran",
@@ -4152,7 +4262,7 @@
     "supportEmail": "hamidreza.forozandeh1@gmail.com",
     "generalTitle": "General",
     "generalDesc": "General enquiries, partnership discussions, and collaboration opportunities.",
-    "generalEmail": "hermesnovinmehriric@gmail.com",
+    "generalEmail": "info@hermesnovin.com",
     "phoneTitle": "Phone",
     "phoneIran": "+98 913 411 6492",
     "phoneUK": "+44 796 054 5833",
@@ -7086,7 +7196,7 @@
         },
         "careers": {
           "name": "Careers",
-          "desc": "Roles and applications at Hermes Novin Mehr.",
+          "desc": "Roles and applications at ZHARFA Vira Pouyesh Fanavari.",
           "cta": "See open roles"
         }
       }
@@ -7168,8 +7278,9 @@
     },
     "footer": {
       "tagline": "Industrial Intelligence. Engineered for Action.",
-      "copyright": "© 2026 Hermes Novin Mehr IRIC. All Rights Reserved.",
+      "copyright": "© 2026 ZHARFA Vira Pouyesh Fanavari. All Rights Reserved.",
       "domain": "hermesnovin.com",
+      "companyWebsiteAria": "{company} corporate website (opens in a new tab)",
       "columns": {
         "platform": "Platform",
         "intelligence": "Industrial Intelligence",

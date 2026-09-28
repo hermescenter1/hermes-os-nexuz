@@ -62,16 +62,36 @@ function publicConsentView(consent: {
 
 const DEFAULTS = { necessary: true, analytics: false, marketing: false, preferences: false };
 
+/**
+ * PHASE 113 — every response on this route is PRIVATE and UNCACHEABLE.
+ *
+ * The GET response is selected entirely by the `hermes_consent_id` cookie, and
+ * it carried no `Cache-Control` at all. A shared cache or reverse proxy that
+ * keys on the URL alone — the URL is identical for every visitor — could serve
+ * one visitor's consent state to another, which both misreports consent and
+ * discloses one subject's record to a different browser. `private` forbids
+ * shared storage, `no-store` forbids storage entirely, and `Vary: Cookie`
+ * states the real cache key for any intermediary that ignores the first two.
+ *
+ * `AnalyticsProvider` already requested `cache: "no-store"` on its own fetch,
+ * but a client-side hint cannot bind an intermediary; the answer has to come
+ * from the server.
+ */
+const NO_STORE_HEADERS = {
+  "Cache-Control": "private, no-store, max-age=0, must-revalidate",
+  Vary: "Cookie",
+} as const;
+
 export async function GET(req: NextRequest) {
   const raw = req.cookies.get(CONSENT_ID_COOKIE)?.value;
   if (!isConsentId(raw)) {
-    return NextResponse.json({ consent: null, defaults: DEFAULTS });
+    return NextResponse.json({ consent: null, defaults: DEFAULTS }, { headers: NO_STORE_HEADERS });
   }
   const consent = await getCookieConsent(raw);
   if (!consent) {
-    return NextResponse.json({ consent: null, defaults: DEFAULTS });
+    return NextResponse.json({ consent: null, defaults: DEFAULTS }, { headers: NO_STORE_HEADERS });
   }
-  return NextResponse.json({ consent: publicConsentView(consent) });
+  return NextResponse.json({ consent: publicConsentView(consent) }, { headers: NO_STORE_HEADERS });
 }
 
 /** Anonymous write, so it carries the same resource boundary as the other ones. */
@@ -136,7 +156,7 @@ export async function POST(req: NextRequest) {
     consent: consent ? publicConsentView(consent) : null,
     preferences,
     saved: !!consent,
-  });
+  }, { headers: NO_STORE_HEADERS });
   response.cookies.set(CONSENT_ID_COOKIE, consentId, consentCookieOptions(process.env.NODE_ENV === "production"));
   return response;
 }

@@ -16,6 +16,8 @@ import {
   FOUNDER_ID,
   ORG_NAME,
   ORG_SHORT_NAME,
+  ORG_SAME_AS,
+  PRODUCT_SAME_AS,
   SITE_NAME,
   PRODUCT_CATEGORY,
 } from "../config";
@@ -63,12 +65,25 @@ describe("entity IDs are stable and absolute", () => {
 describe("canonical identity", () => {
   it("the organisation publishes its full legal name, not the short brand", () => {
     const org = organizationSchema();
-    expect(org.name).toBe("Hermes Novin Mehr IRIC");
+    expect(org.name).toBe("ZHARFA Vira Pouyesh Fanavari");
     expect(org.legalName).toBe(ORG_NAME);
   });
 
-  it("the short brand and the product name resolve to the same organisation", () => {
-    expect(organizationSchema().alternateName).toEqual([ORG_SHORT_NAME, SITE_NAME]);
+  it("the short brand resolves to the organisation, and the PRODUCT name does not", () => {
+    // PHASE 113 — this assertion used to require [ORG_SHORT_NAME, SITE_NAME].
+    // Listing the product name as an alternate name of the company is an
+    // entity merge: it tells a retrieval system that "Hermes OS" IS another
+    // name for the company, which makes the company/product relationship —
+    // modelled everywhere else in this graph as creator/publisher/provider —
+    // unrecoverable. The short brand alone is a genuine alias.
+    expect(organizationSchema().alternateName).toEqual([ORG_SHORT_NAME]);
+    expect(organizationSchema().alternateName).not.toContain(SITE_NAME);
+  });
+
+  it("the retired company identity appears nowhere in the graph", () => {
+    // A retired legal name is not an alias. It must not survive as a name,
+    // a legalName, an alternateName or inside any description.
+    expect(JSON.stringify(siteEntityGraph())).not.toContain("Hermes Novin");
   });
 
   it("the product declares the canonical category", () => {
@@ -151,19 +166,43 @@ describe("no fabricated authority signals", () => {
     expect(dated.datePublished).toBe("2026-03-04T00:00:00.000Z");
   });
 
+  it("the organisation asserts no external identity it cannot prove", () => {
+    // PHASE 113 — two URLs used to sit in ORG_SAME_AS and neither was an
+    // identity of the COMPANY:
+    //   - the ProvenExpert profile reviews the PRODUCT (it moved to the
+    //     SoftwareApplication entity, asserted below);
+    //   - the GitHub account HOSTS this repository, which is not evidence
+    //     that it is operated as the company's official presence.
+    // `sameAs` is an identity claim, so an empty list is safer than a false
+    // entity merge. The property is omitted rather than emitted empty.
+    expect(ORG_SAME_AS).toEqual([]);
+    expect("sameAs" in organizationSchema()).toBe(false);
+  });
+
+  it("the ProvenExpert profile is attached to the PRODUCT, not the company", () => {
+    const app = softwareApplicationSchema() as Record<string, unknown>;
+    expect(app.sameAs).toEqual(["https://www.provenexpert.com/hermes-os/"]);
+    // Publishing the profile's EXISTENCE is not publishing its contents: no
+    // rating, review count or score is asserted anywhere (see the
+    // "no fabricated authority signals" block above).
+    expect("aggregateRating" in app).toBe(false);
+  });
+
   it("sameAs contains only URLs proven to belong to the entity", () => {
     // Guards against a plausible-looking handle being added without evidence.
-    expect(organizationSchema().sameAs).toEqual([
-      "https://www.provenexpert.com/hermes-os/",
-      "https://github.com/hermescenter1",
-    ]);
     expect(founderSchema().sameAs).toEqual([
       "https://www.linkedin.com/in/hamid-reza-forozandeh",
     ]);
   });
 
   it("no sameAs URL carries tracking parameters", () => {
-    for (const url of [...organizationSchema().sameAs, ...founderSchema().sameAs]) {
+    const all = [
+      ...ORG_SAME_AS,
+      ...PRODUCT_SAME_AS,
+      ...founderSchema().sameAs,
+    ];
+    expect(all.length).toBeGreaterThan(0);
+    for (const url of all) {
       expect(url).not.toContain("utm_");
       expect(url).not.toContain("?");
     }
