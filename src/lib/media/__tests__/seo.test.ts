@@ -22,7 +22,7 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ACTIVE_LOCALES, DEFAULT_LOCALE } from "@/i18n/locales";
-import { BASE_URL } from "@/lib/seo/config";
+import { BASE_URL, ORG_NAME } from "@/lib/seo/config";
 import {
   MEDIA_LIFECYCLE_STATUSES,
   MEDIA_PROCESSING_STATES,
@@ -472,6 +472,10 @@ describe("102-SEO (d) — a property the platform cannot back is omitted", () =>
       name: "Acme Industrial",
       url: `${BASE_URL}/en${MEDIA_PUBLIC_PATH_PREFIX}/acme-industrial`,
     });
+    // PHASE 113 — the needle follows the platform operator's CURRENT identity.
+    // The assertion's intent is unchanged and is what matters: a tenant's video
+    // is published by the TENANT, never by the platform operator.
+    expect(JSON.stringify(schema)).not.toContain(ORG_NAME);
     expect(JSON.stringify(schema)).not.toContain("Hermes Novin");
   });
 

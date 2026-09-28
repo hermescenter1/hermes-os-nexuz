@@ -50,7 +50,7 @@ ${locales.map((p) => `- ${BASE_URL}${p}/brain: Hermes Brain — the Industrial K
 ${locales.map((p) => `- ${BASE_URL}${p}/industrial-brain: Hermes Industrial Brain — alarm intelligence, signal matrix and deterministic industrial fault analysis. A capability of Hermes OS. Distinct from Hermes Brain (${p.slice(1)})`).join("\n")}
 ${locales.map((p) => `- ${BASE_URL}${p}/copilot: Hermes Engineering Copilot — engineering assistance, a capability of Hermes OS (${p.slice(1)})`).join("\n")}
 ${locales.map((p) => `- ${BASE_URL}${p}/architecture: Architecture — PLC, SCADA, HMI, OPC UA and MQTT connectivity (${p.slice(1)})`).join("\n")}
-${locales.map((p) => `- ${BASE_URL}${p}/about: About Hermes Novin Mehr (${p.slice(1)})`).join("\n")}
+${locales.map((p) => `- ${BASE_URL}${p}/about: About ${ORG_NAME} (${p.slice(1)})`).join("\n")}
 ${locales.map((p) => `- ${BASE_URL}${p}/contact: Contact (${p.slice(1)})`).join("\n")}
 
 ## Knowledge

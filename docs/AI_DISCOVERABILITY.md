@@ -1,8 +1,28 @@
 # AI Discoverability & Entity Authority — Phase 105
 
+> **Phase 113 amendment (2026-09-27) — company identity and entity separation.**
+> The operating company is **ZHARFA Vira Pouyesh Fanavari** (ژرفا ویرا پویش فناوری). The identity "Hermes Novin Mehr IRIC" is **retired** and is published on no public
+> surface. `Hermes OS` is unchanged and remains the PRODUCT name.
+>
+> Two model corrections landed with it, and both are asserted by
+> `src/lib/seo/__tests__/entity-graph.test.ts`:
+>
+> 1. `Organization.alternateName` no longer contains the product name. Listing
+>    `Hermes OS` as an alternate name of the company merged the two entities,
+>    which contradicted the `creator` / `publisher` / `provider` relationships
+>    the same graph declares. It now carries the short brand only.
+> 2. `Organization.sameAs` is **empty**, and the property is omitted rather
+>    than emitted as an empty array. The ProvenExpert profile reviews the
+>    PRODUCT and moved to `SoftwareApplication.sameAs`; the GitHub account
+>    hosts this repository, which is not evidence of a corporate identity.
+>    An empty list is safer than a false entity merge.
+>
+> The sections below are amended in place where they state identity FACTS. The
+> Phase 105 narrative, rationale and disclaimers are otherwise unchanged.
+
 ## Overview
 
-This document describes the implemented architecture for making Hermes Novin Mehr IRIC and Hermes OS maximally discoverable, disambiguated and citable by standards-compliant search engines and AI-assisted retrieval systems.
+This document describes the implemented architecture for making ZHARFA Vira Pouyesh Fanavari (the company) and Hermes OS (the product) maximally discoverable, disambiguated and citable by standards-compliant search engines and AI-assisted retrieval systems.
 
 **Critical disclaimer:** These implementations improve technical discoverability. They do NOT guarantee recognition, inclusion, ranking or citation by any external AI system, search index or retrieval platform. External systems control their own crawl, indexing and ranking policies independent of any on-site signals. This documentation describes what we control (our public website architecture), not what we can guarantee about external behavior.
 
@@ -12,8 +32,10 @@ This document describes the implemented architecture for making Hermes Novin Meh
 
 | Property | Value |
 |---|---|
-| **Legal Name** | Hermes Novin Mehr IRIC |
-| **Short Brand** | Hermes Novin |
+| **Legal Name** | ZHARFA Vira Pouyesh Fanavari |
+| **Legal Name (Persian)** | ژرفا ویرا پویش فناوری |
+| **Short Brand** | ZHARFA |
+| **Retired identity (never published)** | Hermes Novin Mehr IRIC |
 | **Official Domain** | `https://hermesnovin.com` (APEX, not www) |
 | **Contact Email** | `info@hermesnovin.com` |
 
@@ -23,7 +45,7 @@ This document describes the implemented architecture for making Hermes Novin Meh
 |---|---|
 | **Name** | Hermes OS |
 | **Category** | Enterprise Industrial Intelligence Platform |
-| **Developer** | Hermes Novin Mehr IRIC |
+| **Developer** | ZHARFA Vira Pouyesh Fanavari |
 | **Supported Technologies** | PLC, SCADA, HMI, OPC UA, MQTT, Modbus |
 
 ### Canonical URLs
@@ -56,10 +78,10 @@ duplicates, aliases or legacy variants of one another.
 Both belong to Hermes OS:
 
 ```
-Hermes Novin Mehr IRIC
+ZHARFA Vira Pouyesh Fanavari   (company / operator / developer)
         │
         ▼
-     Hermes OS
+     Hermes OS                  (product)
         │
         ├── Hermes Brain            → Industrial Knowledge Engine
         └── Hermes Industrial Brain → Alarm / signal / industrial analysis
@@ -89,12 +111,12 @@ All public schema on the site participates in a single, interconnected entity gr
 ```
 https://hermesnovin.com/#organization
   ├─ @type: Organization
-  ├─ name: "Hermes Novin Mehr IRIC"
-  ├─ legalName: "Hermes Novin Mehr IRIC"
-  ├─ alternateName: ["Hermes Novin", "Hermes OS"]
+  ├─ name: "ZHARFA Vira Pouyesh Fanavari"
+  ├─ legalName: "ZHARFA Vira Pouyesh Fanavari"
+  ├─ alternateName: ["ZHARFA"]          ← Phase 113: the PRODUCT name was removed
   ├─ knowsAbout: [Industrial automation, PLC, SCADA, HMI, OPC UA, MQTT, ...]
   ├─ founder: → https://hermesnovin.com/#founder
-  ├─ sameAs: [ProvenExpert profile, GitHub org]
+  ├─ sameAs: OMITTED                    ← Phase 113: no verified corporate profile yet
   └─ contactPoint: [email, available languages: Persian, English, German]
 
 https://hermesnovin.com/#founder
@@ -133,10 +155,19 @@ https://hermesnovin.com/#hermes-os
 
 The `sameAs` property lists ONLY URLs proven to belong to the entity. Unverified or guessed usernames are not included.
 
-### Organization (Hermes Novin Mehr IRIC)
+### Organization (ZHARFA Vira Pouyesh Fanavari)
 
-- **ProvenExpert**: https://www.provenexpert.com/hermes-os/ (trusted seal embedded in About page)
-- **GitHub**: https://github.com/hermescenter1 (owns this repository)
+**None.** `ORG_SAME_AS` is empty and the property is omitted from the schema.
+Phase 113 removed both previous entries because neither was an identity of the
+COMPANY:
+
+- the ProvenExpert profile reviews the **product** and now sits on the
+  `SoftwareApplication` entity;
+- `https://github.com/hermescenter1` **hosts** this repository, which is not
+  evidence that the account is operated as the company's official presence.
+
+**Operator action:** supply verified ZHARFA corporate profile URLs (LinkedIn or
+equivalent) to populate `ORG_SAME_AS` in `src/lib/seo/config.ts`.
 
 ### Founder (Hamid Reza Forozandeh)
 
@@ -144,8 +175,13 @@ The `sameAs` property lists ONLY URLs proven to belong to the entity. Unverified
 
 ### Hermes OS (product)
 
-No dedicated verified product profile exists, so the product entity carries **no
-`sameAs`**. An omitted property is preferable to a fabricated one.
+- **ProvenExpert**: https://www.provenexpert.com/hermes-os/ — the profile the
+  footer seal embeds, using this product's own profile id. Moved here from the
+  organisation entity in Phase 113.
+
+This publishes the profile's **existence**, not its contents: no rating, review
+count or score is asserted anywhere in the graph, and `aggregateRating` /
+`review` remain absent.
 
 ### X / Twitter
 
@@ -344,7 +380,7 @@ A human-readable, machine-parseable discovery document for AI systems.
 **Purpose:** Concisely point AI retrieval systems at canonical public resources without claiming any guarantee of retrieval or indexing.
 
 **Content:**
-- Hermes Novin company identity
+- ZHARFA Vira Pouyesh Fanavari company identity (via the `ORG_NAME` constant)
 - Hermes OS product identity
 - Canonical public URLs (homepage, platform, brain, architecture, journal, academy, about, contact)
 - Knowledge surfaces (library, articles, academy)

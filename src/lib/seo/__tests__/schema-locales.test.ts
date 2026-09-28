@@ -87,10 +87,19 @@ describe("89B.1 — organization / website language metadata", () => {
     // unreviewed property appearing in production structured data.
     // `logo` is absent on purpose: a favicon is not a corporate logo, and no
     // verified brand asset exists yet. See the note in lib/seo/config.ts.
+    //
+    // PHASE 113 narrowed the pin: `sameAs` is GONE. Both previous entries were
+    // identities of something other than the company (the ProvenExpert profile
+    // reviews the PRODUCT and moved to the SoftwareApplication entity; the
+    // GitHub account merely hosts this repository), and `sameAs` is an identity
+    // claim. With nothing verified to publish, the property is omitted rather
+    // than emitted as an empty array — an empty array is still a published
+    // claim shape. `sameAs` returns here the moment a verified ZHARFA corporate
+    // profile is supplied.
     expect(Object.keys(org).sort()).toEqual(
       [
         "@context", "@id", "@type", "alternateName", "contactPoint", "founder",
-        "knowsAbout", "legalName", "name", "sameAs", "url",
+        "knowsAbout", "legalName", "name", "url",
       ].sort(),
     );
   });

@@ -8,6 +8,7 @@ import {
   SITE_NAME,
   ORG_NAME,
   ORG_SHORT_NAME,
+  ORG_URL,
   PRODUCT_CATEGORY,
   CONTACT_EMAIL,
   OG_IMAGE_URL,
@@ -16,6 +17,7 @@ import {
   PRODUCT_ID,
   FOUNDER_ID,
   ORG_SAME_AS,
+  PRODUCT_SAME_AS,
   FOUNDER_SAME_AS,
   FOUNDER_NAME,
   FOUNDER_ROLE,
@@ -108,11 +110,19 @@ export function organizationSchema() {
     "@id": ORG_ID,
     name: ORG_NAME,
     legalName: ORG_NAME,
-    // The short brand and the product name are the two other strings the
-    // company is referred to by in the wild. Declaring them as alternates lets
-    // a retrieval system resolve all three to this single entity.
-    alternateName: [ORG_SHORT_NAME, SITE_NAME],
-    url: BASE_URL,
+    // PHASE 113 — the short brand ONLY.
+    //
+    // `SITE_NAME` used to sit here too, which told every retrieval system that
+    // "Hermes OS" is another name for the company. It is not: Hermes OS is the
+    // PRODUCT, and it has its own entity (`PRODUCT_ID`) whose creator,
+    // publisher and provider all point back here. A product name inside
+    // `Organization.alternateName` collapses those two entities into one and
+    // makes the company/product relationship unrecoverable.
+    alternateName: [ORG_SHORT_NAME],
+    // PHASE 113 — the COMPANY url is the company website. It used to be
+    // BASE_URL, i.e. the PRODUCT site, which stated that the organisation IS
+    // the Hermes OS domain. Owner-confirmed and HTTP-verified; see config.ts.
+    url: ORG_URL,
     // `logo` intentionally omitted pending a verified corporate asset — see the
     // note in ./config.ts. A favicon is not a corporate logo.
     founder: ref(FOUNDER_ID),
@@ -123,7 +133,12 @@ export function organizationSchema() {
       contactType: "customer support",
       availableLanguage: ACTIVE_LOCALES.map((locale) => LOCALE_ACCESSIBLE_NAME[locale]),
     },
-    sameAs: [...ORG_SAME_AS],
+    // PHASE 113 — emitted only when there is something verified to emit. An
+    // empty `sameAs: []` is not a useful claim, and the list is deliberately
+    // empty until the operator supplies verified ZHARFA corporate profiles
+    // (see the note on ORG_SAME_AS). `sameAs` is optional on Organization, so
+    // omission is valid structured data.
+    ...(ORG_SAME_AS.length > 0 ? { sameAs: [...ORG_SAME_AS] } : {}),
   };
 }
 
@@ -191,6 +206,10 @@ export function softwareApplicationSchema() {
     publisher: ref(ORG_ID),
     provider: ref(ORG_ID),
     image: OG_IMAGE_URL,
+    // PHASE 113 — the ProvenExpert profile belongs to the PRODUCT, which is
+    // what that profile actually reviews. It used to be published as an
+    // `Organization.sameAs`, i.e. as the company's own identity.
+    ...(PRODUCT_SAME_AS.length > 0 ? { sameAs: [...PRODUCT_SAME_AS] } : {}),
     // NOTE: `offers`, `aggregateRating` and `review` are deliberately absent.
     // Commercial terms are negotiated per deployment and no authoritative
     // public price exists, so publishing one — in particular the previous
@@ -360,7 +379,12 @@ export function jobPostingSchema(opts: JobPostingSchemaOptions) {
       "@type": "Organization",
       "@id": ORG_ID,
       name: ORG_NAME,
-      sameAs: BASE_URL,
+      // PHASE 113 — was `sameAs: BASE_URL`: the wrong property (an
+      // organisation's own site is its `url`, not an alternate identity) with
+      // the wrong value (the product domain). The `@id` above is what
+      // reconciles this with the Organization node; this says where the
+      // company itself lives.
+      url: ORG_URL,
       // `logo` intentionally omitted — same reason as organizationSchema().
     },
     jobLocation: {
@@ -431,7 +455,10 @@ export function courseSchema(opts: CourseSchemaOptions) {
     provider: {
       "@type": "Organization",
       name: opts.provider ?? ORG_NAME,
-      sameAs: BASE_URL,
+      // PHASE 113 — stated through `url` rather than `sameAs`. When the caller
+      // names a different provider the course still lives on this site, so only
+      // the default (the company itself) resolves to the corporate URL.
+      url: opts.provider ? BASE_URL : ORG_URL,
     },
     ...(opts.level ? { educationalLevel: opts.level } : {}),
     courseMode: "online",
@@ -494,7 +521,9 @@ export function buildVendorSchema(vendor: VendorForSchema, locale = "fa") {
     memberOf: {
       "@type": "Organization",
       name:    ORG_NAME,
-      url:     BASE_URL,
+      // PHASE 113 — the company a vendor is a member OF is ZHARFA, so this is
+      // the corporate site, not the product site.
+      url:     ORG_URL,
     },
   };
 }

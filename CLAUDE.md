@@ -2,7 +2,7 @@
 
 ## Project Identity
 
-Project: Hermes OS / Hermes Novin Mehr IRIC  
+Project: Hermes OS (product) / ZHARFA Vira Pouyesh Fanavari (company)  
 
 Repository: hermes-os-nexuz  
 

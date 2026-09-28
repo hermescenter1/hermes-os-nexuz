@@ -296,6 +296,16 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // the four empty/refusal states and the capability disclosures. Zero
     // English carryover; no allowlist entry was needed.
     "liveOperations",
+    // PHASE 113 — the public Cookie Policy (cookiePolicy). 70 leaves,
+    // genuinely German throughout: what cookies and browser storage are, the
+    // responsible company, the legal basis split between strictly-necessary
+    // and optional storage, the four category descriptions, the storage table
+    // vocabulary, the three third-party services with the consent gate each
+    // one sits behind, withdrawal, browser controls, contact and the
+    // related-policy link. Zero English carryover and zero Persian
+    // contamination; no allowlist entry was needed, because no DE leaf is
+    // identical to its EN counterpart.
+    "cookiePolicy",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));

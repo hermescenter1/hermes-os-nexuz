@@ -10,7 +10,7 @@ import { CookieConsentBanner }  from "@/components/compliance/CookieConsentBanne
 import { AnalyticsProvider }    from "@/components/analytics/AnalyticsProvider";
 import { JsonLd }               from "@/components/seo/JsonLd";
 import { siteEntityGraph } from "@/lib/seo/schemas";
-import { BASE_URL, SITE_NAME, OG_IMAGE_URL, OG_LOCALE, type SeoLocale } from "@/lib/seo/config";
+import { BASE_URL, SITE_NAME, ORG_NAME, OG_IMAGE_URL, OG_LOCALE, type SeoLocale } from "@/lib/seo/config";
 import "../globals.css";
 
 const estedad = localFont({
@@ -71,9 +71,14 @@ export async function generateMetadata({
     },
     description,
     ...(keywords ? { keywords } : {}),
-    authors:   [{ name: "Hermes Novin", url: BASE_URL }],
-    creator:   "Hermes Novin",
-    publisher: SITE_NAME,
+    // PHASE 113 — author/creator/publisher are all the COMPANY, read from the
+    // one canonical constant. They previously carried a hard-coded short form
+    // of the retired company name, and `publisher` carried the PRODUCT name,
+    // which contradicted the JSON-LD graph on the same page (where
+    // `WebSite.publisher` resolves to the organisation entity).
+    authors:   [{ name: ORG_NAME, url: BASE_URL }],
+    creator:   ORG_NAME,
+    publisher: ORG_NAME,
     category:  "Industrial AI Platform",
     alternates: {
       canonical: canonicalUrl,

@@ -284,7 +284,14 @@ const SEO_FILES: AuditItem[] = [
       },
       {
         name: "States the company → product relationship",
-        run: (c) => expectMatch(c, /developed by \$\{ORG_NAME\}|Hermes Novin Mehr IRIC/, "company/product relationship stated", "relationship not stated"),
+        // PHASE 113 — the alternative literal ("Hermes Novin Mehr IRIC") is
+        // GONE, and is deliberately NOT replaced with the new company name. A
+        // hard-coded company string was never the invariant: the invariant is
+        // that llms.txt states the relationship THROUGH the canonical constant,
+        // so a rename in config.ts moves the published sentence with it. Naming
+        // a company here would only re-create the same staleness under a new
+        // name.
+        run: (c) => expectMatch(c, /developed by \$\{ORG_NAME\}/, "company/product relationship stated via ORG_NAME", "relationship not stated through the canonical constant"),
       },
     ],
   },
@@ -342,7 +349,66 @@ const SEO_FILES: AuditItem[] = [
       },
       {
         name: "Organization uses its full legal name",
-        run: (c) => expectMatch(c, /ORG_NAME\s*=\s*"Hermes Novin Mehr IRIC"/, "legal name is canonical", "ORG_NAME is not the full legal identity"),
+        // PHASE 113 — the company identity is ZHARFA Vira Pouyesh Fanavari.
+        run: (c) => expectMatch(c, /ORG_NAME\s*=\s*"ZHARFA Vira Pouyesh Fanavari"/, "legal name is canonical", "ORG_NAME is not the full legal identity"),
+      },
+      {
+        name: "Company and product are two separate identities",
+        // PHASE 113 — the defect this closes: ORG_NAME held the company and
+        // SITE_NAME the product, but the Organization schema listed SITE_NAME as
+        // an `alternateName`, which told every retrieval system that the product
+        // name IS another name for the company. Neither constant may contain the
+        // other's value, and the product name may not appear in the company's
+        // alternate names.
+        run: (c, read) => {
+          const org  = /ORG_NAME\s*=\s*"([^"]+)"/.exec(c)?.[1] ?? "";
+          const site = /SITE_NAME\s*=\s*"([^"]+)"/.exec(c)?.[1] ?? "";
+          if (!org || !site) return fail(`ORG_NAME:"${org}" SITE_NAME:"${site}" — both must be declared`);
+          if (org.includes(site) || site.includes(org)) {
+            return fail(`the company name "${org}" and the product name "${site}" overlap`);
+          }
+          const schemas = read("src/lib/seo/schemas.ts");
+          if (!schemas) return fail("schemas.ts unreadable");
+          const alt = /alternateName:\s*\[([^\]]*)\]/.exec(schemas)?.[1] ?? "";
+          if (alt.includes("SITE_NAME")) {
+            return fail("Organization.alternateName still contains SITE_NAME (the product name)");
+          }
+          return pass(`company "${org}" and product "${site}" are distinct; alternateName = [${alt.trim()}]`);
+        },
+      },
+      {
+        name: "The retired company identity appears on no public surface",
+        // A retired legal name is not an alias the current company trades under.
+        // Publishing it anywhere keeps merging the old entity into the new one.
+        run: (_c, read) => {
+          const RETIRED = /Hermes Novin/;
+          // Comments are stripped first: the invariant is that the retired name
+          // is never PUBLISHED, not that it is never mentioned. config.ts
+          // documents which identity was retired and why, and failing on that
+          // note would pressure someone into deleting the explanation. JSON
+          // catalogs have no comments and are read as-is.
+          const published = (p: string, c: string) =>
+            p.endsWith(".json")
+              ? c
+              : c
+                  .replace(/\{\/\*[\s\S]*?\*\/\}/g, " ")
+                  .replace(/\/\*[\s\S]*?\*\//g, " ")
+                  .replace(/(^|[^:])\/\/[^\n]*/g, "$1 ");
+          const surfaces = [
+            "src/lib/seo/config.ts",
+            "src/lib/seo/schemas.ts",
+            "src/lib/seo/metadata.ts",
+            "src/app/llms.txt/route.ts",
+            "src/app/[locale]/layout.tsx",
+            "messages/en.json",
+            "messages/fa.json",
+            "messages/de.json",
+          ];
+          const offenders = surfaces.filter((p) => { const c = read(p); return c !== null && RETIRED.test(published(p, c)); });
+          return offenders.length === 0
+            ? pass(`${surfaces.length} public surfaces carry no retired company identity`)
+            : fail(`retired identity still published in: ${offenders.join(", ")}`);
+        },
       },
       {
         name: "All four entity IDs are defined",
