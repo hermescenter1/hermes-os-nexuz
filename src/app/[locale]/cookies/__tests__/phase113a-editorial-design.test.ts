@@ -43,6 +43,22 @@ function hzBlock(): string {
   return css.slice(start);
 }
 
+/** One rule body, by selector. Safe because no rule body here contains a brace. */
+function hzRule(selector: string): string {
+  const block = hzBlock();
+  const at = block.indexOf(`${selector} {`);
+  expect(at, `the rule for \`${selector}\` must exist`).toBeGreaterThan(-1);
+  return block.slice(at, block.indexOf("}", at) + 1);
+}
+
+/** Every rule in the block as selector + body, with comment lines discarded. */
+function hzRules(): { selector: string; body: string }[] {
+  return [...hzBlock().matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((m) => ({
+    selector: m[1].split(/[\r\n]/).pop()!.trim(),
+    body: m[2],
+  }));
+}
+
 /* ── 1 · The corner language: nothing capsule-shaped ─────────────────────── */
 
 describe("corner language — architectural, not SaaS", () => {
@@ -60,31 +76,43 @@ describe("corner language — architectural, not SaaS", () => {
     expect(Number(button![1])).toBeLessThanOrEqual(Number(card![1]));
   });
 
-  it("no rule rounds anything between 9px and a full capsule", () => {
-    // 999px is the capsule, governed by the next test; anything BETWEEN the 8px
-    // ceiling and a deliberate capsule is the SaaS-card geometry that was
-    // rejected, so that is the band this asserts is empty.
-    const offenders = [...hzBlock().matchAll(/border-radius:\s*([0-9.]+)(px|rem)/g)]
-      .map((m) => ({ raw: m[0], px: m[2] === "rem" ? Number(m[1]) * 16 : Number(m[1]) }))
-      .filter((r) => r.px > 8 && r.px < 999);
+  it("no rule anywhere in the document rounds past the 8px ceiling", () => {
+    // PHASE 113 VISUAL ACCEPTANCE — this band used to stop short of 999px,
+    // which left the capsule itself legal and let `.hz-chip` keep a pill. The
+    // owner withdrew that exception, so the ceiling is now absolute: above 8px
+    // there is no value a rule in this block may use, capsule or otherwise.
+    const offenders = [...hzBlock().matchAll(/border-radius:\s*([0-9.]+)(px|rem|%)/g)]
+      .map((m) => ({
+        raw: m[0],
+        px: m[2] === "rem" ? Number(m[1]) * 16 : m[2] === "%" ? Number(m[1]) * 10 : Number(m[1]),
+      }))
+      .filter((r) => r.px > 8);
     expect(offenders.map((o) => o.raw)).toEqual([]);
   });
 
-  it("the only pill is the tiny semantic status chip", () => {
-    const block = hzBlock();
-    // Split into rules, then keep the ones that round to a capsule. Matching
-    // rule-by-rule avoids a selector pattern greedily swallowing the comment
-    // above it.
-    const capsuleSelectors = block
-      .split("}")
-      .filter((rule) => /border-radius:\s*999px/.test(rule))
-      .map((rule) => rule.slice(0, rule.lastIndexOf("{")).split(/[\r\n]/).pop()!.trim());
-    // Exactly one selector may use a capsule, and it must be the status chip.
-    expect(capsuleSelectors).toEqual([".hz-chip"]);
-    // …and it must genuinely be small: a chip, not a button.
-    const chip = /\.hz-chip\s*\{[^}]*\}/.exec(block)![0];
+  it("not one selector in the document is capsule-shaped", () => {
+    // Rule-by-rule, so a selector pattern cannot greedily swallow the comment
+    // above it. The first pass granted ITSELF one capsule and this test named
+    // the beneficiary; the owner withdrew that grant at visual acceptance, so
+    // the expected set is empty and any re-introduced pill fails here by name.
+    const capsuleSelectors = hzRules()
+      .filter((r) => /border-radius:\s*(9{3,}px|[5-9][0-9]%|100%)/.test(r.body))
+      .map((r) => r.selector);
+    expect(capsuleSelectors).toEqual([]);
+  });
+
+  it("the status chip carries the shared 3px button corner", () => {
+    const chip = hzRule(".hz-chip");
+    // The TOKEN, not a literal: a hard-coded 999px is how the chip drifted off
+    // the scale to begin with, and a token cannot drift on its own without
+    // moving the whole scale, which the ceiling test above would then catch.
+    expect(chip).toMatch(/border-radius:\s*var\(--hz-radius-button\)/);
+    // Everything else about the chip is deliberately unchanged: it stays a small
+    // semantic label, not a button.
     const size = /font-size:\s*([0-9.]+)rem/.exec(chip);
     expect(Number(size![1])).toBeLessThanOrEqual(0.7);
+    expect(chip).toMatch(/text-transform:\s*uppercase/);
+    expect(chip).toMatch(/color:\s*var\(--hz-text-2\)/);
   });
 
   it("the page renders no oversized rounded container and no capsule utility", () => {
@@ -104,6 +132,46 @@ describe("corner language — architectural, not SaaS", () => {
     // The toggle track and knob are a switch — a control whose shape is its
     // meaning — so they stay round. Two, and only two.
     expect((banner.match(/rounded-full/g) ?? []).length).toBe(2);
+  });
+});
+
+/* ── 1b · The light sheet beats the app's dark type colour ──────────────── */
+
+describe("the editorial sheet states its own heading colour", () => {
+  it("the site-wide h1-h6 element rule is the hazard being guarded against", () => {
+    // This is the mechanism, asserted so the guard below is not mistaken for
+    // decoration. globals.css paints EVERY heading element with the dark-chrome
+    // ink. `.hz-legal` only sets `color` on its container, and inheritance loses
+    // to a matching element selector — so on this light sheet a heading that
+    // states no colour of its own renders near-white on near-white.
+    const global = /h1,\s*h2,\s*h3,\s*h4,\s*h5,\s*h6\s*\{[^}]*\}/.exec(read(CSS));
+    expect(global, "the site-wide heading rule must still exist").not.toBeNull();
+    expect(global![0]).toMatch(/color:/);
+  });
+
+  it("every heading styled inside the sheet declares its own colour", () => {
+    // A sweep rather than a list, so a heading added later is covered without
+    // anyone remembering to edit this test. All fourteen section titles
+    // measured 1.05:1 against the sheet because `.hz-section > h2` was the one
+    // rule here that named no colour.
+    const headings = hzRules().filter((r) => /(^|[\s>+~])h[1-6]([\s,:]|$)/.test(r.selector));
+    expect(headings.length, "the sheet must style at least one heading").toBeGreaterThan(0);
+    for (const rule of headings) {
+      expect(rule.body, `\`${rule.selector}\` must state its own colour`).toMatch(
+        /\bcolor:\s*var\(--hz-/,
+      );
+    }
+  });
+
+  it("the section heading takes the document ink, not the app ink", () => {
+    const h2 = hzRule(".hz-section > h2");
+    expect(h2).toMatch(/color:\s*var\(--hz-text\)/);
+    expect(h2, "the app chrome ink is what made it invisible").not.toMatch(/var\(--ink\)/);
+    // The fix is a colour and nothing else: copy, hierarchy, size and spacing
+    // are unchanged, so the grid and the clamp must still be here.
+    expect(h2).toMatch(/grid-template-columns:\s*2\.75rem/);
+    expect(h2).toMatch(/font-size:\s*clamp\(/);
+    expect(h2).toMatch(/font-weight:\s*600/);
   });
 });
 
@@ -218,7 +286,10 @@ describe("inventory table", () => {
 
 describe("direction, motion and accessibility", () => {
   it("uses logical properties so Persian RTL needs no mirrored stylesheet", () => {
-    const block = hzBlock();
+    // The disclosure chevron is excised first and asserted on its own below: it
+    // is a DRAWN GLYPH, not layout, and this very rule — applied to it without
+    // that distinction — is what mirrored it under RTL.
+    const block = hzBlock().replace(/\.hz-toc > summary::after \{[^}]*\}/, ' ');
     expect(block).toMatch(/border-block-start|border-block-end/);
     expect(block).toMatch(/padding-inline|margin-block-start/);
     expect(block).toMatch(/text-align:\s*start/);
@@ -227,6 +298,23 @@ describe("direction, motion and accessibility", () => {
     expect(block, "no physical border-left/right").not.toMatch(/border-(left|right):/);
     expect(block, "no physical padding-left/right").not.toMatch(/padding-(left|right):/);
     expect(block, "no physical margin-left/right").not.toMatch(/margin-(left|right):/);
+  });
+
+  it("draws the disclosure chevron with direction-independent geometry", () => {
+    // Comments stripped: the rule EXPLAINS why it avoids the logical edge, so a
+    // naive text search for that property would match the explanation.
+    const rule = hzRule(".hz-toc > summary::after").replace(/\/\*[\s\S]*?\*\//g, ' ');
+    // Logical inline edges swap sides under RTL while the two rotate() values
+    // below are fixed, so in Persian the OPEN chevron pointed sideways instead
+    // of up. Physical edges give one geometry in both directions.
+    expect(rule, "a mirroring inline edge is the defect").not.toMatch(/border-inline-(start|end)/);
+    expect(rule).toMatch(/border-right:/);
+    expect(rule).toMatch(/border-bottom:/);
+    // Closed points down, open points up.
+    expect(rule).toMatch(/transform:\s*rotate\(45deg\)/);
+    expect(hzBlock()).toMatch(/\.hz-toc\[open\] > summary::after \{ transform: rotate\(-135deg\); }/);
+    // Still native, still no script: the affordance is the element itself.
+    expect(read(PAGE)).toMatch(/<details/);
   });
 
   it("honours prefers-reduced-motion and forced-colors", () => {

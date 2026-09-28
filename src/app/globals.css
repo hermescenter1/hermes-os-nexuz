@@ -3891,8 +3891,16 @@ html:has(.hermes-ops-navy) body {
   content: "";
   inline-size: 0.5rem;
   block-size: 0.5rem;
-  border-inline-end: 1.5px solid currentColor;
-  border-block-end: 1.5px solid currentColor;
+  /* PHASE 113 VISUAL ACCEPTANCE — these two borders are PHYSICAL on purpose,
+     and are the one deliberate exception to the logical-property rule that
+     governs the rest of this block. They are not layout: they are the two
+     strokes that DRAW a chevron. Logical `border-inline-end` flips to the left
+     edge under RTL, which mirrors the glyph, while the two `rotate()` values
+     below are fixed and direction-blind — so in Persian the open state pointed
+     sideways instead of up. Physical edges keep one geometry in both
+     directions: closed points down, open points up. */
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
   transform: rotate(45deg);
   transition: transform var(--hz-motion) var(--hz-ease);
 }
@@ -3957,6 +3965,16 @@ html:has(.hermes-ops-navy) body {
   letter-spacing: -0.01em;
   overflow-wrap: break-word;
   hyphens: auto;
+  /* PHASE 113 VISUAL ACCEPTANCE — this colour is load-bearing, not decoration.
+     The site-wide type-hierarchy rule near the top of this file paints every
+     h1-h6 with the dark-chrome ink. That is an ELEMENT selector, so it outranks
+     the `color` that `.hz-legal` sets on the container: inheritance never beats
+     a matching rule. On the app chrome the ink is correct; on this light
+     editorial sheet it rendered the section titles at 1.05:1 — invisible. Every
+     sibling here (`.hz-ord`, `h3`, `p`, `.hz-toc a`) already states its own
+     colour; the heading was the one that did not, so it alone fell through.
+     Do not remove it. */
+  color: var(--hz-text);
 }
 
 .hz-ord {
@@ -3979,12 +3997,16 @@ html:has(.hermes-ops-navy) body {
 .hz-section p:last-child { margin-bottom: 0; }
 .hz-section a { color: var(--hz-accent); text-decoration: underline; text-underline-offset: 0.18em; }
 
-/* A genuinely small semantic status chip — the one permitted pill. */
+/* A genuinely small semantic status label. It carries the SAME corner as every
+   other bordered thing in this document: the owner withdrew the capsule
+   exception at visual acceptance, so nothing in `.hz-legal` is pill-shaped. The
+   consent dialog's toggle stays round because a switch's shape IS its meaning;
+   a status label's is not. */
 .hz-chip {
   display: inline-block;
   padding: 0.1rem 0.5rem;
   border: var(--hz-rule) solid var(--hz-border-strong);
-  border-radius: 999px;
+  border-radius: var(--hz-radius-button);
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.1em;
