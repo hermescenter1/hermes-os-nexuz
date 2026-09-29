@@ -19,6 +19,46 @@ function localized(...suffixes: string[]): string[] {
   return suffixes.flatMap((s) => ACTIVE_LOCALES.map((l) => `/${l}${s}`));
 }
 
+/**
+ * SPRINT 1C-A - the build output a renderer must be able to fetch.
+ *
+ * THE DEFECT THIS CLOSES
+ * ----------------------
+ * `privateDisallow()` emits `Disallow: /_next/` into every group below, and the
+ * note on the default group claimed that classic search engines do not need
+ * `/_next/` for text extraction. That is true of text extraction and false of
+ * RENDERING, which is what Googlebot actually does. Measured against production
+ * on 2026-09-28, the public homepage references exactly these resources:
+ *
+ *     /_next/static/css/bb5fff2dbde72c72.css
+ *     /_next/static/css/85dc6ba0c1dfd510.css
+ *     /_next/static/media/*.woff2      (all three font families)
+ *     /_next/static/chunks/*.js
+ *
+ * `HEAD /_next/static/css/bb5fff2dbde72c72.css` answered `200 text/css`, so the
+ * server serves them and only crawl policy withheld them. Every font on this
+ * site is declared by `@font-face` INSIDE those stylesheets - there is no
+ * `<link rel="preload" as="font">` in the HTML - so a crawler denied
+ * `/_next/static/` renders the site with neither layout nor typeface.
+ *
+ * WHY THIS EXACT PREFIX AND NOTHING MORE
+ * --------------------------------------
+ * `/_next/static/` is immutable, content-hashed build output: stylesheets,
+ * scripts, fonts and media. It contains no route, no API and no application
+ * data, so allowing it exposes nothing that `Disallow: /_next/` was protecting.
+ *
+ * Under the Robots Exclusion Protocol the most specific match wins and, on an
+ * equal-length tie, `Allow` wins. `/_next/static/` is 14 characters against the
+ * 7 of `/_next/`, so this rule governs every path beneath it while `/_next/`
+ * keeps governing everything else under `/_next/` - the data, flight and
+ * build-manifest paths stay closed.
+ *
+ * `/_next/image` (the Image Optimization endpoint) is deliberately NOT allowed:
+ * no captured public page references it, and an allowance with no evidence
+ * behind it is exactly the kind of speculative widening this rule replaces.
+ */
+const RENDER_RESOURCE_ALLOW = "/_next/static/";
+
 /* ── DISCOVERY-2A — the private surface, derived from the authorization layer ──
  *
  * Every rule below used to carry its own hand-written disallow list. The longest
@@ -86,7 +126,7 @@ interface RobotsRule {
 function searchTier(userAgent: string, crawlDelay?: number): RobotsRule {
   return {
     userAgent,
-    allow: [...publicChildAllows(), ...localeRoots],
+    allow: [RENDER_RESOURCE_ALLOW, ...publicChildAllows(), ...localeRoots],
     disallow: privateDisallow(),
     ...(crawlDelay ? { crawlDelay } : {}),
   };
@@ -102,7 +142,11 @@ function searchTier(userAgent: string, crawlDelay?: number): RobotsRule {
 function trainingTier(userAgent: string, allow: string[]): RobotsRule {
   return {
     userAgent,
-    allow,
+    // The render-resource allowance travels with the disallow list it corrects:
+    // any group told `Disallow: /_next/` is otherwise told it may read a page
+    // but not the stylesheet that page is built from. The training SCOPE is
+    // unchanged - these crawlers still reach only the owner-approved surfaces.
+    allow: [RENDER_RESOURCE_ALLOW, ...allow],
     disallow: privateDisallow(),
   };
 }
@@ -122,7 +166,7 @@ export default function robots(): MetadataRoute.Robots {
          Disallow and remain fetchable. */
       {
         userAgent: "*",
-        allow: [...publicChildAllows(), "/brand/", "/images/", ...localeRoots],
+        allow: [RENDER_RESOURCE_ALLOW, ...publicChildAllows(), "/brand/", "/images/", ...localeRoots],
         disallow: privateDisallow(),
       },
 

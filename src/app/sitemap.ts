@@ -3,6 +3,7 @@ import { BASE_URL, LOCALES } from "@/lib/seo/config";
 import { KNOWLEDGE } from "@/lib/industrial/knowledge";
 import { CASES, CASE_CONTENT_LOCALES } from "@/lib/industrial/cases";
 import { VENDORS } from "@/lib/industrial/vendors";
+import { publicCourseWhere } from "@/lib/academy/public-course";
 
 type SitemapEntry = MetadataRoute.Sitemap[number];
 
@@ -302,7 +303,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const courses = await (prisma as unknown as {
         academyCourse: { findMany: (a: unknown) => Promise<{ id: string }[]> }
       }).academyCourse.findMany({
-        where: { isPublished: true },
+        // SPRINT 1C-A — the SAME predicate the public course page applies.
+        // `/[locale]/academy/course/[courseId]` now answers a real 404 for an
+        // unpublished or soft-deleted row, so this read must exclude soft
+        // deletes too; `isPublished: true` alone would advertise a URL the
+        // page itself refuses. The constant is shared so the two can never
+        // drift again.
+        where: { ...publicCourseWhere },
         select: { id: true },
         // DISCOVERY-2B (query hardening): deterministic order. A `take` with no
         // `orderBy` is a bounded but ARBITRARY slice, so two identical crawls
