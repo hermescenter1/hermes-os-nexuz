@@ -4216,6 +4216,13 @@
     "invalidResponseTitle": "Unexpected response",
     "invalidResponseHint": "The server replied in a format this page does not recognize, so nothing is displayed rather than showing unverified figures."
   },
+  "academy": {
+    "header": {
+      "eyebrow": "HERMES OS · TRAINING ACADEMY",
+      "title": "Hermes Academy",
+      "lede": "Enterprise learning, industrial certification and professional development, through a structured curriculum reviewed by engineers."
+    }
+  },
   "about": {
     "eyebrow": "About ZHARFA Vira Pouyesh Fanavari",
     "title": "Engineering the Future of Industrial Intelligence",
@@ -4223,7 +4230,7 @@
     "companyEyebrow": "The Company",
     "companyTitle": "ZHARFA Vira Pouyesh Fanavari",
     "companyDesc": "We build enterprise-grade industrial intelligence software for automation engineers, plant operators, and engineering leadership teams. Our platform combines AI-powered reasoning, engineering memory, and knowledge graphs to give industrial teams unprecedented clarity and decision support.",
-    "website": "www.hermesnovin.com",
+    "website": "hermesnovin.com",
     "locationIran": "Isfahan, Iran",
     "locationUK": "London, United Kingdom",
     "founderEyebrow": "Founder & CEO",
@@ -4288,7 +4295,7 @@
     "formSuccess": "Message sent. We'll be in touch shortly.",
     "linkedinUrl": "https://www.linkedin.com/in/hamid-reza-forozandeh",
     "githubUrl": "https://github.com/hermescenter1",
-    "websiteUrl": "https://www.hermesnovin.com"
+    "websiteUrl": "https://hermesnovin.com"
   },
   "automation": {
     "dashboard": "Dashboard",

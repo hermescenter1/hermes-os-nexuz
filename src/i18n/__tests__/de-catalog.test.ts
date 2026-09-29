@@ -306,6 +306,12 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // contamination; no allowlist entry was needed, because no DE leaf is
     // identical to its EN counterpart.
     "cookiePolicy",
+    // SPRINT 1C-A - the Academy public header (academy). Three leaves,
+    // genuinely German: the eyebrow, the h1 and the lede that were previously
+    // hard-coded English literals in academy/layout.tsx and rendered verbatim
+    // into /fa and /de. Zero English carryover - no leaf is identical to its
+    // EN counterpart, so no allowlist entry was needed.
+    "academy",
   ]);
   const batch = rows.filter((r) => batchSet.has(r.ns));
   const nonBatch = rows.filter((r) => !batchSet.has(r.ns));

@@ -231,7 +231,13 @@ describe("CASE I — the search / model-training distinction is intact", () => {
   });
 
   it("GPTBot allow list preserves per-suffix fa/en/de ordering", () => {
+    // SPRINT 1C-A prepended the render-resource allowance to every group that
+    // carries `Disallow: /_next/` — see `robots-render-resources.test.ts`,
+    // which proves the addition changes the crawl decision for
+    // `/_next/static/` and for nothing else. The owner-approved TRAINING
+    // SCOPE below is unchanged: same nine surfaces, same per-suffix ordering.
     expect(allowOf("GPTBot")).toEqual([
+      "/_next/static/",
       "/fa/library/", "/en/library/", "/de/library/",
       "/fa/services/", "/en/services/", "/de/services/",
       "/fa/academy/", "/en/academy/", "/de/academy/",
