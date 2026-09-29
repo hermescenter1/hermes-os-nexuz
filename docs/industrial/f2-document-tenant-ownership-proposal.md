@@ -420,52 +420,139 @@ If either count is non-zero, the owner decides per row; this session changed no 
 - `DONE` rows are kept, holding object keys only and no content. A retention sweep is optional (**FU-F2-R4-2**).
 
 ### 12.10 Staging/dev pre-flight: aggregate, read-only, operator-run
-Staging/dev contents remain **UNVERIFIED**; this session did not connect to them. The operator runs the queries below against the target database in a read-only transaction.
-- They print **counts, booleans and migration names only**: no ids, titles, keys or content.
-- Take the connection from the environment's own secret store. Do not echo it.
+
+Staging/dev contents remain **UNVERIFIED**; this session did not connect to them. The operator runs everything below on that environment's host, **one environment per fresh shell** (so no variable carries over from another environment).
+
+**Safety properties**
+- The SQL runs **inside the environment's own `postgres` container**, with that container's `POSTGRES_USER`/`POSTGRES_DB` (the pattern `deploy.yml` uses). No connection string or password appears on a command line, in shell history or in the output.
+- It runs inside `BEGIN READ ONLY … ROLLBACK`, with `statement_timeout = 60s` and `lock_timeout = 5s`.
+- The output is **labels, counts, `t`/`f`, a schema name, one migration name and one timestamp only**: no ids, titles, object keys, document content or env values.
+- Never use any of these, because they print env values:
+  - `docker inspect` without `--format`;
+  - `docker compose config` without `--services`;
+  - `env` or `printenv` in a container;
+  - opening `.env*` files.
+
+#### Step 0: P, F, E, the Compose project, compose file and interpolation env file
+
+`E` must be **the interpolation env file**: the file whose values Compose used for `${…}` substitution when this environment's stack was brought up (`--env-file`, or the project directory's `.env` by default).
+- It is **not** the same thing as a service's `env_file:`, which only injects variables into a container. The two can differ, so `env_file:` must never be used to infer `E`.
+- Nor may `E` be guessed from a directory listing.
+- The only accepted sources are:
+  - what Compose itself recorded on the running containers (the label `com.docker.compose.project.environment_file`);
+  - failing that, the exact path stated by the owner.
+
+**0.1** On the host, list what Compose recorded for the `postgres` container. Labels hold names and paths only, never env values:
 
 ```bash
-psql "$TARGET_DATABASE_URL" -X -q -A -F '|' -v ON_ERROR_STOP=1 <<'SQL'
+docker ps --filter label=com.docker.compose.service=postgres --format 'container={{.Names}} project={{.Label "com.docker.compose.project"}} dir={{.Label "com.docker.compose.project.working_dir"}} files={{.Label "com.docker.compose.project.config_files"}} envfile={{.Label "com.docker.compose.project.environment_file"}}'
+```
+
+- **P** is `project`.
+- **F** is `files`, which must be exactly one path.
+- **E** is `envfile`, which must be exactly one path.
+- If both environments share a host, pick the line by `project` and `dir`, and `cd` into that `dir`.
+
+**Stop rules**:
+- `envfile` is **empty or missing**: Compose did not record the interpolation file. **Stop the pre-flight** and ask the owner for its exact path. Do not substitute `env_file:` or a guessed `.env*`. Only after the owner states the path, set `E` to it and `E_OWNER_CONFIRMED=yes`.
+- `files` or `envfile` lists **more than one path** (comma-separated): stop, because these commands take exactly one of each. The owner decides how to adapt them.
+
+**0.2** Set the three values to the **real** ones from 0.1. Placeholders are refused by 0.3.
+
+```bash
+P='<project>' F='<files, one absolute path>' E='<envfile, one absolute path>'
+```
+
+**0.3** Pre-check.
+- It compares `F` and `E` with what Compose recorded for project `P`, checks that both files exist, and refuses placeholders.
+- It prints **only** `OK` or a `STOP:` reason, never a path or value.
+- It sets `PF_OK=1` only on success. The SQL blocks below refuse to run without it.
+
+```bash
+{
+  PF_OK=
+  LBL=$(docker ps --filter "label=com.docker.compose.project=$P" --filter label=com.docker.compose.service=postgres --format '{{.Label "com.docker.compose.project.config_files"}}|{{.Label "com.docker.compose.project.environment_file"}}' | sort -u)
+  LF=${LBL%%|*}; LE=${LBL#*|}
+  if [ -z "$P" ] || [ -z "$F" ] || [ -z "$E" ] || printf '%s' "$P$F$E" | grep -q '[<>]'; then echo "STOP: P/F/E are empty or still placeholders"
+  elif [ -z "$LBL" ]; then echo "STOP: no running postgres container is labelled with project P"
+  elif [ "$(printf '%s\n' "$LBL" | wc -l)" -ne 1 ]; then echo "STOP: Compose labels for project P are ambiguous"
+  elif case "$LF" in *,*) true;; *) false;; esac; then echo "STOP: Compose recorded more than one compose file; the owner must decide"
+  elif [ "$F" != "$LF" ]; then echo "STOP: F is not the compose file Compose recorded for P"
+  elif case "$LE" in *,*) true;; *) false;; esac; then echo "STOP: Compose recorded more than one interpolation env file; the owner must decide"
+  elif [ -z "$LE" ] && [ "${E_OWNER_CONFIRMED:-}" != yes ]; then echo "STOP: Compose did not record the interpolation env file; ask the owner for its exact path"
+  elif [ -n "$LE" ] && [ "$E" != "$LE" ]; then echo "STOP: E is not the interpolation env file Compose recorded for P"
+  elif [ ! -f "$F" ] || [ ! -f "$E" ]; then echo "STOP: F or E does not exist on this host (run from the project directory)"
+  elif ! docker compose -p "$P" -f "$F" --env-file "$E" ps --services --status running | grep -qx postgres; then echo "STOP: postgres is not running under P/F/E"
+  else PF_OK=1; if [ -n "$LE" ]; then echo "OK"; else echo "OK (E stated by the owner)"; fi; fi
+}
+```
+
+#### Step 1: S0–S6 (before the migration)
+
+```bash
+[ "${PF_OK:-}" = 1 ] && docker compose -p "$P" -f "$F" --env-file "$E" exec -T postgres sh -c 'psql -U "${POSTGRES_USER:-hermes}" -d "${POSTGRES_DB:-hermes_db}" -X -q -t -A -F "|" -v ON_ERROR_STOP=1' <<'SQL'
 BEGIN READ ONLY;
 SET LOCAL statement_timeout = '60s';
-\echo S1 documents|null_tenant|set_tenant
-SELECT count(*), count(*) FILTER (WHERE btrim(coalesce("tenantId", '')) = ''), count(*) FILTER (WHERE btrim(coalesce("tenantId", '')) <> '') FROM "Document";
-\echo S2 orphan_tenant (must be 0 or the FK fails)
-SELECT count(*) FROM "Document" d WHERE btrim(coalesce(d."tenantId", '')) <> '' AND NOT EXISTS (SELECT 1 FROM "Organization" o WHERE o.id = d."tenantId");
-\echo S3 leftover_pg_test_rows (f1pg-/f2pg-)
-SELECT count(*) FROM "Document" WHERE id LIKE 'f1pg-%' OR id LIKE 'f2pg-%';
-\echo S4 orphan_chunks|chunks
-SELECT count(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM "Document" d WHERE d.id = c."documentId")), count(*) FROM "DocumentTextChunk" c;
-\echo S5 fk_exists|index_exists|cleanup_table_exists|cleanup_enum_exists (all expected false before)
-SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Document_tenantId_fkey'), to_regclass('public."Document_tenantId_createdAt_idx"') IS NOT NULL, to_regclass('public."DocumentStorageCleanup"') IS NOT NULL, EXISTS (SELECT 1 FROM pg_type WHERE typname = 'DocumentStorageCleanupStatus');
-\echo S6 applied|unfinished|last_applied|f2_applied
-SELECT count(*) FILTER (WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL), count(*) FILTER (WHERE finished_at IS NULL AND rolled_back_at IS NULL), max(migration_name) FILTER (WHERE finished_at IS NOT NULL), count(*) FILTER (WHERE migration_name = '20260925120000_f2_document_tenant_fk') FROM "_prisma_migrations";
+SET LOCAL lock_timeout = '5s';
+\echo S0 prisma_migrations_schemas|document_in_public|organization_in_public
+SELECT (SELECT coalesce(string_agg(n.nspname, ',' ORDER BY n.nspname), '(none)') FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relname = '_prisma_migrations' AND c.relkind = 'r'), to_regclass('public."Document"') IS NOT NULL, to_regclass('public."Organization"') IS NOT NULL;
+\echo S1 documents_total|tenant_null|tenant_empty_or_whitespace|tenant_set
+SELECT count(*), count(*) FILTER (WHERE "tenantId" IS NULL), count(*) FILTER (WHERE "tenantId" IS NOT NULL AND btrim("tenantId", E' \t\r\n') = ''), count(*) FILTER (WHERE "tenantId" IS NOT NULL AND btrim("tenantId", E' \t\r\n') <> '') FROM public."Document";
+\echo S2 non_null_tenant_without_organization|of_which_empty_or_whitespace
+SELECT count(*), count(*) FILTER (WHERE btrim(d."tenantId", E' \t\r\n') = '') FROM public."Document" d WHERE d."tenantId" IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public."Organization" o WHERE o.id = d."tenantId");
+\echo S3 leftover_pg_test_documents
+SELECT count(*) FROM public."Document" WHERE id LIKE 'f1pg-%' OR id LIKE 'f2pg-%';
+\echo S4 orphan_chunks|chunks_total
+SELECT count(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM public."Document" d WHERE d.id = c."documentId")), count(*) FROM public."DocumentTextChunk" c;
+\echo S5 fk_by_name_on_document|fk_document_tenantId_to_organization_id_any_name|tenant_index_on_document|cleanup_table|cleanup_enum
+SELECT EXISTS (SELECT 1 FROM pg_constraint c WHERE c.contype = 'f' AND c.conname = 'Document_tenantId_fkey' AND c.conrelid = to_regclass('public."Document"')), EXISTS (SELECT 1 FROM pg_constraint c JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1] JOIN pg_attribute fa ON fa.attrelid = c.confrelid AND fa.attnum = c.confkey[1] WHERE c.contype = 'f' AND c.conrelid = to_regclass('public."Document"') AND c.confrelid = to_regclass('public."Organization"') AND cardinality(c.conkey) = 1 AND cardinality(c.confkey) = 1 AND a.attname = 'tenantId' AND fa.attname = 'id'), EXISTS (SELECT 1 FROM pg_index i WHERE i.indexrelid = to_regclass('public."Document_tenantId_createdAt_idx"') AND i.indrelid = to_regclass('public."Document"')), EXISTS (SELECT 1 FROM pg_class c WHERE c.oid = to_regclass('public."DocumentStorageCleanup"') AND c.relkind = 'r'), EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typname = 'DocumentStorageCleanupStatus' AND t.typtype = 'e');
+\echo S6 applied|unfinished|last_applied_by_finished_at|last_finished_at|f2_applied|f2_rows_any_state
+SELECT count(*) FILTER (WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL), count(*) FILTER (WHERE finished_at IS NULL AND rolled_back_at IS NULL), (SELECT m.migration_name FROM public."_prisma_migrations" m WHERE m.finished_at IS NOT NULL AND m.rolled_back_at IS NULL ORDER BY m.finished_at DESC, m.migration_name DESC LIMIT 1), max(finished_at) FILTER (WHERE rolled_back_at IS NULL), count(*) FILTER (WHERE migration_name = '20260925120000_f2_document_tenant_fk' AND finished_at IS NOT NULL AND rolled_back_at IS NULL), count(*) FILTER (WHERE migration_name = '20260925120000_f2_document_tenant_fk') FROM public."_prisma_migrations";
 ROLLBACK;
 SQL
 ```
+
+The output is 14 lines: seven labels, each followed by one line of values.
 
 **Go/no-go before applying the migration there:**
-- S2 = 0 and S3 = 0. Otherwise the owner decides per row; nothing is auto-repaired.
-- S5 all false.
-- S6 `unfinished` = 0 and `f2_applied` = 0.
-- `last_applied` should be `20260925000000_ats_m1_position_management` (or a later main migration that still sorts before F-2).
 
-**After applying, verify read-only:**
+| Check | Required | Otherwise |
+|---|---|---|
+| S0 | exactly `public\|t\|t` | Stop: the tables live elsewhere and the checks below do not apply as written. |
+| S1 | For information. The last three columns add up to `documents_total`. Unassigned documents stay invisible under F-1 (fail-closed). | Report a mismatch. |
+| S2, column 1 | **0**. A PostgreSQL FK validates **every non-NULL value, empty and whitespace-only strings included**, so any such `tenantId` without an `Organization` makes `ADD CONSTRAINT` fail. | Stop. Column 2 shows how many of them are empty or whitespace. The owner decides per row; nothing is auto-repaired. |
+| S3 | **0** | Stop; the owner decides. |
+| S4 | For information; ideally 0. F-2 adds no chunk FK. | Report it; not a blocker. |
+| S5 | **`f\|f\|f\|f\|f`** | By-name `f` but structural `t`: a differently named FK from `tenantId` to `Organization.id` already exists, so stop. All `t`: already applied, so cross-check S6. Mixed: stop. |
+| S6 `unfinished` | **0** | Stop. |
+| S6 `f2_applied` / `f2_rows_any_state` | **0 / 0** | `f2_rows_any_state > 0` means an earlier failed or rolled-back attempt: stop. |
+| S6 `last_applied_by_finished_at` | `20260925000000_ats_m1_position_management` for an environment at the current main level | Older: the deploy applies several migrations. Know it before approving. |
+| S6 `applied` | 79 at the current main level (80 after F-2) | Report a difference. |
+
+Earlier revisions of this block had two defects, corrected on 2026-09-29:
+- S2 counted only non-blank tenants, which missed blank values that would still fail the FK.
+- `last_applied` used `max(migration_name)` instead of the newest `finished_at`.
+
+#### Step 2: V1–V3 (after applying, read-only)
+
+Run the same way, after the same Step 0 in a fresh shell:
 
 ```bash
-psql "$TARGET_DATABASE_URL" -X -q -A -F '|' -v ON_ERROR_STOP=1 <<'SQL'
+[ "${PF_OK:-}" = 1 ] && docker compose -p "$P" -f "$F" --env-file "$E" exec -T postgres sh -c 'psql -U "${POSTGRES_USER:-hermes}" -d "${POSTGRES_DB:-hermes_db}" -X -q -t -A -F "|" -v ON_ERROR_STOP=1' <<'SQL'
 BEGIN READ ONLY;
-\echo V1 fk_on_delete|fk_on_update (expect r|c)
-SELECT confdeltype::text, confupdtype::text FROM pg_constraint WHERE conname = 'Document_tenantId_fkey';
-\echo V2 cleanup_rows_by_status
-SELECT status::text, count(*), max(attempts) FROM "DocumentStorageCleanup" GROUP BY status ORDER BY status;
-\echo V3 overdue_pending (older than 1 hour)
-SELECT count(*) FROM "DocumentStorageCleanup" WHERE status = 'PENDING' AND "nextAttemptAt" < now() - interval '1 hour';
+SET LOCAL statement_timeout = '60s';
+SET LOCAL lock_timeout = '5s';
+\echo V1 document_fk_on_delete|on_update|cleanup_fk_on_delete|on_update (expect r|c|r|c)
+SELECT (SELECT confdeltype::text FROM pg_constraint WHERE contype = 'f' AND conname = 'Document_tenantId_fkey' AND conrelid = to_regclass('public."Document"')), (SELECT confupdtype::text FROM pg_constraint WHERE contype = 'f' AND conname = 'Document_tenantId_fkey' AND conrelid = to_regclass('public."Document"')), (SELECT confdeltype::text FROM pg_constraint WHERE contype = 'f' AND conname = 'DocumentStorageCleanup_organizationId_fkey' AND conrelid = to_regclass('public."DocumentStorageCleanup"')), (SELECT confupdtype::text FROM pg_constraint WHERE contype = 'f' AND conname = 'DocumentStorageCleanup_organizationId_fkey' AND conrelid = to_regclass('public."DocumentStorageCleanup"'));
+\echo V2 status|rows|max_attempts
+SELECT status::text, count(*), max(attempts) FROM public."DocumentStorageCleanup" GROUP BY status ORDER BY status;
+\echo V3 overdue_pending_older_than_1h
+SELECT count(*) FROM public."DocumentStorageCleanup" WHERE status = 'PENDING' AND "nextAttemptAt" < now() - interval '1 hour';
 ROLLBACK;
 SQL
 ```
 
-V2 and V3 are also the ongoing health check for FU-F2-R2-3. A growing `PENDING` count, or `max(attempts)`, means storage removals are failing; read `lastErrorCode` by aggregate only (`SELECT "lastErrorCode", count(*) … GROUP BY 1`).
+V2 and V3 are also the ongoing health check for FU-F2-R2-3. A growing `PENDING` count, or `max(attempts)`, means storage removals are failing. Read `lastErrorCode` by aggregate only (`SELECT "lastErrorCode", count(*) FROM public."DocumentStorageCleanup" GROUP BY 1`).
 
 ### 12.11 R5 (2026-09-28): FU-F2-R4-1, scheduled retry and a dedicated token
 
@@ -517,21 +604,23 @@ Adapt `-p` and `-f` to that environment. Together with the §12.10 SQL, this is 
 
 Nothing below has been run against any real environment. None of these commands prints the value of a secret or env variable. `HERMES_DOCUMENT_RAG_ENABLED` stays **disabled** throughout; nothing here reads or changes it.
 
-**A. Staging/dev: read-only pre-flight (before the migration).**
-1. Run the §12.10 S1–S6 SQL against the target database inside `BEGIN READ ONLY … ROLLBACK`. Go/no-go as in §12.10.
-2. Check the token is present, printing only `set` or `missing`:
+**A. Staging/dev: read-only pre-flight (before the migration).** Use a fresh shell per environment, on that environment's host:
+1. §12.10 **Step 0**: determine `P`/`F`/`E` from what Compose recorded, apply the stop rules and run the pre-check. `E` is the interpolation env file, never inferred from `env_file:`. If Compose did not record it, stop and get the exact path from the owner. Without `OK`, stop here.
+2. §12.10 **Step 1**: S0–S6, then the go/no-go table.
+3. Check the token is present, printing only `set` or `missing`:
 
    ```bash
-   docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production exec -T hermes-web \
-     sh -c 'if [ -n "${DOCUMENT_CLEANUP_WORKER_TOKEN:-}" ]; then echo DOCUMENT_CLEANUP_WORKER_TOKEN=set; else echo DOCUMENT_CLEANUP_WORKER_TOKEN=missing; fi'
+   [ "${PF_OK:-}" = 1 ] && docker compose -p "$P" -f "$F" --env-file "$E" exec -T hermes-web sh -c 'if [ -n "${DOCUMENT_CLEANUP_WORKER_TOKEN:-}" ]; then echo DOCUMENT_CLEANUP_WORKER_TOKEN=set; else echo DOCUMENT_CLEANUP_WORKER_TOKEN=missing; fi'
    ```
 
-   Adapt `-p`, `-f` and `--env-file` to that environment.
-3. Check the worker service resolves, without printing the resolved config (which would contain values):
+   Before the F-2 deploy, `missing` is expected.
+4. Check the worker service resolves. `--services` prints service names only; never run `config` without it:
 
    ```bash
-   docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production config --services | grep -x hermes-document-cleanup-worker
+   [ "${PF_OK:-}" = 1 ] && docker compose -p "$P" -f "$F" --env-file "$E" config --services | grep -x hermes-document-cleanup-worker
    ```
+
+   Before this PR is deployed there, no output is expected.
 
 **B. Production: token (before the deploy that ships this PR).** On the host, in `/opt/hermes-os-nexuz`. This adds a new random value only if the name is absent. It prints `present` or `added`, never the value:
 
@@ -549,7 +638,10 @@ docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production u
 
 Until then the endpoint rejects the worker with 401, fail-closed, and inline cleanup on delete keeps working.
 
-**C. Production: migration and deploy.** Through the protected `deploy.yml` (workflow_dispatch) only, after merge and after the A.1 pre-flight on production. That workflow takes the backup, runs `hermes-migrate` and recreates `hermes-web`. After it, run the §12.10 V1–V3 checks (read-only).
+**C. Production: migration and deploy.** Through the protected `deploy.yml` (workflow_dispatch) only, after merge and after the §12.10 Step 0 + Step 1 pre-flight on production.
+- `deploy.yml` runs every Compose command there from `/opt/hermes-os-nexuz` with `-p hermes -f docker-compose.prod.yml --env-file .env.production`. The expected values are therefore `P=hermes`, `F=/opt/hermes-os-nexuz/docker-compose.prod.yml`, `E=/opt/hermes-os-nexuz/.env.production`.
+- The Step 0 pre-check still confirms them against what Compose recorded, and any `STOP` is resolved by the owner.
+- The workflow takes the backup, runs `hermes-migrate` and recreates `hermes-web`. After it, run §12.10 Step 2 (V1–V3, read-only).
 
 **D. Production: start the worker once** (the deploy workflow never starts workers):
 
@@ -574,4 +666,4 @@ docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production s
 
 The schema rollback is in the migration header and is owner-approved only.
 
-**F. Watch.** §12.10 V2/V3, and the worker's count lines. A growing `PENDING` count or `max(attempts)` means storage removal is failing.
+**F. Watch.** §12.10 Step 2 (V2/V3), and the worker's count lines. A growing `PENDING` count or `max(attempts)` means storage removal is failing.
