@@ -243,7 +243,11 @@ describe("academy and media keep their existing ceilings", () => {
     const courses = argsFor("academyCourse");
     expect(courses).toHaveLength(1);
     expect(courses[0].take).toBe(1000);
-    expect(courses[0].where).toEqual({ isPublished: true });
+    // SPRINT 1C-A — `deletedAt: null` joined the predicate because the public
+    // course page now answers a real 404 for a soft-deleted row. The two read
+    // the SAME exported constant (`publicCourseWhere`), so the sitemap can no
+    // longer advertise a URL the page refuses.
+    expect(courses[0].where).toEqual({ isPublished: true, deletedAt: null });
     expect(courses[0].select).toEqual({ id: true });
   });
 

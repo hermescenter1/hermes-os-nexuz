@@ -4217,6 +4217,13 @@
     "invalidResponseTitle": "پاسخ غیرمنتظره",
     "invalidResponseHint": "سرور پاسخی با قالبی داد که این صفحه آن را نمی‌شناسد؛ به‌جای نمایش ارقام تأییدنشده، هیچ داده‌ای نمایش داده نمی‌شود."
   },
+  "academy": {
+    "header": {
+      "eyebrow": "هرمس او‌اس · آکادمی آموزش",
+      "title": "آکادمی هرمس",
+      "lede": "یادگیری سازمانی، گواهینامهٔ صنعتی و توسعهٔ حرفه‌ای، بر پایهٔ برنامهٔ درسی ساختاریافته‌ای که مهندسان بازبینی کرده‌اند."
+    }
+  },
   "about": {
     "eyebrow": "درباره ژرفا ویرا پویش فناوری",
     "title": "مهندسی آینده هوش صنعتی",
@@ -4224,7 +4231,7 @@
     "companyEyebrow": "شرکت",
     "companyTitle": "ژرفا ویرا پویش فناوری",
     "companyDesc": "ما نرم‌افزار هوش صنعتی سازمانی برای مهندسان اتوماسیون، اپراتورهای کارخانه و تیم‌های مدیریت مهندسی می‌سازیم. پلتفرم ما هوش مصنوعی، حافظه مهندسی و گراف دانش را برای دادن شفافیت و پشتیبانی تصمیم بی‌سابقه به تیم‌های صنعتی ترکیب می‌کند.",
-    "website": "www.hermesnovin.com",
+    "website": "hermesnovin.com",
     "locationIran": "اصفهان، ایران",
     "locationUK": "لندن، انگلستان",
     "founderEyebrow": "بنیانگذار و مدیرعامل",
@@ -4289,7 +4296,7 @@
     "formSuccess": "پیام ارسال شد. به زودی با شما تماس می‌گیریم.",
     "linkedinUrl": "https://www.linkedin.com/in/hamid-reza-forozandeh",
     "githubUrl": "https://github.com/hermescenter1",
-    "websiteUrl": "https://www.hermesnovin.com"
+    "websiteUrl": "https://hermesnovin.com"
   },
   "automation": {
     "dashboard": "داشبورد",
