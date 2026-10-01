@@ -50,9 +50,13 @@ function pageFileFor(route: string): string {
 
 describe("SiteNav — admin link visibility", () => {
   it("there is at least one admin-gated link to protect", () => {
-    expect(ADMIN_HREFS).toEqual(
-      expect.arrayContaining(["/admin", "/admin/documents", "/admin/documents/search"]),
-    );
+    expect(ADMIN_HREFS).toEqual(expect.arrayContaining(["/admin"]));
+    // F-2: the document library is an ORGANIZATION surface now — its links
+    // carry the workspace "dashboard" capability and the page itself requires
+    // view_documents in the resolved organization. Locked in
+    // src/lib/auth/__tests__/f2-document-pages-access.test.ts.
+    expect(ADMIN_HREFS).not.toContain("/admin/documents");
+    expect(ADMIN_HREFS).not.toContain("/admin/documents/search");
   });
 
   it("unauthenticated visitors (role null) see no admin links, but do see public links", () => {
@@ -160,7 +164,7 @@ describe("SiteNav and Control Center agree on shared admin destinations", () => 
         expect(match.capability).toBe(navItem.capability);
       }
     }
-    expect(shared).toBeGreaterThan(0); // /admin, /admin/documents, /admin/documents/search
+    expect(shared).toBeGreaterThan(0); // /admin
   });
 });
 

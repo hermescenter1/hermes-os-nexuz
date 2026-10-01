@@ -167,3 +167,20 @@ function createDatabaseChunkRepo(): DocumentTextChunkRepository {
 export function documentTextChunkRepository(): DocumentTextChunkRepository {
   return getStorageMode() === "database" ? createDatabaseChunkRepo() : createSessionChunkRepo();
 }
+
+/**
+ * F-2 FU-F2-R2-3 — delete a document's chunks INSIDE a caller's database
+ * transaction (`tx` is the interactive-transaction client).
+ *
+ * Unlike `deleteByDocumentId`, this never falls back to the session store:
+ * a failure must abort the caller's transaction so the Document row, its
+ * chunks and the storage-cleanup outbox row commit or roll back together.
+ * It lives here because this module is the only permitted user of the typed
+ * chunk delegate (F-1 R11 rule 2).
+ */
+export async function deleteDocumentChunksInTransaction(tx: unknown, documentId: string): Promise<number> {
+  const model = (tx as Record<string, unknown>).documentTextChunk as ChunkModel | undefined;
+  if (!model) throw new Error("transaction client has no documentTextChunk delegate");
+  const { count } = await model.deleteMany({ where: { documentId } });
+  return count;
+}

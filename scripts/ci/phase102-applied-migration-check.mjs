@@ -113,6 +113,9 @@ export const POST_PHASE102_MIGRATIONS = [
   // enum values, nullable AtsJob columns, one nullable RetentionPolicy column
   // and two new organization-owned tables. Declared for the same reason.
   "20260925000000_ats_m1_position_management",
+  // F-2 — Document.tenantId foreign key to Organization (ON DELETE RESTRICT)
+  // plus one index. Additive: no column, no row touched.
+  "20260925120000_f2_document_tenant_fk",
 ];
 
 /**

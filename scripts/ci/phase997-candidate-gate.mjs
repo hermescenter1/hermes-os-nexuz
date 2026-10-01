@@ -62,8 +62,12 @@ const LOCALES = ["fa", "en", "de"];
 // env_file for ATS_REVIEW_WORKER_TOKEN, and without it here a candidate run
 // would let that container read the repository's real .env.production. The
 // companion test caught it on the first CI run of the packaging change.
+//
+// F-2 FU-F2-R4-1 adds `hermes-document-cleanup-worker` for the same reason: it
+// declares env_file for DOCUMENT_CLEANUP_WORKER_TOKEN.
 export const ENV_FILE_SERVICES = Object.freeze([
   "hermes-ats-review-worker",
+  "hermes-document-cleanup-worker",
   "hermes-metering-worker",
   "hermes-web",
   "postgres",

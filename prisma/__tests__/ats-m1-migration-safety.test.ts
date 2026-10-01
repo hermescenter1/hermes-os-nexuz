@@ -31,10 +31,17 @@ function model(name: string): string {
 }
 
 describe("ATS-M1 — the migration is additive and non-destructive", () => {
-  it("is the newest migration and sorts strictly after every predecessor", () => {
+  it("sorts strictly after every predecessor; anything later is strictly later (append-only)", () => {
     const dirs = readdirSync(join(REPO, "prisma/migrations")).filter((d) => /^\d{14}_/.test(d)).sort();
-    expect(dirs[dirs.length - 1]).toBe(MIGRATION);
-    for (const d of dirs.slice(0, -1)) expect(d.slice(0, 14) < MIGRATION.slice(0, 14), d).toBe(true);
+    const idx = dirs.indexOf(MIGRATION);
+    expect(idx).toBeGreaterThan(0);
+    // Same append-only rule main applies to ATS-B2/S1 and Phase 112
+    // (scripts/ci/phase997-migration-integrity.mjs FUTURE_MIGRATIONS_APPEND_ONLY):
+    // it need not stay the globally-last migration — F-2
+    // (20260925120000_f2_document_tenant_fk) follows it — but nothing may sort
+    // before or beside it with an equal or later timestamp.
+    for (const d of dirs.slice(0, idx)) expect(d.slice(0, 14) < MIGRATION.slice(0, 14), d).toBe(true);
+    for (const d of dirs.slice(idx + 1)) expect(d.slice(0, 14) > MIGRATION.slice(0, 14), d).toBe(true);
   });
 
   it("contains no destructive statement and no data rewrite", () => {

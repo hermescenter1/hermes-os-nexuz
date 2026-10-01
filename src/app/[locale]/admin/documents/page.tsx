@@ -1,23 +1,33 @@
 export const metadata = { title: "Document Library · Hermes OS", robots: { index: false, follow: false } };
 
+import { cookies }              from "next/headers";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { PageShell }            from "@/components/PageShell";
 import { PageIntro }            from "@/components/PageIntro";
 import { RequireCapability }    from "@/components/auth/RequireCapability";
+import { DataUnavailableNotice } from "@/components/data-access/DataUnavailableNotice";
 import { AdminDocumentsClient } from "@/components/admin/AdminDocumentsClient";
+import { DocumentTenantStamp }  from "@/components/admin/DocumentTenantStamp";
+import { resolveDocumentPageAccess } from "@/lib/documents/page-access";
 
 /**
- * /admin/documents (Phase 16B).
+ * /admin/documents (Phase 16B; F-2 organization document library).
  *
- * Page-level gate (`RequireCapability capability="admin"`) for the normal
- * UI flow — the underlying `/api/documents*` routes ALSO enforce
- * `can(role, "admin")` themselves (see those routes' comments for why),
- * so this page being reachable is never the only thing standing between
- * an unauthorized request and the data.
+ * Two gates, in order:
+ *   1. `RequireCapability capability="dashboard"` — the same workspace
+ *      platform roles middleware admits to this path (see
+ *      `isAuthorizedForPath`); it also renders the sign-in prompt.
+ *   2. `resolveDocumentPageAccess` — an ACTIVE membership in the session's
+ *      resolved organization with `view_documents`. A platform admin who is
+ *      not a member gets the same refusal as anyone else; an unresolved or
+ *      ambiguous organization renders its own existing notice.
  *
- * Not yet linked from any navigation menu — reachable by direct URL only,
- * consistent with "no UI redesign" / no navigation changes this phase.
+ * `manage_documents` decides whether the upload / process / delete controls
+ * render at all. That is presentation only: every `/api/documents*` request
+ * re-proves membership and permission on its own.
  */
+export const dynamic = "force-dynamic";
+
 export default async function AdminDocumentsPage({
   params,
 }: {
@@ -26,12 +36,19 @@ export default async function AdminDocumentsPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("adminDocuments");
+  const access = await resolveDocumentPageAccess(await cookies());
 
   return (
-    <RequireCapability capability="admin">
+    <RequireCapability capability="dashboard">
       <PageShell>
         <PageIntro eyebrow={t("eyebrow")} title={t("title")} lede={t("lede")} />
-        <AdminDocumentsClient />
+        {access.granted ? (
+          <DocumentTenantStamp organizationId={access.organizationId}>
+            <AdminDocumentsClient canManage={access.canManage} />
+          </DocumentTenantStamp>
+        ) : (
+          <DataUnavailableNotice code={access.code} />
+        )}
       </PageShell>
     </RequireCapability>
   );

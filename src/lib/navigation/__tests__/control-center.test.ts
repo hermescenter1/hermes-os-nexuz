@@ -34,24 +34,33 @@ function pageFileFor(href: string): string {
 // ── Role → visible groups matrix ─────────────────────────────────────────────
 
 describe("control center — role visibility matrix", () => {
-  it("superadmin sees administration, editorial and contributor tools", () => {
-    expect(groupKeys("superadmin")).toEqual(["administration", "editorial", "contributor"]);
+  // F-2: "organizationDocuments" is the organization document library. It is
+  // visible to every workspace ("dashboard") role because the pages gate on
+  // the ORGANIZATION (ACTIVE membership + view_documents), not on a platform
+  // role — see src/lib/auth/__tests__/f2-document-pages-access.test.ts.
+  it("superadmin sees administration, organization documents, editorial and contributor tools", () => {
+    expect(groupKeys("superadmin")).toEqual(["administration", "organizationDocuments", "editorial", "contributor"]);
   });
 
-  it("admin sees administration, editorial and contributor tools (not superadmin-only)", () => {
-    expect(groupKeys("admin")).toEqual(["administration", "editorial", "contributor"]);
+  it("admin sees administration, organization documents, editorial and contributor tools (not superadmin-only)", () => {
+    expect(groupKeys("admin")).toEqual(["administration", "organizationDocuments", "editorial", "contributor"]);
   });
 
-  it("engineer sees contributor tools only — no administration or editorial", () => {
-    expect(groupKeys("engineer")).toEqual(["contributor"]);
+  it("engineer sees organization documents and contributor tools only — no administration or editorial", () => {
+    expect(groupKeys("engineer")).toEqual(["organizationDocuments", "contributor"]);
   });
 
-  it("customer sees contributor tools but no administration or editorial", () => {
-    expect(groupKeys("customer")).toEqual(["contributor"]);
+  it("customer sees organization documents and contributor tools but no administration or editorial", () => {
+    expect(groupKeys("customer")).toEqual(["organizationDocuments", "contributor"]);
   });
 
-  it("vendor sees contributor tools but gains no admin/editorial access", () => {
-    expect(groupKeys("vendor")).toEqual(["contributor"]);
+  it("vendor sees organization documents and contributor tools but gains no admin/editorial access", () => {
+    expect(groupKeys("vendor")).toEqual(["organizationDocuments", "contributor"]);
+  });
+
+  it("the administration group holds only platform-admin items", () => {
+    const admin = CONTROL_CENTER.find((g) => g.key === "administration")!;
+    for (const item of admin.items) expect(item.capability, item.key).toBe("admin");
   });
 
   it("viewer and candidate receive no contributor, admin or editorial items", () => {

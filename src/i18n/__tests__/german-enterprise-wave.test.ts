@@ -43,7 +43,10 @@ const LEAF_COUNTS: Record<Target, number> = {
   crm: 187,
   billing: 68,
   apiPlatform: 51,
-  adminDocuments: 50,
+  // F-2: +1 adminDocuments.list.loadMore (50 -> 51), genuinely German
+  // ("Weitere laden"), so the wave totals below move 531 -> 532 and the
+  // translated bucket 487 -> 488. No identical or token entry was added.
+  adminDocuments: 51,
   org: 49,
   admin: 40,
   erp: 33,
@@ -114,10 +117,10 @@ describe("87L.6E — exact namespace inventory", () => {
     expect(nsLeaves(en, ns).length).toBe(LEAF_COUNTS[ns]);
   });
 
-  it("the ten target namespaces total exactly 531 leaves", () => {
+  it("the ten target namespaces total exactly 532 leaves", () => {
     const total = Object.values(LEAF_COUNTS).reduce((a, b) => a + b, 0);
-    expect(total).toBe(531);
-    expect(allTargetLeaves.length).toBe(531);
+    expect(total).toBe(532);
+    expect(allTargetLeaves.length).toBe(532);
   });
 
   it("total = translated + intentional identical + technical token, per namespace", () => {
@@ -134,7 +137,7 @@ describe("87L.6E — exact namespace inventory", () => {
     }
   });
 
-  it("the wave's global arithmetic is 531 = 487 + 36 + 8", () => {
+  it("the wave's global arithmetic is 532 = 488 + 36 + 8", () => {
     let translated = 0, identical = 0, token = 0;
     for (const [path, deVal] of allTargetLeaves) {
       if (deVal !== enByPath.get(path)) translated++;
@@ -142,9 +145,9 @@ describe("87L.6E — exact namespace inventory", () => {
       else identical++;
     }
     expect({ translated, identical, token }).toEqual({
-      translated: 487, identical: 36, token: 8,
+      translated: 488, identical: 36, token: 8,
     });
-    expect(translated + identical + token).toBe(531);
+    expect(translated + identical + token).toBe(532);
   });
 
   it("has zero unapproved English sentence carryover", () => {

@@ -433,6 +433,9 @@ describe("102 — migration ordering", () => {
     // ATS-M1 — position management + organization ATS settings. Additive
     // only; touches no Phase 102 table (asserted below).
     "20260925000000_ats_m1_position_management",
+    // F-2 — Document.tenantId foreign key to Organization (ON DELETE RESTRICT)
+    // and one index. Additive only; touches no Phase 102 table (asserted below).
+    "20260925120000_f2_document_tenant_fk",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {

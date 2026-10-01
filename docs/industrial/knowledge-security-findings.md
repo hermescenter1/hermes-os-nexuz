@@ -7,7 +7,7 @@ documenting them. Baseline: `origin/main` @ `1c7aa40579d501468212d6542ddac295f3a
 | Id | Title | Priority | State |
 |---|---|---|---|
 | F-1 | Document RAG layer in `/api/brain` returns document text across tenants | **P0: immediate, security blocker** | **FIX IMPLEMENTED, UNCOMMITTED** (Stage 1 of `f1-document-rag-remediation-plan.md`, see §F-1.6). Production flag reported **`disabled`** by the owner on 2026-09-23 after running the §F-1.4 check. This session did not observe production itself. The fix is not deployed. |
-| F-2 | Generic document pipeline has no tenant ownership | **P1** | OPEN |
+| F-2 | Generic document pipeline has no tenant ownership | **P1** | **FIX IMPLEMENTED, IN REVIEW** on `feature/f2-document-tenant-ownership` (see §F-2 status and `f2-document-tenant-ownership-proposal.md` §11–§12.12). Not merged, not deployed; no production migration run. |
 | F-3 | Anonymous `GET /api/knowledge` runs an unbounded full-table read | **P2** | OPEN |
 | F-4 | Author avatar upload trusts the declared MIME type (public path) | P3 | OPEN (noted, out of scope) |
 
@@ -126,6 +126,9 @@ The Stage 1 code fix is in the working tree. It adds no schema change and no mig
 3. Additive migration: add `organizationId` to `DocumentTextChunk` (and `DocumentChunk`), with a composite FK to `Document(id, organizationId)`, following the Phase 109-C-UI.2 R7 composite-tenant-FK precedent. Backfill needs an owner decision for existing NULL-tenant rows: quarantine them, do not guess.
 4. Add magic-byte validation and refuse `application/octet-stream`, reusing `src/lib/media/validation.ts`.
 5. Paginate `GET /api/documents`: `take ≤ 50` plus a cursor.
+
+### Status (2026-09-24)
+Implemented on branch `feature/f2-document-tenant-ownership` (in review, not merged): items 2 and 5 (bounded `limit`: default 50, max 100, plus an opaque keyset cursor on `createdAt DESC, id DESC`, tenant-filtered in the same query; the cursor was added in R2, see below). Item 1 is superseded by the owner's decision to make documents tenant-owned. Item 3 was replaced by the owner-approved Option S: no chunk tenant column; the chunk tenant is always the parent `Document.tenantId`, plus `Document.tenantId` → `Organization` FK with `ON DELETE RESTRICT`. Item 4 (magic-byte validation) and a cursor for item 5 were implemented in R2 (2026-09-25, UNCOMMITTED; `f2-document-tenant-ownership-proposal.md` §12). The document pages now open to organization members by permission, session mode is fail-closed, and the chunk FK is documented as a follow-up, not added. R4 (2026-09-27, UNCOMMITTED) closes FU-F2-R2-3: a document delete removes its chunks and row and records a `DocumentStorageCleanup` outbox row in one transaction; the original and the extracted text are removed after the commit and retried until gone (proposal §12.9). R5 (2026-09-28, UNCOMMITTED) schedules that retry with a dedicated `hermes-document-cleanup-worker` service and a dedicated `DOCUMENT_CLEANUP_WORKER_TOKEN`; the metering/metrics tokens are no longer accepted for it (§12.11). Production data (owner-run read-only counts, 2026-09-24): `Document = 0`, `DocumentTextChunk = 0`, so no backfill.
 
 ### Regression tests to add with the fix
 - Org A admin cannot list, read, process or delete an org B document (404, not 403).

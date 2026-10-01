@@ -202,6 +202,14 @@ export const GUARD_TOKENS = [
   // `can(role, "admin")`; with neither, 401. Locked on both halves by
   // src/lib/ats/__tests__/ats-guard-registration.test.ts.
   { token: "authorizeReviewWorker", scope: "platform" },
+  // F-2 FU-F2-R4-1 — the document storage-cleanup worker guard
+  // (`src/lib/documents/storage-cleanup-worker-auth.ts`). The same two-key shape
+  // as the two entries above and vouched for on the same terms: a constant-time
+  // comparison against DOCUMENT_CLEANUP_WORKER_TOKEN — its own env-only secret,
+  // with NO fallback to the metering or metrics tokens — or `getCurrentUser` plus
+  // `can(role, "admin")`; with neither, 401. Locked on both halves by
+  // scripts/__tests__/document-cleanup-worker-registration.test.ts.
+  { token: "authorizeDocumentCleanupWorker", scope: "platform" },
   // Authenticated identity
   { token: "getCurrentUser", scope: "user" },
   { token: "getAuthRole", scope: "user" },

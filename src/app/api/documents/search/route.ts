@@ -1,28 +1,39 @@
-import { NextResponse } from "next/server";
-import { searchDocuments, resolveDocumentSearchScope } from "@/lib/documents/search";
-import { resolveBrainOwner } from "@/lib/storage/brain-owner";
-import { getCurrentUser } from "@/lib/auth/session";
-import { isAuthConfigured } from "@/lib/auth/config";
-import { can } from "@/lib/auth/roles";
+import { NextRequest, NextResponse } from "next/server";
+import { searchDocuments } from "@/lib/documents/search";
+import { isUsableChunkSearchScope } from "@/lib/documents/chunk-vector-store";
+import { requirePlatformAuth } from "@/lib/api/auth";
+import { requireOrgActor, orgActorRefusalCode } from "@/lib/org/context";
+import { requirePermission } from "@/lib/org/rbac";
 
 /**
- * POST /api/documents/search (Phase 16D).
+ * POST /api/documents/search (Phase 16D; F-1 tenant scope; F-2 org guard).
  *
  * Standalone semantic search over `DocumentTextChunk` embeddings — admin
- * test page. Admin-gated server-side, same as every other `/api/documents*`
- * route, and (F-1) tenant-scoped to the caller's organization.
+ * test page. Requires `view_documents` in the caller's active organization.
+ *
+ * F-1/F-2: the search scope is the organization proven by `requireOrgActor`,
+ * never a request value. An unresolved or ambiguous organization is refused
+ * by `requirePlatformAuth` (409) before any search runs; the chunk store then
+ * joins every chunk to its parent Document and matches `tenantId` exactly.
  *
  * Never returns a 5xx for a query that simply finds nothing or fails
  * internally — `searchDocuments()` never throws, so the only error
- * responses here are auth failures and a malformed request body.
+ * responses here are guard refusals and a malformed request body.
  */
-export async function POST(req: Request) {
-  if (!isAuthConfigured()) {
-    return NextResponse.json({ error: "auth not configured" }, { status: 403 });
-  }
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin")) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+export const dynamic = "force-dynamic";
+
+function refuse(status: number, error: string) {
+  return NextResponse.json({ error }, { status, headers: { "Cache-Control": "no-store" } });
+}
+
+export async function POST(req: NextRequest) {
+  const auth = await requirePlatformAuth(req);
+  if ("error" in auth) return refuse(auth.status, auth.code);
+  const member = await requireOrgActor(req, auth.ctx.orgId);
+  if ("error" in member) return refuse(member.status, orgActorRefusalCode(member.status));
+  const perm = requirePermission(member.ctx.role, "view_documents");
+  if (!perm.ok) return refuse(perm.status, "forbidden");
 
   let body: { query?: unknown };
   try {
@@ -36,10 +47,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "query_required" }, { status: 400 });
   }
 
-  // F-1: confine the search to the caller's server-resolved tenant. A platform
-  // admin with no (or an ambiguous) organization scope gets no matches — never
-  // the global index. The body cannot supply or widen the scope.
-  const scope = resolveDocumentSearchScope(await resolveBrainOwner());
+  const scope = { orgId: member.ctx.orgId };
+  if (!isUsableChunkSearchScope(scope)) return NextResponse.json({ matches: [] });
   const result = await searchDocuments(query, scope);
   return NextResponse.json({ matches: result.matches });
 }

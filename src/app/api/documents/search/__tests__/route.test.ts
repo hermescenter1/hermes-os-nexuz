@@ -1,32 +1,28 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import type { BrainOwner } from "@/lib/storage/types";
+import { resetSessionDocuments, seedSessionDocument } from "@/lib/documents/__tests__/tenant-fixtures";
 import {
   ORG_A,
   ORG_B,
-  resetSessionDocuments,
-  seedSessionDocument,
-} from "@/lib/documents/__tests__/tenant-fixtures";
+  member,
+  mockGuards,
+  unmockGuards,
+  docRequest,
+  orgActorCalls,
+  type GuardState,
+} from "../../__tests__/org-guard-harness";
 
 /**
- * Phase 17B — POST /api/documents/search route tests.
+ * Phase 17B / F-1 / F-2 — POST /api/documents/search route tests.
  *
- * Auth is mocked via vi.doMock exactly like every other route test in this
- * codebase — getCurrentUser requires a request-scoped cookie context that
- * this environment does not provide; only isAuthConfigured() (a plain env-var
- * check) is exercised directly.
+ * The org guards are mocked through `org-guard-harness.ts`; the search itself
+ * (mock embeddings, session chunk store, parent-Document tenant join) is real.
  *
  * The session-mode chunk buffer is shared across all tests via globalThis —
  * reset in beforeEach so each test starts from a clean slate, exactly like
  * the other document route tests.
  */
 
-const ENV_KEYS = [
-  "ADMIN_EMAIL",
-  "ADMIN_PASSWORD",
-  "HERMES_STORAGE_MODE",
-  "DATABASE_URL",
-  "DOCUMENT_EMBEDDINGS_PROVIDER",
-] as const;
+const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL", "DOCUMENT_EMBEDDINGS_PROVIDER"] as const;
 let saved: Record<string, string | undefined>;
 
 beforeEach(() => {
@@ -46,29 +42,8 @@ afterEach(() => {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
-  vi.doUnmock("@/lib/auth/session");
-  vi.doUnmock("@/lib/storage/brain-owner");
+  unmockGuards();
 });
-
-function mockUser(role: "admin" | "engineer" | "viewer" | null) {
-  vi.doMock("@/lib/auth/session", () => ({
-    getCurrentUser: async () =>
-      role ? { id: "u1", email: "u@test.com", name: "Test User", role } : null,
-  }));
-}
-
-/**
- * F-1: the search is scoped to the caller's server-resolved tenant. Session
- * mode has no membership table (every caller resolves to a personal, org-less
- * scope), so suites that expect matches pin the resolved owner here — exactly
- * what `resolveBrainOwner()` returns for a single-org member in database mode.
- */
-function mockOwner(owner: BrainOwner | null) {
-  vi.doUnmock("@/lib/storage/brain-owner");
-  vi.doMock("@/lib/storage/brain-owner", () => ({
-    resolveBrainOwner: async () => owner,
-  }));
-}
 
 async function indexChunk(documentId: string, tenantId: string | null, text: string) {
   seedSessionDocument(documentId, tenantId);
@@ -80,95 +55,87 @@ async function indexChunk(documentId: string, tenantId: string | null, text: str
   await embedDocumentChunks(documentId);
 }
 
-function searchRequest(body: unknown): Request {
-  return new Request("http://localhost/api/documents/search", {
+function searchRequest(body: unknown) {
+  return docRequest("/api/documents/search", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
   });
 }
 
+async function loadRoute(state: GuardState) {
+  await mockGuards(state);
+  return import("../route");
+}
+
+const CANARY_B = "tenant b confidential relay settings canary 51c0";
+
 // ─── authorization ────────────────────────────────────────────────────────────
 
-describe("/api/documents/search — authorization", () => {
-  it("rejects when auth is not configured (no ADMIN_EMAIL set) — 403", async () => {
-    const { POST } = await import("../route");
-    const res = await POST(searchRequest({ query: "motor fault" }));
-    expect(res.status).toBe(403);
-    expect((await res.json()).error).toBe("auth not configured");
-  });
+describe("/api/documents/search — guard chain", () => {
+  const refusals: Array<[string, GuardState, number, string]> = [
+    ["unauthenticated", { kind: "refused", code: "AUTHENTICATION_REQUIRED" }, 401, "AUTHENTICATION_REQUIRED"],
+    ["ambiguous organization", { kind: "refused", code: "ORGANIZATION_SELECTION_REQUIRED" }, 409, "ORGANIZATION_SELECTION_REQUIRED"],
+    ["no organization", { kind: "refused", code: "ORGANIZATION_CONTEXT_REQUIRED" }, 409, "ORGANIZATION_CONTEXT_REQUIRED"],
+    ["authenticated non-member", { kind: "nonMember" }, 403, "ORGANIZATION_SCOPE_REQUIRED"],
+    ["MEMBER (no view_documents)", member("MEMBER"), 403, "forbidden"],
+  ];
 
-  it("rejects an unauthenticated request — 401", async () => {
-    process.env.ADMIN_EMAIL = "a@test.com";
-    process.env.ADMIN_PASSWORD = "x";
-    mockUser(null);
-    const { POST } = await import("../route");
-    const res = await POST(searchRequest({ query: "motor fault" }));
-    expect(res.status).toBe(401);
-    expect((await res.json()).error).toBe("unauthorized");
-  });
+  for (const [name, state, status, code] of refusals) {
+    it(`${name} → ${status} ${code}; no match is returned`, async () => {
+      await indexChunk("doc-b", ORG_B, CANARY_B);
+      await indexChunk("doc-a", ORG_A, "tenant a relay settings");
+      const { POST } = await loadRoute(state);
+      const res = await POST(searchRequest({ query: CANARY_B }));
+      expect(res.status).toBe(status);
+      const body = await res.json();
+      expect(body.error).toBe(code);
+      expect(body.matches).toBeUndefined();
+    });
+  }
 
-  it("rejects engineer role — 403", async () => {
-    process.env.ADMIN_EMAIL = "a@test.com";
-    process.env.ADMIN_PASSWORD = "x";
-    mockUser("engineer");
-    const { POST } = await import("../route");
-    const res = await POST(searchRequest({ query: "motor fault" }));
-    expect(res.status).toBe(403);
-    expect((await res.json()).error).toBe("forbidden");
-  });
-
-  it("rejects viewer role — 403", async () => {
-    process.env.ADMIN_EMAIL = "a@test.com";
-    process.env.ADMIN_PASSWORD = "x";
-    mockUser("viewer");
-    const { POST } = await import("../route");
-    const res = await POST(searchRequest({ query: "motor fault" }));
-    expect(res.status).toBe(403);
-    expect((await res.json()).error).toBe("forbidden");
-  });
+  for (const role of ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"]) {
+    it(`${role} holds view_documents → 200`, async () => {
+      const { POST } = await loadRoute(member(role));
+      expect((await POST(searchRequest({ query: "motor fault" }))).status).toBe(200);
+    });
+  }
 });
 
 // ─── request validation ───────────────────────────────────────────────────────
 
 describe("/api/documents/search — request validation", () => {
-  beforeEach(() => {
-    process.env.ADMIN_EMAIL = "a@test.com";
-    process.env.ADMIN_PASSWORD = "x";
-    mockUser("admin");
-  });
-
   it("rejects a body with no query field — 400 query_required", async () => {
-    const { POST } = await import("../route");
+    const { POST } = await loadRoute(member("ADMIN"));
     const res = await POST(searchRequest({}));
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("query_required");
   });
 
   it("rejects an empty string query — 400 query_required", async () => {
-    const { POST } = await import("../route");
+    const { POST } = await loadRoute(member("ADMIN"));
     const res = await POST(searchRequest({ query: "" }));
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("query_required");
   });
 
   it("rejects a whitespace-only query — 400 query_required", async () => {
-    const { POST } = await import("../route");
+    const { POST } = await loadRoute(member("ADMIN"));
     const res = await POST(searchRequest({ query: "   " }));
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("query_required");
   });
 
   it("rejects a non-string query value — 400 query_required", async () => {
-    const { POST } = await import("../route");
+    const { POST } = await loadRoute(member("ADMIN"));
     const res = await POST(searchRequest({ query: 42 }));
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("query_required");
   });
 
   it("rejects malformed JSON body — 400 invalid_json", async () => {
-    const { POST } = await import("../route");
-    const req = new Request("http://localhost/api/documents/search", {
+    const { POST } = await loadRoute(member("ADMIN"));
+    const req = docRequest("/api/documents/search", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: "{ not valid json",
@@ -182,37 +149,21 @@ describe("/api/documents/search — request validation", () => {
 // ─── happy path ───────────────────────────────────────────────────────────────
 
 describe("/api/documents/search — happy path", () => {
-  beforeEach(() => {
-    process.env.ADMIN_EMAIL = "a@test.com";
-    process.env.ADMIN_PASSWORD = "x";
-    mockUser("admin");
-    mockOwner({ userId: "u1", orgId: ORG_A });
-  });
-
   it("returns 200 with an empty matches array when no chunks are embedded", async () => {
-    const { POST } = await import("../route");
+    const { POST } = await loadRoute(member("ADMIN"));
     const res = await POST(searchRequest({ query: "motor overheating fault" }));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(Array.isArray(body.matches)).toBe(true);
     expect(body.matches).toEqual([]);
   });
 
   it("returns 200 with matches after chunks have been indexed", async () => {
-    const { documentTextChunkRepository } = await import("@/lib/documents/chunk-repository");
-    const { embedDocumentChunks } = await import("@/lib/documents/embedding");
     const queryText = "siemens s7-1200 cpu fault watchdog timeout";
-    seedSessionDocument("doc-search-1", ORG_A);
-    await documentTextChunkRepository().createMany([
-      { documentId: "doc-search-1", position: 0, text: queryText, charCount: queryText.length, metadata: {} },
-    ]);
-    await embedDocumentChunks("doc-search-1");
-
-    const { POST } = await import("../route");
+    await indexChunk("doc-search-1", ORG_A, queryText);
+    const { POST } = await loadRoute(member("ADMIN"));
     const res = await POST(searchRequest({ query: queryText }));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(Array.isArray(body.matches)).toBe(true);
     expect(body.matches.length).toBeGreaterThan(0);
     const [m] = body.matches;
     expect(typeof m.chunkId).toBe("string");
@@ -222,18 +173,10 @@ describe("/api/documents/search — happy path", () => {
   });
 
   it("match text is the original chunk text — not truncated or transformed", async () => {
-    const { documentTextChunkRepository } = await import("@/lib/documents/chunk-repository");
-    const { embedDocumentChunks } = await import("@/lib/documents/embedding");
     const chunkText = "abb acs580 drive overcurrent trip fault investigation procedure";
-    seedSessionDocument("doc-search-2", ORG_A);
-    await documentTextChunkRepository().createMany([
-      { documentId: "doc-search-2", position: 0, text: chunkText, charCount: chunkText.length, metadata: {} },
-    ]);
-    await embedDocumentChunks("doc-search-2");
-
-    const { POST } = await import("../route");
-    const res = await POST(searchRequest({ query: chunkText }));
-    const body = await res.json();
+    await indexChunk("doc-search-2", ORG_A, chunkText);
+    const { POST } = await loadRoute(member("ADMIN"));
+    const body = await (await POST(searchRequest({ query: chunkText }))).json();
     expect(body.matches[0].text).toBe(chunkText);
   });
 });
@@ -241,42 +184,25 @@ describe("/api/documents/search — happy path", () => {
 // ─── safe failure behavior ────────────────────────────────────────────────────
 
 describe("/api/documents/search — safe failure contract", () => {
-  beforeEach(() => {
-    process.env.ADMIN_EMAIL = "a@test.com";
-    process.env.ADMIN_PASSWORD = "x";
-    mockUser("admin");
-  });
-
   it("never returns a 5xx — always 200 for a valid query that just finds nothing", async () => {
-    const { POST } = await import("../route");
-    const res = await POST(searchRequest({ query: "plc watchdog reset" }));
-    expect(res.status).toBe(200);
+    const { POST } = await loadRoute(member("ADMIN"));
+    expect((await POST(searchRequest({ query: "plc watchdog reset" }))).status).toBe(200);
   });
 
   it("never leaks raw internal error text in any response", async () => {
-    const { POST } = await import("../route");
-    const res = await POST(searchRequest({ query: "motor fault" }));
-    const text = JSON.stringify(await res.json());
+    const { POST } = await loadRoute(member("ADMIN"));
+    const text = JSON.stringify(await (await POST(searchRequest({ query: "motor fault" }))).json());
     expect(text).not.toMatch(/stack|ENOENT|at Object\.|at searchDocuments/i);
   });
 });
 
-// ─── F-1: tenant isolation (R9) ─────────────────────────────────────────────
+// ─── F-1 / F-2: tenant isolation ──────────────────────────────────────────────
 
-describe("/api/documents/search — F-1 tenant isolation", () => {
-  const CANARY_B = "tenant b confidential relay settings canary 51c0";
-
-  beforeEach(() => {
-    process.env.ADMIN_EMAIL = "a@test.com";
-    process.env.ADMIN_PASSWORD = "x";
-    mockUser("admin");
-  });
-
-  it("an admin whose organization is A never receives tenant B chunks", async () => {
+describe("/api/documents/search — tenant isolation", () => {
+  it("a member of A never receives tenant B chunks", async () => {
     await indexChunk("doc-b", ORG_B, CANARY_B);
     await indexChunk("doc-a", ORG_A, "tenant a relay settings");
-    mockOwner({ userId: "u1", orgId: ORG_A });
-    const { POST } = await import("../route");
+    const { POST } = await loadRoute(member("OWNER"));
     const res = await POST(searchRequest({ query: CANARY_B }));
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -285,39 +211,29 @@ describe("/api/documents/search — F-1 tenant isolation", () => {
     expect(JSON.stringify(body)).not.toContain("51c0");
   });
 
-  it("an admin with no organization (personal scope) gets no matches — never the global index", async () => {
+  it("a member of B does receive B's chunks (positive control)", async () => {
     await indexChunk("doc-b", ORG_B, CANARY_B);
-    mockOwner({ userId: "u1", orgId: null });
-    const { POST } = await import("../route");
+    const { POST } = await loadRoute(member("VIEWER", ORG_B));
+    const body = await (await POST(searchRequest({ query: CANARY_B }))).json();
+    expect(body.matches.map((m: { documentId: string }) => m.documentId)).toContain("doc-b");
+  });
+
+  it("unassigned (NULL tenant) chunks are never returned", async () => {
+    await indexChunk("doc-null", null, CANARY_B);
+    const { POST } = await loadRoute(member("OWNER"));
     const body = await (await POST(searchRequest({ query: CANARY_B }))).json();
     expect(body.matches).toEqual([]);
   });
 
-  it("an ambiguous multi-org admin gets no matches", async () => {
+  it("a client-supplied organizationId / tenantId / orgId in the body is ignored", async () => {
     await indexChunk("doc-b", ORG_B, CANARY_B);
-    mockOwner({ userId: "u1", orgId: null, ambiguous: true });
-    const { POST } = await import("../route");
-    const body = await (await POST(searchRequest({ query: CANARY_B }))).json();
-    expect(body.matches).toEqual([]);
-  });
-
-  it("an unresolvable owner (null) gets no matches", async () => {
-    await indexChunk("doc-b", ORG_B, CANARY_B);
-    mockOwner(null);
-    const { POST } = await import("../route");
-    const body = await (await POST(searchRequest({ query: CANARY_B }))).json();
-    expect(body.matches).toEqual([]);
-  });
-
-  it("a client-supplied organizationId / tenantId in the body is ignored", async () => {
-    await indexChunk("doc-b", ORG_B, CANARY_B);
-    mockOwner({ userId: "u1", orgId: ORG_A });
-    const { POST } = await import("../route");
+    const { POST } = await loadRoute(member("OWNER"));
     const res = await POST(
       searchRequest({ query: CANARY_B, organizationId: ORG_B, tenantId: ORG_B, orgId: ORG_B })
     );
     const body = await res.json();
     expect(body.matches).toEqual([]);
     expect(JSON.stringify(body)).not.toContain("51c0");
+    expect(orgActorCalls).toEqual([ORG_A]);
   });
 });

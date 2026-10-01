@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { withTenantPrecondition } from "@/lib/client/resource-request";
 
 interface SearchMatch {
   chunkId: string;
@@ -36,11 +37,14 @@ export function AdminDocumentSearchClient() {
     setError(null);
     setSearching(true);
     try {
-      const res = await fetch("/api/documents/search", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ query }),
-      });
+      const res = await fetch(
+        "/api/documents/search",
+        withTenantPrecondition({
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ query }),
+        })
+      );
       if (!res.ok) {
         setError(t("validation.searchFailed"));
         return;
