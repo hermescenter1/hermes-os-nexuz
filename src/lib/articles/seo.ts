@@ -39,6 +39,7 @@
 import type { MetadataRoute } from "next";
 import { getPrisma } from "@/lib/db/prisma";
 import { BASE_URL, DEFAULT_LOCALE, LOCALES } from "@/lib/seo/config";
+import { isRetiredIdentityHandle } from "@/lib/seo/retired-identity";
 import { localeForArticleLanguage } from "./locale";
 import { normalizeArticleSlug } from "./slug";
 
@@ -300,6 +301,11 @@ export async function listPublicAuthorSitemapItems(): Promise<AuthorSitemapItem[
     for (const row of rows) {
       const author = row.author as { handle?: unknown } | null;
       if (author && typeof author.handle === "string" && author.handle.length > 0) {
+        // A handle publishing the retired company identity is never advertised.
+        // The row and its articles stay intact; only the sitemap entry — the one
+        // place this platform actively ASKS a crawler to index a URL — is
+        // withheld. See `lib/seo/retired-identity.ts`.
+        if (isRetiredIdentityHandle(author.handle)) continue;
         handles.add(author.handle);
       }
     }
