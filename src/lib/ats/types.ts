@@ -77,6 +77,8 @@ export interface Candidate {
   atsScore: AtsScore;
   /** go-live: true only when a real review score exists for this application. */
   scored?: boolean;
+  /** go-live: the underlying candidate id, for the detail/erase surface. */
+  candidateId?: string;
 }
 
 export interface Interview {

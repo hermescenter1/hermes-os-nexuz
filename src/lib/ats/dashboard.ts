@@ -181,6 +181,7 @@ function toCandidate(a: AppRow): Candidate & { scored: boolean } {
     appliedAt: a.createdAt.toISOString(),
     atsScore: score,
     scored,
+    candidateId: a.candidate?.id,
   };
 }
 
@@ -337,4 +338,79 @@ export async function getAtsHasData(organizationId: string): Promise<boolean | n
   const apps = await loadApplications(organizationId);
   if (apps === null) return null;
   return apps.length > 0;
+}
+
+/** The candidate-detail view model the recruiter page and the erase modal use:
+ *  the candidate (or its erased state), the linked counts WITHOUT any personal
+ *  content, and the recent recruitment-audit trail for this candidate. Reached
+ *  only THROUGH an application in the acting organization; returns null for an
+ *  unknown or cross-tenant candidate, and null on a store fault. Unlike the
+ *  list views it does NOT hide an erased candidate — the page must be able to
+ *  show the "erased" state. */
+export interface CandidateDetail {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  location: string | null;
+  erased: boolean;
+  stage: PipelineStage | null;
+  appliedAt: string | null;
+  counts: { applications: number; interviews: number; reviews: number };
+  audit: { action: string; createdAt: string; byName: string | null }[];
+}
+
+interface DetailClient {
+  atsApplication: { findMany: (a: unknown) => Promise<Array<{ id: string; status: string; createdAt: Date }>> };
+  atsCandidate: { findUnique: (a: unknown) => Promise<{ id: string; name: string; email: string; phone: string | null; location: string | null; deletedAt: Date | null } | null> };
+  atsInterview: { count: (a: unknown) => Promise<number> };
+  atsAiReview: { count: (a: unknown) => Promise<number> };
+  auditLog: { findMany: (a: unknown) => Promise<Array<{ action: string; createdAt: Date }>> };
+}
+
+export async function getCandidateDetail(organizationId: string, candidateId: string): Promise<CandidateDetail | null> {
+  const db = await getPrisma();
+  if (!db) return null;
+  const d = db as unknown as DetailClient;
+  try {
+    const apps = await d.atsApplication.findMany({
+      where: { organizationId, candidateId },
+      select: { id: true, status: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    });
+    if (apps.length === 0) return null; // unknown or cross-tenant → indistinguishable
+    const cand = await d.atsCandidate.findUnique({
+      where: { id: candidateId },
+      select: { id: true, name: true, email: true, phone: true, location: true, deletedAt: true },
+    });
+    if (!cand) return null;
+
+    const appIds = apps.map((a) => a.id);
+    const [interviews, reviews, auditRows] = await Promise.all([
+      d.atsInterview.count({ where: { organizationId, applicationId: { in: appIds } } }),
+      d.atsAiReview.count({ where: { applicationId: { in: appIds } } }),
+      d.auditLog.findMany({
+        where: { organizationId, entityType: "AtsCandidate", entityId: candidateId },
+        select: { action: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      }).catch(() => [] as Array<{ action: string; createdAt: Date }>),
+    ]);
+
+    const latest = apps[0];
+    return {
+      id: cand.id,
+      name: cand.name,
+      email: cand.email,
+      phone: cand.phone,
+      location: cand.location,
+      erased: cand.deletedAt !== null,
+      stage: latest ? stageOf(latest.status) : null,
+      appliedAt: latest ? latest.createdAt.toISOString() : null,
+      counts: { applications: apps.length, interviews, reviews },
+      audit: auditRows.map((r) => ({ action: r.action, createdAt: r.createdAt.toISOString(), byName: null })),
+    };
+  } catch {
+    return null;
+  }
 }

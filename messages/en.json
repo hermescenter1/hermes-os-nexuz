@@ -10260,6 +10260,38 @@
     "realEmpty": {
       "body": "No real candidates have been received yet. This section will update automatically after the first application.",
       "insufficient": "Not enough data yet to show this."
+    },
+    "erase": {
+      "detailTitle": "Candidate",
+      "back": "Back to candidates",
+      "sectionProfile": "Profile",
+      "sectionActivity": "Linked activity",
+      "sectionAudit": "Audit trail",
+      "noAudit": "No audited actions yet.",
+      "appliedLabel": "Applied",
+      "stageLabel": "Stage",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "locationLabel": "Location",
+      "countApplications": "Applications",
+      "countInterviews": "Interviews",
+      "countReviews": "AI reviews",
+      "erasedBadge": "This candidate has been erased and anonymised.",
+      "action": "Erase & anonymise candidate",
+      "modalTitle": "Erase & anonymise this candidate",
+      "modalWarning": "This permanently removes the candidate's personal information — name, email, phone, location, links, résumé text, cover letter and notes — from this organization. It cannot be undone. Audit records, the pipeline history and recorded decisions are kept without personal content.",
+      "modalImpact": "This will anonymise {applications} application(s), and is linked to {interviews} interview(s) and {reviews} AI review(s).",
+      "reasonLabel": "Reason (recorded in the audit log)",
+      "reasonPlaceholder": "e.g. candidate's erasure request, reference …",
+      "confirmLabel": "Type ERASE CANDIDATE to confirm",
+      "cancel": "Cancel",
+      "confirm": "Erase candidate",
+      "erasing": "Erasing…",
+      "success": "The candidate has been erased and anonymised.",
+      "errorGeneric": "The candidate could not be erased. Please try again.",
+      "errorLegalHold": "This candidate's data is under a legal hold and cannot be erased.",
+      "errorCrossOrg": "This candidate cannot be erased from here.",
+      "errorForbidden": "You do not have permission to erase a candidate."
     }
   },
   "customerSuccess": {

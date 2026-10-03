@@ -10260,6 +10260,38 @@
     "realEmpty": {
       "body": "Es wurden noch keine echten Bewerbungen empfangen. Dieser Bereich wird nach der ersten Bewerbung automatisch aktualisiert.",
       "insufficient": "Noch nicht genügend Daten, um dies anzuzeigen."
+    },
+    "erase": {
+      "detailTitle": "Bewerber/in",
+      "back": "Zurück zu den Bewerbenden",
+      "sectionProfile": "Profil",
+      "sectionActivity": "Verknüpfte Aktivität",
+      "sectionAudit": "Prüfprotokoll",
+      "noAudit": "Noch keine protokollierten Aktionen.",
+      "appliedLabel": "Beworben am",
+      "stageLabel": "Phase",
+      "emailLabel": "E-Mail",
+      "phoneLabel": "Telefon",
+      "locationLabel": "Ort",
+      "countApplications": "Bewerbungen",
+      "countInterviews": "Gespräche",
+      "countReviews": "KI-Prüfungen",
+      "erasedBadge": "Diese Bewerberin bzw. dieser Bewerber wurde gelöscht und anonymisiert.",
+      "action": "Bewerber/in löschen & anonymisieren",
+      "modalTitle": "Diese Bewerberin bzw. diesen Bewerber löschen & anonymisieren",
+      "modalWarning": "Dies entfernt die personenbezogenen Daten — Name, E-Mail, Telefon, Ort, Links, Lebenslauftext, Anschreiben und Notizen — dauerhaft aus dieser Organisation. Es kann nicht rückgängig gemacht werden. Prüfprotokolle, der Pipeline-Verlauf und erfasste Entscheidungen bleiben ohne personenbezogenen Inhalt erhalten.",
+      "modalImpact": "Dadurch werden {applications} Bewerbung(en) anonymisiert; verknüpft sind {interviews} Gespräch(e) und {reviews} KI-Prüfung(en).",
+      "reasonLabel": "Grund (wird im Prüfprotokoll erfasst)",
+      "reasonPlaceholder": "z. B. Löschersuchen der Person, Referenz …",
+      "confirmLabel": "Geben Sie zur Bestätigung ERASE CANDIDATE ein",
+      "cancel": "Abbrechen",
+      "confirm": "Bewerber/in löschen",
+      "erasing": "Wird gelöscht…",
+      "success": "Die Bewerberin bzw. der Bewerber wurde gelöscht und anonymisiert.",
+      "errorGeneric": "Die Löschung war nicht möglich. Bitte versuchen Sie es erneut.",
+      "errorLegalHold": "Die Daten dieser Person unterliegen einer rechtlichen Sperre und können nicht gelöscht werden.",
+      "errorCrossOrg": "Diese Bewerberin bzw. dieser Bewerber kann hier nicht gelöscht werden.",
+      "errorForbidden": "Sie haben keine Berechtigung, eine Bewerberin bzw. einen Bewerber zu löschen."
     }
   },
   "customerSuccess": {

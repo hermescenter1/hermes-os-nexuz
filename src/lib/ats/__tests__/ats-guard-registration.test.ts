@@ -92,6 +92,9 @@ describe("requireAtsActor — registered at TENANT scope", () => {
     }
     // the candidate CREATE is refused, and still behind ATS_ADMIN
     guardsFirst("src/app/api/ats/candidates/route.ts", "POST", 'requireAtsActor(req, "ATS_ADMIN")', /NOT_IMPLEMENTED|correlationOf/);
+    // the candidate detail read is ATS_VIEW; the erasure is ATS_ADMIN and runs the guard first
+    guardsFirst("src/app/api/ats/candidates/[id]/route.ts", "GET", 'requireAtsActor(req, "ATS_VIEW")', /getCandidateDetail\(|correlationOf/);
+    guardsFirst("src/app/api/ats/candidates/[id]/erase/route.ts", "POST", 'requireAtsActor(req, "ATS_ADMIN")', /eraseCandidate\(|mutationPreconditions\(|readJsonBody\(/);
   });
 
   it("half one — every M1 WRITE checks Origin and the Idempotency-Key before reading the body", () => {

@@ -151,6 +151,9 @@ describe.each(LOCALES)("the rendered notice (%s)", (locale) => {
   it("shows the consent version intake records", async () => {
     const html = await render(locale);
     expect(html).toContain(RECRUITMENT_CONSENT_VERSION);
+    // parity: the version is rendered as the exact bidi-isolated token the page
+    // builds from the constant — not wrapped with extra characters.
+    expect(html).toContain(`⁦${RECRUITMENT_CONSENT_VERSION}⁩`);
   });
 
   it("is indexable now that it is operational", async () => {

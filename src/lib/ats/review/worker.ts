@@ -73,7 +73,8 @@ interface LoadedApplication {
   resumeText: string | null;
   coverLetter: string | null;
   totalYearsExp: number | null;
-  candidate: { skills: unknown; location: string | null; linkedinUrl: string | null } | null;
+  anonymizedAt: Date | null;
+  candidate: { deletedAt: Date | null; skills: unknown; location: string | null; linkedinUrl: string | null } | null;
   job: { title: string; criteria: StoredCriterion[] } | null;
 }
 
@@ -191,7 +192,7 @@ async function deliverDueReviews(
     let app: LoadedApplication | null;
     try {
       app = await prisma.atsApplication.findFirst({
-        where: { id: row.applicationId, organizationId: row.organizationId, deletedAt: null },
+        where: { id: row.applicationId, organizationId: row.organizationId, deletedAt: null, anonymizedAt: null },
         select: {
           id: true,
           status: true,
@@ -200,7 +201,8 @@ async function deliverDueReviews(
           resumeText: true,
           coverLetter: true,
           totalYearsExp: true,
-          candidate: { select: { skills: true, location: true, linkedinUrl: true } },
+          anonymizedAt: true,
+          candidate: { select: { deletedAt: true, skills: true, location: true, linkedinUrl: true } },
           job: {
             select: {
               title: true,
@@ -226,6 +228,19 @@ async function deliverDueReviews(
       await prisma.atsReviewOutbox.updateMany({
         where: { id: row.id, status: "CLAIMED" },
         data: { status: "DEAD_LETTER", lastErrorCode: "APPLICATION_NOT_PENDING" },
+      });
+      report.deadLettered++;
+      continue;
+    }
+
+    // ATS go-live — the erasure guard, re-checked here AFTER the claim (the
+    // load above already excludes an anonymised application at the query, the
+    // "before" side). A candidate erased between the outbox write and now must
+    // never be reviewed: dead-letter the row and move on, reviewing nothing.
+    if (app.anonymizedAt || app.candidate?.deletedAt) {
+      await prisma.atsReviewOutbox.updateMany({
+        where: { id: row.id, status: "CLAIMED" },
+        data: { status: "DEAD_LETTER", lastErrorCode: "CANDIDATE_ERASED" },
       });
       report.deadLettered++;
       continue;

@@ -15,13 +15,13 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 397,
-    "handlers": 552,
+    "routeFiles": 399,
+    "handlers": 554,
     "byClassification": {
       "PUBLIC_READ": 36,
       "PUBLIC_WRITE": 14,
-      "AUTHENTICATED_USER": 216,
-      "TENANT_MEMBER": 147,
+      "AUTHENTICATED_USER": 211,
+      "TENANT_MEMBER": 154,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
       "PLATFORM_ADMIN": 135,
@@ -30,16 +30,16 @@
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 147,
+    "tenantBoundHandlers": 154,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 282,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 282,
-    "TENANT_IDENTITY_SERVER_DERIVED": 282,
+    "TENANT_BOUND_HANDLERS_TOTAL": 289,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 289,
+    "TENANT_IDENTITY_SERVER_DERIVED": 289,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 282,
+    "OBJECT_SCOPED_HANDLERS": 289,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -833,12 +833,12 @@
       "apiPath": "/api/ats/analytics",
       "method": "GET",
       "file": "src/app/api/ats/analytics/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "requireRecruitmentReader"
+        "requireAtsActor"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -885,12 +885,12 @@
       "apiPath": "/api/ats/candidates",
       "method": "GET",
       "file": "src/app/api/ats/candidates/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "requireRecruitmentReader"
+        "requireAtsActor"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -898,12 +898,38 @@
       "apiPath": "/api/ats/candidates",
       "method": "POST",
       "file": "src/app/api/ats/candidates/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getAuthRole"
+        "requireAtsActor"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/candidates/[id]",
+      "method": "GET",
+      "file": "src/app/api/ats/candidates/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/ats/candidates/[id]/erase",
+      "method": "POST",
+      "file": "src/app/api/ats/candidates/[id]/erase/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireAtsActor"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -1095,12 +1121,12 @@
       "apiPath": "/api/ats/overview",
       "method": "GET",
       "file": "src/app/api/ats/overview/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "requireRecruitmentReader"
+        "requireAtsActor"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -1108,12 +1134,12 @@
       "apiPath": "/api/ats/pipeline",
       "method": "GET",
       "file": "src/app/api/ats/pipeline/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "requireRecruitmentReader"
+        "requireAtsActor"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },

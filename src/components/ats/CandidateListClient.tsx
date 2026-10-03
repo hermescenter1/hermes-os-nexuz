@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useMemo } from "react";
+import { Link } from "@/i18n/navigation";
 import type { Candidate, PipelineStage } from "@/lib/ats/types";
 import { STAGE_LABELS, STAGE_ORDER }     from "@/lib/ats/types";
 import { AtsScoreCard }                  from "./AtsScoreCard";
@@ -186,7 +187,13 @@ export function CandidateListClient() {
             <div className="rounded-xl border border-line bg-surface px-4 py-4 space-y-4 sticky top-4">
               {/* Header */}
               <div className="border-b border-line pb-3">
-                <p className="font-body text-sm font-semibold text-ink">{selected.name}</p>
+                {selected.candidateId ? (
+                  <Link href={`/dashboard/ats/candidates/${selected.candidateId}`} className="ds-focus font-body text-sm font-semibold text-signal underline">
+                    {selected.name}
+                  </Link>
+                ) : (
+                  <p className="font-body text-sm font-semibold text-ink">{selected.name}</p>
+                )}
                 <p className="kpi-label text-metadata mt-0.5">{selected.location} · {t("yearsExperience", { years: selected.experienceYears })}</p>
                 <span className={`${STAGE_BADGE[selected.stage]} mt-1.5 inline-block`}>
                   {STAGE_LABELS[selected.stage]}
