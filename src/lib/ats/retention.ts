@@ -28,6 +28,7 @@
 
 import { getPrisma } from "@/lib/db/prisma";
 import { isUnderLegalHold, type HoldLike } from "@/lib/compliance/retention-engine";
+import { anonymiseApplicationTx } from "./anonymise";
 import { RECRUITMENT_DATA_CLASS } from "./application";
 import { readSettingsOrDefaults, type SettingsReader } from "./settings/defaults";
 import { buildRecruitmentAuditCreate } from "./recruitment-audit";
@@ -201,17 +202,13 @@ export async function sweepExpiredApplications(args: {
       if (!execute || !automated) continue;
       try {
         await prisma.$transaction(async (tx) => {
-          const changed = await tx.atsApplication.updateMany({
-            where: { id: app.id, organizationId: args.organizationId, anonymizedAt: null },
-            data: {
-              resumeText: null,
-              coverLetter: null,
-              notes: null,
-              anonymizedAt: now,
-              ...(policy.action === "DELETE" ? { deletedAt: now } : {}),
-            },
+          const changed = await anonymiseApplicationTx(tx, {
+            applicationId: app.id,
+            organizationId: args.organizationId,
+            now,
+            alsoSoftDelete: policy.action === "DELETE",
           });
-          if (changed.count !== 1) return;
+          if (!changed) return;
           await tx.auditLog.create(
             buildRecruitmentAuditCreate({
               action: "recruitment.application.anonymized",

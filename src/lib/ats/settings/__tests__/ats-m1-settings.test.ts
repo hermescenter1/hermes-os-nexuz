@@ -86,8 +86,13 @@ describe("fail-closed defaults", () => {
     expect(effectiveExternalAi({ ...on, aiProviderMode: "deterministic" })).toBe(false);
   });
 
-  it("the global acceptance gate is still closed", () => {
-    expect(APPLICATION_ACCEPTANCE_AUTHORIZED).toBe(false);
+  it("the global acceptance gate is open, and the organization's intake default stays CLOSED", () => {
+    // ATS-STAGE1-FORM: the owner authorized acceptance platform-wide. That does
+    // not open intake for any organization: with no settings row the default
+    // is closed, and only an ATS_ADMIN (with a reason) may open it.
+    expect(APPLICATION_ACCEPTANCE_AUTHORIZED).toBe(true);
+    expect(ATS_SETTINGS_DEFAULTS.applicationIntakeEnabled).toBe(false);
+    expect(settingsFromRow(null).applicationIntakeEnabled).toBe(false);
   });
 });
 
@@ -200,7 +205,10 @@ describe("the security section never returns a secret value", () => {
   it("reports MISSING — fail closed — when a secret is absent", async () => {
     const admin = await getSettingsView("org-A", "ADMIN");
     expect(admin!.security!.items.filter((i) => i.state === "MISSING").map((i) => i.name)).toEqual([ENV.IDEMPOTENCY_SECRET, ENV.REVIEW_WORKER_TOKEN]);
-    expect(admin!.security!.applicationAcceptanceAuthorized).toBe(false);
+    // ATS-STAGE1-FORM: the view reports the REAL platform flag (now authorized)
+    // — a missing secret still fails intake closed, which is what MISSING says.
+    expect(admin!.security!.applicationAcceptanceAuthorized).toBe(APPLICATION_ACCEPTANCE_AUTHORIZED);
+    expect(admin!.security!.applicationAcceptanceAuthorized).toBe(true);
   });
 
   it("the locked invariants are reported as locked", async () => {

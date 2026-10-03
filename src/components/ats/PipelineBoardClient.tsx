@@ -1,10 +1,9 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useState, useEffect }          from "react";
 import type { PipelineColumn, Candidate, PipelineStage } from "@/lib/ats/types";
 import { AtsScoreCard }                 from "./AtsScoreCard";
-import { formatNumber } from "@/lib/i18n/format";
 
 interface PipelineResponse { columns: PipelineColumn[]; total: number }
 
@@ -48,8 +47,8 @@ function CandidateCard({
     >
       <div className="flex items-center justify-between gap-1.5 mb-0.5">
         <p className="font-body text-xs font-semibold text-ink truncate">{candidate.name}</p>
-        <span className={`font-mono text-xs font-bold flex-shrink-0 ${SCORE_COLOR(candidate.atsScore.total)}`}>
-          {candidate.atsScore.total}
+        <span className={`font-mono text-xs font-bold flex-shrink-0 ${candidate.scored ? SCORE_COLOR(candidate.atsScore.total) : "text-metadata"}`}>
+          {candidate.scored ? candidate.atsScore.total : "—"}
         </span>
       </div>
       <p className="kpi-label text-metadata truncate">{candidate.location}</p>
@@ -60,7 +59,6 @@ function CandidateCard({
 
 export function PipelineBoardClient() {
   const t = useTranslations("ats");
-  const locale = useLocale();
   const [data,       setData]       = useState<PipelineResponse | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -102,9 +100,13 @@ export function PipelineBoardClient() {
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="kpi-label text-metadata">
-        {data.total} candidate{data.total !== 1 ? "s" : ""} across {data.columns.filter(c => c.count > 0).length} active stages · Click a card to inspect
-      </p>
+      {data.total === 0 ? (
+        <p className="kpi-label text-metadata py-8 text-center">{t("realEmpty.body")}</p>
+      ) : (
+        <p className="kpi-label text-metadata">
+          {data.total} candidate{data.total !== 1 ? "s" : ""} across {data.columns.filter(c => c.count > 0).length} active stages · Click a card to inspect
+        </p>
+      )}
 
       <div className="flex gap-3 overflow-x-auto pb-4" style={{ minHeight: "360px" }}>
         {data.columns.map(col => (
@@ -147,10 +149,8 @@ export function PipelineBoardClient() {
             <p className="kpi-label text-metadata mb-3">{selected.location} · {t("yearsExperience", { years: selected.experienceYears })}</p>
             <div className="space-y-1">
               {[
-                { label: t("workAuth"), value: selected.workAuthorization.replace(/-/g, " ") },
-                { label: t("salaryExp"), value: `${formatNumber(selected.salaryExpectation, locale)}` },
                 { label: t("applied"),    value: selected.appliedAt },
-              ].map(row => (
+              ].filter(row => row.value).map(row => (
                 <div key={row.label} className="flex justify-between gap-2">
                   <span className="kpi-label text-metadata">{row.label}</span>
                   <span className="font-mono text-[0.65rem] text-ink">{row.value}</span>
@@ -171,15 +171,19 @@ export function PipelineBoardClient() {
             <div className="h-layer-sep mb-3">
               <span className="kpi-label">{t("scoreAnalysis")}</span>
             </div>
-            <AtsScoreCard score={selected.atsScore} />
+            {selected.scored
+              ? <AtsScoreCard score={selected.atsScore} />
+              : <p className="kpi-label text-metadata">{t("realEmpty.insufficient")}</p>}
           </div>
 
-          <div>
-            <div className="h-layer-sep mb-3">
-              <span className="kpi-label">{t("cvSummary")}</span>
+          {selected.cvSummary ? (
+            <div>
+              <div className="h-layer-sep mb-3">
+                <span className="kpi-label">{t("cvSummary")}</span>
+              </div>
+              <p className="font-body text-xs text-metadata leading-relaxed">{selected.cvSummary}</p>
             </div>
-            <p className="font-body text-xs text-metadata leading-relaxed">{selected.cvSummary}</p>
-          </div>
+          ) : null}
         </div>
       )}
     </div>
