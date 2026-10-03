@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "gate": "scripts/ci/dependency-audit-gate.mjs",
+  "note": "Time-bounded, path-exact, dev-only risk acceptances. These findings are NOT fixed. Every entry is evaluated against the live npm audit on every pull request and fails the build the moment it expires, moves, reaches production, or becomes fixable by an in-range update.",
+  "exceptions": [
+    {
+      "advisoryIds": ["GHSA-vfj7-8cjw-p6xm"],
+      "package": "braces",
+      "paths": ["node_modules/braces"],
+      "inheritedFrom": [],
+      "devOnly": true,
+      "owner": "ZHARFA Engineering",
+      "reason": "No safe published version exists in the current compatible dependency line: braces has no release outside the advisory range, and remediation requires a separately reviewed Tailwind/design-system or upstream Next ESLint transition.",
+      "created": "2026-10-03",
+      "expires": "2026-11-02",
+      "futureRemediation": "docs/security/dependency-audit-governance.md#future-remediation-lanes"
+    },
+    {
+      "advisoryIds": ["GHSA-vfj7-8cjw-p6xm"],
+      "package": "micromatch",
+      "paths": ["node_modules/micromatch"],
+      "inheritedFrom": ["braces"],
+      "devOnly": true,
+      "owner": "ZHARFA Engineering",
+      "reason": "No safe published version exists in the current compatible dependency line: micromatch inherits the braces advisory and has no release outside the range, and remediation requires a separately reviewed Tailwind/design-system or upstream Next ESLint transition.",
+      "created": "2026-10-03",
+      "expires": "2026-11-02",
+      "futureRemediation": "docs/security/dependency-audit-governance.md#future-remediation-lanes"
+    },
+    {
+      "advisoryIds": ["GHSA-vfj7-8cjw-p6xm"],
+      "package": "chokidar",
+      "paths": ["node_modules/chokidar"],
+      "inheritedFrom": ["braces"],
+      "devOnly": true,
+      "owner": "ZHARFA Engineering",
+      "reason": "No safe published version exists in the current compatible dependency line: this chokidar 3.x instance exists only to serve Tailwind 3 and inherits the braces advisory, and remediation requires a separately reviewed Tailwind/design-system transition.",
+      "created": "2026-10-03",
+      "expires": "2026-11-02",
+      "futureRemediation": "docs/security/dependency-audit-governance.md#future-remediation-lanes"
+    },
+    {
+      "advisoryIds": ["GHSA-vfj7-8cjw-p6xm"],
+      "package": "fast-glob",
+      "paths": [
+        "node_modules/@next/eslint-plugin-next/node_modules/fast-glob",
+        "node_modules/fast-glob"
+      ],
+      "inheritedFrom": ["micromatch"],
+      "devOnly": true,
+      "owner": "ZHARFA Engineering",
+      "reason": "No safe published version exists in the current compatible dependency line: fast-glob inherits the braces advisory through micromatch and has no release outside the range, and remediation requires a separately reviewed Tailwind/design-system or upstream Next ESLint transition.",
+      "created": "2026-10-03",
+      "expires": "2026-11-02",
+      "futureRemediation": "docs/security/dependency-audit-governance.md#future-remediation-lanes"
+    },
+    {
+      "advisoryIds": ["GHSA-vfj7-8cjw-p6xm"],
+      "package": "tailwindcss",
+      "paths": ["node_modules/tailwindcss"],
+      "inheritedFrom": ["chokidar", "fast-glob", "micromatch"],
+      "devOnly": true,
+      "owner": "ZHARFA Engineering",
+      "reason": "No safe published version exists in the current compatible dependency line: the Tailwind 3 line ends at 3.4.19, which is inside the advisory range, and remediation requires a separately reviewed Tailwind 4 design-system transition with full visual acceptance.",
+      "created": "2026-10-03",
+      "expires": "2026-11-02",
+      "futureRemediation": "docs/security/dependency-audit-governance.md#future-remediation-lanes"
+    },
+    {
+      "advisoryIds": ["GHSA-vfj7-8cjw-p6xm"],
+      "package": "@next/eslint-plugin-next",
+      "paths": ["node_modules/@next/eslint-plugin-next"],
+      "inheritedFrom": ["fast-glob"],
+      "devOnly": true,
+      "owner": "ZHARFA Engineering",
+      "reason": "No safe published version exists in the current compatible dependency line: the plugin inherits the braces advisory through fast-glob and npm's only offered fix is a semver-major downgrade of eslint-config-next, so remediation requires a separately reviewed upstream Next ESLint transition.",
+      "created": "2026-10-03",
+      "expires": "2026-11-02",
+      "futureRemediation": "docs/security/dependency-audit-governance.md#future-remediation-lanes"
+    },
+    {
+      "advisoryIds": ["GHSA-vfj7-8cjw-p6xm"],
+      "package": "eslint-config-next",
+      "paths": ["node_modules/eslint-config-next"],
+      "inheritedFrom": ["@next/eslint-plugin-next"],
+      "devOnly": true,
+      "owner": "ZHARFA Engineering",
+      "reason": "No safe published version exists in the current compatible dependency line: eslint-config-next 15.x inherits the braces advisory and npm's only offered fix is a semver-major downgrade to 14.2.35 that contradicts next@15.5.25, so remediation requires a separately reviewed upstream Next ESLint transition.",
+      "created": "2026-10-03",
+      "expires": "2026-11-02",
+      "futureRemediation": "docs/security/dependency-audit-governance.md#future-remediation-lanes"
+    }
+  ]
+}
