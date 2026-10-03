@@ -10256,6 +10256,10 @@
           "restricted": "The security status is visible to ATS administrators only."
         }
       }
+    },
+    "realEmpty": {
+      "body": "No real candidates have been received yet. This section will update automatically after the first application.",
+      "insufficient": "Not enough data yet to show this."
     }
   },
   "customerSuccess": {

@@ -62,7 +62,7 @@ function jsonReq(path: string, body: unknown): Request {
 
 const ATS_MOCK_ROUTES = [
   { name: "/api/ats/jobs", path: "../../../app/api/ats/jobs/route", body: { title: "X" }, b1: true },
-  { name: "/api/ats/candidates", path: "../../../app/api/ats/candidates/route", body: { name: "X" } },
+  { name: "/api/ats/candidates", path: "../../../app/api/ats/candidates/route", body: { name: "X" }, b1: true },
   { name: "/api/ats/score", path: "../../../app/api/ats/score/route", body: { jobId: "job-1" } },
 ];
 

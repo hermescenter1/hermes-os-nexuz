@@ -278,7 +278,7 @@ const RAW_CANDIDATES: RawCandidate[] = [
 
 export const CANDIDATES: Candidate[] = RAW_CANDIDATES.map(c => {
   const job = JOBS.find(j => j.id === c.jobId)!;
-  return { ...c, atsScore: scoreCandidate(job, c) };
+  return { ...c, atsScore: scoreCandidate(job, { ...c, salaryExpectation: c.salaryExpectation ?? 0 }) };
 });
 
 export const INTERVIEWS: Interview[] = [

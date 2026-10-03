@@ -10256,6 +10256,10 @@
           "restricted": "Der Sicherheitsstatus ist nur für die ATS-Administration sichtbar."
         }
       }
+    },
+    "realEmpty": {
+      "body": "Es wurden noch keine echten Bewerbungen empfangen. Dieser Bereich wird nach der ersten Bewerbung automatisch aktualisiert.",
+      "insufficient": "Noch nicht genügend Daten, um dies anzuzeigen."
     }
   },
   "customerSuccess": {

@@ -6,7 +6,9 @@ export type PipelineStage =
 export type ApplicationSource =
   | "linkedin" | "indeed" | "referral" | "direct" | "agency" | "internal";
 export type WorkAuthorization =
-  | "citizen" | "permanent-resident" | "work-visa" | "requires-sponsorship";
+  | "citizen" | "permanent-resident" | "work-visa" | "requires-sponsorship"
+  /** go-live: real intake does not collect work authorization. */
+  | "not-collected";
 export type InterviewType   = "phone" | "video" | "on-site" | "technical" | "panel";
 export type InterviewStatus = "pending" | "scheduled" | "completed" | "cancelled";
 
@@ -69,9 +71,12 @@ export interface Candidate {
   cvSummary: string;
   source: ApplicationSource;
   stage: PipelineStage;
-  salaryExpectation: number;
+  /** go-live: not collected at intake; null for real candidates. */
+  salaryExpectation: number | null;
   appliedAt: string;
   atsScore: AtsScore;
+  /** go-live: true only when a real review score exists for this application. */
+  scored?: boolean;
 }
 
 export interface Interview {
