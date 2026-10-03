@@ -22,7 +22,7 @@ import { createTranslator } from "next-intl";
 import en from "../../../../../../messages/en.json";
 import fa from "../../../../../../messages/fa.json";
 import de from "../../../../../../messages/de.json";
-import { CONTACT_EMAIL, ORG_NAME } from "@/lib/seo/config";
+import { CONTACT_EMAIL } from "@/lib/seo/config";
 import { RECRUITMENT_CONSENT_VERSION } from "@/lib/ats/policy";
 
 type Locale = "en" | "fa" | "de";
@@ -100,45 +100,80 @@ describe.each(LOCALES)("the rendered notice (%s)", (locale) => {
     expect(body).toContain(n.get("s3.p1")!);
   });
 
-  it("is visibly marked as a legal DRAFT", async () => {
+  it("is operational, not a draft — no draft banner, no draft keys", async () => {
     const html = await render(locale);
     const n = notice(locale);
-    expect(html).toContain('data-legal-status="draft"');
-    expect(html).toMatch(/role="note"/);
-    expect(html).toContain(n.get("draftBadge")!);
-    expect(html).toContain(n.get("draftNotice")!);
+    expect(html).toContain('data-legal-status="operational"');
+    expect(html).not.toContain('data-legal-status="draft"');
+    // the draft-only keys are gone from the catalogue
+    expect(n.has("draftBadge")).toBe(false);
+    expect(n.has("draftNotice")).toBe(false);
+    // and the metadata title no longer carries a "(draft)" marker
+    expect(n.get("metaTitle")!).not.toMatch(/draft|entwurf|پیش‌نویس/i);
   });
 
-  it("shows the consent version intake records, the published contact and the real request route", async () => {
+  it("names the controller, its address, the legal-unit contact and the governing law", async () => {
     const html = await render(locale);
-    expect(html).toContain(RECRUITMENT_CONSENT_VERSION);
-    expect(html).toContain(ORG_NAME);
+    const n = notice(locale);
+    const body = text(html);
+    // the controller sentence is rendered in this locale (Latin name in en/de,
+    // Persian name in fa — both carried by the leaf itself)
+    expect(body).toContain(n.get("s8.controller")!);
+    expect(body).toContain(n.get("s8.address")!);
     expect(html).toContain(`href="mailto:${CONTACT_EMAIL}"`);
     expect(html).toContain(CONTACT_EMAIL);
+    // governing law + its conservative, non-universal disclaimer, and the complaint forum
+    expect(body).toContain(n.get("s8.governingLaw")!);
+    expect(body).toContain(n.get("s8.complaintForum")!);
+    expect(body).toContain(n.get("s8.noDpo")!);
+    // the request route is unchanged
     expect(html.match(/href="\/data-request"/g) ?? []).toHaveLength(2);
     expect(html).toContain('href="/privacy"');
     expect(html).toContain('href="/careers"');
   });
 
-  it("is noindex while it is a draft", async () => {
+  it("states the confirmed 365-day retention without claiming it is automatic", async () => {
+    const html = await render(locale);
+    const n = notice(locale);
+    const body = text(html);
+    expect(body).toContain(n.get("s5.p1")!);
+    // the 365-day period is stated (Latin digits in en/de, Persian digits in fa)
+    expect(n.get("s5.p1")!).toMatch(/365|۳۶۵/);
+    // it must explicitly say anonymisation is NOT automatic
+    const notAutomatic = {
+      en: /not anonymised automatically/i,
+      de: /nicht automatisch anonymisiert/i,
+      fa: /به‌صورت خودکار انجام نمی‌شود/,
+    }[locale];
+    expect(n.get("s5.p1")!).toMatch(notAutomatic);
+  });
+
+  it("shows the consent version intake records", async () => {
+    const html = await render(locale);
+    expect(html).toContain(RECRUITMENT_CONSENT_VERSION);
+  });
+
+  it("is indexable now that it is operational", async () => {
     const meta = await generateMetadata({ params: Promise.resolve({ locale }) });
-    const robots = meta.robots as { index?: boolean; follow?: boolean };
-    expect(robots.index).toBe(false);
+    const robots = meta.robots as { index?: boolean };
+    expect(robots.index).not.toBe(false);
     expect(String(meta.title ?? "")).toContain(notice(locale).get("metaTitle")!);
   });
 });
 
-describe("no claim of legal compliance", () => {
-  it("the English notice never says it complies, only that it is not a statement of compliance", () => {
-    const all = [...notice("en").values()].join(" ");
-    expect(all).not.toMatch(/\bcompl(ies|iant)\b|in compliance with|fully (meets|satisfies)|certified/i);
-    expect(notice("en").get("draftNotice")).toMatch(/not a statement or guarantee of compliance/);
+describe("no claim of universal compliance and no legal-review claim", () => {
+  it("no locale claims compliance; English governing law explicitly disclaims universal compliance", () => {
+    for (const loc of LOCALES) {
+      const all = [...notice(loc).values()].join(" ");
+      expect(all, loc).not.toMatch(/\bcompl(ies|iant)\b|in compliance with|fully (meets|satisfies)|certified|GDPR|reviewed by (legal )?counsel|legal counsel reviewed/i);
+    }
+    expect(notice("en").get("s8.governingLaw")).toMatch(/does not claim universal legal compliance/);
   });
 
-  it("the page source hard-codes neither a legal claim nor the contact details", () => {
+  it("the page source hard-codes neither a legal claim, the controller, nor the contact details, and is indexable", () => {
     const src = readFileSync(join(REPO, "src/app/[locale]/careers/privacy/page.tsx"), "utf8");
-    expect(src).not.toMatch(/GDPR|compliant|@hermesnovin\.com|Novin Mehr/);
-    expect(src).toContain("noIndex: true");
+    expect(src).not.toMatch(/GDPR|compliant|@hermesnovin\.com|ZHARFA|Novin Mehr/);
+    expect(src).not.toContain("noIndex");
   });
 });
 

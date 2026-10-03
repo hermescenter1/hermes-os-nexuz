@@ -2,30 +2,31 @@ import type { ReactNode } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { buildMetadata } from "@/lib/seo/metadata";
-import { CONTACT_EMAIL, ORG_NAME } from "@/lib/seo/config";
+import { CONTACT_EMAIL } from "@/lib/seo/config";
 import { RECRUITMENT_CONSENT_VERSION } from "@/lib/ats/policy";
 
 /**
- * ATS — the candidate privacy notice (LEGAL DRAFT).
+ * ATS — the candidate privacy notice (operational).
  *
  * The Stage-1 application form links here. The copy lives in
  * `careers.privacy` (en/fa/de) and describes the recruitment system as it is
- * built — preliminary screening that never decides, a recorded human decision,
- * retention set by the organization's approved policy, and the Data Request
- * Center as the one request route. It is marked as a draft on the page itself
- * and claims no legal compliance.
+ * built — preliminary AI-assisted screening that never decides, a recorded
+ * human decision, retention under the organization's approved policy, the
+ * controller and governing law, and the Data Request Center as the one request
+ * route. It claims no universal legal compliance and does not state that it was
+ * reviewed by legal counsel.
  *
  * The version shown IS the consent version intake records with every
  * acknowledgement (`RECRUITMENT_CONSENT_VERSION`), so "recorded with the notice
  * version" stays true. Changing this notice's substance means bumping that
  * constant — an owner decision, not a copy edit.
  *
- * Draft ⇒ `noIndex`: applicants can read it from the form; search engines do
- * not index a notice that is not final.
+ * Indexable: the notice is final enough to be a public legal page, so it is not
+ * noindex.
  */
 
-/** The date this draft was prepared — shown, never used for any decision. */
-const PREPARED_ON = new Date(Date.UTC(2026, 8, 26));
+/** The date this version became effective — shown, never used for any decision. */
+const EFFECTIVE_ON = new Date(Date.UTC(2026, 9, 3));
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -35,7 +36,6 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     path: "/careers/privacy",
     title: t("metaTitle"),
     description: t("metaDescription"),
-    noIndex: true,
   });
 }
 
@@ -66,10 +66,10 @@ export default async function CandidatePrivacyPage({ params }: { params: Promise
       {chunks}
     </a>
   );
-  const date = new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" }).format(PREPARED_ON);
+  const date = new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" }).format(EFFECTIVE_ON);
 
   return (
-    <article className="mx-auto max-w-3xl px-6 py-12 sm:py-16" data-legal-status="draft">
+    <article className="mx-auto max-w-3xl px-6 py-12 sm:py-16" data-legal-status="operational">
       <header className="mb-8">
         <p className="eyebrow-label mb-2">{t("eyebrow")}</p>
         <h1 className="type-page-title mb-3">{t("title")}</h1>
@@ -79,11 +79,6 @@ export default async function CandidatePrivacyPage({ params }: { params: Promise
           {t("versionLine", { version: `\u2066${RECRUITMENT_CONSENT_VERSION}\u2069`, date })}
         </p>
       </header>
-
-      <div role="note" className="mb-8 rounded-lg border border-amber-400/50 bg-amber-950/30 p-4">
-        <p className="mb-1 text-sm font-semibold text-ink">{t("draftBadge")}</p>
-        <p className="text-xs leading-relaxed text-muted">{t("draftNotice")}</p>
-      </div>
 
       <div className="space-y-8 text-sm leading-relaxed text-ink/85">
         <p>{t.rich("intro", { general: generalLink })}</p>
@@ -170,8 +165,13 @@ export default async function CandidatePrivacyPage({ params }: { params: Promise
         <section aria-labelledby="cp-s8">
           <H2><span id="cp-s8">{t("s8.title")}</span></H2>
           <div className="space-y-2">
-            <p>{t("s8.controller", { org: ORG_NAME })}</p>
+            <p>{t("s8.controller")}</p>
+            {/* The postal code is isolated so its digits keep their order inside the RTL line. */}
+            <p dir="auto">{t("s8.address")}</p>
             <p>{t.rich("s8.contact", { email: CONTACT_EMAIL, mail })}</p>
+            <p>{t("s8.noDpo")}</p>
+            <p>{t("s8.governingLaw")}</p>
+            <p>{t("s8.complaintForum")}</p>
             <p>{t("s8.otherOrgs")}</p>
           </div>
         </section>

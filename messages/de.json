@@ -9308,13 +9308,11 @@
       }
     },
     "privacy": {
-      "metaTitle": "Datenschutzhinweise für Bewerbende (Entwurf)",
-      "metaDescription": "Wie Bewerbungen über die Karriereseiten verarbeitet werden: automatisierte Vorprüfung, menschliche Entscheidungen, Aufbewahrung und Ihre Rechte.",
+      "metaTitle": "Datenschutzhinweise für Bewerbende",
+      "metaDescription": "Wie Bewerbungen über die Karriereseiten verarbeitet werden: KI-gestützte Vorprüfung, menschliche Entscheidungen, Aufbewahrung und Ihre Rechte.",
       "eyebrow": "Karriere · Datenschutz",
       "title": "Datenschutzhinweise für Bewerbende",
-      "draftBadge": "Rechtlicher Entwurf",
-      "draftNotice": "Diese Hinweise sind ein Entwurf, der noch rechtlich geprüft wird. Sie beschreiben, wie das Bewerbungssystem dieser Website für die Verarbeitung personenbezogener Daten ausgelegt ist. Sie sind keine Erklärung oder Garantie der Übereinstimmung mit einem bestimmten Gesetz, und ihr Wortlaut kann sich bis zur endgültigen Fassung ändern.",
-      "versionLine": "Entwurfsfassung {version} · erstellt am {date}",
+      "versionLine": "Fassung {version} · gültig ab {date}",
       "intro": "Diese Hinweise erklären, wie Ihre personenbezogenen Daten verarbeitet werden, wenn Sie sich über die Karriereseiten dieser Website auf eine Stelle bewerben. Sie ergänzen die <general>allgemeine Datenschutzerklärung</general>, die weiterhin gilt.",
       "s1": {
         "title": "1. Daten der Bewerbenden",
@@ -9349,10 +9347,10 @@
       },
       "s5": {
         "title": "5. Aufbewahrungsdauer und Aufbewahrungsrichtlinie",
-        "p1": "Wie lange Bewerbungsdaten aufbewahrt werden, legt die genehmigte Aufbewahrungsrichtlinie der einstellenden Organisation für Bewerbungsdaten fest. Bewerbungen werden nur angenommen, solange eine solche Richtlinie gilt.",
-        "p2": "Nach Ablauf der Aufbewahrungsdauer — gerechnet ab der Einsendung oder ab der letzten Aktivität zur Bewerbung, je nach Richtlinie — wird der Inhalt Ihrer Bewerbung (Lebenslauftext, Anschreiben und interne Notizen) anonymisiert. Daten, die einer rechtlichen Sperre unterliegen, werden bis zu deren Ende aufbewahrt.",
-        "p3": "Ihr Kontaktdatensatz (Name, E-Mail-Adresse und Telefonnummer) wird gelöscht, wenn Sie die Löschung verlangen, sofern er nicht noch für eine andere offene Bewerbung oder zur Erfüllung einer rechtlichen Pflicht benötigt wird.",
-        "p4": "Nachweise Ihrer Bestätigungen und Einwilligungen sowie die Prüfprotokolle des Auswahlverfahrens werden so lange aufbewahrt, wie es zum Nachweis einer rechtmäßigen Verarbeitung erforderlich ist, im Einklang mit der allgemeinen Datenschutzerklärung."
+        "p1": "Die derzeit genehmigte Aufbewahrungsrichtlinie der Organisation bewahrt Bewerbungsdaten bis zu 365 Tage ab dem Eingang einer Bewerbung auf. Nach Ablauf dieser Frist werden die betroffenen Daten über den kontrollierten Aufbewahrungs- und Löschprozess der Organisation für eine Anonymisierung vorgesehen; sie werden nicht automatisch anonymisiert.",
+        "p2": "Die Anonymisierung entfernt den personenbezogenen Inhalt Ihrer Bewerbung — Lebenslauftext, Anschreiben und interne Notizen. Daten, die einer rechtlichen Sperre oder einer gesetzlichen Aufbewahrungspflicht unterliegen, werden bis zu deren Ende aufbewahrt.",
+        "p3": "Ihr Kontaktdatensatz (Name, E-Mail-Adresse und Telefonnummer) wird entfernt, wenn Sie uns um Löschung bitten, sofern er nicht noch für eine andere offene Bewerbung oder zur Erfüllung einer rechtlichen Pflicht benötigt wird.",
+        "p4": "Nachweise Ihrer Bestätigungen und Einwilligungen sowie die Prüfprotokolle des Auswahlverfahrens werden — soweit möglich ohne identifizierenden Inhalt — so lange aufbewahrt, wie es zum Nachweis einer rechtmäßigen Verarbeitung erforderlich ist. Ändert sich diese Richtlinie wesentlich, ändert sich auch die mit neuen Bewerbungen erfasste Einwilligungsversion."
       },
       "s6": {
         "title": "6. Ihre Rechte",
@@ -9373,10 +9371,14 @@
         "p3": "Ihre Daten sind durch technische und organisatorische Maßnahmen geschützt, darunter verschlüsselte Übertragung, rollenbasierte Zugriffskontrolle, Trennung der Daten jeder Organisation und Protokollierung. Kein System ist vollkommen sicher; bei einem Vorfall handeln wir im Einklang mit dem anwendbaren Recht."
       },
       "s8": {
-        "title": "8. Verantwortliche Stelle und Kontakt",
-        "controller": "Verantwortlich für die Verarbeitung der Bewerbungen auf eine Stelle ist die Organisation, die sie veröffentlicht. Für Stellen von {org} ist {org} verantwortlich.",
-        "contact": "Kontakt für Datenschutzfragen zu Bewerbungen: <mail>{email}</mail>. Bitte schreiben Sie „Datenschutz Bewerbung“ in den Betreff und geben Sie Ihre Bewerbungsreferenz an.",
-        "otherOrgs": "Wurde eine Stelle von einer anderen Organisation veröffentlicht, die diese Plattform nutzt, ist diese Organisation für Ihre Bewerbung verantwortlich; wir leiten Ihre Anfrage an sie weiter."
+        "title": "8. Verantwortliche Stelle, Kontakt und anwendbares Recht",
+        "controller": "Verantwortlich für die Verarbeitung der über diese Karriereseiten eingereichten Bewerbungen ist ZHARFA Vira Pouyesh Fanavari.",
+        "contact": "Für Datenschutzfragen zu Bewerbungen wenden Sie sich an die Rechtsabteilung des Unternehmens unter <mail>{email}</mail>. Bitte schreiben Sie „Datenschutz Bewerbung“ in den Betreff und geben Sie Ihre Bewerbungsreferenz an.",
+        "otherOrgs": "Wurde eine Stelle von einer anderen Organisation veröffentlicht, die diese Plattform nutzt, ist diese Organisation für Ihre Bewerbung verantwortlich; wir leiten Ihre Anfrage an sie weiter.",
+        "address": "Iran, Isfahan, Janbazan-Straße, Valiasr-Gasse, Ostad-Mehryar-Straße, Marefat-Straße, Postleitzahl 8179679495.",
+        "noDpo": "Wir haben keinen formellen Datenschutzbeauftragten bestellt; Datenschutzanfragen zu Bewerbungen bearbeitet die Rechtsabteilung des Unternehmens.",
+        "governingLaw": "Die Verarbeitung unterliegt grundsätzlich den Gesetzen der Islamischen Republik Iran. Soweit zwingende Datenschutzvorschriften am Wohnsitz der bewerbenden Person anwendbar sind, beachtet die Organisation auch die dort zwingend vorgeschriebenen Rechte. Diese Erklärung behauptet keine weltweite Rechtskonformität.",
+        "complaintForum": "Beschwerden können bei den zuständigen Behörden und Gerichten Irans und, soweit das Gesetz dies verlangt, bei der zuständigen Behörde am Wohnsitz der bewerbenden Person eingereicht werden."
       },
       "s9": {
         "title": "9. Haftungsgrenzen und Weg zur Anfrage",

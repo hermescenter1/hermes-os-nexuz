@@ -9308,13 +9308,11 @@
       }
     },
     "privacy": {
-      "metaTitle": "Candidate Privacy Notice (draft)",
-      "metaDescription": "How applications submitted through the careers pages are processed: preliminary automated screening, human decisions, retention and your rights.",
+      "metaTitle": "Candidate Privacy Notice",
+      "metaDescription": "How applications submitted through the careers pages are processed: preliminary AI-assisted screening, human decisions, retention and your rights.",
       "eyebrow": "Careers · Privacy",
       "title": "Candidate Privacy Notice",
-      "draftBadge": "Legal draft",
-      "draftNotice": "This notice is a draft pending legal review. It describes how the recruitment system of this website is designed to process personal data. It is not a statement or guarantee of compliance with any particular law, and its wording may change before it is final.",
-      "versionLine": "Draft version {version} · prepared {date}",
+      "versionLine": "Version {version} · effective {date}",
       "intro": "This notice explains how your personal data is processed when you apply for a position through the careers pages of this website. It supplements the <general>general Privacy Policy</general>, which continues to apply.",
       "s1": {
         "title": "1. Applicant data",
@@ -9349,10 +9347,10 @@
       },
       "s5": {
         "title": "5. Retention period and policy",
-        "p1": "How long application data is kept is set by the hiring organisation's approved retention policy for recruitment data. Applications are accepted only while such a policy is in effect.",
-        "p2": "When the retention period ends — counted from submission or from the last activity on the application, as the policy states — the content of your application (résumé text, cover letter and internal notes) is anonymised. Data subject to a legal hold is kept until the hold ends.",
-        "p3": "Your contact record (name, e-mail address and phone number) is deleted when you request erasure, unless it is still needed for another open application or to meet a legal obligation.",
-        "p4": "Records of your confirmations and consents, and the audit records of the selection process, are kept for as long as needed to demonstrate lawful processing, in line with the general Privacy Policy."
+        "p1": "The organisation's current approved retention policy keeps candidate data for up to 365 days, counted from the time an application is received. After that period, the data concerned becomes eligible for anonymisation through the organisation's controlled retention-and-deletion process; it is not anonymised automatically.",
+        "p2": "Anonymisation removes the personal content of your application — résumé text, cover letter and internal notes. Data subject to a legal hold or a legal retention requirement is kept until that hold or requirement ends.",
+        "p3": "Your contact record (name, e-mail address and phone number) is removed when you ask us to erase it, unless it is still needed for another open application or to meet a legal obligation.",
+        "p4": "Records of your confirmations and consents, and the audit records of the selection process, are kept — without identifying content where possible — for as long as needed to demonstrate lawful processing. If this policy changes materially, the consent version recorded with new applications also changes."
       },
       "s6": {
         "title": "6. Your rights",
@@ -9373,10 +9371,14 @@
         "p3": "Your data is protected by technical and organisational measures, including encrypted transmission, role-based access control, separation of each organisation's data and audit logging. No system is completely secure, and we will act on any incident in line with applicable law."
       },
       "s8": {
-        "title": "8. Controller and contact",
-        "controller": "The organisation that publishes a position is responsible for processing the applications for it. For positions of {org}, the controller is {org}.",
-        "contact": "Contact for recruitment privacy questions: <mail>{email}</mail>. Please write “Candidate privacy” in the subject and include your application reference.",
-        "otherOrgs": "If a position was published by another organisation that uses this platform, that organisation is the controller for your application; we will forward your request to it."
+        "title": "8. Controller, contact and governing law",
+        "controller": "The controller responsible for processing applications submitted through these careers pages is ZHARFA Vira Pouyesh Fanavari.",
+        "contact": "For recruitment privacy questions, contact the Company Legal Unit at <mail>{email}</mail>. Please put “Candidate privacy” in the subject and include your application reference.",
+        "otherOrgs": "If a position was published by another organisation that uses this platform, that organisation is the controller for your application; we will forward your request to it.",
+        "address": "Iran, Isfahan, Janbazan Street, Valiasr Alley, Ostad Mehryar Street, Marefat Street, Postal Code 8179679495.",
+        "noDpo": "We have not appointed a formal Data Protection Officer; recruitment privacy requests are handled by the Company Legal Unit.",
+        "governingLaw": "Processing is principally governed by the laws of the Islamic Republic of Iran. Where mandatory data-protection rules in the applicant's place of residence apply, the organisation will also respect the rights required by those rules. This notice does not claim universal legal compliance.",
+        "complaintForum": "Complaints may be brought before the competent authorities and courts of Iran and, where the law so requires, the competent authority of the applicant's place of residence."
       },
       "s9": {
         "title": "9. Limitations and how to make a request",
