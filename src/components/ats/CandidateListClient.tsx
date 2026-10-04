@@ -1,11 +1,11 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useMemo } from "react";
+import { Link } from "@/i18n/navigation";
 import type { Candidate, PipelineStage } from "@/lib/ats/types";
 import { STAGE_LABELS, STAGE_ORDER }     from "@/lib/ats/types";
 import { AtsScoreCard }                  from "./AtsScoreCard";
-import { formatNumber } from "@/lib/i18n/format";
 
 interface CandidatesResponse { candidates: Candidate[]; total: number }
 
@@ -34,7 +34,6 @@ const SOURCE_LABEL_KEY: Record<string, string> = {
 
 export function CandidateListClient() {
   const t = useTranslations("ats");
-  const locale = useLocale();
   const [data,       setData]       = useState<CandidatesResponse | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [stageFilter,setStageFilter]= useState<PipelineStage | "all">("all");
@@ -154,8 +153,8 @@ export function CandidateListClient() {
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <div className="text-right">
-                        <p className={`font-mono text-base font-bold ${SCORE_COLOR(c.atsScore.total)}`}>
-                          {c.atsScore.total}
+                        <p className={`font-mono text-base font-bold ${c.scored ? SCORE_COLOR(c.atsScore.total) : "text-metadata"}`}>
+                          {c.scored ? c.atsScore.total : "—"}
                         </p>
                         <p className="kpi-label">ATS</p>
                       </div>
@@ -174,7 +173,9 @@ export function CandidateListClient() {
                 </button>
               ))}
               {visible.length === 0 && (
-                <p className="kpi-label text-metadata py-8 text-center">{t("noCandidatesMatch")}</p>
+                <p className="kpi-label text-metadata py-8 text-center">
+                  {(data?.candidates ?? []).length === 0 ? t("realEmpty.body") : t("noCandidatesMatch")}
+                </p>
               )}
             </div>
           )}
@@ -186,26 +187,32 @@ export function CandidateListClient() {
             <div className="rounded-xl border border-line bg-surface px-4 py-4 space-y-4 sticky top-4">
               {/* Header */}
               <div className="border-b border-line pb-3">
-                <p className="font-body text-sm font-semibold text-ink">{selected.name}</p>
+                {selected.candidateId ? (
+                  <Link href={`/dashboard/ats/candidates/${selected.candidateId}`} className="ds-focus font-body text-sm font-semibold text-signal underline">
+                    {selected.name}
+                  </Link>
+                ) : (
+                  <p className="font-body text-sm font-semibold text-ink">{selected.name}</p>
+                )}
                 <p className="kpi-label text-metadata mt-0.5">{selected.location} · {t("yearsExperience", { years: selected.experienceYears })}</p>
                 <span className={`${STAGE_BADGE[selected.stage]} mt-1.5 inline-block`}>
                   {STAGE_LABELS[selected.stage]}
                 </span>
               </div>
 
-              {/* ATS Score breakdown */}
-              <AtsScoreCard score={selected.atsScore} />
+              {/* ATS Score breakdown — only when a real review score exists */}
+              {selected.scored
+                ? <AtsScoreCard score={selected.atsScore} />
+                : <p className="kpi-label text-metadata">{t("realEmpty.insufficient")}</p>}
 
               {/* Contact + meta */}
               <div className="border-t border-line pt-3 space-y-1.5">
                 {[
                   { label: t("email"),        value: selected.email           },
                   { label: t("phone"),        value: selected.phone           },
-                  { label: t("auth"),         value: selected.workAuthorization.replace(/-/g, " ") },
-                  { label: t("salary"),       value: `${formatNumber(selected.salaryExpectation, locale)} — expectation` },
                   { label: t("source"),       value: t(SOURCE_LABEL_KEY[selected.source]) },
                   { label: t("applied"),      value: selected.appliedAt       },
-                ].map(row => (
+                ].filter(row => row.value).map(row => (
                   <div key={row.label} className="flex justify-between gap-2">
                     <span className="kpi-label text-metadata flex-shrink-0">{row.label}</span>
                     <span className="font-mono text-[0.65rem] text-ink text-right truncate">{row.value}</span>
@@ -213,10 +220,12 @@ export function CandidateListClient() {
                 ))}
               </div>
 
-              <div>
-                <p className="kpi-label mb-1.5">{t("cvSummary")}</p>
-                <p className="font-body text-xs text-metadata leading-relaxed">{selected.cvSummary}</p>
-              </div>
+              {selected.cvSummary ? (
+                <div>
+                  <p className="kpi-label mb-1.5">{t("cvSummary")}</p>
+                  <p className="font-body text-xs text-metadata leading-relaxed">{selected.cvSummary}</p>
+                </div>
+              ) : null}
             </div>
           ) : (
             <div className="rounded-xl border border-line bg-surface px-4 py-8 flex flex-col items-center justify-center text-center">

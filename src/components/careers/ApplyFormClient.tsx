@@ -9,35 +9,35 @@ import { parsePublicJobDetail, type PublicJobDetail } from "./public-job-contrac
 // The dependency-free flag module: the SAME constant the server route reads,
 // without pulling Prisma/pg into the client bundle (see acceptance-flag.ts).
 import { APPLICATION_ACCEPTANCE_AUTHORIZED } from "@/lib/ats/acceptance-flag";
+import { Stage1ApplicationForm } from "./Stage1ApplicationForm";
 
 /**
- * PHASE 104-B1.3 — the public application surface, closed honestly.
+ * The public application surface.
  *
- * WHY THERE IS NO FORM HERE
- * -------------------------
- * The server refuses every application:
+ * ORDER OF TRUTH
+ * --------------
+ * The posting is verified FIRST, in the active locale, against the database
+ * (`source === "db"`); an outage, an unknown posting and a posting that is not
+ * published in this language each get their own honest answer and NO fields.
+ * Only a verified posting reaches the owner gate:
  *
- *   APPLICATION_ACCEPTANCE_AUTHORIZED     = false   (owner gate, B1)
- *   APPLICATION_ORCHESTRATION_IMPLEMENTED = NO      (B2 work)
+ *   APPLICATION_ACCEPTANCE_AUTHORIZED = false → the honest "not accepting"
+ *     state: no fields, no submit control, no claim of receipt or contact;
+ *   APPLICATION_ACCEPTANCE_AUTHORIZED = true  → the Stage-1 form
+ *     (`./Stage1ApplicationForm`), built on `./stage1-contract` and validated
+ *     with the server's own `stage1ApplicationSchema`.
  *
- * A form that collects a person's name, e-mail and résumé and then posts them
- * into a guaranteed refusal is not a form — it is a way of taking data under a
- * false impression. So while acceptance is off this component offers NO
- * fields, NO submit control and NO application CTA, and makes NO claim of
- * receipt or later contact. It says the one true thing: applications are not
- * open for this position.
+ * The flag is the SAME constant the server route reads, so the two cannot
+ * disagree. Nothing in this file can bypass the route: it still refuses, with
+ * one generic answer, when the organization's intake is closed, no approved
+ * retention policy is in effect, or the posting stops being eligible.
  *
  * WHAT WAS REMOVED (retired contract, B1.3 §1)
  * --------------------------------------------
- * The previous version implemented the pre-B1 vocabulary — `name`,
- * `location`, `coverLetter`, `totalYearsExp`, `skills` and a
- * `workAuthorization` select defaulting to `"citizen"` — none of which the
- * server's `.strict()` Stage-1 schema accepts, and the last of which invented
- * a legal fact about the applicant. It also posted without an idempotency key
- * and verified the posting without a locale. All of it is DELETED, not
- * hidden: the future contract lives in `./stage1-contract` (pure, tested,
- * unwired), and enabling it is a B2 SERVER change — no edit to this file can
- * bypass the route's refusal.
+ * The pre-B1 vocabulary — `name`, `location`, `coverLetter`, `totalYearsExp`,
+ * `skills` and a `workAuthorization` select defaulting to `"citizen"` — is
+ * DELETED, not hidden; the server's `.strict()` schema rejects every one of
+ * those keys, and the last of them invented a legal fact about the applicant.
  */
 
 type VerifyState =
@@ -138,12 +138,10 @@ export function ApplyFormClient({ jobId }: { jobId: string }) {
   const job = state.job;
 
   /*
-   * The posting is real and published — and applications are still not being
-   * accepted. This branch is deliberately unconditional on the client: the flag
+   * The posting is real and published — but the owner gate is closed. The flag
    * is the SAME constant the server route reads (`@/lib/ats/acceptance-flag`,
-   * which `@/lib/ats/application` re-exports rather than redeclares), so the
-   * two cannot disagree; and there is no `else` that renders a form, because no
-   * correct form exists until B2 ships the orchestration.
+   * which `@/lib/ats/application` re-exports rather than redeclares), so while
+   * it is false no field is ever rendered.
    */
   if (!APPLICATION_ACCEPTANCE_AUTHORIZED) {
     return (
@@ -166,17 +164,6 @@ export function ApplyFormClient({ jobId }: { jobId: string }) {
     );
   }
 
-  /*
-   * Unreachable while the gate above holds. When B2 enables acceptance it
-   * builds the Stage-1 form on `./stage1-contract` — the payload builder and
-   * the Web Crypto idempotency key that already match the server schema
-   * exactly — and wires it to the orchestrated route. Rendering the honest
-   * state is the correct behaviour for every state this stage can reach.
-   */
-  return (
-    <div className="mx-auto max-w-xl py-20 text-center">
-      <h1 className="type-page-title mb-3">{t("notAcceptingTitle")}</h1>
-      <p className="mx-auto max-w-md text-sm leading-relaxed text-muted">{t("notAcceptingBody")}</p>
-    </div>
-  );
+  // Verified, published in this locale, and the owner gate is open.
+  return <Stage1ApplicationForm jobId={jobId} jobTitle={job.title} locale={locale} />;
 }

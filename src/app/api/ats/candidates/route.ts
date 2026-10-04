@@ -1,89 +1,75 @@
-import { NextResponse }      from "next/server";
-import type { NextRequest }   from "next/server";
-import { getAuthRole }        from "@/lib/auth/rbac-server";
-import { can }                from "@/lib/auth/roles";
-import { CANDIDATES, JOBS }  from "@/lib/ats/mock-data";
-import { scoreCandidate }    from "@/lib/ats/scoring";
-import type { Candidate, PipelineStage } from "@/lib/ats/types";
-import { requireRecruitmentReader, RECRUITMENT_NO_STORE } from "@/lib/ats/management-guard";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { requireAtsActor } from "@/lib/ats/rbac";
+import { correlationOf } from "@/lib/ats/positions/http";
+import { REQUEST_ID_HEADER } from "@/lib/logger/correlation";
+import { getAtsCandidates } from "@/lib/ats/dashboard";
+import type { PipelineStage } from "@/lib/ats/types";
 
 /**
- * Internal candidate listing — a MANAGEMENT surface.
+ * Internal candidate listing — REAL, tenant-scoped.
  *
- * The POST below has been authorized since Phase 86C4B2B1D-SECURITY-8, but the
- * GET beside it answered any anonymous caller and returned whole candidate
- * records. That asymmetry is now closed: both verbs gate on the same
- * capability.
+ * The rows come only from this organization's live applications (see
+ * `@/lib/ats/dashboard`), reached THROUGH `AtsApplication` because
+ * `AtsCandidate` carries no organization of its own. Erased, anonymised and
+ * soft-deleted rows are excluded at the query level, so a candidate who has
+ * been erased never appears here or in search. A fresh organization gets an
+ * empty list. No fixture is imported; a store fault is a controlled 503.
  *
- * STILL FIXTURE-BACKED, and NOT tenant-scoped. Note that `AtsCandidate` has no
- * `organizationId` column at all — a real listing must reach candidates THROUGH
- * `AtsApplication`, which is where the tenant lives. A future change that
- * queries `atsCandidate.findMany()` directly would have no organization
- * predicate available to it and would cross tenants by construction.
+ * There is no fixture-backed candidate CREATE: real applications arrive only
+ * through the public `/api/careers/apply` intake, so POST answers 501 rather
+ * than minting an invented person.
  */
+const NO_STORE = { "Cache-Control": "no-store" } as const;
+
+const STAGES: PipelineStage[] = ["applied", "screening", "technical-review", "interview", "offer", "hired", "rejected"];
+
 export async function GET(req: NextRequest) {
-  const reader = await requireRecruitmentReader(req);
-  if (!reader.ok) return reader.response;
+  const actor = await requireAtsActor(req, "ATS_VIEW");
+  if (!actor.ok) return actor.response;
 
+  const correlationId = correlationOf(req);
   const { searchParams } = new URL(req.url);
-  const jobId    = searchParams.get("jobId");
-  const stage    = searchParams.get("stage") as PipelineStage | null;
+  const stageParam = searchParams.get("stage");
+  const stage = stageParam && (STAGES as string[]).includes(stageParam) ? (stageParam as PipelineStage) : undefined;
+
+  const rows = await getAtsCandidates(actor.ctx.orgId, stage ? { stage } : undefined);
+  if (rows === null) {
+    return NextResponse.json(
+      { error: "Recruitment data is temporarily unavailable.", code: "STORE_UNAVAILABLE", correlationId },
+      { status: 503, headers: { ...NO_STORE, [REQUEST_ID_HEADER]: correlationId } },
+    );
+  }
+
+  const jobId = searchParams.get("jobId");
   const minScore = searchParams.get("minScore");
-
-  let candidates = [...CANDIDATES];
-  if (jobId)    candidates = candidates.filter(c => c.jobId === jobId);
-  if (stage)    candidates = candidates.filter(c => c.stage === stage);
-  if (minScore) candidates = candidates.filter(c => c.atsScore.total >= Number(minScore));
-
-  candidates.sort((a, b) => b.atsScore.total - a.atsScore.total);
+  let candidates = rows;
+  if (jobId) candidates = candidates.filter((c) => c.jobId === jobId);
+  if (minScore) {
+    const n = Number(minScore);
+    if (Number.isFinite(n)) candidates = candidates.filter((c) => c.scored && c.atsScore.total >= n);
+  }
+  candidates = [...candidates].sort((a, b) => b.atsScore.total - a.atsScore.total);
 
   return NextResponse.json(
     { candidates, total: candidates.length },
-    { headers: RECRUITMENT_NO_STORE },
+    { headers: { ...NO_STORE, [REQUEST_ID_HEADER]: correlationId } },
   );
 }
 
 export async function POST(req: NextRequest) {
-  // Phase 86C4B2B1D-SECURITY-8: internal ATS candidate creation (recruiter
-  // side). Public applications go through /api/careers/apply. Authorize before
-  // reading the body.
-  const role = await getAuthRole(req);
-  if (!role) {
-    return NextResponse.json({ error: "Authentication required" }, { status: 401, headers: { "Cache-Control": "no-store" } });
-  }
-  if (!can(role, "authoring")) {
-    return NextResponse.json({ error: "Insufficient permissions" }, { status: 403, headers: { "Cache-Control": "no-store" } });
-  }
-
-  const body: Partial<Candidate> = await req.json();
-  const job = body.jobId ? JOBS.find(j => j.id === body.jobId) : null;
-
-  const created: Candidate = {
-    id:                 `cand-${Date.now()}`,
-    jobId:              body.jobId              ?? "",
-    name:               body.name               ?? "Unknown",
-    email:              body.email              ?? "",
-    phone:              body.phone              ?? "",
-    location:           body.location           ?? "",
-    workAuthorization:  body.workAuthorization  ?? "citizen",
-    experienceYears:    body.experienceYears    ?? 0,
-    skills:             body.skills             ?? [],
-    cvSummary:          body.cvSummary          ?? "",
-    source:             body.source             ?? "direct",
-    stage:              "applied",
-    salaryExpectation:  body.salaryExpectation  ?? 0,
-    appliedAt:          new Date().toISOString().split("T")[0],
-    atsScore: job
-      ? scoreCandidate(job, {
-          jobId:              body.jobId             ?? "",
-          location:           body.location          ?? "",
-          workAuthorization:  body.workAuthorization ?? "citizen",
-          experienceYears:    body.experienceYears   ?? 0,
-          skills:             body.skills            ?? [],
-          salaryExpectation:  body.salaryExpectation ?? 0,
-        })
-      : { total: 0, skillScore: 0, experienceScore: 0, locationScore: 0, authorizationScore: 0, salaryScore: 0, industryScore: 0, riskFlags: [], explanations: [] },
-  };
-
-  return NextResponse.json(created, { status: 201 });
+  // Authorize before doing anything else (anti-enumeration), then refuse: there
+  // is no internal candidate creation in production. Candidates enter only
+  // through the public application intake, which runs the full gate chain.
+  const actor = await requireAtsActor(req, "ATS_ADMIN");
+  if (!actor.ok) return actor.response;
+  const correlationId = correlationOf(req);
+  return NextResponse.json(
+    {
+      error: "Candidates are created only through the public application intake.",
+      code: "NOT_IMPLEMENTED",
+      correlationId,
+    },
+    { status: 501, headers: { ...NO_STORE, [REQUEST_ID_HEADER]: correlationId } },
+  );
 }

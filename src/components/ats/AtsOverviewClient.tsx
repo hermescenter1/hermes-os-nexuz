@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect }  from "react";
+import { useState, useEffect }  from "react";
+
 import { useTranslations } from "next-intl";
 import type { AtsOverview, PipelineStage } from "@/lib/ats/types";
 import { STAGE_LABELS, STAGE_ORDER } from "@/lib/ats/types";
@@ -71,6 +72,9 @@ export function AtsOverviewClient() {
 
   return (
     <div className="flex flex-col gap-5">
+      {data.totalCandidates === 0 ? (
+        <p className="kpi-label text-metadata">{t("realEmpty.body")}</p>
+      ) : null}
 
       {/* KPI strip */}
       <div className="global-ops-strip">
