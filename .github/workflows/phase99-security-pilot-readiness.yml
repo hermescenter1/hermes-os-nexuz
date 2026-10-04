@@ -59,7 +59,15 @@ jobs:
         run: npm run lint
       - name: Route-security inventory is up to date
         run: npm run security:phase99:inventory:check
+      # The LIVE review is written to its own path. The committed
+      # docs/security/phase99-dependency-review.json is the historical Phase 99
+      # record that the sha-pinned retest asserts against and the P99-DEP-*
+      # findings cite; a live regeneration must never overwrite it. Only this step
+      # and the readiness step below see the variable — `npm test` does not, so it
+      # reads the committed record exactly as ci.yml does.
       - name: Dependency review (npm audit, sanitized artifact)
+        env:
+          PHASE99_DEPENDENCY_REVIEW_PATH: phase99-dependency-review.live.json
         run: npm run security:phase99:deps
       - name: Prior-phase governance evaluations (offline)
         run: |
@@ -68,6 +76,9 @@ jobs:
           npm run eval:phase97
           npm run eval:phase98
       - name: Phase 99 internal readiness evaluation (offline, fail-closed)
+        env:
+          # Evaluate exactly the live review generated above; missing => FAIL.
+          PHASE99_DEPENDENCY_REVIEW_PATH: phase99-dependency-review.live.json
         run: npm run eval:phase99:readiness
       - name: Pilot incident rehearsal (offline, non-destructive)
         run: npm run rehearse:phase99:incident
@@ -87,7 +98,7 @@ jobs:
           path: |
             phase99-readiness.json
             docs/security/phase99-route-security-inventory.json
-            docs/security/phase99-dependency-review.json
+            phase99-dependency-review.live.json
           if-no-files-found: warn
 
   phase99-security-tests:
