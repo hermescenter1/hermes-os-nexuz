@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "kind": "ADDITIVE_GOVERNED_DEPENDENCY_RETEST_EVIDENCE",
+  "note": "Additive record. It does NOT rewrite the historical Phase 99 finding register (docs/security/phase99-findings.json) or the retest sha256 pinned there; it records, alongside them, the governed dependency-audit state that followed. Verified by scripts/__tests__/phase99-dependency-governed-retest.test.ts against the repository and the live npm audit, through scripts/ci/dependency-audit-gate.mjs.",
+  "baseCommit": "11a94dadeb593524bdb1d4de7c7bc5e79b2bfac3",
+  "baseCommitMeaning": "The commit that introduced the governed gate, the exception manifest and the dependency state recorded here.",
+  "historicalRetest": {
+    "path": "scripts/__tests__/phase99-dependency-remediation.test.ts",
+    "sha256": "bad1fd80088d5648b3ec79ea02a49615b474a1f8a2cc02dd015926f018fa2c1f",
+    "registerEvidenceHash": "bad1fd80088d5648b3ec79ea02a49615b474a1f8a2cc02dd015926f018fa2c1f",
+    "register": "docs/security/phase99-findings.json",
+    "findings": [
+      "P99-DEP-001",
+      "P99-DEP-002",
+      "P99-DEP-003",
+      "P99-DEP-004",
+      "P99-DEP-005",
+      "P99-DEP-006",
+      "P99-DEP-007",
+      "P99-DEP-013",
+      "P99-DEP-014"
+    ],
+    "status": "HISTORICAL_UNCHANGED"
+  },
+  "governedRetest": {
+    "path": "scripts/__tests__/phase99-dependency-governed-retest.test.ts",
+    "sha256": "079f1ddee2a5e115889ecf6dd0fa419b92fd2e349db182fa4c0bef33460d1bc6",
+    "gate": "scripts/ci/dependency-audit-gate.mjs",
+    "manifest": "docs/security/dependency-audit-exceptions.json"
+  },
+  "productionAudit": {
+    "critical": 0,
+    "high": 0
+  },
+  "fullTreeAudit": {
+    "critical": 0
+  },
+  "acceptedDevOnlyHighCount": 7,
+  "acceptedDevOnlyHigh": [
+    {
+      "package": "braces",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/braces"
+      ],
+      "inheritedFrom": [],
+      "devOnly": true,
+      "expires": "2026-11-02",
+      "status": "ACCEPTED_TEMPORARY_DEV_ONLY_RISK"
+    },
+    {
+      "package": "micromatch",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/micromatch"
+      ],
+      "inheritedFrom": [
+        "braces"
+      ],
+      "devOnly": true,
+      "expires": "2026-11-02",
+      "status": "ACCEPTED_TEMPORARY_DEV_ONLY_RISK"
+    },
+    {
+      "package": "chokidar",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/chokidar"
+      ],
+      "inheritedFrom": [
+        "braces"
+      ],
+      "devOnly": true,
+      "expires": "2026-11-02",
+      "status": "ACCEPTED_TEMPORARY_DEV_ONLY_RISK"
+    },
+    {
+      "package": "fast-glob",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/@next/eslint-plugin-next/node_modules/fast-glob",
+        "node_modules/fast-glob"
+      ],
+      "inheritedFrom": [
+        "micromatch"
+      ],
+      "devOnly": true,
+      "expires": "2026-11-02",
+      "status": "ACCEPTED_TEMPORARY_DEV_ONLY_RISK"
+    },
+    {
+      "package": "tailwindcss",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/tailwindcss"
+      ],
+      "inheritedFrom": [
+        "chokidar",
+        "fast-glob",
+        "micromatch"
+      ],
+      "devOnly": true,
+      "expires": "2026-11-02",
+      "status": "ACCEPTED_TEMPORARY_DEV_ONLY_RISK"
+    },
+    {
+      "package": "@next/eslint-plugin-next",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/@next/eslint-plugin-next"
+      ],
+      "inheritedFrom": [
+        "fast-glob"
+      ],
+      "devOnly": true,
+      "expires": "2026-11-02",
+      "status": "ACCEPTED_TEMPORARY_DEV_ONLY_RISK"
+    },
+    {
+      "package": "eslint-config-next",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/eslint-config-next"
+      ],
+      "inheritedFrom": [
+        "@next/eslint-plugin-next"
+      ],
+      "devOnly": true,
+      "expires": "2026-11-02",
+      "status": "ACCEPTED_TEMPORARY_DEV_ONLY_RISK"
+    }
+  ],
+  "expires": "2026-11-02",
+  "notFixed": true,
+  "remediationSummary": "The 7 HIGH findings recorded here are NOT fixed. All of them rest on one root advisory, GHSA-vfj7-8cjw-p6xm (stack-exhaustion DoS in braces), for which no safe published release exists in the current compatible dependency line; they reach the tree only through dev, build and lint tooling (tailwindcss 3, eslint-config-next 15 and their glob dependencies) and are unreachable from production. They are accepted temporarily, as time-bounded dev-only risk, until 2026-11-02 inclusive; from the following day the governed gate fails them as EXCEPTION_EXPIRED. Production dependencies carry 0 critical and 0 high. Closing them requires the separately reviewed Tailwind 4 and upstream Next ESLint transitions."
+}

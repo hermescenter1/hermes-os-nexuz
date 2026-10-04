@@ -156,11 +156,37 @@ describe("with acceptance ON — the orchestrated path", () => {
     const res = await apply(applyReq(validBody()));
     expect(res.status).toBe(202);
     expect(res.headers.get("cache-control")).toBe("no-store");
-    const body = await res.json();
-    expect(Object.keys(body).sort()).toEqual(["received", "reference"]);
-    expect(body.received).toBe(true);
-    expect(body.reference).toMatch(/^ats_/);
-    expect(JSON.stringify(body)).not.toMatch(/a-1|c-1|jane|Doe|applicationId/i);
+    // Check the parsed STRUCTURE exactly. A substring search over the serialised
+    // body is not a valid privacy check here: the reference is 16 random bytes in
+    // base64url, so it contains "C-1", "doe" or "jane" by chance in ~0.1% of runs
+    // and would fail a correct response.
+    const body = JSON.parse(await res.text()) as unknown;
+    expect(body !== null && typeof body === "object" && !Array.isArray(body)).toBe(true);
+    const record = body as Record<string, unknown>;
+    // Exactly these two keys, nothing else.
+    expect(Object.keys(record).sort()).toEqual(["received", "reference"]);
+    expect(record.received).toBe(true);
+    // No row id and no submitted field comes back, under any name.
+    for (const field of [
+      "id", "applicationId", "candidateId", "jobId", "organizationId", "publicReference",
+      "fullName", "name", "email", "privacyNoticeAcknowledged", "accuracyConfirmed",
+    ]) {
+      expect(record, `the response must not carry ${field}`).not.toHaveProperty(field);
+    }
+    // The reference is opaque: exactly what intake.ts mints ("ats_" + 16 random
+    // bytes, base64url, unpadded = 22 characters)...
+    expect(typeof record.reference).toBe("string");
+    const reference = record.reference as string;
+    expect(reference).toMatch(/^ats_[A-Za-z0-9_-]{22}$/);
+    // ...and it is not a fixture row id, the idempotency key or a submitted value.
+    const fixtureValues = [
+      "a-1", "c-1", "c-old", "job-1", "org-1", "rp-1", "i-1", KEY,
+      ...Object.values(validBody()).filter((v): v is string => typeof v === "string"),
+    ];
+    for (const value of fixtureValues) {
+      expect(reference).not.toBe(value);
+      expect(reference.slice("ats_".length)).not.toBe(value);
+    }
     expect(store.writes).toEqual(["idem", "candidate", "application", "consent", "consent", "event", "application.update", "event", "outbox", "audit"]);
   });
 
