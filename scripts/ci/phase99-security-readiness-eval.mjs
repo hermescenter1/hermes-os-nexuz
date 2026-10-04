@@ -41,7 +41,8 @@ import {
 import { buildRouteInventory, summarizeInventory, stripComments } from "../security/phase99/route-inventory.mjs";
 import { analyzeTenantPredicates } from "../security/phase99/tenant-predicates.mjs";
 import { evaluateRegistry } from "../security/phase99/finding-contract.mjs";
-import { scanPhase99Artifacts } from "../security/phase99/data-hygiene.mjs";
+import { scanPhase99Artifacts, DEFAULT_ROOTS as HYGIENE_ROOTS } from "../security/phase99/data-hygiene.mjs";
+import { resolveDependencyReviewPath } from "../security/phase99/dependency-review-path.mjs";
 import {
   computeScopeHash,
   validateExternalAttestation,
@@ -241,8 +242,17 @@ group("SQL_INJECTION", ({ check, note }) => {
 
 // ── 14. Dependency review ─────────────────────────────────────────────────────
 group("DEPENDENCY_REVIEW", ({ check, blockOwner, note }) => {
-  const dep = readJson("docs/security/phase99-dependency-review.json");
-  check(dep !== null, "dependency-review artifact missing — run scripts/ci/phase99-dependency-review.mjs");
+  // Exactly the review this run was told to evaluate: the live file CI generated
+  // (PHASE99_DEPENDENCY_REVIEW_PATH), or the committed record when unset. An
+  // invalid or missing path FAILS — it never falls back to the committed record.
+  const target = resolveDependencyReviewPath();
+  if (!target.ok) {
+    check(false, target.error);
+    return;
+  }
+  note("source", { path: target.path, live: target.live });
+  const dep = readJson(target.path);
+  check(dep !== null, `dependency-review artifact missing or unreadable at ${target.path} — run scripts/ci/phase99-dependency-review.mjs`);
   if (!dep) return;
   note("totals", dep.totals);
   check(dep.totals.all.UNKNOWN === 0, "an advisory severity could not be mapped");
@@ -413,7 +423,11 @@ group("SLA_DRAFT", ({ check }) => {
 
 // ── 24. Public-repository data hygiene ────────────────────────────────────────
 group("PUBLIC_REPO_DATA_HYGIENE", ({ check, note }) => {
-  const scan = scanPhase99Artifacts(REPO);
+  // A live dependency review written outside docs/security/ is still a published
+  // Phase 99 artifact (CI uploads it), so it stays inside the hygiene guarantee.
+  const review = resolveDependencyReviewPath();
+  const roots = review.ok && review.live ? [...HYGIENE_ROOTS, review.path] : HYGIENE_ROOTS;
+  const scan = scanPhase99Artifacts(REPO, roots);
   note("filesScanned", scan.filesScanned);
   check(scan.filesScanned > 0, "hygiene scanner found nothing to scan");
   for (const v of scan.violations) check(false, `${v.file}:${v.line} — ${v.why} (${v.rule})`);
