@@ -12,6 +12,8 @@ const SCORE_COLOR = (s: number) =>
 
 const COL_ACCENT: Record<PipelineStage, string> = {
   applied:            "border-t-muted",
+  "ai-review":        "border-t-ice",
+  "pending-approval": "border-t-warn",
   screening:          "border-t-ice",
   "technical-review": "border-t-ice",
   interview:          "border-t-warn",
@@ -22,6 +24,8 @@ const COL_ACCENT: Record<PipelineStage, string> = {
 
 const COL_COUNT_COLOR: Record<PipelineStage, string> = {
   applied:            "text-muted",
+  "ai-review":        "text-ice",
+  "pending-approval": "text-warn",
   screening:          "text-ice",
   "technical-review": "text-ice",
   interview:          "text-warn",

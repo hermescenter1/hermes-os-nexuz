@@ -9777,6 +9777,56 @@
     "yearsExpShort": "{years} J. Erf.",
     "yearsExperience": "{years} Jahre Erfahrung",
     "navSettings": "Einstellungen",
+    "reviewPanel": {
+      "title": "Ergebnis der KI-Prüfung",
+      "empty": "Für diese Bewerbung wurde noch keine KI-Prüfung abgeschlossen.",
+      "advisory": "Dieser Bericht ist beratend. Keine Stufenänderung ohne eine dokumentierte menschliche Entscheidung.",
+      "applicationStatus": "Bewerbungsstatus",
+      "awaitingDecision": "Wartet auf eine menschliche Entscheidung",
+      "noDecisionNeeded": "Keine menschliche Entscheidung offen",
+      "overallScore": "Gesamtbewertung",
+      "notScored": "Nicht bewertet",
+      "confidence": "Zuverlässigkeit",
+      "recommendation": "Empfehlung",
+      "completedAt": "Abgeschlossen am",
+      "provider": "Anbieter",
+      "cycle": "Zyklus",
+      "dimensionsTitle": "Bewertung je Dimension",
+      "hardGatesTitle": "Harte Ausschlusskriterien",
+      "hardGatesSummary": "{passed} erfüllt · {failed} nicht erfüllt · {unknown} unbekannt",
+      "evidenceTitle": "Nachweise",
+      "missingTitle": "Fehlende Nachweise",
+      "riskFlagsTitle": "Risikohinweise",
+      "versionsTitle": "Versionen",
+      "explanationTitle": "Begründung",
+      "matchedLabel": "{matched} von {total}",
+      "weightLabel": "Gewicht {weight}",
+      "recommendations": {
+        "ADVANCE": "Weiterführen",
+        "REVIEW_REQUIRED": "Prüfung erforderlich",
+        "HOLD": "Zurückstellen",
+        "REJECT_RECOMMENDED": "Ablehnung empfohlen"
+      },
+      "dimensions": {
+        "skill": "Fachkenntnisse",
+        "experience": "Berufserfahrung",
+        "education": "Ausbildung",
+        "certification": "Zertifizierungen",
+        "project": "Projekte",
+        "roleRelevance": "Rollenrelevanz"
+      }
+    },
+    "stageNames": {
+      "applied": "Eingegangen",
+      "aiReview": "KI-Prüfung",
+      "pendingApproval": "Freigabe ausstehend",
+      "screening": "Vorauswahl",
+      "technicalReview": "Technische Prüfung",
+      "interview": "Gespräch",
+      "offer": "Angebot",
+      "hired": "Eingestellt",
+      "rejected": "Abgelehnt"
+    },
     "mgmt": {
       "status": {
         "DRAFT": "Entwurf",

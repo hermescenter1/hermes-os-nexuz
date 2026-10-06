@@ -9777,6 +9777,56 @@
     "yearsExpShort": "{years} سال تجربه",
     "yearsExperience": "{years} سال تجربه",
     "navSettings": "تنظیمات",
+    "reviewPanel": {
+      "title": "نتیجهٔ بازبینی هوش مصنوعی",
+      "empty": "هنوز هیچ بازبینی هوش مصنوعی برای این درخواست تکمیل نشده است.",
+      "advisory": "این گزارش مشورتی است. هیچ تغییر مرحله‌ای بدون تصمیم ثبت‌شدهٔ انسانی رخ نمی‌دهد.",
+      "applicationStatus": "وضعیت درخواست",
+      "awaitingDecision": "در انتظار تصمیم انسانی",
+      "noDecisionNeeded": "تصمیم انسانی در انتظار نیست",
+      "overallScore": "امتیاز کل",
+      "notScored": "امتیازدهی نشده",
+      "confidence": "اطمینان",
+      "recommendation": "توصیه",
+      "completedAt": "زمان تکمیل",
+      "provider": "ارائه‌دهنده",
+      "cycle": "چرخه",
+      "dimensionsTitle": "امتیاز هر بُعد",
+      "hardGatesTitle": "شرط‌های قطعی",
+      "hardGatesSummary": "{passed} قبول · {failed} رد · {unknown} نامعلوم",
+      "evidenceTitle": "شواهد",
+      "missingTitle": "شواهد ناموجود",
+      "riskFlagsTitle": "نشانه‌های ریسک",
+      "versionsTitle": "نسخه‌ها",
+      "explanationTitle": "توضیح",
+      "matchedLabel": "{matched} از {total}",
+      "weightLabel": "وزن {weight}",
+      "recommendations": {
+        "ADVANCE": "پیشروی",
+        "REVIEW_REQUIRED": "نیازمند بازبینی",
+        "HOLD": "نگه داشتن",
+        "REJECT_RECOMMENDED": "رد پیشنهاد می‌شود"
+      },
+      "dimensions": {
+        "skill": "مهارت‌ها",
+        "experience": "تجربه",
+        "education": "تحصیلات",
+        "certification": "گواهی‌نامه‌ها",
+        "project": "پروژه‌ها",
+        "roleRelevance": "تناسب با نقش"
+      }
+    },
+    "stageNames": {
+      "applied": "دریافت‌شده",
+      "aiReview": "بازبینی هوش مصنوعی",
+      "pendingApproval": "در انتظار تأیید",
+      "screening": "بررسی اولیه",
+      "technicalReview": "بررسی فنی",
+      "interview": "مصاحبه",
+      "offer": "پیشنهاد کاری",
+      "hired": "استخدام‌شده",
+      "rejected": "رد شده"
+    },
     "mgmt": {
       "status": {
         "DRAFT": "پیش‌نویس",

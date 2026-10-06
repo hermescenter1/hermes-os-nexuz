@@ -18,6 +18,53 @@ import { atsRead, atsMutate } from "@/components/ats/management/client-api";
 /** The exact phrase the operator must type — never translated. */
 const CONFIRMATION = "ERASE CANDIDATE";
 
+/** PipelineStage slug → the `ats.stageNames` key. Kept exhaustive on purpose:
+ *  an unmapped stage falls back to the raw slug, which is exactly the kind of
+ *  untranslated machine value this hotfix exists to remove. */
+const STAGE_KEY: Record<string, string> = {
+  applied: "applied",
+  "ai-review": "aiReview",
+  "pending-approval": "pendingApproval",
+  screening: "screening",
+  "technical-review": "technicalReview",
+  interview: "interview",
+  offer: "offer",
+  hired: "hired",
+  rejected: "rejected",
+};
+
+/** Report dimension code → the `ats.reviewPanel.dimensions` key. */
+const DIMENSION_KEY: Record<string, string> = {
+  skill: "skill",
+  experience: "experience",
+  education: "education",
+  certification: "certification",
+  project: "project",
+  role_relevance: "roleRelevance",
+};
+
+const RECOMMENDATIONS = new Set(["ADVANCE", "REVIEW_REQUIRED", "HOLD", "REJECT_RECOMMENDED"]);
+
+interface ReviewSummary {
+  id: string;
+  cycle: number;
+  provider: string;
+  recommendation: string;
+  overallScore: number | null;
+  confidence: number | null;
+  hardGates: { passed: number; failed: number; unknown: number };
+  riskFlagCount: number;
+  completedAt: string;
+  versions: { extractor: string; rubric: string; prompt: string; policy: string; model: string | null };
+  dimensionScores: { dimension: string; score: number | null; weightApplied: number; matched: number; total: number }[];
+  hardGateResults: { criterionCode: string; label: string; outcome: string; note: string }[];
+  evidence: { criterionCode: string; label: string; source: string; quote: string; confidence: string }[];
+  missingEvidence: { label: string; ask: string }[];
+  riskFlags: { code: string; note: string }[];
+  explanation: string | null;
+  requiresHumanDecision: boolean;
+}
+
 interface CandidateDetail {
   id: string;
   name: string;
@@ -27,8 +74,16 @@ interface CandidateDetail {
   erased: boolean;
   stage: string | null;
   appliedAt: string | null;
+  latestApplication: {
+    id: string;
+    status: string;
+    stage: string;
+    appliedAt: string;
+    awaitingHumanDecision: boolean;
+  } | null;
+  latestReview: ReviewSummary | null;
   counts: { applications: number; interviews: number; reviews: number };
-  audit: { action: string; createdAt: string; byName: string | null }[];
+  audit: { action: string; entityType: string; createdAt: string; byName: string | null }[];
   canErase: boolean;
 }
 
@@ -36,6 +91,8 @@ type View = "loading" | "ready" | "notFound" | "denied" | "error";
 
 export function CandidateDetailClient({ candidateId }: { candidateId: string }) {
   const t = useTranslations("ats.erase");
+  const tr = useTranslations("ats.reviewPanel");
+  const ts = useTranslations("ats.stageNames");
   const [detail, setDetail] = useState<CandidateDetail | null>(null);
   const [view, setView] = useState<View>("loading");
   const [tick, setTick] = useState(0);
@@ -64,6 +121,11 @@ export function CandidateDetailClient({ candidateId }: { candidateId: string }) 
   if (view === "error" || !detail) return <Shell t={t}><p role="alert" className="kpi-label text-danger py-8 text-center">{t("errorGeneric")}</p></Shell>;
 
   const d = detail;
+  // A stage this build does not know is shown as its raw slug rather than
+  // mislabelled: a wrong stage name is worse than an unfamiliar one.
+  const stageKey = d.stage ? STAGE_KEY[d.stage] : undefined;
+  const stageLabel = stageKey ? ts(stageKey) : d.stage;
+  const review = d.latestReview;
   return (
     <Shell t={t}>
       {d.erased ? (
@@ -81,7 +143,11 @@ export function CandidateDetailClient({ candidateId }: { candidateId: string }) 
               [t("emailLabel"), d.email],
               [t("phoneLabel"), d.phone],
               [t("locationLabel"), d.location],
-              [t("stageLabel"), d.stage],
+              [t("stageLabel"), stageLabel],
+              // The database value itself, beside the rendered stage. The two
+              // can no longer disagree, and an operator reading a support
+              // ticket can quote the status the row actually holds.
+              [tr("applicationStatus"), d.latestApplication?.status ?? null],
               [t("appliedLabel"), d.appliedAt ? new Date(d.appliedAt).toISOString().slice(0, 10) : null],
             ] as const).filter(([, v]) => v).map(([label, value]) => (
               <div key={label} className="flex justify-between gap-2">
@@ -103,6 +169,8 @@ export function CandidateDetailClient({ candidateId }: { candidateId: string }) 
             </div>
           ) : null}
         </section>
+
+        <ReviewPanel tr={tr} review={review} awaiting={d.latestApplication?.awaitingHumanDecision ?? false} />
 
         <aside className="flex flex-col gap-5">
           <section className="rounded-xl border border-line bg-surface p-5">
@@ -129,8 +197,14 @@ export function CandidateDetailClient({ candidateId }: { candidateId: string }) 
               <ul className="space-y-1.5">
                 {d.audit.map((a, i) => (
                   <li key={i} className="flex justify-between gap-2">
-                    <span className="font-mono text-[0.65rem] text-ink">{a.action}</span>
-                    <span className="kpi-label text-metadata">{new Date(a.createdAt).toISOString().slice(0, 10)}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-mono text-[0.65rem] text-ink">{a.action}</span>
+                      {/* entityType is a model name, not prose: it is the same
+                          class of technical identifier as the action above and
+                          stays verbatim in every locale. */}
+                      <span className="kpi-label text-metadata block font-mono text-[0.6rem]" dir="ltr">{a.entityType}</span>
+                    </span>
+                    <span className="kpi-label text-metadata shrink-0">{new Date(a.createdAt).toISOString().slice(0, 10)}</span>
                   </li>
                 ))}
               </ul>
@@ -149,6 +223,211 @@ export function CandidateDetailClient({ candidateId }: { candidateId: string }) 
         />
       ) : null}
     </Shell>
+  );
+}
+
+/**
+ * ATS review-visibility hotfix — the AI review result, on the page.
+ *
+ * `GET /api/ats/applications/[id]/review` has returned this evidence since
+ * ATS-S1 and no surface consumed it, so a completed review was invisible: the
+ * candidate page showed only a count of reviews, and nothing told a recruiter
+ * that a decision was waiting on them. Everything here is read from the stored
+ * report; nothing is derived, inferred or re-scored in the browser.
+ *
+ * The report is ADVISORY. This panel states that, shows that a human decision
+ * is required when the application is in PENDING_HUMAN_APPROVAL, and offers no
+ * accept/reject control: a decision is recorded through
+ * `POST /api/ats/applications/[id]/decision`, which requires a written reason.
+ */
+function ReviewPanel({
+  tr, review, awaiting,
+}: {
+  tr: ReturnType<typeof useTranslations>;
+  review: ReviewSummary | null;
+  awaiting: boolean;
+}) {
+  return (
+    <section className="lg:col-span-2 rounded-xl border border-line bg-surface p-5">
+      <div className="h-layer-sep mb-3 flex items-center justify-between gap-3">
+        <span className="kpi-label">{tr("title")}</span>
+        {awaiting ? (
+          <span role="status" className="hs-badge hs--warning">{tr("awaitingDecision")}</span>
+        ) : null}
+      </div>
+
+      {!review ? (
+        <p className="kpi-label text-metadata py-6 text-center">{tr("empty")}</p>
+      ) : (
+        <>
+          <p className="mb-4 text-xs leading-relaxed text-muted">{tr("advisory")}</p>
+
+          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Metric
+              label={tr("overallScore")}
+              value={review.overallScore === null ? tr("notScored") : `${review.overallScore}`}
+            />
+            <Metric
+              label={tr("confidence")}
+              value={review.confidence === null ? tr("notScored") : `${review.confidence}`}
+            />
+            <Metric
+              label={tr("recommendation")}
+              value={RECOMMENDATIONS.has(review.recommendation)
+                ? tr(`recommendations.${review.recommendation}`)
+                : review.recommendation}
+            />
+            <Metric label={tr("completedAt")} value={new Date(review.completedAt).toISOString().slice(0, 16).replace("T", " ")} />
+          </div>
+
+          <div className="mb-5 space-y-1.5">
+            <Row label={tr("provider")} value={review.provider} />
+            <Row label={tr("cycle")} value={`${review.cycle}`} />
+            <Row
+              label={tr("hardGatesTitle")}
+              value={tr("hardGatesSummary", {
+                passed: review.hardGates.passed,
+                failed: review.hardGates.failed,
+                unknown: review.hardGates.unknown,
+              })}
+            />
+          </div>
+
+          {review.dimensionScores.length > 0 ? (
+            <Block title={tr("dimensionsTitle")}>
+              <ul className="space-y-2">
+                {review.dimensionScores.map((ds) => (
+                  <li key={ds.dimension}>
+                    <div className="flex justify-between gap-2">
+                      <span className="kpi-label text-metadata">
+                        {DIMENSION_KEY[ds.dimension] ? tr(`dimensions.${DIMENSION_KEY[ds.dimension]}`) : ds.dimension}
+                      </span>
+                      <span className="font-mono text-[0.7rem] text-ink">
+                        {ds.score === null ? tr("notScored") : ds.score}
+                        {" · "}
+                        {tr("matchedLabel", { matched: ds.matched, total: ds.total })}
+                        {" · "}
+                        {tr("weightLabel", { weight: ds.weightApplied })}
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1 rounded-full bg-line">
+                      <div
+                        className="h-1 rounded-full bg-ice"
+                        style={{ width: `${ds.score === null ? 0 : Math.max(0, Math.min(100, ds.score))}%` }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Block>
+          ) : null}
+
+          {review.hardGateResults.length > 0 ? (
+            <Block title={tr("hardGatesTitle")}>
+              <ul className="space-y-1.5">
+                {review.hardGateResults.map((g) => (
+                  <li key={g.criterionCode} className="flex justify-between gap-2">
+                    <span className="min-w-0 flex-1 text-xs text-ink" dir="auto">{g.label || g.criterionCode}</span>
+                    <span className="kpi-label shrink-0 font-mono text-metadata" dir="ltr">{g.outcome}</span>
+                  </li>
+                ))}
+              </ul>
+            </Block>
+          ) : null}
+
+          {review.evidence.length > 0 ? (
+            <Block title={tr("evidenceTitle")}>
+              <ul className="space-y-2">
+                {review.evidence.map((e, i) => (
+                  <li key={`${e.criterionCode}-${i}`} className="rounded-lg border border-line/60 p-2">
+                    <div className="flex justify-between gap-2">
+                      <span className="kpi-label text-metadata" dir="auto">{e.label || e.criterionCode}</span>
+                      <span className="kpi-label shrink-0 font-mono text-metadata" dir="ltr">{e.source} · {e.confidence}</span>
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-ink" dir="auto">{e.quote}</p>
+                  </li>
+                ))}
+              </ul>
+            </Block>
+          ) : null}
+
+          {review.missingEvidence.length > 0 ? (
+            <Block title={tr("missingTitle")}>
+              <ul className="space-y-1.5">
+                {review.missingEvidence.map((m, i) => (
+                  <li key={`${m.label}-${i}`} className="text-xs text-muted" dir="auto">
+                    <span className="text-ink">{m.label}</span>{m.ask ? ` — ${m.ask}` : null}
+                  </li>
+                ))}
+              </ul>
+            </Block>
+          ) : null}
+
+          {review.riskFlags.length > 0 ? (
+            <Block title={tr("riskFlagsTitle")}>
+              <ul className="space-y-1.5">
+                {review.riskFlags.map((f, i) => (
+                  <li key={`${f.code}-${i}`} className="text-xs text-muted">
+                    <span className="font-mono text-[0.65rem] text-ink" dir="ltr">{f.code}</span>
+                    {f.note ? <span dir="auto"> — {f.note}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            </Block>
+          ) : null}
+
+          {review.explanation ? (
+            <Block title={tr("explanationTitle")}>
+              <p className="text-xs leading-relaxed text-muted" dir="auto">{review.explanation}</p>
+            </Block>
+          ) : null}
+
+          <Block title={tr("versionsTitle")}>
+            <div className="space-y-1.5">
+              {([
+                ["extractor", review.versions.extractor],
+                ["rubric", review.versions.rubric],
+                ["prompt", review.versions.prompt],
+                ["policy", review.versions.policy],
+                ["model", review.versions.model],
+              ] as const).filter(([, v]) => v).map(([name, v]) => (
+                <div key={name} className="flex justify-between gap-2">
+                  <span className="kpi-label text-metadata font-mono" dir="ltr">{name}</span>
+                  <span className="font-mono text-[0.65rem] text-ink" dir="ltr">{v}</span>
+                </div>
+              ))}
+            </div>
+          </Block>
+        </>
+      )}
+    </section>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-line/60 p-2.5">
+      <p className="kpi-label text-metadata mb-1">{label}</p>
+      <p className="font-mono text-sm font-bold text-ink" dir="auto">{value}</p>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <span className="kpi-label text-metadata">{label}</span>
+      <span className="font-mono text-[0.7rem] text-ink text-right" dir="auto">{value}</span>
+    </div>
+  );
+}
+
+function Block({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mt-4 border-t border-line pt-3">
+      <p className="kpi-label text-metadata mb-2">{title}</p>
+      {children}
+    </div>
   );
 }
 

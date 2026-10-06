@@ -1,7 +1,17 @@
 export type JobStatus     = "draft" | "open" | "paused" | "closed";
 export type ContractType  = "full-time" | "part-time" | "contract" | "internship";
+/**
+ * ATS review-visibility hotfix — the stage vocabulary now carries the two
+ * machine-held states of the mandatory stage gate. They are NOT new database
+ * values: `AtsApplicationStatus` has held `AI_REVIEW_PENDING` and
+ * `PENDING_HUMAN_APPROVAL` since migration
+ * 20260923000000_ats_b2_s1_orchestration_and_review. Before this change the
+ * dashboard collapsed both into "applied", so an application the review worker
+ * had already moved to PENDING_HUMAN_APPROVAL rendered as "Applied" everywhere
+ * — a surface that contradicted the database.
+ */
 export type PipelineStage =
-  | "applied" | "screening" | "technical-review"
+  | "applied" | "ai-review" | "pending-approval" | "screening" | "technical-review"
   | "interview" | "offer" | "hired" | "rejected";
 export type ApplicationSource =
   | "linkedin" | "indeed" | "referral" | "direct" | "agency" | "internal";
@@ -14,6 +24,8 @@ export type InterviewStatus = "pending" | "scheduled" | "completed" | "cancelled
 
 export const STAGE_LABELS: Record<PipelineStage, string> = {
   applied:            "Applied",
+  "ai-review":        "AI Review",
+  "pending-approval": "Pending Approval",
   screening:          "Screening",
   "technical-review": "Technical Review",
   interview:          "Interview",
@@ -23,7 +35,8 @@ export const STAGE_LABELS: Record<PipelineStage, string> = {
 };
 
 export const STAGE_ORDER: PipelineStage[] = [
-  "applied", "screening", "technical-review", "interview", "offer", "hired", "rejected",
+  "applied", "ai-review", "pending-approval", "screening", "technical-review",
+  "interview", "offer", "hired", "rejected",
 ];
 
 export interface Job {

@@ -12,6 +12,7 @@
     "documents:cleanup:worker": "node scripts/documents/storage-cleanup-worker.mjs",
     "documents:cleanup:worker:once": "node scripts/documents/storage-cleanup-worker.mjs --once",
     "ats:review:worker:once": "node scripts/ats/ai-review-worker.mjs --once",
+    "ats:reconcile:review-stage": "tsx scripts/ats/reconcile-review-stage.ts",
     "test:phase91:postgres": "vitest run --config vitest.phase91-postgres.config.ts",
     "test:phase92:postgres": "vitest run --config vitest.phase92-postgres.config.ts",
     "audit:retention": "node scripts/audit-retention.mjs",
