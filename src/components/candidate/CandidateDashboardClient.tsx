@@ -26,6 +26,11 @@ interface ApplicationSummary {
 
 const STATUS_COLORS: Record<string, string> = {
   APPLIED:          "bg-ice/10 text-ice border-ice/30",
+  // ATS review-visibility hotfix — the two stage-gate states. Without an entry
+  // each fell through to the neutral fallback AND rendered the raw enum name
+  // to the applicant.
+  AI_REVIEW_PENDING:      "bg-ice/10 text-ice border-ice/30",
+  PENDING_HUMAN_APPROVAL: "bg-amber-400/10 text-amber-300 border-amber-400/30",
   SCREENING:        "bg-signal/10 text-signal border-signal/30",
   TECHNICAL_REVIEW: "bg-purple-400/10 text-purple-300 border-purple-400/30",
   INTERVIEW:        "bg-amber-400/10 text-amber-300 border-amber-400/30",
@@ -35,11 +40,28 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  APPLIED: "Applied", SCREENING: "Screening", TECHNICAL_REVIEW: "Technical Review",
+  APPLIED: "Applied", AI_REVIEW_PENDING: "Under Review", PENDING_HUMAN_APPROVAL: "Under Review",
+  SCREENING: "Screening", TECHNICAL_REVIEW: "Technical Review",
   INTERVIEW: "Interview", OFFER: "Offer", HIRED: "Hired", REJECTED: "Rejected",
 };
 
-const STAGE_ORDER = ["APPLIED","SCREENING","TECHNICAL_REVIEW","INTERVIEW","OFFER","HIRED","REJECTED"];
+/**
+ * ATS review-visibility hotfix — the applicant's position in the RENDERED
+ * six-segment bar below, which has no segment for either stage-gate state.
+ *
+ * This replaces an index derived from a list that did not contain
+ * AI_REVIEW_PENDING or PENDING_HUMAN_APPROVAL: `indexOf` returned -1 for both,
+ * so an application that had already been reviewed showed LESS progress than
+ * "Applied". From the applicant's side both states mean the same thing — the
+ * application has been received and nothing has been decided — so both map to
+ * the APPLIED segment and are labelled "Under Review". The applicant is never
+ * shown which machine state holds the row, and never the AI's recommendation:
+ * that is advisory and internal until a human records a decision.
+ */
+const BAR_INDEX: Record<string, number> = {
+  APPLIED: 0, AI_REVIEW_PENDING: 0, PENDING_HUMAN_APPROVAL: 0,
+  SCREENING: 1, TECHNICAL_REVIEW: 2, INTERVIEW: 3, OFFER: 4, HIRED: 5,
+};
 
 export function CandidateDashboardClient() {
   const locale = useLocale();
@@ -161,7 +183,7 @@ export function CandidateDashboardClient() {
 function ApplicationRow({ app }: { app: ApplicationSummary }) {
   const locale = useLocale();
   const cls = STATUS_COLORS[app.status] ?? "bg-surface text-muted border-line";
-  const stageIdx = STAGE_ORDER.indexOf(app.status);
+  const stageIdx = BAR_INDEX[app.status] ?? -1;
 
   return (
     <div className="rounded-xl border border-line bg-surface p-5">

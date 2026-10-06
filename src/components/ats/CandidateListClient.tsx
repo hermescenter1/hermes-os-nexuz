@@ -14,6 +14,8 @@ const SCORE_COLOR = (s: number) =>
 
 const STAGE_BADGE: Record<PipelineStage, string> = {
   applied:            "hs-badge hs--nominal",
+  "ai-review":        "hs-badge hs--knowledge",
+  "pending-approval": "hs-badge hs--warning",
   screening:          "hs-badge hs--confident",
   "technical-review": "hs-badge hs--knowledge",
   interview:          "hs-badge hs--warning",

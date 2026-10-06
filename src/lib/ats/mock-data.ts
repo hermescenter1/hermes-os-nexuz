@@ -371,6 +371,8 @@ export const HIRING_VELOCITY_DAYS: number = HIRED.length > 0
 
 export const STAGE_COUNTS: Record<PipelineStage, number> = {
   applied:            0,
+  "ai-review":        0,
+  "pending-approval": 0,
   screening:          0,
   "technical-review": 0,
   interview:          0,

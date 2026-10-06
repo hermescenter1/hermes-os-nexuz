@@ -8,6 +8,8 @@ import { STAGE_LABELS, STAGE_ORDER } from "@/lib/ats/types";
 
 const STAGE_DOT: Record<PipelineStage, string> = {
   applied:            "bg-muted",
+  "ai-review":        "bg-cyan-400",
+  "pending-approval": "bg-warn",
   screening:          "bg-ice",
   "technical-review": "bg-ice",
   interview:          "bg-warn",

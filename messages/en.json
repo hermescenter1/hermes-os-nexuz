@@ -9777,6 +9777,56 @@
     "yearsExpShort": "{years}y exp",
     "yearsExperience": "{years}y experience",
     "navSettings": "Settings",
+    "reviewPanel": {
+      "title": "AI review result",
+      "empty": "No AI review has completed for this application yet.",
+      "advisory": "This report is advisory. No stage changes without a recorded human decision.",
+      "applicationStatus": "Application status",
+      "awaitingDecision": "Awaiting a human decision",
+      "noDecisionNeeded": "No human decision is pending",
+      "overallScore": "Overall score",
+      "notScored": "Not scored",
+      "confidence": "Confidence",
+      "recommendation": "Recommendation",
+      "completedAt": "Completed",
+      "provider": "Provider",
+      "cycle": "Cycle",
+      "dimensionsTitle": "Dimension scores",
+      "hardGatesTitle": "Hard gates",
+      "hardGatesSummary": "{passed} passed · {failed} failed · {unknown} unknown",
+      "evidenceTitle": "Evidence",
+      "missingTitle": "Missing evidence",
+      "riskFlagsTitle": "Risk flags",
+      "versionsTitle": "Versions",
+      "explanationTitle": "Explanation",
+      "matchedLabel": "{matched} of {total}",
+      "weightLabel": "weight {weight}",
+      "recommendations": {
+        "ADVANCE": "Advance",
+        "REVIEW_REQUIRED": "Review required",
+        "HOLD": "Hold",
+        "REJECT_RECOMMENDED": "Rejection recommended"
+      },
+      "dimensions": {
+        "skill": "Skills",
+        "experience": "Experience",
+        "education": "Education",
+        "certification": "Certifications",
+        "project": "Projects",
+        "roleRelevance": "Role relevance"
+      }
+    },
+    "stageNames": {
+      "applied": "Applied",
+      "aiReview": "AI review",
+      "pendingApproval": "Pending approval",
+      "screening": "Screening",
+      "technicalReview": "Technical review",
+      "interview": "Interview",
+      "offer": "Offer",
+      "hired": "Hired",
+      "rejected": "Rejected"
+    },
     "mgmt": {
       "status": {
         "DRAFT": "Draft",

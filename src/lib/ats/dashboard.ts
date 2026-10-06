@@ -35,17 +35,25 @@ import {
 } from "./types";
 
 /** Map the real AtsApplicationStatus to the pipeline-stage vocabulary the
- *  dashboard renders. The pre-human stages (AI review, pending approval) are
- *  still "applied" — a candidate no human has acted on yet. */
+ *  dashboard renders.
+ *
+ *  ATS review-visibility hotfix — the two machine-held states of the stage gate
+ *  are now rendered as themselves. They used to fall through to "applied",
+ *  which made every surface report "Applied" for an application the review
+ *  worker had already moved to PENDING_HUMAN_APPROVAL. A dashboard that
+ *  contradicts the database is worse than one that shows an unfamiliar stage:
+ *  a recruiter cannot act on a decision they are never told is waiting. */
 function stageOf(status: string): PipelineStage {
   switch (status) {
+    case "AI_REVIEW_PENDING": return "ai-review";
+    case "PENDING_HUMAN_APPROVAL": return "pending-approval";
     case "SCREENING": return "screening";
     case "TECHNICAL_REVIEW": return "technical-review";
     case "INTERVIEW": return "interview";
     case "OFFER": return "offer";
     case "HIRED": return "hired";
     case "REJECTED": return "rejected";
-    // APPLIED, AI_REVIEW_PENDING, PENDING_HUMAN_APPROVAL and anything unknown
+    // APPLIED and anything unknown
     default: return "applied";
   }
 }
@@ -356,16 +364,206 @@ export interface CandidateDetail {
   erased: boolean;
   stage: PipelineStage | null;
   appliedAt: string | null;
+  /**
+   * ATS review-visibility hotfix — the LATEST application's own, unmapped
+   * `AtsApplicationStatus`. `stage` above is the rendering vocabulary; this is
+   * the database value, so the surface can never disagree with the row. Null
+   * only when the candidate has no application in this organization, which is
+   * already a 404 at the route.
+   */
+  latestApplication: {
+    id: string;
+    status: string;
+    stage: PipelineStage;
+    appliedAt: string;
+    awaitingHumanDecision: boolean;
+  } | null;
+  /** The latest AI review of the latest application, or null when none ran. */
+  latestReview: CandidateReviewSummary | null;
   counts: { applications: number; interviews: number; reviews: number };
-  audit: { action: string; createdAt: string; byName: string | null }[];
+  audit: { action: string; entityType: string; createdAt: string; byName: string | null }[];
+}
+
+/**
+ * The reviewer-facing projection of one `AtsAiReview`. Bounded on purpose: the
+ * stored `report` is the source of truth and can be large, so the fields a
+ * recruiter needs to act are projected and the long tails are capped.
+ *
+ * `evidence[].quote` is a short excerpt of material the candidate themselves
+ * submitted. It is shown to a holder of ATS_VIEW — the same boundary
+ * `GET /api/ats/applications/[id]/review` already applies — and it is NEVER
+ * copied into an audit row or a log line.
+ */
+export interface CandidateReviewSummary {
+  id: string;
+  cycle: number;
+  provider: string;
+  recommendation: string;
+  /** 0..100, or null when the rubric could not produce an overall score. */
+  overallScore: number | null;
+  confidence: number | null;
+  hardGates: { passed: number; failed: number; unknown: number };
+  riskFlagCount: number;
+  /** ISO-8601 — when the review completed. */
+  completedAt: string;
+  versions: {
+    extractor: string;
+    rubric: string;
+    prompt: string;
+    policy: string;
+    model: string | null;
+  };
+  dimensionScores: { dimension: string; score: number | null; weightApplied: number; matched: number; total: number }[];
+  hardGateResults: { criterionCode: string; label: string; outcome: string; note: string }[];
+  evidence: { criterionCode: string; label: string; source: string; quote: string; confidence: string }[];
+  missingEvidence: { label: string; ask: string }[];
+  riskFlags: { code: string; note: string }[];
+  explanation: string | null;
+  /** The stage gate, restated for the reader: advisory only. */
+  requiresHumanDecision: boolean;
+}
+
+interface ReviewRow {
+  id: string;
+  cycle: number;
+  provider: string;
+  modelVersion: string | null;
+  extractorVersion: string;
+  rubricVersion: string;
+  promptVersion: string;
+  policyVersion: string;
+  recommendation: string;
+  overallScore: number | null;
+  confidence: number | null;
+  hardGatesPassed: number;
+  hardGatesFailed: number;
+  hardGatesUnknown: number;
+  riskFlagCount: number;
+  report: unknown;
+  createdAt: Date;
 }
 
 interface DetailClient {
   atsApplication: { findMany: (a: unknown) => Promise<Array<{ id: string; status: string; createdAt: Date }>> };
   atsCandidate: { findUnique: (a: unknown) => Promise<{ id: string; name: string; email: string; phone: string | null; location: string | null; deletedAt: Date | null } | null> };
   atsInterview: { count: (a: unknown) => Promise<number> };
-  atsAiReview: { count: (a: unknown) => Promise<number> };
-  auditLog: { findMany: (a: unknown) => Promise<Array<{ action: string; createdAt: Date }>> };
+  atsAiReview: {
+    count: (a: unknown) => Promise<number>;
+    findMany: (a: unknown) => Promise<Array<{ id: string }>>;
+    findFirst: (a: unknown) => Promise<ReviewRow | null>;
+  };
+  atsReviewDecision: { findMany: (a: unknown) => Promise<Array<{ id: string }>> };
+  auditLog: { findMany: (a: unknown) => Promise<Array<{ action: string; entityType: string; createdAt: Date }>> };
+}
+
+/** Caps on the fan-out of one candidate-detail read. A candidate cannot hold
+ *  more than one application per job, so these bounds are generous rather than
+ *  truncating in practice — they exist so no single row can make this query
+ *  unbounded. */
+const DETAIL_APPLICATION_CAP = 100;
+const DETAIL_LINKED_ID_CAP = 200;
+const DETAIL_AUDIT_CAP = 50;
+const REVIEW_EVIDENCE_CAP = 24;
+const REVIEW_MISSING_CAP = 12;
+
+function asRecord(v: unknown): Record<string, unknown> {
+  return v !== null && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+}
+function asUnknownArray(v: unknown): unknown[] {
+  return Array.isArray(v) ? v : [];
+}
+function asText(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
+function asIntOrNull(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) ? Math.trunc(v) : null;
+}
+function asIntOrZero(v: unknown): number {
+  return asIntOrNull(v) ?? 0;
+}
+
+/**
+ * Project a stored review row into the reviewer summary. The `report` column is
+ * typed `Json`, so every field is read defensively: a report written by an
+ * older engine version yields empty sections rather than a crashed page, and
+ * nothing here invents a score, a dimension or a piece of evidence the report
+ * does not contain.
+ */
+function toReviewSummary(r: ReviewRow, applicationStatus: string): CandidateReviewSummary {
+  const report = asRecord(r.report);
+  const dimensionScores = asUnknownArray(report.dimensionScores).map((raw) => {
+    const d = asRecord(raw);
+    return {
+      dimension: asText(d.dimension),
+      score: asIntOrNull(d.score),
+      weightApplied: asIntOrZero(d.weightApplied),
+      matched: asIntOrZero(d.matched),
+      total: asIntOrZero(d.total),
+    };
+  });
+  const hardGateResults = asUnknownArray(report.hardGates).map((raw) => {
+    const g = asRecord(raw);
+    return {
+      criterionCode: asText(g.criterionCode),
+      label: asText(g.label),
+      outcome: asText(g.outcome),
+      note: asText(g.note),
+    };
+  });
+  // Evidence is carried per matched criterion; flatten it into the list a
+  // reader scans, keeping the criterion each quote supports attached to it.
+  const evidence: CandidateReviewSummary["evidence"] = [];
+  for (const raw of asUnknownArray(report.matchedSkills)) {
+    if (evidence.length >= REVIEW_EVIDENCE_CAP) break;
+    const m = asRecord(raw);
+    for (const e of asUnknownArray(m.evidence)) {
+      if (evidence.length >= REVIEW_EVIDENCE_CAP) break;
+      const ev = asRecord(e);
+      evidence.push({
+        criterionCode: asText(m.criterionCode),
+        label: asText(m.label),
+        source: asText(ev.source),
+        quote: asText(ev.quote),
+        confidence: asText(ev.confidence),
+      });
+    }
+  }
+  const missingEvidence = [...asUnknownArray(report.missingSkills), ...asUnknownArray(report.missingEvidence)]
+    .slice(0, REVIEW_MISSING_CAP)
+    .map((raw) => {
+      const m = asRecord(raw);
+      return { label: asText(m.label), ask: asText(m.ask) };
+    });
+  const riskFlags = asUnknownArray(report.riskFlags).map((raw) => {
+    const f = asRecord(raw);
+    return { code: asText(f.code), note: asText(f.note) };
+  });
+
+  return {
+    id: r.id,
+    cycle: r.cycle,
+    provider: r.provider,
+    recommendation: r.recommendation,
+    overallScore: r.overallScore,
+    confidence: r.confidence,
+    hardGates: { passed: r.hardGatesPassed, failed: r.hardGatesFailed, unknown: r.hardGatesUnknown },
+    riskFlagCount: r.riskFlagCount,
+    completedAt: r.createdAt.toISOString(),
+    versions: {
+      extractor: r.extractorVersion,
+      rubric: r.rubricVersion,
+      prompt: r.promptVersion,
+      policy: r.policyVersion,
+      model: r.modelVersion,
+    },
+    dimensionScores,
+    hardGateResults,
+    evidence,
+    missingEvidence,
+    riskFlags,
+    explanation: asText(report.explanation) || null,
+    requiresHumanDecision: applicationStatus === "PENDING_HUMAN_APPROVAL",
+  };
 }
 
 export async function getCandidateDetail(organizationId: string, candidateId: string): Promise<CandidateDetail | null> {
@@ -377,6 +575,7 @@ export async function getCandidateDetail(organizationId: string, candidateId: st
       where: { organizationId, candidateId },
       select: { id: true, status: true, createdAt: true },
       orderBy: { createdAt: "desc" },
+      take: DETAIL_APPLICATION_CAP,
     });
     if (apps.length === 0) return null; // unknown or cross-tenant → indistinguishable
     const cand = await d.atsCandidate.findUnique({
@@ -386,18 +585,74 @@ export async function getCandidateDetail(organizationId: string, candidateId: st
     if (!cand) return null;
 
     const appIds = apps.map((a) => a.id);
-    const [interviews, reviews, auditRows] = await Promise.all([
+    const latest = apps[0];
+
+    // Every predicate below carries `organizationId`. `appIds` is already
+    // tenant-scoped by the query above, so this is defence in depth rather
+    // than the only barrier — but the rule is that a tenant filter belongs in
+    // the query, not in the caller's reasoning about an earlier query.
+    const [interviews, reviews, reviewIds, decisionIds, latestReviewRow] = await Promise.all([
       d.atsInterview.count({ where: { organizationId, applicationId: { in: appIds } } }),
-      d.atsAiReview.count({ where: { applicationId: { in: appIds } } }),
-      d.auditLog.findMany({
-        where: { organizationId, entityType: "AtsCandidate", entityId: candidateId },
-        select: { action: true, createdAt: true },
+      d.atsAiReview.count({ where: { organizationId, applicationId: { in: appIds } } }),
+      d.atsAiReview.findMany({
+        where: { organizationId, applicationId: { in: appIds } },
+        select: { id: true },
         orderBy: { createdAt: "desc" },
-        take: 20,
-      }).catch(() => [] as Array<{ action: string; createdAt: Date }>),
+        take: DETAIL_LINKED_ID_CAP,
+      }).catch(() => [] as Array<{ id: string }>),
+      d.atsReviewDecision.findMany({
+        where: { organizationId, applicationId: { in: appIds } },
+        select: { id: true },
+        orderBy: { createdAt: "desc" },
+        take: DETAIL_LINKED_ID_CAP,
+      }).catch(() => [] as Array<{ id: string }>),
+      d.atsAiReview.findFirst({
+        where: { organizationId, applicationId: latest.id },
+        orderBy: { cycle: "desc" },
+        select: {
+          id: true,
+          cycle: true,
+          provider: true,
+          modelVersion: true,
+          extractorVersion: true,
+          rubricVersion: true,
+          promptVersion: true,
+          policyVersion: true,
+          recommendation: true,
+          overallScore: true,
+          confidence: true,
+          hardGatesPassed: true,
+          hardGatesFailed: true,
+          hardGatesUnknown: true,
+          riskFlagCount: true,
+          report: true,
+          createdAt: true,
+        },
+      }).catch(() => null),
     ]);
 
-    const latest = apps[0];
+    // ATS review-visibility hotfix — the audit trail of a candidate is not the
+    // trail of rows whose entityType happens to be "AtsCandidate". Intake and
+    // the review worker write against the APPLICATION and the REVIEW, and the
+    // human decisions against the DECISION. Reading only one entityType made
+    // this panel report "no audited actions yet" for a candidate whose intake
+    // and completed AI review were both audited. All four are aggregated here,
+    // every branch scoped to this organization.
+    const auditRows = await d.auditLog.findMany({
+      where: {
+        organizationId,
+        OR: [
+          { entityType: "AtsCandidate", entityId: candidateId },
+          { entityType: "AtsApplication", entityId: { in: appIds } },
+          { entityType: "AtsAiReview", entityId: { in: reviewIds.map((r) => r.id) } },
+          { entityType: "AtsReviewDecision", entityId: { in: decisionIds.map((r) => r.id) } },
+        ],
+      },
+      select: { action: true, entityType: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: DETAIL_AUDIT_CAP,
+    }).catch(() => [] as Array<{ action: string; entityType: string; createdAt: Date }>);
+
     return {
       id: cand.id,
       name: cand.name,
@@ -405,10 +660,23 @@ export async function getCandidateDetail(organizationId: string, candidateId: st
       phone: cand.phone,
       location: cand.location,
       erased: cand.deletedAt !== null,
-      stage: latest ? stageOf(latest.status) : null,
-      appliedAt: latest ? latest.createdAt.toISOString() : null,
+      stage: stageOf(latest.status),
+      appliedAt: latest.createdAt.toISOString(),
+      latestApplication: {
+        id: latest.id,
+        status: latest.status,
+        stage: stageOf(latest.status),
+        appliedAt: latest.createdAt.toISOString(),
+        awaitingHumanDecision: latest.status === "PENDING_HUMAN_APPROVAL",
+      },
+      latestReview: latestReviewRow ? toReviewSummary(latestReviewRow, latest.status) : null,
       counts: { applications: apps.length, interviews, reviews },
-      audit: auditRows.map((r) => ({ action: r.action, createdAt: r.createdAt.toISOString(), byName: null })),
+      audit: auditRows.map((r) => ({
+        action: r.action,
+        entityType: r.entityType,
+        createdAt: r.createdAt.toISOString(),
+        byName: null,
+      })),
     };
   } catch {
     return null;

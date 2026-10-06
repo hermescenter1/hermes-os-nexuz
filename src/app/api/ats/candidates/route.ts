@@ -4,7 +4,7 @@ import { requireAtsActor } from "@/lib/ats/rbac";
 import { correlationOf } from "@/lib/ats/positions/http";
 import { REQUEST_ID_HEADER } from "@/lib/logger/correlation";
 import { getAtsCandidates } from "@/lib/ats/dashboard";
-import type { PipelineStage } from "@/lib/ats/types";
+import { STAGE_ORDER, type PipelineStage } from "@/lib/ats/types";
 
 /**
  * Internal candidate listing — REAL, tenant-scoped.
@@ -22,7 +22,10 @@ import type { PipelineStage } from "@/lib/ats/types";
  */
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 
-const STAGES: PipelineStage[] = ["applied", "screening", "technical-review", "interview", "offer", "hired", "rejected"];
+// Derived from STAGE_ORDER so the filter can never fall behind the vocabulary
+// the dashboard renders. Hard-coding it meant `?stage=pending-approval` was
+// treated as "no filter" and quietly returned the whole list.
+const STAGES: PipelineStage[] = [...STAGE_ORDER];
 
 export async function GET(req: NextRequest) {
   const actor = await requireAtsActor(req, "ATS_VIEW");
