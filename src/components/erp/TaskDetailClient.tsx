@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ErpTask } from "@/lib/erp/types";
 import { formatDate } from "@/lib/i18n/format";
 
-export function TaskDetailClient({ task }: { task: ErpTask & { comments?: unknown[] } }) {
+export function TaskDetailClient({ task }: { task: ErpTask }) {
   const locale = useLocale();
   const t      = useTranslations("enterpriseOperations");
 

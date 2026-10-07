@@ -1,0 +1,384 @@
+PRESERVATION-MANIFEST.txt
+Hermes Factory Connection Center (HFCC) -- Phase 0  **DESIGN FROZEN**
+Generated 2026-10-05 by Claude Opus 5, session 15a653ec
+
+================================================================================
+SECTION 0 -- FREEZE HEADER
+================================================================================
+
+VERDICT   FACTORY_CONNECTION_CENTER_DESIGN_READY_FOR_IMPLEMENTATION_AUTHORIZATION
+
+OD-A      CLOSED -- A1 APPROVED (owner, 2026-10-05)
+OD-E      CLOSED -- E1 APPROVED (owner, 2026-10-05), i18n under `otEdge`
+OD-L      SETTLED by OD-A -- worktree C:\h110-factory-connection-center
+
+BASELINE_COMMIT_SHA   153b8617e764474e00f37f9424125e8e8da2c0e1   (full, 40 hex)
+BASELINE_TREE_SHA     71e9cbfc2b9db28cda165481ed0664652917391c
+BASELINE_PARENT_1     67865f05a49973c2406d52c24a1f70d9c5d5d95d
+BASELINE_PARENT_2     76476f93fe719b1f7fa516908cbd7f215ac03e29
+BASELINE_DATE         2026-10-04 06:29:25 +0100
+BASELINE_SUBJECT      Merge pull request #115 ...feature/ats-production-go-live
+BASELINE_SIGNED       yes (gpgsig; committer GitHub)
+BRANCH (to create)    feature/factory-connection-center
+WORKTREE (to create)  C:\h110-factory-connection-center
+
+FORBIDDEN BASE        local `main` = fb41cb7eb0e973ad1d6f199b53eff4714a0f7283
+                      2026-09-14, PR #96, 59 COMMITS STALE.
+                      `git branch <new> main` would drop Phase 113 (PR #112),
+                      Sprint 1C-A SEO (PR #113), ATS go-live (PR #115) and the
+                      dependency CI change (PR #116). Name the base by FULL SHA.
+
+BASELINE FINGERPRINTS (measured at 153b8617, not from the working tree):
+  FC1 factory-contract / api v2 ...... ABSENT
+  i18n totals en/fa/de ............... 8128 / 8128 / 8128   (79 namespaces)
+  otEdge leaves ...................... 397 (each locale)
+  catalogue-total pin ................ 8128 at german-final-gate.test.ts:584,628
+  prisma/migrations entries .......... 81  (newest 20260925120000_f2_document_tenant_fk)
+
+  >>> The working tree shows 8162 and a pin ALREADY edited to 8162. That is the
+      HRIS lane's +34 and must NOT be carried into HFCC. HFCC arithmetic is
+      8128 + N, with otEdge growing from 397 + N. <<<
+
+Authoritative detail, verification commands, the contamination barrier, the
+document-transfer procedure and the IDLE_CONFIRMED definition are in
+BASELINE-FREEZE.md.
+
+================================================================================
+Primary repository: E:\hermes-os-nexuz   HEAD 153b8617e764474e00f37f9424125e8e8da2c0e1
+Branch at audit time: feature/hris-workforce-foundation  (NOT HFCC's baseline -- see OD-A)
+
+================================================================================
+SECTION 1 -- WHAT PHASE 0 CHANGED
+================================================================================
+
+Product code modified ............................. 0 files
+Prisma schema modified ............................ 0 bytes
+Migrations created ................................ 0
+i18n catalogues modified .......................... 0 bytes
+Branches created .................................. 0
+Worktrees created ................................. 0
+Commits ........................................... 0
+Pushes ............................................ 0
+Files staged ...................................... 0
+Files reset / stashed / checked out / discarded .... 0
+Files or directories deleted ...................... 0
+Frozen evidence modified .......................... 0
+Docker operations ................................. 0
+Database operations ............................... 0
+Builds / tests / typechecks started ............... 0
+
+ADDED: 13 new untracked documents in docs/factory-connection-center/.
+They contain zero product bytes. git status shows them as ONE untracked
+directory entry: "?? docs/factory-connection-center/".
+
+================================================================================
+SECTION 2 -- PHASE 0 DELIVERABLES (SHA-256)
+================================================================================
+
+7974cd36d8afd0e04999ae70471f497968e9b93e06c2ce3a11ca9b23b6cdf8fc  API-CONTRACT-PROPOSAL.md
+0a1cd204bb2e45aa2545fcbe20355a58fc07e2d2b764f0b927a4f3c21f50544e  BASELINE-FREEZE.md
+a6e02948014e7dd22544994c8e81c67b72ac8e31175f3bb8387fc32a61b3fd86  DATA-MODEL-PROPOSAL.md
+b818c76e589e9ee98e92eb616c0bb44dddb9972fb8fc1fa05d7d9379f9d48807  EXISTING-FACTORY-INVENTORY.md
+d8cb8c5587e5c2f8c12d34bbdb0e07365e3ae7f8d92756c852eff73a69a983e6  FACTORY-CONNECTION-CENTER-ARCHITECTURE.md
+15c48f46f6c3da32cdc1359d4497c3051327c1b4243e9b9e8c211566319b9afb  IMPLEMENTATION-SLICES.md
+9ed1819c2411c5f4e074e366537d8ac03272f46ab81f7270d93e9b3a8844d51d  OD-A-BASELINE-DECISION-BRIEF.md
+771ac2dbc974dc6f5fc5a1391448b3122a20b3bbd41fb810f096199390681ee3  OPEN-DECISIONS.md
+08972a86667c2674ba2d2b835bb55d222e1d814f4fa2a570bdc8a418038d72e6  REPOSITORY-BASELINE.md
+7cd935c239932e90d960202b2cd1e37afd12615bbccc4eb65a385319936e882f  SECURITY-THREAT-MODEL.md
+df49a457fa885de9ae9ce7824aeea60cbb25fb2b489c117f1c9f8eff72758ad3  STATE-MACHINE.md
+8c9ad661e8da92ef4dda835cd0dc68c1c43845f0991dda90d0d1e07fa38f1f04  TEST-AND-QUALIFICATION-PLAN.md
+7eb49d3b6532e2c2c7a37996a903a54d5f869cabd45e59321e6d2faec2f252c0  UI-DESIGN-SPEC.md
+395bcaf3d28fb98933bb0d1e653678657a6687f45073365133c9cee5cb04a569  UX-INFORMATION-ARCHITECTURE.md
+
+c24a3669a5f2c98b8692056d96ea7794276383f56084b43a0d8228ed18b4de72  SLICE-1-HOLD.md
+
+Deliverables: 15 hashed documents + this manifest = 16.
+
+TRANSFER ACCEPTANCE TEST (owner requirement 6). After copying
+docs/factory-connection-center into the HFCC worktree, re-hash the destination
+and compare against the 14 lines above. Any mismatch, any missing file, OR ANY
+EXTRA FILE means the transfer FAILED -- do not proceed, and do not "repair" by
+re-copying over a partial result. Hash this manifest separately and record the
+value independently; it cannot list its own hash.
+
+--------------------------------------------------------------------------------
+REVISION 1 -- i18n pin measurement cross-checked
+--------------------------------------------------------------------------------
+A backgrounded repository-wide grep completed and independently confirmed the
+targeted i18n pin measurement. The two greps AGREE. Refinement: the
+catalogue-wide leaf total is pinned in exactly TWO LINES of ONE file
+(german-final-gate.test.ts:584,628), not spread across six files; and `otEdge`
+appears in NONE of the four per-namespace LEAF_COUNTS tables while `industrial`
+appears in one. Revised: REPOSITORY-BASELINE.md, OPEN-DECISIONS.md,
+IMPLEMENTATION-SLICES.md, TEST-AND-QUALIFICATION-PLAN.md, this manifest.
+
+--------------------------------------------------------------------------------
+REVISION 2 -- OD-E CLOSED by the owner; `main` found to be stale
+--------------------------------------------------------------------------------
+2026-10-05. OWNER DECISION: OD-E APPROVED as option E1 -- all HFCC i18n strings
+nest under the existing `otEdge` namespace. No new namespace; do not use
+`industrial`. Recorded in OPEN-DECISIONS.md. This closes OD-E only and is NOT an
+implementation authorisation.
+
+NEW MEASUREMENT taken while preparing the OD-A brief:
+
+    HEAD (feature/hris-workforce-foundation)  153b8617  2026-10-04  PR #115
+    origin/main                               153b8617  (identical to HEAD)
+    local main                                fb41cb7e  2026-09-14  PR #96
+
+    local main .. origin/main  =  59 commits BEHIND
+    origin/main .. local main  =   0 commits ahead
+
+    >>> `git branch <new> main` would silently base work on a 2026-09-14 tree
+        and drop 59 commits (Phase 113 / PR #112, Sprint 1C-A / PR #113,
+        ATS go-live / PR #115, dependency CI / PR #116).
+        "Base on main" therefore means `origin/main` = 153b8617, explicitly. <<<
+
+Corollary: feature/hris-workforce-foundation is at EXACTLY origin/main in commit
+terms; its entire difference is uncommitted working-tree content. Basing HFCC on
+origin/main forfeits no commit, only the dirt.
+
+ADDED: OD-A-BASELINE-DECISION-BRIEF.md -- the OD-A options with technical,
+security and operational impact, for owner decision.
+Revised: REPOSITORY-BASELINE.md section 3, OPEN-DECISIONS.md (OD-E closed,
+summary table), this manifest.
+
+NOTHING ELSE CHANGED. No product file, migration, test or catalogue was touched
+in either revision, per the owner's standing instruction.
+
+--------------------------------------------------------------------------------
+REVISION 3 -- OD-A CLOSED; DESIGN FROZEN
+--------------------------------------------------------------------------------
+2026-10-05. OWNER DECISION: OD-A APPROVED as option A1. HFCC Tier A is built in
+an independent worktree on the frozen commit 153b8617..., branch
+feature/factory-connection-center, worktree C:\h110-factory-connection-center.
+Seven binding requirements issued (exact immutable base; verify the full SHA and
+never re-anchor silently; no uncommitted/staged/untracked content from this tree
+or the HRIS lane; NO FC1 code in Tier A with F-020/F-021/D-6/D-7 implemented as
+independent requirements and negative controls; Tier B only after an independent
+FC1 verdict plus a separate owner decision; docs transferred with a valid
+manifest; i18n under otEdge). OD-L is settled as a consequence.
+
+Full immutable anchors measured and recorded this revision: commit SHA (40 hex),
+tree SHA, both parents, signature status, the forbidden local-main SHA and its
+59-commit lag, FC1 absence at the baseline, i18n totals (8128) and otEdge leaves
+(397) at the baseline, the clean 8128 pin values, the baseline migration count
+(81), and the blob SHAs of all seven files HFCC will modify.
+
+ADDED: BASELINE-FREEZE.md -- authoritative for the baseline, the verification
+commands, the contamination barrier, the document-transfer procedure, the
+carried security requirements and the IDLE_CONFIRMED definition.
+Revised: OPEN-DECISIONS.md (OD-A + OD-L closed, summary table), this manifest.
+
+STILL NOT ISSUED: FACTORY_CONNECTION_CENTER_IMPLEMENTATION_AUTHORIZED.
+STILL NOT TRUE:   IDLE_CONFIRMED (four concurrent foreign workloads).
+
+No branch, no worktree, no product/migration/test/catalogue change, no build,
+test, Prisma, Docker or qualification run, no commit, push, merge or deploy was
+performed in this revision. The design is FROZEN at the hashes in section 2.
+
+PRESERVATION-MANIFEST.txt is deliberately NOT listed above: a manifest cannot
+contain its own hash. (Lesson carried from the HV2 R2 lane: a manifested
+document cannot quote its own TOTAL.) Verify this file by its own sha256sum
+recorded separately by the reader.
+
+Total: 12 hashed documents + this manifest = 13 deliverables.
+
+================================================================================
+SECTION 3 -- READ-ONLY PATHS: OPENED, NOT MODIFIED
+================================================================================
+
+The brief declared four reference paths as read-only. Each was opened with a
+DIRECTORY LISTING ONLY. No file inside any of them was read, written, moved,
+renamed or deleted.
+
+  C:\h110-fc1i\repo                     listed. NOT a git repository.
+  C:\h110-fc1i-evidence                 listed.
+  C:\h110-fc1i-harness-v2-r2-1          listed.
+  C:\h110-fc1i-hv2-r2-independent       listed.
+
+ADDITIONALLY TREATED AS READ-ONLY, THOUGH NOT IN THE BRIEF'S LIST:
+
+  C:\h110-fc1i-hv2-r2-1-independent     NOT OPENED AT ALL.
+        This is the LIVE output directory of the running R2.1 independent
+        requalification (PID 11712). The brief protects the "-r2-independent"
+        directory; the active process writes to "-r2-1-independent". The
+        difference is one character and it matters.
+
+  C:\h110-fc1\repo                      listed (two subdirectories) to establish
+        where FC1 actually lives. Not a git repository. Nothing modified.
+
+  E:\h110-r3c\repo                      not opened.
+  E:\h110-fc1-evidence                  not opened.
+  All 76 other git worktrees             not opened.
+
+================================================================================
+SECTION 4 -- FOREIGN SESSION WORK: PRESERVED UNTOUCHED
+================================================================================
+
+The primary working tree carries 74 uncommitted entries belonging to another
+active session (HRIS / ERP workforce foundation lane). Composition, measured:
+
+  57  modified, unstaged      (" M")
+  17  untracked               ("??")  -> 23 actual files under
+                                        --untracked-files=all, because
+                                        git status --porcelain COLLAPSES
+                                        untracked directories
+
+NONE of them was modified, staged, reset, stashed, checked out or deleted.
+
+>>> THE FOREIGN ENTRY COUNT GREW DURING THIS AUDIT: 74 -> 75. <<<
+    Measured at audit start and again at audit end, excluding this session's
+    own docs directory. The other session is WRITING TO THIS TREE RIGHT NOW.
+    This is direct evidence, not inference, and it is the strongest single
+    argument for OD-A option A1 (base HFCC on `main`, in a separate worktree):
+    any HFCC work in this tree would race a live writer on
+    prisma/schema.prisma, messages/*.json and the Phase 102 migration gate.
+
+Evidence of foreign ownership (recorded so a later reader can confirm this
+audit did not author them):
+
+  prisma/schema.prisma                                              modified
+  prisma/__tests__/phase102-migration-safety.test.ts                modified
+  messages/de.json  messages/en.json  messages/fa.json              modified
+  docs/security/phase99-route-security-inventory.json               modified
+  src/app/[locale]/erp/**                             17 pages      modified
+  src/app/api/erp/**                                  15 handlers   modified
+  src/components/erp/**                                             modified
+  src/components/business-operations/**                             modified
+  src/i18n/__tests__/**                                             modified
+
+  prisma/migrations/20261004120000_hris05_erp_tenant_isolation/      untracked
+  src/lib/erp/tenant.ts                                             untracked
+  src/lib/erp/active-organization.ts                                untracked
+  src/lib/erp/page-scope.ts                                         untracked
+  src/lib/erp/schemas.ts                                            untracked
+  src/lib/erp/ops-schemas.ts                                        untracked
+  src/lib/erp/http.ts                                               untracked
+  src/lib/erp/operations.ts                                         untracked
+  src/lib/erp/__tests__/                                            untracked
+  src/lib/idempotency/                                              untracked
+  src/components/erp/ErpModuleUnavailable.tsx                       untracked
+  src/components/erp/ErpOrganizationChooser.tsx                     untracked
+  src/components/erp/ErpScopeNotice.tsx                             untracked
+  src/app/api/erp/resources/[id]/                                   untracked
+  src/app/api/erp/teams/[id]/members/                               untracked
+  src/app/api/organizations/[orgId]/activate/                       untracked
+  vitest.hris05-postgres.config.ts                                  untracked
+
+================================================================================
+SECTION 5 -- HOST STATE AT AUDIT TIME
+================================================================================
+
+Measured 2026-10-05 ~08:51 local via Get-CimInstance Win32_Process.
+
+ACTIVE HEAVY PROCESSING -- the owner's conditional therefore APPLIES:
+
+  PID 11712   924 MB   node inventory.cjs
+                       C:/h110-fc1i-harness-v2-r2-1
+                       C:/h110-fc1i-hv2-r2-1-independent/logs/inventory-R2-1-PRE.json
+              >>> THE R2.1 INDEPENDENT REQUALIFICATION IS RUNNING <<<
+
+  PID 24060    86 MB   npx tsc --noEmit -p .
+  PID 12528   186 MB   node .../typescript/bin/tsc --noEmit -p .
+              >>> A FOREIGN SESSION IS TYPECHECKING E:\hermes-os-nexuz ITSELF <<<
+
+  PIDs 20820, 20836, 18484, 20792, 21756, 20428
+                       @sethdouglasford/mcp-figma     (MCP servers, not qualification)
+
+Consequence, enforced: no build, no test, no typecheck, no Prisma migration,
+no Docker operation and no heavy execution was started by this session.
+
+================================================================================
+SECTION 6 -- MEASURED BASELINE FACTS (RE-MEASURE; DO NOT COPY)
+================================================================================
+
+These were measured at audit time. They are recorded for traceability, NOT as
+values to be reused. Every one must be re-measured on the baseline that OD-A
+selects.
+
+  HEAD                                   153b8617e764474e00f37f9424125e8e8da2c0e1
+  branch                                 feature/hris-workforce-foundation
+  git worktrees registered               77
+  Prisma models                          275
+  prisma/migrations entries              82  (81 migrations + migration_lock.toml)
+  newest migration                       20261004120000_hris05_erp_tenant_isolation
+  i18n top-level namespaces              79
+  i18n leaves at HEAD (en/fa/de)         8128 / 8128 / 8128   (exact three-way parity)
+  i18n leaves in the WORKING TREE (en)   8162                 (+34, foreign HRIS lane)
+  i18n leaf pin in the gate test         8162  <-- ALREADY the dirty value
+  design system components               23
+  npm script "typecheck"                 DOES NOT EXIST
+
+  FC1 present on HEAD                    NO
+     src/lib/industrial/factory-contract/     absent
+     src/app/api/industrial/v2/               absent
+  FC1 location                           C:\h110-fc1i\repo  (not a git repository)
+  FC1 digest                             2777ad47...  (64 paths, uncommitted)
+  Combined Integration digest            5a224b9d...  (45 paths, uncommitted)
+
+================================================================================
+SECTION 7 -- PHASE 0 VERDICT
+================================================================================
+
+  FACTORY_CONNECTION_CENTER_DESIGN_READY_FOR_OWNER_REVIEW
+
+All 13 deliverables are present. No product code changed. No migration created.
+No commit, no push. The baseline conflict with other sessions is reported in
+REPOSITORY-BASELINE.md section 6.
+
+IMPLEMENTATION IS WITHHELD pending BOTH of:
+
+  1. FACTORY_CONNECTION_CENTER_IMPLEMENTATION_AUTHORIZED   (the owner's token)
+  2. OD-A                                                  (the baseline branch)
+
+Neither has been given. A third precondition is not the owner's to give and is
+currently FAILING: the host must be idle (section 5).
+
+Nothing further will be started until all three hold.
+
+--------------------------------------------------------------------------------
+REVISION 4 -- IMPLEMENTATION AUTHORIZED; SLICE 1 HELD AT STEP 1
+--------------------------------------------------------------------------------
+2026-10-05. FACTORY_CONNECTION_CENTER_IMPLEMENTATION_AUTHORIZED received.
+
+BASELINE INTEGRITY VERIFIED (read-only, preliminary -- to be repeated as the
+binding check immediately before worktree creation):
+  commit object reachable ............ yes (type: commit)
+  git rev-parse 153b8617...^{commit} .. 153b8617e764474e00f37f9424125e8e8da2c0e1
+  git rev-parse 153b8617...^{tree} .... 71e9cbfc2b9db28cda165481ed0664652917391c
+                                        EXACT MATCH -> BASELINE_INTEGRITY = OK
+  origin/main ......................... 153b8617... , 0 commits ahead, NO DRIFT
+BASELINE_INTEGRITY_HOLD was NOT triggered.
+
+IDLE_CONFIRMED: 4 of 6 PASS, 2 FAIL.
+  PASS 1 no run-qualification/inventory.cjs -- R2.1 independent requalification
+         has FINISHED
+  PASS 2 no next build/npm run build -- the build on this tree has FINISHED
+  FAIL 3 two foreign vitest runs active (E:\hermes-phase114 ,
+         E:\hermes-f2-documents) -- expected to self-resolve
+  PASS 4 no tsc --noEmit in E:\hermes-os-nexuz
+  PASS 5 docker info OK (29.7.2, 19 containers, 2 running)
+  FAIL 6 C: at 8.3% free (19.5 GB) -- CANNOT SELF-RESOLVE, OWNER DECISION NEEDED
+
+Slice 1 step 1 is "verify the host is idle". It was verified and it FAILED, so
+nothing beyond step 1 ran. Per the authorisation, an incomplete result is not a
+PASS.
+
+VERDICT: SLICE_1_HOLD   (recorded in SLICE-1-HOLD.md, blocker S1-F01)
+
+NOTHING WAS CREATED OR MUTATED, verified after the fact:
+  branch feature/factory-connection-center ... 0 (does not exist)
+  C:\h110-factory-connection-center .......... does not exist
+  npm ci ..................................... not run
+  docker containers .......................... 19 (unchanged)
+  docker volumes ............................. 41 (unchanged)
+  docker prune / volume delete ............... 0 (prohibited without approval)
+  migrations ................................. 82 (unchanged)
+  product/migration/test/catalogue files ..... 0 changed
+  commits / pushes / PRs / merges / deploys .. 0
+
+No LAB_READY, FACTORY_READY, FAT_READY, DEPLOY_READY or PRODUCTION_READY claim is
+made or implied.
+
+ADDED: SLICE-1-HOLD.md

@@ -15,13 +15,13 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 399,
-    "handlers": 554,
+    "routeFiles": 412,
+    "handlers": 570,
     "byClassification": {
       "PUBLIC_READ": 36,
       "PUBLIC_WRITE": 14,
-      "AUTHENTICATED_USER": 211,
-      "TENANT_MEMBER": 154,
+      "AUTHENTICATED_USER": 186,
+      "TENANT_MEMBER": 195,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
       "PLATFORM_ADMIN": 135,
@@ -30,16 +30,16 @@
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 154,
+    "tenantBoundHandlers": 195,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 289,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 289,
-    "TENANT_IDENTITY_SERVER_DERIVED": 289,
+    "TENANT_BOUND_HANDLERS_TOTAL": 330,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 330,
+    "TENANT_IDENTITY_SERVER_DERIVED": 330,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 289,
+    "OBJECT_SCOPED_HANDLERS": 330,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -4657,12 +4657,13 @@
       "apiPath": "/api/erp/approvals",
       "method": "GET",
       "file": "src/app/api/erp/approvals/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4670,12 +4671,27 @@
       "apiPath": "/api/erp/approvals/[id]",
       "method": "PATCH",
       "file": "src/app/api/erp/approvals/[id]/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/approvals/[id]/steps",
+      "method": "GET",
+      "file": "src/app/api/erp/approvals/[id]/steps/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4683,12 +4699,13 @@
       "apiPath": "/api/erp/inventory",
       "method": "GET",
       "file": "src/app/api/erp/inventory/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4696,12 +4713,13 @@
       "apiPath": "/api/erp/inventory",
       "method": "POST",
       "file": "src/app/api/erp/inventory/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4709,12 +4727,13 @@
       "apiPath": "/api/erp/inventory/[id]",
       "method": "GET",
       "file": "src/app/api/erp/inventory/[id]/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4722,12 +4741,27 @@
       "apiPath": "/api/erp/inventory/[id]",
       "method": "PATCH",
       "file": "src/app/api/erp/inventory/[id]/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/inventory/[id]/movements",
+      "method": "GET",
+      "file": "src/app/api/erp/inventory/[id]/movements/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4735,12 +4769,13 @@
       "apiPath": "/api/erp/kpis",
       "method": "GET",
       "file": "src/app/api/erp/kpis/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4748,12 +4783,13 @@
       "apiPath": "/api/erp/overview",
       "method": "GET",
       "file": "src/app/api/erp/overview/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4761,12 +4797,13 @@
       "apiPath": "/api/erp/projects",
       "method": "GET",
       "file": "src/app/api/erp/projects/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4774,12 +4811,13 @@
       "apiPath": "/api/erp/projects",
       "method": "POST",
       "file": "src/app/api/erp/projects/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4787,12 +4825,13 @@
       "apiPath": "/api/erp/projects/[id]",
       "method": "GET",
       "file": "src/app/api/erp/projects/[id]/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4800,12 +4839,69 @@
       "apiPath": "/api/erp/projects/[id]",
       "method": "PATCH",
       "file": "src/app/api/erp/projects/[id]/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/projects/[id]/costs",
+      "method": "GET",
+      "file": "src/app/api/erp/projects/[id]/costs/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/projects/[id]/milestones",
+      "method": "GET",
+      "file": "src/app/api/erp/projects/[id]/milestones/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/projects/[id]/tasks",
+      "method": "GET",
+      "file": "src/app/api/erp/projects/[id]/tasks/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/projects/[id]/work-orders",
+      "method": "GET",
+      "file": "src/app/api/erp/projects/[id]/work-orders/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4813,12 +4909,13 @@
       "apiPath": "/api/erp/resources",
       "method": "GET",
       "file": "src/app/api/erp/resources/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4826,12 +4923,41 @@
       "apiPath": "/api/erp/resources",
       "method": "POST",
       "file": "src/app/api/erp/resources/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/resources/[id]",
+      "method": "GET",
+      "file": "src/app/api/erp/resources/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/resources/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/erp/resources/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4839,12 +4965,13 @@
       "apiPath": "/api/erp/tasks",
       "method": "GET",
       "file": "src/app/api/erp/tasks/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4852,12 +4979,13 @@
       "apiPath": "/api/erp/tasks",
       "method": "POST",
       "file": "src/app/api/erp/tasks/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4865,12 +4993,13 @@
       "apiPath": "/api/erp/tasks/[id]",
       "method": "GET",
       "file": "src/app/api/erp/tasks/[id]/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4878,12 +5007,27 @@
       "apiPath": "/api/erp/tasks/[id]",
       "method": "PATCH",
       "file": "src/app/api/erp/tasks/[id]/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/tasks/[id]/comments",
+      "method": "GET",
+      "file": "src/app/api/erp/tasks/[id]/comments/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4891,12 +5035,13 @@
       "apiPath": "/api/erp/teams",
       "method": "GET",
       "file": "src/app/api/erp/teams/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4904,12 +5049,13 @@
       "apiPath": "/api/erp/teams",
       "method": "POST",
       "file": "src/app/api/erp/teams/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4917,12 +5063,83 @@
       "apiPath": "/api/erp/teams/[id]",
       "method": "GET",
       "file": "src/app/api/erp/teams/[id]/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/teams/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/erp/teams/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/teams/[id]/member-candidates",
+      "method": "GET",
+      "file": "src/app/api/erp/teams/[id]/member-candidates/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/teams/[id]/members",
+      "method": "GET",
+      "file": "src/app/api/erp/teams/[id]/members/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/teams/[id]/members",
+      "method": "POST",
+      "file": "src/app/api/erp/teams/[id]/members/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/teams/[id]/members/[userId]",
+      "method": "DELETE",
+      "file": "src/app/api/erp/teams/[id]/members/[userId]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4930,12 +5147,13 @@
       "apiPath": "/api/erp/work-orders",
       "method": "GET",
       "file": "src/app/api/erp/work-orders/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4943,12 +5161,13 @@
       "apiPath": "/api/erp/work-orders",
       "method": "POST",
       "file": "src/app/api/erp/work-orders/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4956,12 +5175,13 @@
       "apiPath": "/api/erp/work-orders/[id]",
       "method": "GET",
       "file": "src/app/api/erp/work-orders/[id]/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -4969,12 +5189,27 @@
       "apiPath": "/api/erp/work-orders/[id]",
       "method": "PATCH",
       "file": "src/app/api/erp/work-orders/[id]/route.ts",
-      "classification": "AUTHENTICATED_USER",
+      "classification": "TENANT_MEMBER",
       "authEvidence": [
-        "getCurrentUser"
+        "getCurrentUser",
+        "requirePermission"
       ],
       "declaredSurface": false,
-      "tenantScoped": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/erp/work-orders/[id]/activities",
+      "method": "GET",
+      "file": "src/app/api/erp/work-orders/[id]/activities/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "getCurrentUser",
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },
@@ -6677,6 +6912,19 @@
       "authEvidence": [
         "requireOrgActor",
         "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/organizations/[orgId]/activate",
+      "method": "POST",
+      "file": "src/app/api/organizations/[orgId]/activate/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requireOrgActor"
       ],
       "declaredSurface": false,
       "tenantScoped": true,

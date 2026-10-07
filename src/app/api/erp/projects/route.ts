@@ -1,48 +1,55 @@
-import { NextResponse } from "next/server";
-import { z }            from "zod";
+import type { NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
-import { can }           from "@/lib/auth/roles";
-import { getProjects, createProject } from "@/lib/erp/db";
+import { can } from "@/lib/auth/roles";
+import { getActiveOrganizationContext } from "@/lib/erp/active-organization";
+import { createProject, listProjects } from "@/lib/erp/operations";
+import { ProjectCreateSchema, ProjectListQuerySchema } from "@/lib/erp/ops-schemas";
+import { ErpError, erpFailure } from "@/lib/erp/tenant";
+import { requirePermission } from "@/lib/org/rbac";
+import { ctxFor, idempotencyKeyOf, originRefusal, outcomeResponse, ok, parseWith, readJsonBody } from "@/lib/erp/http";
 import { onProjectCreated } from "@/lib/erp/triggers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CreateSchema = z.object({
-  name:          z.string().min(1).max(200),
-  description:   z.string().max(1000).optional().nullable(),
-  status:        z.enum(["PLANNED","ACTIVE","ON_HOLD","COMPLETED","CANCELLED"]).optional(),
-  startDate:     z.string().optional().nullable(),
-  endDate:       z.string().optional().nullable(),
-  budget:        z.number().positive().optional().nullable(),
-  crmAccountId:  z.string().optional().nullable(),
-  managerId:     z.string().optional().nullable(),
-});
-
-export async function GET(req: Request): Promise<NextResponse> {
+export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin"))
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-
-  const url    = new URL(req.url);
-  const status = url.searchParams.get("status") ?? undefined;
-  const projects = await getProjects(status);
-  return NextResponse.json(projects);
+  if (!user) return erpFailure(new ErpError(401, "AUTHENTICATION_REQUIRED"));
+  if (!can(user.role, "admin")) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const active = await getActiveOrganizationContext();
+  if (!active.ok) return erpFailure(active.error);
+  const allowed = requirePermission(active.scope.role, "view_erp");
+  if (!allowed.ok) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const scope = active.scope;
+  const query = parseWith(ProjectListQuerySchema, Object.fromEntries(new URL(req.url).searchParams));
+  if (!query.ok) return query.response;
+  try {
+    return ok(await listProjects(ctxFor(scope, req), query.data));
+  } catch (err) {
+    return erpFailure(err);
+  }
 }
 
-export async function POST(req: Request): Promise<NextResponse> {
+export async function POST(req: NextRequest) {
+  const refused = originRefusal(req);
+  if (refused) return refused;
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin"))
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-
-  const body   = await req.json().catch(() => ({}));
-  const parsed = CreateSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-
-  const project = await createProject({ ...parsed.data, createdBy: user.id });
-  if (project) onProjectCreated(project.id, project.name);
-  if (!project) return NextResponse.json({ error: "Could not persist — mock mode" }, { status: 202 });
-  return NextResponse.json(project, { status: 201 });
+  if (!user) return erpFailure(new ErpError(401, "AUTHENTICATION_REQUIRED"));
+  if (!can(user.role, "admin")) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const active = await getActiveOrganizationContext();
+  if (!active.ok) return erpFailure(active.error);
+  const allowed = requirePermission(active.scope.role, "manage_erp");
+  if (!allowed.ok) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const scope = active.scope;
+  const body = await readJsonBody(req);
+  if (!body.ok) return body.response;
+  const input = parseWith(ProjectCreateSchema, body.value);
+  if (!input.ok) return input.response;
+  try {
+    const outcome = await createProject(ctxFor(scope, req, idempotencyKeyOf(req)), input.data);
+    if (outcome.kind === "created") onProjectCreated(outcome.value.id, outcome.value.name);
+    return outcomeResponse(outcome, project => project);
+  } catch (err) {
+    return erpFailure(err);
+  }
 }

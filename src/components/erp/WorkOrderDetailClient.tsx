@@ -2,10 +2,11 @@
 
 import Link                          from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import type { ErpWorkOrderFull } from "@/lib/erp/types";
+import type { ErpWorkOrderDetailView } from "@/lib/erp/operations";
 import { formatDate } from "@/lib/i18n/format";
+import { ErpPagedList } from "./ErpPagedList";
 
-export function WorkOrderDetailClient({ wo }: { wo: ErpWorkOrderFull }) {
+export function WorkOrderDetailClient({ wo }: { wo: ErpWorkOrderDetailView }) {
   const locale = useLocale();
   const t      = useTranslations("enterpriseOperations");
 
@@ -33,21 +34,25 @@ export function WorkOrderDetailClient({ wo }: { wo: ErpWorkOrderFull }) {
         ))}
       </div>
 
-      {wo.activities && wo.activities.length > 0 && (
+      {wo.activities.items.length > 0 && (
         <div className="rounded-xl border bg-card p-5">
           <h3 className="font-semibold mb-4">{t("workOrders.activityLog")}</h3>
-          <div className="space-y-3 text-sm">
-            {wo.activities.map(a => (
-              <div key={a.id} className="flex gap-3 py-1 border-b last:border-0">
-                <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
-                <div>
-                  <p>{a.notes ?? a.action}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {formatDate(a.createdAt, locale)}
-                  </p>
+          <div className="text-sm">
+            <ErpPagedList
+              page={wo.activities}
+              endpoint={`/api/erp/work-orders/${wo.id}/activities`}
+              renderItem={a => (
+                <div className="flex gap-3 py-1 border-b last:border-0">
+                  <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
+                  <div>
+                    <p>{a.notes ?? a.action}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {formatDate(a.createdAt, locale)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )}
+            />
           </div>
         </div>
       )}

@@ -1,43 +1,53 @@
-import { NextResponse } from "next/server";
-import { z }            from "zod";
+import type { NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
-import { can }           from "@/lib/auth/roles";
-import { getResources, createResource } from "@/lib/erp/db";
+import { can } from "@/lib/auth/roles";
+import { getActiveOrganizationContext } from "@/lib/erp/active-organization";
+import { createResource, listResources } from "@/lib/erp/db";
+import { ListQuerySchema, ResourceCreateSchema } from "@/lib/erp/schemas";
+import { erpFailure, ErpError } from "@/lib/erp/tenant";
+import { requirePermission } from "@/lib/org/rbac";
+import { ctxFor, idempotencyKeyOf, originRefusal, outcomeResponse, ok, parseWith, readJsonBody } from "@/lib/erp/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CreateSchema = z.object({
-  name:        z.string().min(1).max(200),
-  type:        z.enum(["HUMAN","EQUIPMENT","SOFTWARE","VEHICLE","FACILITY","TOOL"]),
-  description: z.string().max(500).optional().nullable(),
-  costRate:    z.number().positive().optional().nullable(),
-  projectId:   z.string().optional().nullable(),
-});
-
-export async function GET(req: Request): Promise<NextResponse> {
+export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin"))
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-
-  const url  = new URL(req.url);
-  const type = url.searchParams.get("type") ?? undefined;
-  const resources = await getResources(type);
-  return NextResponse.json(resources);
+  if (!user) return erpFailure(new ErpError(401, "AUTHENTICATION_REQUIRED"));
+  if (!can(user.role, "admin")) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const active = await getActiveOrganizationContext();
+  if (!active.ok) return erpFailure(active.error);
+  const allowed = requirePermission(active.scope.role, "view_erp");
+  if (!allowed.ok) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const scope = active.scope;
+  const query = parseWith(ListQuerySchema, Object.fromEntries(new URL(req.url).searchParams));
+  if (!query.ok) return query.response;
+  try {
+    return ok(await listResources(ctxFor(scope, req), query.data));
+  } catch (err) {
+    return erpFailure(err);
+  }
 }
 
-export async function POST(req: Request): Promise<NextResponse> {
+export async function POST(req: NextRequest) {
+  const refused = originRefusal(req);
+  if (refused) return refused;
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin"))
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-
-  const body   = await req.json().catch(() => ({}));
-  const parsed = CreateSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-
-  const resource = await createResource(parsed.data);
-  if (!resource) return NextResponse.json({ error: "Could not persist — mock mode" }, { status: 202 });
-  return NextResponse.json(resource, { status: 201 });
+  if (!user) return erpFailure(new ErpError(401, "AUTHENTICATION_REQUIRED"));
+  if (!can(user.role, "admin")) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const active = await getActiveOrganizationContext();
+  if (!active.ok) return erpFailure(active.error);
+  const allowed = requirePermission(active.scope.role, "manage_erp");
+  if (!allowed.ok) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const scope = active.scope;
+  const body = await readJsonBody(req);
+  if (!body.ok) return body.response;
+  const input = parseWith(ResourceCreateSchema, body.value);
+  if (!input.ok) return input.response;
+  try {
+    const outcome = await createResource(ctxFor(scope, req, idempotencyKeyOf(req)), input.data);
+    return outcomeResponse(outcome, resource => resource);
+  } catch (err) {
+    return erpFailure(err);
+  }
 }

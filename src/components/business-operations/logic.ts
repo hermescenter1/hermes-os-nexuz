@@ -11,6 +11,9 @@
 
 import type { ErpOverview } from "@/lib/erp/types";
 
+/** The attention rules read only these count fields, so they accept any overview shape that carries them. */
+export type ErpAttentionInput = Pick<ErpOverview, "overdueTasks" | "pendingApprovals" | "inventoryWarnings" | "tasksByStatus" | "workOrdersByStatus">;
+
 export interface ErpAttentionItem {
   id: string;
   kind: "overdueTasks" | "woWaitingApproval" | "pendingApprovals" | "blockedTasks" | "inventoryLow";
@@ -19,7 +22,7 @@ export interface ErpAttentionItem {
   href: string;
 }
 
-export function deriveErpAttention(overview: ErpOverview): ErpAttentionItem[] {
+export function deriveErpAttention(overview: ErpAttentionInput): ErpAttentionItem[] {
   const items: ErpAttentionItem[] = [];
   const blocked = overview.tasksByStatus?.BLOCKED ?? 0;
   const woWaiting = overview.workOrdersByStatus?.WAITING_APPROVAL ?? 0;

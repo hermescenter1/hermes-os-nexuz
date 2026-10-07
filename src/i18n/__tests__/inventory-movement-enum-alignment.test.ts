@@ -32,7 +32,7 @@ const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 const TYPES_REL = "src/lib/erp/types.ts";
 const CLIENT_REL = "src/components/erp/InventoryDetailClient.tsx";
 const PRISMA_REL = "prisma/schema.prisma";
-const DB_REL = "src/lib/erp/db.ts";
+const DB_REL = "src/lib/erp/operations.ts";
 
 const typesSrc = read(TYPES_REL);
 const clientSrc = read(CLIENT_REL);
@@ -142,11 +142,14 @@ describe("movement badge access is direct — no silent fallback", () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe("surrounding behavior is unchanged (rendering, ordering, routes, catalogs)", () => {
-  it("movement-history ordering stays in the data layer (desc, take 20; no client sort)", () => {
-    expect(read(DB_REL)).toContain(
-      'include: { movements: { orderBy: { createdAt: "desc" }, take: 20 } }',
-    );
-    expect(clientSrc).toContain("item.movements.map(");
+  it("movement-history ordering stays in the data layer (desc, cursor-paged; no client sort)", () => {
+    // HRIS-0.5B: the tenant-scoped query carries organizationId in its where clause, and
+    // the list is continued by cursor through the item's movements route.
+    expect(read(DB_REL)).toContain('where: { itemId, organizationId }');
+    expect(read(DB_REL)).toContain('orderBy: [{ createdAt: "desc" }, { id: "desc" }]');
+    expect(read(DB_REL)).toContain("take: CHILD_DETAIL_PAGE + 1");
+    expect(clientSrc).toContain("ErpPagedList");
+    expect(clientSrc).toContain("item.movements.items.length");
     expect(clientSrc).not.toContain(".sort(");
     expect(clientSrc).not.toContain(".reverse(");
   });
@@ -174,7 +177,8 @@ describe("surrounding behavior is unchanged (rendering, ordering, routes, catalo
       return out;
     };
     const inv = flatten(((en as Tree).enterpriseOperations as Tree).inventory);
-    expect(inv.size).toBe(18); // unchanged leaf count — no moveType labels added
+    // PINNED CHANGE (ERP child pagination): 19 -> 18 (movementsLimited removed with the server-side latest-20 notice). Still no moveType labels added.
+    expect(inv.size).toBe(18);
     for (const key of inv.keys()) {
       expect(/movementTypes|moveTypes/i.test(key), key).toBe(false);
     }

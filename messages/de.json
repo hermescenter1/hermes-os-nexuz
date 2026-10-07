@@ -6613,6 +6613,35 @@
     }
   },
   "enterpriseOperations": {
+    "financials": {
+      "restricted": "Eingeschränkter Zugriff"
+    },
+    "utilization": {
+      "label": "Auslastung",
+      "teamSize": "Teamgröße",
+      "insufficientData": "Unzureichende Daten",
+      "note": "Die Auslastung benötigt echte Kapazitäts- und Zuteilungsdaten. Ein Zuteilungsmodell gibt es noch nicht, daher wird kein Prozentwert angezeigt."
+    },
+    "lists": {
+      "loadMore": "Weitere laden",
+      "loadFailed": "Weitere Einträge konnten nicht geladen werden. Bitte erneut versuchen."
+    },
+    "tenantScope": {
+      "organizationRequired": "Sie gehören mehreren Organisationen an. Wählen Sie eine aus, um fortzufahren.",
+      "chooseOrganization": "Organisation wählen",
+      "forbidden": "Ihre Rolle hat keinen Zugriff auf die ERP-Daten dieser Organisation.",
+      "notFound": "Diese Organisation ist für Ihr Konto nicht verfügbar.",
+      "unavailable": "Der Dienst ist vorübergehend nicht verfügbar.",
+      "signIn": "Melden Sie sich an, um diese Seite anzuzeigen."
+    },
+    "moduleAccess": {
+      "title": "Funktionsstatus",
+      "description": "Tatsächlicher Status jedes Moduls auf Basis der Organisationstrennung und der Datenbankverbindung.",
+      "scoped": "Je Organisation getrennt",
+      "database": "Datenbank",
+      "databaseAvailable": "Verbunden",
+      "databaseUnavailable": "Nicht verfügbar"
+    },
     "nav": {
       "eyebrow": "ERP-Betrieb",
       "items": {
@@ -6629,6 +6658,7 @@
       }
     },
     "dashboard": {
+      "activityLimited": "Es werden die neuesten {count} Ereignisse angezeigt; die Liste ist begrenzt.",
       "pageTitle": "Betriebsdashboard",
       "kpiActiveProjects": "Aktive Projekte",
       "kpiOverdueTasks": "Überfällige Aufgaben",
@@ -6651,6 +6681,14 @@
       "target": "Ziel:"
     },
     "kpis": {
+      "recentLimited": "Es werden die neuesten {count} KPI-Zeilen angezeigt; die Liste ist begrenzt.",
+      "completionTitle": "Durchlaufzeit bis zum Abschluss",
+      "completionTasks": "Aufgaben",
+      "completionWorkOrders": "Arbeitsaufträge",
+      "completionAverage": "Durchschnitt {hours} h",
+      "completionMeasured": "{count} gemessen",
+      "completionSkipped": "{count} übersprungen (ohne Abschlusszeit)",
+      "completionNone": "Keine gemessenen Abschlüsse",
       "pageTitle": "Operative KPIs",
       "heading": "Operative KPIs",
       "projectCompletion": "Projektabschluss",
@@ -6675,7 +6713,6 @@
     },
     "projects": {
       "pageTitle": "Projekte",
-      "count": "{count, plural, one {# Projekt} other {# Projekte}}",
       "newProject": "Neues Projekt",
       "due": "Fällig: {date}",
       "noProjectsFound": "Keine Projekte gefunden.",
@@ -6721,7 +6758,20 @@
       "members": "Mitglieder",
       "memberRoleFallback": "Mitglied",
       "noTeamsFound": "Keine Teams gefunden.",
-      "backToTeams": "Zurück zu den Teams"
+      "backToTeams": "Zurück zu den Teams",
+      "noMembers": "Noch keine Mitglieder.",
+      "addMember": "Mitglied hinzufügen",
+      "searchPlaceholder": "Nach Name oder E-Mail suchen",
+      "searchAction": "Suchen",
+      "noCandidates": "Kein aktives Organisationsmitglied passt zur Suche, oder alle Treffer sind bereits im Team.",
+      "addAction": "Hinzufügen",
+      "removeAction": "Entfernen",
+      "removeConfirm": "{name} aus diesem Team entfernen?",
+      "confirmRemove": "Entfernen bestätigen",
+      "cancel": "Abbrechen",
+      "addFailed": "Das Mitglied konnte nicht hinzugefügt werden. Bitte erneut versuchen.",
+      "removeFailed": "Das Mitglied konnte nicht entfernt werden. Bitte erneut versuchen.",
+      "searchFailed": "Die Suche konnte nicht abgeschlossen werden. Bitte erneut versuchen."
     },
     "resources": {
       "pageTitle": "Ressourcen",
@@ -6783,6 +6833,8 @@
       "empty": "Keine Bestandsartikel gefunden."
     },
     "approvals": {
+      "reasonLabel": "Begründung (erforderlich)",
+      "decisionFailed": "Die Entscheidung wurde nicht gespeichert. Die Anfrage ist möglicherweise schon entschieden; laden Sie die Seite neu und versuchen Sie es erneut.",
       "pageTitle": "Genehmigungsanträge",
       "status": {
         "PENDING": "Ausstehend",

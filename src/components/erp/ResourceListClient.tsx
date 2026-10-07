@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import type { ErpResource } from "@/lib/erp/types";
+import type { ChildPage } from "@/lib/erp/pagination";
+import { ErpPagedList } from "./ErpPagedList";
 
 const TYPE_COLOR: Record<string, string> = {
   HUMAN:     "bg-blue-500/15 text-blue-400",
@@ -12,29 +14,33 @@ const TYPE_COLOR: Record<string, string> = {
   TOOL:      "bg-muted text-muted-foreground",
 };
 
-export function ResourceListClient({ resources }: { resources: ErpResource[] }) {
+export function ResourceListClient({ page, endpoint }: { page: ChildPage<ErpResource>; endpoint: string }) {
   const t = useTranslations("enterpriseOperations");
 
   return (
     <div className="space-y-2">
-      {resources.map(r => (
-        <div key={r.id} className="flex items-center gap-4 rounded-xl border bg-card px-4 py-3">
-          <div className="flex-1 min-w-0">
-            <div className="font-medium">{r.name}</div>
-            {r.description && <div className="text-xs text-muted-foreground truncate">{r.description}</div>}
+      <ErpPagedList
+        page={page}
+        endpoint={endpoint}
+        renderItem={r => (
+          <div className="flex items-center gap-4 rounded-xl border bg-card px-4 py-3">
+            <div className="flex-1 min-w-0">
+              <div className="font-medium">{r.name}</div>
+              {r.description && <div className="text-xs text-muted-foreground truncate">{r.description}</div>}
+            </div>
+            <div className="flex items-center gap-3 shrink-0 text-xs">
+              {r.costRate != null && <span className="text-muted-foreground">${r.costRate}/h</span>}
+              <span className={`px-2 py-0.5 rounded-full font-medium ${TYPE_COLOR[r.type] ?? ""}`}>
+                {t(`resources.types.${r.type}`)}
+              </span>
+              <span className={`px-2 py-0.5 rounded-full font-medium ${r.isAvailable ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`}>
+                {r.isAvailable ? t("resources.available") : t("resources.inUse")}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-3 shrink-0 text-xs">
-            {r.costRate != null && <span className="text-muted-foreground">${r.costRate}/h</span>}
-            <span className={`px-2 py-0.5 rounded-full font-medium ${TYPE_COLOR[r.type] ?? ""}`}>
-              {t(`resources.types.${r.type}`)}
-            </span>
-            <span className={`px-2 py-0.5 rounded-full font-medium ${r.isAvailable ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`}>
-              {r.isAvailable ? t("resources.available") : t("resources.inUse")}
-            </span>
-          </div>
-        </div>
-      ))}
-      {resources.length === 0 && (
+        )}
+      />
+      {page.items.length === 0 && (
         <div className="text-center py-12 text-muted-foreground text-sm">{t("resources.noResourcesFound")}</div>
       )}
     </div>
