@@ -261,7 +261,7 @@ Die Abhilfe hat zwei unabhängige Teile, und beides als ein Problem zu behandeln
 ## Empfohlene Praxis
 
 - Vor jeder Auslegung Verschiebungs- und wahren Leistungsfaktor getrennt messen und feststellen, welcher Anteil defizitär ist.
-- Wo das Defizit aus der Verzerrung stammt, es als Netzqualitätsproblem behandeln, nicht als Kompensationsaufgabe.
+- Wo das Defizit aus der Verzerrung stammt, es als [Netzqualitätsproblem](/de/articles/industrial-power-quality-harmonics-flicker-voltage) behandeln, nicht als Kompensationsaufgabe.
 - Einzel-, Gruppen- oder Zentralkompensation danach wählen, wo der Blindstrom enden soll.
 - Motor-Einzelkondensatoren konservativ zum Magnetisierungsbedarf nach Herstellerangabe bemessen, um Selbsterregung auszuschließen; nie Kondensatoren zwischen Umrichter und Motor setzen.
 - Stufen aus dem gemessenen Lastprofil bemessen, Auflösung gegen Schalthäufigkeit abwägen, mit Hysterese und Verzögerung gegen Pendeln.
