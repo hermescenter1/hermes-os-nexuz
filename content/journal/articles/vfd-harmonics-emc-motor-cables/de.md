@@ -159,7 +159,7 @@ Die Abhilfe ist die Verdrosselung — Drosseln in Reihe zu jeder Kondensatorstuf
 ## Empfohlene Praxis
 
 - Die beiden Probleme ausdrücklich trennen: niederfrequente Oberschwingungen am Eingang, hochfrequente EMV am Ausgang. Getrennt diagnostizieren und mindern.
-- Stromverzerrung als Eigenschaft des Umrichters, Spannungsverzerrung als Eigenschaft der Installation behandeln; gegen die reale Netzimpedanz bewerten.
+- Stromverzerrung als Eigenschaft des Umrichters, [Spannungsverzerrung als Eigenschaft der Installation](/de/articles/industrial-power-quality-harmonics-flicker-voltage) behandeln; gegen die reale Netzimpedanz bewerten.
 - Oberschwingungsstrombeträge vergleichen, nicht Prozentwerte aus verschiedenen Lastpunkten.
 - Jede Installation mit Kompensationskondensatoren und oberschwingungserzeugender Last auf Resonanz prüfen und gegebenenfalls verdrosseln.
 - Netz- oder Zwischenkreisdrosseln als erste Standardmaßnahme vorsehen; auf Basis einer Studie zu Mehrpuls-, Passiv- oder Aktivlösungen eskalieren.
