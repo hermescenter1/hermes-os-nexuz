@@ -86,7 +86,7 @@ Two related decisions belong here:
 
 Redundancy belongs to specific roles, not to "the SCADA".
 
-The acquisition role is usually the one that justifies a redundant pair, because its loss costs plant visibility. Historians are more often protected by store-and-forward buffering at the collector than by a redundant server: if the collector buffers during a historian outage and forwards on recovery, the data gap closes by itself. Operator stations are made redundant by having several, not by pairing them.
+The acquisition role is usually the one that justifies a redundant pair, because its loss costs plant visibility. Historians are more often protected by [historian store-and-forward buffering](/en/articles/scada-historian-industrial-time-series) at the collector than by a redundant server: if the collector buffers during a historian outage and forwards on recovery, the data gap closes by itself. Operator stations are made redundant by having several, not by pairing them.
 
 Two honest caveats, treated properly in a dedicated companion article on redundant SCADA architectures:
 
