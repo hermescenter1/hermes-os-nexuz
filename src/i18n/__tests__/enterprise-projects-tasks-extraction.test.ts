@@ -138,10 +138,10 @@ describe("enterpriseOperations projects/tasks — catalog structure & parity", (
     }
   });
 
-  it("projects has exactly 21 leaves, tasks exactly 14 (35 combined new)", () => {
-    expect(flatten(enEO.projects).size).toBe(21);
+  it("projects has exactly 20 leaves, tasks exactly 14 (34 combined)", () => {
+    expect(flatten(enEO.projects).size).toBe(20);
     expect(flatten(enEO.tasks).size).toBe(14);
-    expect(flatten(enEO.projects).size + flatten(enEO.tasks).size).toBe(35);
+    expect(flatten(enEO.projects).size + flatten(enEO.tasks).size).toBe(34);
   });
 
   // Scoped in Phase 86C4B2B1C: the whole-namespace total grows as later ERP
@@ -150,11 +150,12 @@ describe("enterpriseOperations projects/tasks — catalog structure & parity", (
   // enterprise-teams-resources-work-orders-extraction.test.ts.
   it("the six Part A+B sub-objects still total exactly 85 leaves (50 core + 35 new)", () => {
     const six = ["nav", "dashboard", "kpis", "settings", "projects", "tasks"] as const;
-    expect(six.reduce((s, k) => s + flatten(enEO[k]).size, 0)).toBe(85);
-    // core sub-objects unchanged by this phase
+    // PINNED CHANGE (operational UX pass): 85 -> 94 (+9): dashboard +1 (activityLimited), kpis +8 (recentLimited, completion*).
+    expect(six.reduce((s, k) => s + flatten(enEO[k]).size, 0)).toBe(93);
+    // core sub-objects: dashboard and kpis grew by the operational-UX pass (see the six-sum pin above)
     expect(flatten(enEO.nav).size).toBe(11);
-    expect(flatten(enEO.dashboard).size).toBe(20);
-    expect(flatten(enEO.kpis).size).toBe(14);
+    expect(flatten(enEO.dashboard).size).toBe(21);
+    expect(flatten(enEO.kpis).size).toBe(22);
     expect(flatten(enEO.settings).size).toBe(5);
   });
 
@@ -192,7 +193,6 @@ describe("enterpriseOperations projects/tasks — catalog structure & parity", (
 
   it("declares the intended ICU placeholders for count/date interpolation", () => {
     const p = flatten(enEO.projects);
-    expect(p.get("count")).toBe("{count, plural, one {# project} other {# projects}}");
     expect(p.get("due")).toBe("Due {date}");
     expect(p.get("tasksCount")).toBe("Tasks ({count})");
     expect(p.get("viewAllTasks")).toBe("View all {count} tasks");
@@ -278,7 +278,6 @@ describe("enterpriseOperations projects/tasks — German translation quality (Ph
   });
 
   it("keeps ICU structure and protected Latin tokens intact", () => {
-    expect(d.get("projects.count")).toBe("{count, plural, one {# Projekt} other {# Projekte}}");
     expect(String(d.get("projects.due"))).toContain("{date}");
     expect(String(d.get("projects.tasksCount"))).toContain("{count}");
     expect(String(d.get("projects.viewAllTasks"))).toContain("{count}");
@@ -353,7 +352,6 @@ describe("enterpriseOperations projects/tasks — Persian translation quality (P
   });
 
   it("keeps ICU structure and Latin digits (no Persian digits)", () => {
-    expect(f.get("projects.count")).toBe("{count, plural, one {# پروژه} other {# پروژه}}");
     expect(String(f.get("projects.due"))).toContain("{date}");
     expect(String(f.get("projects.tasksCount"))).toContain("{count}");
     expect(String(f.get("projects.viewAllTasks"))).toContain("{count}");
@@ -477,7 +475,7 @@ describe("Projects/Tasks behavior & raw values preserved", () => {
   it("raw task status enum grouping keys are preserved (columns unchanged)", () => {
     const list = read("src/components/erp/TaskListClient.tsx");
     expect(list).toContain('const COLUMNS = ["TODO","IN_PROGRESS","BLOCKED","REVIEW","DONE"] as const');
-    expect(list).toContain("tasks.filter(task => task.status === col)");
+    expect(list).toContain("items.filter(task => task.status === col)");
     expect(read("src/components/erp/TaskDetailClient.tsx")).toContain(
       'task.status.toLowerCase().replace("_"," ")',
     );
@@ -493,26 +491,31 @@ describe("Projects/Tasks behavior & raw values preserved", () => {
     expect(read("src/components/erp/TaskDetailClient.tsx")).toContain("{task.priority}");
   });
 
-  it("data-access calls, HTTP method sample and route segments are unchanged", () => {
-    expect(read("src/app/[locale]/erp/projects/page.tsx")).toContain("getProjects(status)");
-    expect(read("src/app/[locale]/erp/projects/[id]/page.tsx")).toContain("getProjectById(id)");
-    expect(read("src/app/[locale]/erp/projects/[id]/milestones/page.tsx")).toContain("getProjectById(id)");
-    expect(read("src/app/[locale]/erp/tasks/page.tsx")).toContain("getTasks(projectId, status)");
-    expect(read("src/app/[locale]/erp/tasks/[id]/page.tsx")).toContain("getTaskById(id)");
-    // raw API route + HTTP method left as a literal code sample (not translated)
-    expect(read("src/app/[locale]/erp/projects/new/page.tsx")).toContain("POST /api/erp/projects");
+  it("data-access calls and route segments are unchanged; the raw POST sample is no longer shown (HRIS-0.5B)", () => {
+    // HRIS-0.5B: calls take the server-side tenant context (access.ctx) first.
+    expect(read("src/app/[locale]/erp/projects/page.tsx")).toContain("listProjects(access.ctx, query)");
+    expect(read("src/app/[locale]/erp/projects/[id]/page.tsx")).toContain("getProjectById(access.ctx, id)");
+    expect(read("src/app/[locale]/erp/projects/[id]/milestones/page.tsx")).toContain("getProjectById(access.ctx, id)");
+    expect(read("src/app/[locale]/erp/tasks/page.tsx")).toContain("listTasks(access.ctx, query)");
+    expect(read("src/app/[locale]/erp/tasks/[id]/page.tsx")).toContain("getTaskById(access.ctx, id)");
+    // The create page no longer teaches a raw API route; the route link is kept.
+    expect(read("src/app/[locale]/erp/projects/new/page.tsx")).not.toContain("POST /api/erp/projects");
     expect(read("src/app/[locale]/erp/projects/new/page.tsx")).toContain('href="../projects"');
   });
 
-  it("filtering/sorting/progress calculations are unchanged", () => {
+  it("progress uses database counts over the whole project, never a sum over a page (ERP child pagination)", () => {
     const detail = read("src/components/erp/ProjectDetailClient.tsx");
-    expect(detail).toContain('project.tasks?.filter(task => task.status === "DONE")');
+    expect(detail).toContain("project.taskSummary.done");
+    expect(detail).toContain("project.taskSummary.total");
+    expect(detail).toContain("project.costTotal");
+    expect(detail).not.toContain("project.tasks?.filter");
+    expect(detail).not.toContain("costs.reduce");
     expect(detail).toContain("Math.round((doneCount / taskCount) * 100)");
   });
 
-  it("milestone logic (completion flag, ordering, date formatting) is preserved", () => {
-    const ms = read("src/app/[locale]/erp/projects/[id]/milestones/page.tsx");
-    expect(ms).toContain("(project.milestones ?? []).map");
+  it("milestone logic (completion flag, ordering, date formatting) is preserved in the paged list", () => {
+    const ms = read("src/components/erp/MilestoneList.tsx");
+    expect(read("src/app/[locale]/erp/projects/[id]/milestones/page.tsx")).toContain("<MilestoneList");
     expect(ms).toContain("m.completedAt");
     expect(ms).toContain("formatDate(m.dueDate, locale)");
   });
@@ -521,7 +524,7 @@ describe("Projects/Tasks behavior & raw values preserved", () => {
     expect(read("src/components/erp/ProjectDetailClient.tsx")).toContain("{project.name}");
     expect(read("src/components/erp/ProjectListClient.tsx")).toContain("{p.name}");
     expect(read("src/components/erp/TaskDetailClient.tsx")).toContain("{task.title}");
-    expect(read("src/app/[locale]/erp/projects/[id]/milestones/page.tsx")).toContain("{m.name}");
+    expect(read("src/components/erp/MilestoneList.tsx")).toContain("{m.name}");
   });
 
   it("noIndexMetadata static module labels remain (shared helper untouched)", () => {

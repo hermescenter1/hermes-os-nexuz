@@ -6613,6 +6613,35 @@
     }
   },
   "enterpriseOperations": {
+    "financials": {
+      "restricted": "دسترسی محدود"
+    },
+    "utilization": {
+      "label": "بهره‌برداری",
+      "teamSize": "اندازه تیم",
+      "insufficientData": "داده کافی موجود نیست",
+      "note": "محاسبه بهره‌برداری به سوابق واقعی ظرفیت و تخصیص نیاز دارد. هنوز مدل تخصیص وجود ندارد، بنابراین درصدی نمایش داده نمی‌شود."
+    },
+    "lists": {
+      "loadMore": "بارگذاری موارد بیشتر",
+      "loadFailed": "بارگذاری موارد بیشتر انجام نشد. دوباره تلاش کنید."
+    },
+    "tenantScope": {
+      "organizationRequired": "شما عضو چند سازمان هستید. برای ادامه یک سازمان را انتخاب کنید.",
+      "chooseOrganization": "انتخاب سازمان",
+      "forbidden": "نقش شما به داده‌های ERP این سازمان دسترسی ندارد.",
+      "notFound": "این سازمان برای حساب شما در دسترس نیست.",
+      "unavailable": "سرویس موقتاً در دسترس نیست.",
+      "signIn": "برای مشاهده این صفحه وارد شوید."
+    },
+    "moduleAccess": {
+      "title": "وضعیت قابلیت‌ها",
+      "description": "وضعیت واقعی هر ماژول بر اساس جداسازی سازمانی و اتصال پایگاه داده.",
+      "scoped": "محدود به سازمان",
+      "database": "پایگاه داده",
+      "databaseAvailable": "متصل",
+      "databaseUnavailable": "قطع"
+    },
     "nav": {
       "eyebrow": "عملیات ERP",
       "items": {
@@ -6629,6 +6658,7 @@
       }
     },
     "dashboard": {
+      "activityLimited": "نمایش {count} رویداد آخر؛ فهرست محدود است.",
       "pageTitle": "داشبورد عملیات",
       "kpiActiveProjects": "پروژه‌های فعال",
       "kpiOverdueTasks": "وظایف معوق",
@@ -6651,6 +6681,14 @@
       "target": "هدف:"
     },
     "kpis": {
+      "recentLimited": "نمایش {count} ردیف آخر شاخص‌ها؛ فهرست محدود است.",
+      "completionTitle": "زمان تکمیل",
+      "completionTasks": "وظایف",
+      "completionWorkOrders": "دستورهای کار",
+      "completionAverage": "میانگین {hours} ساعت",
+      "completionMeasured": "{count} مورد اندازه‌گیری‌شده",
+      "completionSkipped": "{count} مورد کنار گذاشته شد (بدون زمان تکمیل)",
+      "completionNone": "اندازه‌گیری تکمیلی وجود ندارد",
       "pageTitle": "شاخص‌های کلیدی عملکرد عملیاتی",
       "heading": "شاخص‌های کلیدی عملکرد عملیاتی",
       "projectCompletion": "تکمیل پروژه",
@@ -6675,7 +6713,6 @@
     },
     "projects": {
       "pageTitle": "پروژه‌ها",
-      "count": "{count, plural, one {# پروژه} other {# پروژه}}",
       "newProject": "پروژه جدید",
       "due": "سررسید {date}",
       "noProjectsFound": "پروژه‌ای یافت نشد.",
@@ -6721,7 +6758,20 @@
       "members": "اعضا",
       "memberRoleFallback": "عضو",
       "noTeamsFound": "تیمی یافت نشد.",
-      "backToTeams": "بازگشت به تیم‌ها"
+      "backToTeams": "بازگشت به تیم‌ها",
+      "noMembers": "هنوز عضوی وجود ندارد.",
+      "addMember": "افزودن عضو",
+      "searchPlaceholder": "جست‌وجو بر اساس نام یا ایمیل",
+      "searchAction": "جست‌وجو",
+      "noCandidates": "عضو فعال سازمانی با این جست‌وجو پیدا نشد، یا همه‌ی نتایج از قبل در تیم هستند.",
+      "addAction": "افزودن",
+      "removeAction": "حذف",
+      "removeConfirm": "{name} از این تیم حذف شود؟",
+      "confirmRemove": "تأیید حذف",
+      "cancel": "انصراف",
+      "addFailed": "عضو افزوده نشد. دوباره تلاش کنید.",
+      "removeFailed": "عضو حذف نشد. دوباره تلاش کنید.",
+      "searchFailed": "جست‌وجو کامل نشد. دوباره تلاش کنید."
     },
     "resources": {
       "pageTitle": "منابع",
@@ -6783,6 +6833,8 @@
       "empty": "هیچ قلم موجودی یافت نشد."
     },
     "approvals": {
+      "reasonLabel": "دلیل (الزامی)",
+      "decisionFailed": "تصمیم ذخیره نشد. ممکن است این درخواست قبلاً تصمیم‌گیری شده باشد؛ صفحه را دوباره بارگذاری کنید.",
       "pageTitle": "درخواست‌های تأیید",
       "status": {
         "PENDING": "در انتظار",

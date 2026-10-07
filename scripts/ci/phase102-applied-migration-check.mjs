@@ -116,6 +116,13 @@ export const POST_PHASE102_MIGRATIONS = [
   // F-2 — Document.tenantId foreign key to Organization (ON DELETE RESTRICT)
   // plus one index. Additive: no column, no row touched.
   "20260925120000_f2_document_tenant_fk",
+  // HRIS-0.5 — ERP tenant isolation: the team-membership foreign keys move to
+  // the composite (organizationId, userId) / (organizationId, teamId) keys the
+  // rest of the schema already uses. Additive/structural only, no existing row
+  // rewritten. Declared for the same reason as the lines above — an undeclared
+  // row would fail the era-count equality, and silently widening that check to
+  // `>=` would retire the gate.
+  "20261004120000_hris05_erp_tenant_isolation",
 ];
 
 /**

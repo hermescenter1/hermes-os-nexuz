@@ -6613,6 +6613,35 @@
     }
   },
   "enterpriseOperations": {
+    "financials": {
+      "restricted": "Restricted access"
+    },
+    "utilization": {
+      "label": "Utilization",
+      "teamSize": "Team Size",
+      "insufficientData": "Insufficient data",
+      "note": "Utilization needs real capacity and allocation records. No allocation model exists yet, so no percentage is shown."
+    },
+    "lists": {
+      "loadMore": "Load more",
+      "loadFailed": "Could not load more items. Try again."
+    },
+    "tenantScope": {
+      "organizationRequired": "You belong to several organizations. Choose one to continue.",
+      "chooseOrganization": "Choose organization",
+      "forbidden": "Your role does not have access to ERP data for this organization.",
+      "notFound": "This organization is not available to your account.",
+      "unavailable": "The service is temporarily unavailable.",
+      "signIn": "Sign in to view this page."
+    },
+    "moduleAccess": {
+      "title": "Capability status",
+      "description": "Real status of each module, based on organization isolation and database connectivity.",
+      "scoped": "Organization scoped",
+      "database": "Database",
+      "databaseAvailable": "Connected",
+      "databaseUnavailable": "Unavailable"
+    },
     "nav": {
       "eyebrow": "ERP Operations",
       "items": {
@@ -6629,6 +6658,7 @@
       }
     },
     "dashboard": {
+      "activityLimited": "Showing the latest {count} events. The list is limited.",
       "pageTitle": "Operations Dashboard",
       "kpiActiveProjects": "Active Projects",
       "kpiOverdueTasks": "Overdue Tasks",
@@ -6651,6 +6681,14 @@
       "target": "Target:"
     },
     "kpis": {
+      "recentLimited": "Showing the latest {count} KPI rows. The list is limited.",
+      "completionTitle": "Completion time",
+      "completionTasks": "Tasks",
+      "completionWorkOrders": "Work orders",
+      "completionAverage": "Average {hours} h",
+      "completionMeasured": "{count} measured",
+      "completionSkipped": "{count} skipped (no completion time)",
+      "completionNone": "No measured completions",
       "pageTitle": "Operational KPIs",
       "heading": "Operational KPIs",
       "projectCompletion": "Project Completion",
@@ -6675,7 +6713,6 @@
     },
     "projects": {
       "pageTitle": "Projects",
-      "count": "{count, plural, one {# project} other {# projects}}",
       "newProject": "New Project",
       "due": "Due {date}",
       "noProjectsFound": "No projects found.",
@@ -6721,7 +6758,20 @@
       "members": "Members",
       "memberRoleFallback": "member",
       "noTeamsFound": "No teams found.",
-      "backToTeams": "Back to Teams"
+      "backToTeams": "Back to Teams",
+      "noMembers": "No members yet.",
+      "addMember": "Add a member",
+      "searchPlaceholder": "Search by name or email",
+      "searchAction": "Search",
+      "noCandidates": "No active organization member matches this search, or every match is already in the team.",
+      "addAction": "Add",
+      "removeAction": "Remove",
+      "removeConfirm": "Remove {name} from this team?",
+      "confirmRemove": "Confirm removal",
+      "cancel": "Cancel",
+      "addFailed": "The member could not be added. Try again.",
+      "removeFailed": "The member could not be removed. Try again.",
+      "searchFailed": "The search could not be completed. Try again."
     },
     "resources": {
       "pageTitle": "Resources",
@@ -6783,6 +6833,8 @@
       "empty": "No inventory items found."
     },
     "approvals": {
+      "reasonLabel": "Reason (required)",
+      "decisionFailed": "The decision was not saved. The request may already be decided; reload the page and try again.",
       "pageTitle": "Approval Requests",
       "status": {
         "PENDING": "pending",

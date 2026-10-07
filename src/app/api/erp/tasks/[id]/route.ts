@@ -1,50 +1,60 @@
-import { NextResponse } from "next/server";
-import { z }            from "zod";
+import type { NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
-import { can }           from "@/lib/auth/roles";
-import { getTaskById, updateTask } from "@/lib/erp/db";
+import { can } from "@/lib/auth/roles";
+import { getActiveOrganizationContext } from "@/lib/erp/active-organization";
+import { getTaskById, updateTask } from "@/lib/erp/operations";
+import { TaskUpdateSchema } from "@/lib/erp/ops-schemas";
+import { ErpError, erpFailure } from "@/lib/erp/tenant";
+import { requirePermission } from "@/lib/org/rbac";
+import { ctxFor, originRefusal, ok, parseWith, readJsonBody } from "@/lib/erp/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PatchSchema = z.object({
-  title:      z.string().min(1).max(300).optional(),
-  status:     z.enum(["TODO","IN_PROGRESS","BLOCKED","REVIEW","DONE","CANCELLED"]).optional(),
-  priority:   z.enum(["LOW","MEDIUM","HIGH","CRITICAL"]).optional(),
-  assigneeId: z.string().optional().nullable(),
-  dueDate:    z.string().optional().nullable(),
-});
+type Params = { params: Promise<{ id: string }> };
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse> {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin"))
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-
+export async function GET(req: NextRequest, { params }: Params) {
   const { id } = await params;
-  const task   = await getTaskById(id);
-  if (!task) return NextResponse.json({ error: "not found" }, { status: 404 });
-  return NextResponse.json(task);
+  const user = await getCurrentUser();
+  if (!user) return erpFailure(new ErpError(401, "AUTHENTICATION_REQUIRED"));
+  if (!can(user.role, "admin")) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const active = await getActiveOrganizationContext();
+  if (!active.ok) return erpFailure(active.error);
+  const allowed = requirePermission(active.scope.role, "view_erp");
+  if (!allowed.ok) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const scope = active.scope;
+  // The tenant identifier comes only from the server-side context.
+  const { organizationId } = scope;
+  const tenantCtx = ctxFor({ ...scope, organizationId }, req);
+  try {
+    return ok(await getTaskById(tenantCtx, id));
+  } catch (err) {
+    return erpFailure(err);
+  }
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse> {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin"))
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-
+export async function PATCH(req: NextRequest, { params }: Params) {
   const { id } = await params;
-  const body   = await req.json().catch(() => ({}));
-  const parsed = PatchSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-
-  const updated = await updateTask(id, parsed.data);
-  if (!updated) return NextResponse.json({ error: "not found or no db" }, { status: 404 });
-  return NextResponse.json(updated);
+  const refused = originRefusal(req);
+  if (refused) return refused;
+  const user = await getCurrentUser();
+  if (!user) return erpFailure(new ErpError(401, "AUTHENTICATION_REQUIRED"));
+  if (!can(user.role, "admin")) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const active = await getActiveOrganizationContext();
+  if (!active.ok) return erpFailure(active.error);
+  const allowed = requirePermission(active.scope.role, "manage_erp");
+  if (!allowed.ok) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const scope = active.scope;
+  const body = await readJsonBody(req);
+  if (!body.ok) return body.response;
+  const input = parseWith(TaskUpdateSchema, body.value);
+  if (!input.ok) return input.response;
+  // The tenant identifier comes only from the server-side context.
+  const { organizationId } = scope;
+  const tenantCtx = ctxFor({ ...scope, organizationId }, req);
+  try {
+    return ok(await updateTask(tenantCtx, id, input.data));
+  } catch (err) {
+    return erpFailure(err);
+  }
 }

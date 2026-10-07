@@ -171,26 +171,27 @@ describe("enterpriseOperations teams/resources/workOrders — catalog structure 
   });
 
   it("teams has exactly 7 leaves, resources 10, workOrders 15 (32 combined new)", () => {
-    expect(flatten(enEO.teams).size).toBe(7);
+    expect(flatten(enEO.teams).size).toBe(20);
     expect(flatten(enEO.resources).size).toBe(10);
     expect(flatten(enEO.workOrders).size).toBe(15);
-    expect(newLeaves(enEO).size).toBe(32);
+    expect(newLeaves(enEO).size).toBe(45);
   });
 
-  it("the nine post-C sub-objects still sum to 117 leaves (85 prior + 32 new)", () => {
+  it("the nine post-C sub-objects still sum to 130 leaves (85 prior + 45 new)", () => {
     // Whole-namespace total is owned by the inventory/approvals phase; assert the
     // sum of the nine sub-objects this phase knows about (forward-compatible).
     const nine = [
       "nav", "dashboard", "kpis", "settings",
       "projects", "tasks", "teams", "resources", "workOrders",
     ];
-    expect(nine.reduce((s, k) => s + flatten(enEO[k]).size, 0)).toBe(117);
-    // Part A + B sub-objects unchanged by this phase
+    // PINNED CHANGE (operational UX pass): 117 -> 126 (+9): dashboard +1 (activityLimited), kpis +8 (recentLimited, completion*).
+    expect(nine.reduce((s, k) => s + flatten(enEO[k]).size, 0)).toBe(138);
+    // Part A + B sub-objects: dashboard and kpis grew by the operational-UX pass (see the nine-sum pin above)
     expect(flatten(enEO.nav).size).toBe(11);
-    expect(flatten(enEO.dashboard).size).toBe(20);
-    expect(flatten(enEO.kpis).size).toBe(14);
+    expect(flatten(enEO.dashboard).size).toBe(21);
+    expect(flatten(enEO.kpis).size).toBe(22);
     expect(flatten(enEO.settings).size).toBe(5);
-    expect(flatten(enEO.projects).size).toBe(21);
+    expect(flatten(enEO.projects).size).toBe(20);
     expect(flatten(enEO.tasks).size).toBe(14);
   });
 
@@ -264,9 +265,9 @@ describe("enterpriseOperations teams/resources/workOrders — Persian translatio
   const e = newLeaves(enEO);
   const f = newLeaves(faEO);
 
-  it("covers all 32 new leaves (guards against vacuous passes)", () => {
-    expect(e.size).toBe(32);
-    expect(f.size).toBe(32);
+  it("covers all 45 new leaves (guards against vacuous passes)", () => {
+    expect(e.size).toBe(45);
+    expect(f.size).toBe(45);
   });
 
   it("every fa leaf outside the allowlist is translated (fa !== en)", () => {
@@ -341,9 +342,9 @@ describe("enterpriseOperations teams/resources/workOrders — German translation
   const e = newLeaves(enEO);
   const d = newLeaves(deEO);
 
-  it("covers all 32 new leaves (guards against vacuous passes)", () => {
-    expect(e.size).toBe(32);
-    expect(d.size).toBe(32);
+  it("covers all 45 new leaves (guards against vacuous passes)", () => {
+    expect(e.size).toBe(45);
+    expect(d.size).toBe(45);
   });
 
   it("every de leaf outside the allowlist is translated (de !== en)", () => {
@@ -544,15 +545,17 @@ describe("Teams/Resources/Work Orders behavior & raw values preserved", () => {
     expect(read("src/components/erp/WorkOrderDetailClient.tsx")).toContain("{wo.priority}");
   });
 
-  it("team membership logic and member counting are unchanged", () => {
+  it("team membership logic is unchanged; the member count is the database count, not the list length", () => {
     const src = read("src/components/erp/TeamDetailClient.tsx");
-    expect(src).toContain("{team.members?.length ?? 0}");
-    expect(src).toContain("team.members && team.members.length > 0");
-    expect(src).toContain("team.members.map((m, i)");
+    // The count is the server's database count, held in state and updated by each confirmed add or remove.
+    expect(src).toContain("useState(team.memberCount)");
+    expect(src).toContain("{memberCount}");
+    expect(src).not.toContain("team.members?.length");
+    expect(src).toContain("members.items.length === 0");
+    expect(src).toContain("p.name ?? p.email ?? p.userId");
     // open-string role column: raw lowercased display retained, only the
     // null-fallback label moved to the catalog
     expect(src).toContain('m.role?.toLowerCase() ?? t("teams.memberRoleFallback")');
-    expect(src).toContain("{m.userId}");
   });
 
   it("capacity display logic is unchanged (label translated only)", () => {
@@ -568,25 +571,34 @@ describe("Teams/Resources/Work Orders behavior & raw values preserved", () => {
   });
 
   it("data-access calls and searchParams filter pass-through are unchanged", () => {
-    expect(read("src/app/[locale]/erp/teams/page.tsx")).toContain("getTeams()");
-    expect(read("src/app/[locale]/erp/teams/[id]/page.tsx")).toContain("getTeamById(id)");
-    expect(read("src/app/[locale]/erp/resources/page.tsx")).toContain("getResources(type)");
+    // HRIS-0.5B: calls take the server-side tenant context (access.ctx) first.
+    expect(read("src/app/[locale]/erp/teams/page.tsx")).toContain("listTeams(access.ctx, { limit: 50 })");
+    expect(read("src/app/[locale]/erp/teams/[id]/page.tsx")).toContain("getTeam(access.ctx, id)");
+    expect(read("src/app/[locale]/erp/resources/page.tsx")).toContain("listResources(access.ctx, { limit: 50, type: validType })");
     expect(read("src/app/[locale]/erp/resources/page.tsx")).toContain("const { type } = await searchParams;");
-    expect(read("src/app/[locale]/erp/work-orders/page.tsx")).toContain("getWorkOrders(status, projectId)");
+    expect(read("src/app/[locale]/erp/work-orders/page.tsx")).toContain("listWorkOrders(access.ctx, query)");
     expect(read("src/app/[locale]/erp/work-orders/page.tsx")).toContain(
       "const { status, projectId } = await searchParams;",
     );
-    expect(read("src/app/[locale]/erp/work-orders/[id]/page.tsx")).toContain("getWorkOrderById(id)");
+    expect(read("src/app/[locale]/erp/work-orders/[id]/page.tsx")).toContain("getWorkOrderById(access.ctx, id)");
   });
 
-  it("no HTTP/API mutation surface exists or was introduced in the 10 files", () => {
+  it("no HTTP/API mutation surface exists in the 10 files, except the team member routes in TeamDetailClient", () => {
+    const TEAM_CLIENT = "src/components/erp/TeamDetailClient.tsx";
     for (const rel of TEN) {
       const src = read(rel);
-      expect(src, `${rel} fetch`).not.toMatch(/\bfetch\s*\(/);
       expect(src, `${rel} axios`).not.toMatch(/\baxios\b/);
       expect(src, `${rel} useMutation`).not.toMatch(/\buseMutation\b/);
-      expect(src, `${rel} api route literal`).not.toContain("/api/");
+      if (rel === TEAM_CLIENT) continue;
+      expect(src, `${rel} fetch`).not.toMatch(/\bfetch\s*\(/);
+      expect(src, `${rel} write method`).not.toMatch(/method:\s*["'](POST|PATCH|PUT|DELETE)["']/);
     }
+    // The only writes are member add (POST) and member remove (DELETE), on the member routes; every add carries a fresh key.
+    const team = read(TEAM_CLIENT);
+    expect(team).toContain("fetch(`/api/erp/teams/${team.id}/members`, {");
+    expect(team).toContain("fetch(`/api/erp/teams/${team.id}/members/${encodeURIComponent(m.userId)}`, {");
+    expect(team).toContain('"Idempotency-Key": crypto.randomUUID()');
+    expect(team).not.toMatch(/method:\s*["'](PATCH|PUT)["']/);
   });
 
   it("date formatting is locale-aware via the shared formatter (89B-FINAL)", () => {

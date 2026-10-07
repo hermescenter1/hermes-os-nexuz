@@ -3,7 +3,9 @@
 import Link                          from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ErpWorkOrder } from "@/lib/erp/types";
+import type { ChildPage } from "@/lib/erp/pagination";
 import { formatDate } from "@/lib/i18n/format";
+import { ErpPagedList } from "./ErpPagedList";
 
 const STATUS_COLOR: Record<string, string> = {
   OPEN:              "bg-blue-500/15 text-blue-400",
@@ -21,32 +23,35 @@ const PRIORITY_DOT: Record<string, string> = {
   CRITICAL: "bg-red-500",
 };
 
-export function WorkOrderListClient({ orders }: { orders: ErpWorkOrder[] }) {
+export function WorkOrderListClient({ page, endpoint }: { page: ChildPage<ErpWorkOrder>; endpoint: string }) {
   const locale = useLocale();
   const t      = useTranslations("enterpriseOperations");
 
   return (
     <div className="space-y-2">
-      {orders.map(wo => (
-        <Link
-          key={wo.id}
-          href={`/${locale}/erp/work-orders/${wo.id}`}
-          className="flex items-center gap-4 rounded-xl border bg-card px-4 py-3 hover:bg-accent/30 transition-colors"
-        >
-          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${PRIORITY_DOT[wo.priority] ?? "bg-muted"}`} />
-          <div className="flex-1 min-w-0">
-            <div className="font-medium truncate">{wo.title}</div>
-            {wo.description && <div className="text-xs text-muted-foreground truncate">{wo.description}</div>}
-          </div>
-          <div className="flex items-center gap-3 shrink-0 text-xs">
-            {wo.dueDate && <span className="text-muted-foreground">{t("workOrders.due", { date: formatDate(wo.dueDate, locale) })}</span>}
-            <span className={`px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[wo.status] ?? ""}`}>
-              {t(`workOrders.status.${wo.status}`)}
-            </span>
-          </div>
-        </Link>
-      ))}
-      {orders.length === 0 && (
+      <ErpPagedList
+        page={page}
+        endpoint={endpoint}
+        renderItem={wo => (
+          <Link
+            href={`/${locale}/erp/work-orders/${wo.id}`}
+            className="flex items-center gap-4 rounded-xl border bg-card px-4 py-3 hover:bg-accent/30 transition-colors"
+          >
+            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${PRIORITY_DOT[wo.priority] ?? "bg-muted"}`} />
+            <div className="flex-1 min-w-0">
+              <div className="font-medium truncate">{wo.title}</div>
+              {wo.description && <div className="text-xs text-muted-foreground truncate">{wo.description}</div>}
+            </div>
+            <div className="flex items-center gap-3 shrink-0 text-xs">
+              {wo.dueDate && <span className="text-muted-foreground">{t("workOrders.due", { date: formatDate(wo.dueDate, locale) })}</span>}
+              <span className={`px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[wo.status] ?? ""}`}>
+                {t(`workOrders.status.${wo.status}`)}
+              </span>
+            </div>
+          </Link>
+        )}
+      />
+      {page.items.length === 0 && (
         <div className="text-center py-12 text-muted-foreground text-sm">{t("workOrders.noWorkOrdersFound")}</div>
       )}
     </div>

@@ -436,6 +436,7 @@ describe("102 — migration ordering", () => {
     // F-2 — Document.tenantId foreign key to Organization (ON DELETE RESTRICT)
     // and one index. Additive only; touches no Phase 102 table (asserted below).
     "20260925120000_f2_document_tenant_fk",
+    "20261004120000_hris05_erp_tenant_isolation",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {

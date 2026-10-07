@@ -121,14 +121,16 @@ describe("enterpriseOperations (ERP Core) — three-locale parity", () => {
     expect(enEO).toBeTruthy();
     expect(faEO).toBeTruthy();
     expect(deEO).toBeTruthy();
-    expect(flatten(enCore).size).toBe(50);
+    // PINNED CHANGE (operational UX pass): 50 -> 59 (+9): dashboard +1 (activityLimited), kpis +8 (recentLimited, completion*).
+    expect(flatten(enCore).size).toBe(59);
   });
 
   it("sub-object leaf counts: nav 11, dashboard 20, kpis 14, settings 5", () => {
     const c = (o: unknown) => flatten(o).size;
     expect(c((enEO as Tree).nav)).toBe(11);
-    expect(c((enEO as Tree).dashboard)).toBe(20);
-    expect(c((enEO as Tree).kpis)).toBe(14);
+    // PINNED CHANGE (operational UX pass): dashboard 20 -> 21, kpis 14 -> 22 (see the core-leaves pin above)
+    expect(c((enEO as Tree).dashboard)).toBe(21);
+    expect(c((enEO as Tree).kpis)).toBe(22);
     expect(c((enEO as Tree).settings)).toBe(5);
   });
 
@@ -386,8 +388,8 @@ describe("ERP Core behavior and navigation preserved (allowlisted)", () => {
   });
 
   it("keeps dashboard/KPI data calls and calculations unchanged", () => {
-    expect(read("src/app/[locale]/erp/page.tsx")).toContain("getErpOverview()");
-    expect(read("src/app/[locale]/erp/kpis/page.tsx")).toContain("getErpKpiReport()");
+    expect(read("src/app/[locale]/erp/page.tsx")).toContain("getErpOverview(access.ctx)");
+    expect(read("src/app/[locale]/erp/kpis/page.tsx")).toContain("getErpKpiReport(access.ctx)");
     const dash = read("src/components/erp/ErpDashboardClient.tsx");
     expect(dash).toMatch(/const KPI_COLOR =/);
     expect(dash).toContain("(overview.totalActualCost - overview.totalBudget)");

@@ -1,461 +1,535 @@
-// Phase 68 — ERP DB layer (Prisma + mock fallback)
+/**
+ * ERP tenant data access (HRIS-0.5).
+ *
+ * Scope of this module: teams, team members, resources, and module status.
+ * Every query carries `organizationId` from a resolved ErpScope. A row whose
+ * organizationId is NULL matches no query here, so legacy unassigned rows are
+ * invisible (fail closed).
+ *
+ * Removed in this change: every MOCK_* fallback and the fake-success 202
+ * response. When the database is unavailable the functions throw ErpError 503.
+ * The operational modules (projects, tasks, inventory, work orders, approvals,
+ * KPIs, overview) live in operations.ts and follow the same scope rules.
+ */
 
 import { getPrisma } from "@/lib/db/prisma";
-import {
-  MOCK_PROJECTS, MOCK_PROJECTS_FULL, MOCK_TASKS, MOCK_TEAMS, MOCK_TEAMS_FULL,
-  MOCK_RESOURCES, MOCK_INVENTORY, MOCK_INVENTORY_FULL, MOCK_WORK_ORDERS,
-  MOCK_WORK_ORDERS_FULL, MOCK_APPROVALS, MOCK_APPROVALS_FULL, MOCK_KPIS,
-  ACTIVE_PROJECTS, OVERDUE_TASKS, OPEN_WO, PENDING_APPROVALS, LOW_STOCK_ITEMS,
-  MOCK_PROJECT_COSTS,
-} from "./mock-data";
+import { runIdempotentWrite, type IdempotencyDelegate, type IdempotentSuccess } from "@/lib/idempotency/transactional";
+import { ErpError, type ErpScope } from "./tenant";
+import { CHILD_DETAIL_PAGE, cursorArgs, pageOf, type ChildListQuery, type ChildPage } from "./pagination";
+import type { ErpResource, ErpTeam, ErpTeamFull, ErpTeamMember } from "./types";
+import type { MemberCandidateQuery } from "./ops-schemas";
 import type {
-  ErpProject, ErpProjectFull, ErpTask, ErpTeam, ErpTeamFull,
-  ErpResource, ErpInventoryItem, ErpInventoryItemFull, ErpWorkOrder,
-  ErpWorkOrderFull, ErpApprovalRequest, ErpApprovalRequestFull,
-  ErpOperationalKpi, ErpOverview, ErpKpiReport,
-} from "./types";
+  ListQuery,
+  ResourceCreateInput,
+  ResourceUpdateInput,
+  TeamCreateInput,
+  TeamMemberAddInput,
+  TeamUpdateInput,
+} from "./schemas";
 
-type AnyM = Record<string, (...a: unknown[]) => Promise<unknown>>;
+export interface ErpCtx {
+  scope: ErpScope;
+  /** Request correlation id, copied into the audit row. */
+  correlationId: string;
+  /** Raw Idempotency-Key header value for creates. Never stored. */
+  idempotencyKey?: string | null;
+}
 
-async function m() {
-  const db = await getPrisma();
-  if (!db) return null;
-  const d = db as Record<string, unknown>;
+type Row = Record<string, unknown> & { id: string };
+
+interface Delegate {
+  findMany(args: unknown): Promise<Row[]>;
+  findFirst(args: unknown): Promise<Row | null>;
+  create(args: unknown): Promise<Row>;
+  updateMany(args: unknown): Promise<{ count: number }>;
+  deleteMany(args: unknown): Promise<{ count: number }>;
+  count(args: unknown): Promise<number>;
+}
+
+interface ErpTx {
+  erpTeam: Delegate;
+  erpTeamMember: Delegate;
+  erpResource: Delegate;
+  organizationMember: Delegate;
+  auditLog: { create(args: unknown): Promise<unknown> };
+  idempotencyKey: IdempotencyDelegate;
+}
+
+type ErpClient = ErpTx & {
+  $transaction<R>(fn: (tx: ErpTx) => Promise<R>): Promise<R>;
+};
+
+async function client(): Promise<ErpClient> {
+  const prisma = await getPrisma();
+  if (!prisma) throw new ErpError(503, "SERVICE_UNAVAILABLE");
+  return prisma as unknown as ErpClient;
+}
+
+const iso = (v: unknown): string => (v instanceof Date ? v.toISOString() : String(v));
+
+function toTeam(row: Row): ErpTeam {
   return {
-    proj:  d.erpProject        as AnyM | undefined,
-    task:  d.erpTask           as AnyM | undefined,
-    team:  d.erpTeam           as AnyM | undefined,
-    res:   d.erpResource       as AnyM | undefined,
-    inv:   d.erpInventoryItem  as AnyM | undefined,
-    wo:    d.erpWorkOrder      as AnyM | undefined,
-    apr:   d.erpApprovalRequest as AnyM | undefined,
-    kpi:   d.erpOperationalKpi as AnyM | undefined,
+    id: row.id,
+    organizationId: (row.organizationId as string | null) ?? null,
+    name: row.name as string,
+    description: (row.description as string | null) ?? null,
+    leadId: (row.leadId as string | null) ?? null,
+    capacity: row.capacity as number,
+    version: row.version as number,
+    createdAt: iso(row.createdAt),
+    updatedAt: iso(row.updatedAt),
   };
 }
 
-const iso = (v: unknown): string => v instanceof Date ? v.toISOString() : String(v);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ts  = (r: any): any => ({ ...r, createdAt: iso(r.createdAt), updatedAt: r.updatedAt ? iso(r.updatedAt) : undefined });
+/** Reads the member's name and email with the member row, in the same query (no per-row lookup). */
+const MEMBER_INCLUDE = { member: { select: { user: { select: { name: true, email: true } } } } } as const;
 
-// ── Overview ──────────────────────────────────────────────────────────────────
-
-export async function getErpOverview(): Promise<ErpOverview> {
-  try {
-    const db = await m();
-    if (db?.proj && db?.task && db?.wo && db?.apr) {
-      const [projects, tasks, workOrders, approvals, inv, kpis] = await Promise.all([
-        db.proj.findMany({ where: { deletedAt: null } } as never),
-        db.task.findMany({ where: { deletedAt: null } } as never),
-        db.wo.findMany({ where: { deletedAt: null } } as never),
-        db.apr.findMany() as Promise<ErpApprovalRequest[]>,
-        db.inv?.findMany({ where: { deletedAt: null } } as never),
-        db.kpi?.findMany({ orderBy: { createdAt: "desc" }, take: 8 } as never),
-      ]) as [ErpProject[], ErpTask[], ErpWorkOrder[], ErpApprovalRequest[], ErpInventoryItem[], ErpOperationalKpi[]];
-
-      return buildOverview(projects, tasks, workOrders, approvals, inv ?? [], kpis ?? []);
-    }
-  } catch { /* fallthrough */ }
-
-  return buildOverview(MOCK_PROJECTS, MOCK_TASKS, MOCK_WORK_ORDERS, MOCK_APPROVALS, MOCK_INVENTORY, MOCK_KPIS);
-}
-
-function buildOverview(
-  projects: ErpProject[], tasks: ErpTask[], workOrders: ErpWorkOrder[],
-  approvals: ErpApprovalRequest[], inv: ErpInventoryItem[], kpis: ErpOperationalKpi[]
-): ErpOverview {
-  const now = new Date().toISOString();
-  const byProjStatus = { PLANNED: 0, ACTIVE: 0, ON_HOLD: 0, COMPLETED: 0, CANCELLED: 0 };
-  projects.forEach(p => { byProjStatus[p.status] = (byProjStatus[p.status] ?? 0) + 1; });
-
-  const byTaskStatus = { TODO: 0, IN_PROGRESS: 0, BLOCKED: 0, REVIEW: 0, DONE: 0, CANCELLED: 0 };
-  tasks.forEach(t => { byTaskStatus[t.status] = (byTaskStatus[t.status] ?? 0) + 1; });
-
-  const byWoStatus = { OPEN: 0, ASSIGNED: 0, IN_PROGRESS: 0, WAITING_APPROVAL: 0, COMPLETED: 0, CANCELLED: 0 };
-  workOrders.forEach(w => { byWoStatus[w.status] = (byWoStatus[w.status] ?? 0) + 1; });
-
-  const totalBudget = projects.reduce((s, p) => s + (p.budget ?? 0), 0);
-  const totalActual = projects.reduce((s, p) => s + p.actualCost, 0);
-  const lowStock    = inv.filter(i => i.quantity <= i.reorderLevel);
-  const overdue     = tasks.filter(t => t.dueDate && iso(t.dueDate) < now && !t.completedAt);
-  const pending     = approvals.filter(a => a.status === "PENDING");
-  const openWo      = workOrders.filter(w => !["COMPLETED","CANCELLED"].includes(w.status));
-
-  const totalRes     = 8;
-  const usedRes      = tasks.filter(t => t.assigneeId).length;
-  const utilization  = totalRes > 0 ? Math.min(100, Math.round((usedRes / totalRes) * 100)) : 0;
-
-  const recent = [
-    ...tasks.filter(t => t.completedAt).slice(0, 3).map(t => ({ type: "task_completed", description: `Task completed: ${t.title}`, createdAt: t.completedAt! })),
-    ...workOrders.filter(w => w.completedAt).slice(0, 2).map(w => ({ type: "work_order_completed", description: `Work order completed: ${w.title}`, createdAt: w.completedAt! })),
-    ...approvals.filter(a => a.decidedAt).slice(0, 2).map(a => ({ type: "approval_decided", description: `Approval ${a.status.toLowerCase()}: ${a.title}`, createdAt: a.decidedAt! })),
-  ].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8).map(r => ({ ...r, createdAt: iso(r.createdAt) }));
-
+function toMember(row: Row): ErpTeamMember {
+  const user = (row.member as { user?: { name?: unknown; email?: unknown } | null } | null | undefined)?.user;
   return {
-    activeProjects:     byProjStatus.ACTIVE,
-    overdueTasks:       overdue.length,
-    openWorkOrders:     openWo.length,
-    inventoryWarnings:  lowStock.length,
-    pendingApprovals:   pending.length,
-    totalBudget,
-    totalActualCost:    totalActual,
-    resourceUtilization: utilization,
-    recentActivity:     recent,
-    projectsByStatus:   byProjStatus,
-    tasksByStatus:      byTaskStatus,
-    workOrdersByStatus: byWoStatus,
-    kpiSummary:         kpis.slice(0, 6),
+    id: row.id,
+    teamId: row.teamId as string,
+    userId: row.userId as string,
+    role: row.role as string,
+    availability: row.availability as number,
+    joinedAt: iso(row.joinedAt),
+    name: typeof user?.name === "string" ? user.name : null,
+    email: typeof user?.email === "string" ? user.email : null,
   };
 }
 
-// ── Projects ──────────────────────────────────────────────────────────────────
-
-export async function getProjects(status?: string): Promise<ErpProject[]> {
-  try {
-    const db = await m();
-    if (db?.proj) {
-      const where = status ? { status, deletedAt: null } : { deletedAt: null };
-      const rows = await db.proj.findMany({ where, orderBy: { updatedAt: "desc" } } as never) as ErpProject[];
-      return rows.map(ts);
-    }
-  } catch { /* fallthrough */ }
-  return status ? MOCK_PROJECTS.filter(p => p.status === status) : [...MOCK_PROJECTS];
+/** A resource as seen by this caller. For non-owners `costRate` is null and `financialsVisible` is false. */
+export interface ErpResourceView extends ErpResource {
+  financialsVisible: boolean;
 }
 
-export async function getProjectById(id: string): Promise<ErpProjectFull | null> {
-  try {
-    const db = await m();
-    if (db?.proj) {
-      const row = await db.proj.findFirst({
-        where:   { id, deletedAt: null },
-        include: { milestones: true, tasks: { where: { deletedAt: null } }, workOrders: { where: { deletedAt: null } }, costs: true },
-      } as never) as ErpProjectFull | null;
-      if (row) return ts(row) as ErpProjectFull;
-    }
-  } catch { /* fallthrough */ }
-  return MOCK_PROJECTS_FULL.find(p => p.id === id) ?? null;
-}
-
-export async function createProject(data: {
-  name: string; description?: string | null; status?: string;
-  startDate?: string | null; endDate?: string | null; budget?: number | null;
-  crmAccountId?: string | null; managerId?: string | null; createdBy?: string | null;
-}): Promise<ErpProject | null> {
-  try {
-    const db = await m();
-    if (db?.proj) {
-      const row = await db.proj.create({ data: { ...data, updatedAt: new Date() } } as never) as ErpProject;
-      return ts(row);
-    }
-  } catch { /* fallthrough */ }
-  return null;
-}
-
-export async function updateProject(id: string, data: Partial<{
-  name: string; description: string | null; status: string;
-  endDate: string | null; budget: number | null;
-}>): Promise<ErpProject | null> {
-  try {
-    const db = await m();
-    if (db?.proj) {
-      const row = await db.proj.update({ where: { id }, data: { ...data, updatedAt: new Date() } } as never) as ErpProject;
-      return ts(row);
-    }
-  } catch { /* fallthrough */ }
-  return null;
-}
-
-// ── Tasks ─────────────────────────────────────────────────────────────────────
-
-export async function getTasks(projectId?: string, status?: string): Promise<ErpTask[]> {
-  try {
-    const db = await m();
-    if (db?.task) {
-      const where: Record<string, unknown> = { deletedAt: null };
-      if (projectId) where.projectId = projectId;
-      if (status)    where.status    = status;
-      const rows = await db.task.findMany({ where, orderBy: { updatedAt: "desc" } } as never) as ErpTask[];
-      return rows.map(ts);
-    }
-  } catch { /* fallthrough */ }
-  let list = MOCK_TASKS;
-  if (projectId) list = list.filter(t => t.projectId === projectId);
-  if (status)    list = list.filter(t => t.status === status);
-  return list;
-}
-
-export async function getTaskById(id: string): Promise<(ErpTask & { comments: import("./types").ErpTaskComment[] }) | null> {
-  try {
-    const db = await m();
-    if (db?.task) {
-      const row = await db.task.findFirst({
-        where: { id, deletedAt: null }, include: { comments: { orderBy: { createdAt: "asc" } } },
-      } as never) as (ErpTask & { comments: import("./types").ErpTaskComment[] }) | null;
-      if (row) return ts(row) as typeof row;
-    }
-  } catch { /* fallthrough */ }
-  const task = MOCK_TASKS.find(t => t.id === id);
-  return task ? { ...task, comments: [] } : null;
-}
-
-export async function createTask(data: {
-  title: string; description?: string | null; priority?: string;
-  projectId?: string | null; teamId?: string | null; assigneeId?: string | null;
-  dueDate?: string | null; estimatedHours?: number | null; createdBy?: string | null;
-}): Promise<ErpTask | null> {
-  try {
-    const db = await m();
-    if (db?.task) {
-      const row = await db.task.create({ data: { ...data, updatedAt: new Date() } } as never) as ErpTask;
-      return ts(row);
-    }
-  } catch { /* fallthrough */ }
-  return null;
-}
-
-export async function updateTask(id: string, data: Partial<{
-  title: string; status: string; priority: string;
-  assigneeId: string | null; dueDate: string | null;
-}>): Promise<ErpTask | null> {
-  try {
-    const db = await m();
-    if (db?.task) {
-      const row = await db.task.update({ where: { id }, data: { ...data, updatedAt: new Date() } } as never) as ErpTask;
-      return ts(row);
-    }
-  } catch { /* fallthrough */ }
-  return null;
-}
-
-// ── Teams ─────────────────────────────────────────────────────────────────────
-
-export async function getTeams(): Promise<ErpTeam[]> {
-  try {
-    const db = await m();
-    if (db?.team) {
-      const rows = await db.team.findMany({ orderBy: { createdAt: "desc" } } as never) as ErpTeam[];
-      return rows.map(ts);
-    }
-  } catch { /* fallthrough */ }
-  return MOCK_TEAMS;
-}
-
-export async function getTeamById(id: string): Promise<ErpTeamFull | null> {
-  try {
-    const db = await m();
-    if (db?.team) {
-      const row = await db.team.findUnique({
-        where: { id }, include: { members: true },
-      } as never) as ErpTeamFull | null;
-      if (row) return ts(row) as ErpTeamFull;
-    }
-  } catch { /* fallthrough */ }
-  return MOCK_TEAMS_FULL.find(t => t.id === id) ?? null;
-}
-
-export async function createTeam(data: {
-  name: string; description?: string | null; leadId?: string | null; capacity?: number;
-}): Promise<ErpTeam | null> {
-  try {
-    const db = await m();
-    if (db?.team) {
-      const row = await db.team.create({ data: { ...data, updatedAt: new Date() } } as never) as ErpTeam;
-      return ts(row);
-    }
-  } catch { /* fallthrough */ }
-  return null;
-}
-
-// ── Resources ─────────────────────────────────────────────────────────────────
-
-export async function getResources(type?: string): Promise<ErpResource[]> {
-  try {
-    const db = await m();
-    if (db?.res) {
-      const where = type ? { type } : {};
-      const rows = await db.res.findMany({ where, orderBy: { createdAt: "desc" } } as never) as ErpResource[];
-      return rows.map(ts);
-    }
-  } catch { /* fallthrough */ }
-  return type ? MOCK_RESOURCES.filter(r => r.type === type) : MOCK_RESOURCES;
-}
-
-export async function createResource(data: {
-  name: string; type: string; description?: string | null;
-  costRate?: number | null; projectId?: string | null;
-}): Promise<ErpResource | null> {
-  try {
-    const db = await m();
-    if (db?.res) {
-      const row = await db.res.create({ data: { ...data, updatedAt: new Date() } } as never) as ErpResource;
-      return ts(row);
-    }
-  } catch { /* fallthrough */ }
-  return null;
-}
-
-// ── Inventory ─────────────────────────────────────────────────────────────────
-
-export async function getInventory(category?: string): Promise<ErpInventoryItem[]> {
-  try {
-    const db = await m();
-    if (db?.inv) {
-      const where: Record<string, unknown> = { deletedAt: null };
-      if (category) where.category = category;
-      const rows = await db.inv.findMany({ where, orderBy: { name: "asc" } } as never) as ErpInventoryItem[];
-      return rows.map(ts);
-    }
-  } catch { /* fallthrough */ }
-  let list = MOCK_INVENTORY.filter(i => !i.deletedAt);
-  if (category) list = list.filter(i => i.category === category);
-  return list;
-}
-
-export async function getInventoryById(id: string): Promise<ErpInventoryItemFull | null> {
-  try {
-    const db = await m();
-    if (db?.inv) {
-      const row = await db.inv.findFirst({
-        where:   { id, deletedAt: null },
-        include: { movements: { orderBy: { createdAt: "desc" }, take: 20 } },
-      } as never) as ErpInventoryItemFull | null;
-      if (row) return ts(row) as ErpInventoryItemFull;
-    }
-  } catch { /* fallthrough */ }
-  return MOCK_INVENTORY_FULL.find(i => i.id === id) ?? null;
-}
-
-export async function updateInventory(id: string, data: Partial<{
-  quantity: number; reserved: number; reorderLevel: number; location: string | null;
-}>): Promise<ErpInventoryItem | null> {
-  try {
-    const db = await m();
-    if (db?.inv) {
-      const row = await db.inv.update({ where: { id }, data: { ...data, updatedAt: new Date() } } as never) as ErpInventoryItem;
-      return ts(row);
-    }
-  } catch { /* fallthrough */ }
-  return null;
-}
-
-// ── Work Orders ───────────────────────────────────────────────────────────────
-
-export async function getWorkOrders(status?: string, projectId?: string): Promise<ErpWorkOrder[]> {
-  try {
-    const db = await m();
-    if (db?.wo) {
-      const where: Record<string, unknown> = { deletedAt: null };
-      if (status)    where.status    = status;
-      if (projectId) where.projectId = projectId;
-      const rows = await db.wo.findMany({ where, orderBy: { updatedAt: "desc" } } as never) as ErpWorkOrder[];
-      return rows.map(ts);
-    }
-  } catch { /* fallthrough */ }
-  let list = MOCK_WORK_ORDERS.filter(w => !w.deletedAt);
-  if (status)    list = list.filter(w => w.status === status);
-  if (projectId) list = list.filter(w => w.projectId === projectId);
-  return list;
-}
-
-export async function getWorkOrderById(id: string): Promise<ErpWorkOrderFull | null> {
-  try {
-    const db = await m();
-    if (db?.wo) {
-      const row = await db.wo.findFirst({
-        where:   { id, deletedAt: null },
-        include: { activities: { orderBy: { createdAt: "asc" } } },
-      } as never) as ErpWorkOrderFull | null;
-      if (row) return ts(row) as ErpWorkOrderFull;
-    }
-  } catch { /* fallthrough */ }
-  return MOCK_WORK_ORDERS_FULL.find(w => w.id === id) ?? null;
-}
-
-export async function createWorkOrder(data: {
-  title: string; description?: string | null; priority?: string;
-  projectId?: string | null; teamId?: string | null;
-  dueDate?: string | null; requiresApproval?: boolean; createdBy?: string | null;
-}): Promise<ErpWorkOrder | null> {
-  try {
-    const db = await m();
-    if (db?.wo) {
-      const row = await db.wo.create({ data: { ...data, updatedAt: new Date() } } as never) as ErpWorkOrder;
-      return ts(row);
-    }
-  } catch { /* fallthrough */ }
-  return null;
-}
-
-export async function updateWorkOrder(id: string, data: Partial<{
-  status: string; priority: string; assigneeId: string | null;
-  completionNote: string | null;
-}>): Promise<ErpWorkOrder | null> {
-  try {
-    const db = await m();
-    if (db?.wo) {
-      const row = await db.wo.update({ where: { id }, data: { ...data, updatedAt: new Date() } } as never) as ErpWorkOrder;
-      return ts(row);
-    }
-  } catch { /* fallthrough */ }
-  return null;
-}
-
-// ── Approvals ─────────────────────────────────────────────────────────────────
-
-export async function getApprovals(status?: string): Promise<ErpApprovalRequestFull[]> {
-  try {
-    const db = await m();
-    if (db?.apr) {
-      const where = status ? { status } : {};
-      const rows = await db.apr.findMany({
-        where, include: { steps: { orderBy: { order: "asc" } } }, orderBy: { createdAt: "desc" },
-      } as never) as ErpApprovalRequestFull[];
-      return rows.map(r => ts(r) as ErpApprovalRequestFull);
-    }
-  } catch { /* fallthrough */ }
-  let list = MOCK_APPROVALS_FULL;
-  if (status) list = list.filter(a => a.status === status);
-  return list;
-}
-
-export async function updateApproval(id: string, data: {
-  status: string; decision?: string | null; decidedBy?: string | null;
-}): Promise<ErpApprovalRequest | null> {
-  try {
-    const db = await m();
-    if (db?.apr) {
-      const row = await db.apr.update({
-        where: { id }, data: { ...data, decidedAt: new Date(), updatedAt: new Date() },
-      } as never) as ErpApprovalRequest;
-      return ts(row);
-    }
-  } catch { /* fallthrough */ }
-  return null;
-}
-
-// ── KPIs ──────────────────────────────────────────────────────────────────────
-
-export async function getErpKpiReport(): Promise<ErpKpiReport> {
-  try {
-    const db = await m();
-    if (db?.kpi) {
-      const rows = await db.kpi.findMany({ orderBy: { createdAt: "desc" } } as never) as ErpOperationalKpi[];
-      if (rows.length > 0) return buildKpiReport(rows);
-    }
-  } catch { /* fallthrough */ }
-  return buildKpiReport(MOCK_KPIS);
-}
-
-function buildKpiReport(kpis: ErpOperationalKpi[]): ErpKpiReport {
-  const get = (cat: string, name: string) => kpis.find(k => k.category === cat && k.name.includes(name))?.value ?? 0;
+/** `costRate` is returned only to holders of view_erp_compensation. */
+function toResource(row: Row, canViewCompensation: boolean): ErpResourceView {
   return {
-    projectCompletionRate:   get("PROJECTS",   "Completion"),
-    taskThroughput:          get("TASKS",      "Throughput"),
-    workOrderCompletionRate: get("OPERATIONS", "Completion"),
-    inventoryRisk:           get("INVENTORY",  "Risk"),
-    resourceUtilization:     get("RESOURCES",  "Utilization"),
-    budgetVariance:          get("FINANCE",    "Variance"),
-    scheduleVariance:        get("SCHEDULE",   "Variance"),
-    approvalCycleTime:       get("APPROVALS",  "Cycle"),
-    kpis,
+    id: row.id,
+    organizationId: (row.organizationId as string | null) ?? null,
+    name: row.name as string,
+    type: row.type as ErpResource["type"],
+    description: (row.description as string | null) ?? null,
+    costRate: canViewCompensation ? ((row.costRate as number | null) ?? null) : null,
+    currency: row.currency as string,
+    isAvailable: row.isAvailable as boolean,
+    projectId: (row.projectId as string | null) ?? null,
+    workOrderId: (row.workOrderId as string | null) ?? null,
+    version: row.version as number,
+    createdAt: iso(row.createdAt),
+    updatedAt: iso(row.updatedAt),
+    financialsVisible: canViewCompensation,
   };
+}
+
+/**
+ * Audit row written inside the same transaction as the mutation. `before` and
+ * `after` carry only non-sensitive fields. A sensitive field (costRate) is
+ * reported by name, never by value.
+ */
+async function audit(
+  tx: ErpTx,
+  ctx: ErpCtx,
+  args: { action: string; entityType: string; entityId: string; changedFields: string[]; before?: object; after?: object },
+): Promise<void> {
+  await tx.auditLog.create({
+    data: {
+      userId: ctx.scope.userId,
+      organizationId: ctx.scope.organizationId,
+      action: args.action,
+      entityType: args.entityType,
+      entityId: args.entityId,
+      outcome: "SUCCESS",
+      correlationId: ctx.correlationId,
+      metadata: {
+        changedFields: args.changedFields,
+        before: args.before ?? null,
+        after: args.after ?? null,
+      },
+    },
+  });
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  return typeof err === "object" && err !== null && (err as { code?: unknown }).code === "P2002";
+}
+
+function assertCompensationAccess(ctx: ErpCtx, touched: boolean): void {
+  if (touched && !ctx.scope.canViewCompensation) throw new ErpError(403, "FORBIDDEN");
+}
+
+function idempotencyFailure(reason: "KEY_INVALID" | "KEY_REUSED"): never {
+  if (reason === "KEY_INVALID") throw new ErpError(400, "IDEMPOTENCY_KEY_INVALID");
+  throw new ErpError(409, "IDEMPOTENCY_KEY_REUSED");
+}
+
+async function requireKey(ctx: ErpCtx): Promise<string> {
+  if (!ctx.idempotencyKey) throw new ErpError(400, "IDEMPOTENCY_KEY_INVALID");
+  return ctx.idempotencyKey;
+}
+
+// ── Module status (no internals) ─────────────────────────────────────────────
+
+/** Whether the tenant-scoped ERP modules can reach the database. */
+export async function getErpDatabaseStatus(): Promise<"available" | "unavailable"> {
+  try {
+    const prisma = (await getPrisma()) as unknown as { $queryRawUnsafe?: (q: string) => Promise<unknown> } | null;
+    if (!prisma?.$queryRawUnsafe) return "unavailable";
+    await prisma.$queryRawUnsafe("SELECT 1");
+    return "available";
+  } catch {
+    return "unavailable";
+  }
+}
+
+// ── Teams ────────────────────────────────────────────────────────────────────
+
+export async function listTeams(ctx: ErpCtx, q: Pick<ListQuery, "limit" | "cursor">): Promise<ChildPage<ErpTeam>> {
+  const c = await client();
+  const organizationId = ctx.scope.organizationId;
+  if (q.cursor) {
+    const anchor = await c.erpTeam.findFirst({ where: { id: q.cursor, organizationId } });
+    if (!anchor) throw new ErpError(400, "INVALID_REQUEST");
+  }
+  const rows = await c.erpTeam.findMany({
+    where: { organizationId },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: q.limit + 1,
+    ...cursorArgs(q.cursor),
+  });
+  return pageOf(rows, q.limit, toTeam);
+}
+
+/** A team with its first page of members. `memberCount` is a database count over every member. */
+export interface ErpTeamDetailView extends Omit<ErpTeamFull, "members"> {
+  members: ChildPage<ErpTeamMember>;
+  memberCount: number;
+}
+
+export async function getTeam(ctx: ErpCtx, id: string): Promise<ErpTeamDetailView> {
+  const c = await client();
+  const organizationId = ctx.scope.organizationId;
+  const row = await c.erpTeam.findFirst({ where: { id, organizationId } });
+  if (!row) throw new ErpError(404, "NOT_FOUND");
+  const [members, memberCount] = await Promise.all([
+    c.erpTeamMember.findMany({
+      where: { teamId: id, organizationId },
+      orderBy: [{ joinedAt: "asc" }, { id: "asc" }],
+      take: CHILD_DETAIL_PAGE + 1,
+      include: MEMBER_INCLUDE,
+    }),
+    c.erpTeamMember.count({ where: { teamId: id, organizationId } }),
+  ]);
+  return { ...toTeam(row), members: pageOf(members, CHILD_DETAIL_PAGE, toMember), memberCount };
+}
+
+/** Next page of a team's members. The team must belong to the caller's organization. */
+export async function listTeamMembers(ctx: ErpCtx, teamId: string, q: ChildListQuery): Promise<ChildPage<ErpTeamMember>> {
+  const c = await client();
+  const organizationId = ctx.scope.organizationId;
+  const team = await c.erpTeam.findFirst({ where: { id: teamId, organizationId } });
+  if (!team) throw new ErpError(404, "NOT_FOUND");
+  if (q.cursor) {
+    const anchor = await c.erpTeamMember.findFirst({ where: { id: q.cursor, teamId, organizationId } });
+    if (!anchor) throw new ErpError(400, "INVALID_REQUEST");
+  }
+  const rows = await c.erpTeamMember.findMany({
+    where: { teamId, organizationId },
+    orderBy: [{ joinedAt: "asc" }, { id: "asc" }],
+    take: q.limit + 1,
+    ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
+    include: MEMBER_INCLUDE,
+  });
+  return pageOf(rows, q.limit, toMember);
+}
+
+export interface MemberCandidate {
+  userId: string;
+  name: string | null;
+  email: string | null;
+}
+
+/**
+ * Active members of the caller's organization who are not yet in this team: the
+ * add-member picker. Searchable by name or email. The team must belong to the caller's
+ * organization. A cursor must name a row of this same filtered list.
+ */
+export async function listMemberCandidates(ctx: ErpCtx, teamId: string, q: MemberCandidateQuery): Promise<ChildPage<MemberCandidate>> {
+  const c = await client();
+  const organizationId = ctx.scope.organizationId;
+  const team = await c.erpTeam.findFirst({ where: { id: teamId, organizationId } });
+  if (!team) throw new ErpError(404, "NOT_FOUND");
+  const term = q.q && q.q.length > 0 ? q.q : null;
+  const where = {
+    organizationId,
+    status: "ACTIVE" as const,
+    erpTeamMembers: { none: { teamId } },
+    ...(term
+      ? {
+          user: {
+            OR: [
+              { name: { contains: term, mode: "insensitive" as const } },
+              { email: { contains: term, mode: "insensitive" as const } },
+            ],
+          },
+        }
+      : {}),
+  };
+  if (q.cursor) {
+    const anchor = await c.organizationMember.findFirst({ where: { ...where, id: q.cursor }, select: { id: true } });
+    if (!anchor) throw new ErpError(400, "INVALID_REQUEST");
+  }
+  const rows = await c.organizationMember.findMany({
+    where,
+    select: { id: true, userId: true, user: { select: { name: true, email: true } } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: q.limit + 1,
+    ...cursorArgs(q.cursor),
+  });
+  return pageOf(rows, q.limit, row => {
+    const user = row.user as { name?: unknown; email?: unknown } | null | undefined;
+    return {
+      userId: row.userId as string,
+      name: typeof user?.name === "string" ? user.name : null,
+      email: typeof user?.email === "string" ? user.email : null,
+    };
+  });
+}
+
+export async function createTeam(ctx: ErpCtx, input: TeamCreateInput): Promise<IdempotentSuccess<ErpTeam>> {
+  const c = await client();
+  const organizationId = ctx.scope.organizationId;
+  const outcome = await runIdempotentWrite<ErpTeam, ErpTx>({
+    store: c,
+    organizationId,
+    actorUserId: ctx.scope.userId,
+    operation: "erp.team.create",
+    rawKey: await requireKey(ctx),
+    payload: input,
+    write: async tx => {
+      const row = await tx.erpTeam.create({
+        data: { organizationId, name: input.name, description: input.description ?? null, capacity: input.capacity ?? 0 },
+      });
+      await audit(tx, ctx, { action: "erp.team.create", entityType: "ErpTeam", entityId: row.id, changedFields: ["name", "description", "capacity"], after: { name: input.name } });
+      return { resultType: "ErpTeam", resultId: row.id, value: toTeam(row) };
+    },
+    replay: async (_type, id) => {
+      const row = await c.erpTeam.findFirst({ where: { id, organizationId } });
+      return row ? toTeam(row) : null;
+    },
+  });
+  if (outcome.kind === "refused") idempotencyFailure(outcome.reason);
+  return outcome;
+}
+
+export async function updateTeam(ctx: ErpCtx, id: string, input: TeamUpdateInput): Promise<ErpTeam> {
+  const c = await client();
+  const organizationId = ctx.scope.organizationId;
+  const changes: Record<string, unknown> = {};
+  if (input.name !== undefined) changes.name = input.name;
+  if (input.description !== undefined) changes.description = input.description;
+  if (input.capacity !== undefined) changes.capacity = input.capacity;
+  const changedFields = Object.keys(changes);
+
+  return c.$transaction(async tx => {
+    const before = await tx.erpTeam.findFirst({ where: { id, organizationId } });
+    if (!before) throw new ErpError(404, "NOT_FOUND");
+    if (before.version !== input.version) throw new ErpError(409, "VERSION_CONFLICT");
+
+    const res = await tx.erpTeam.updateMany({
+      where: { id, organizationId, version: input.version },
+      data: { ...changes, version: { increment: 1 } },
+    });
+    if (res.count === 0) throw new ErpError(409, "VERSION_CONFLICT");
+
+    const after = await tx.erpTeam.findFirst({ where: { id, organizationId } });
+    if (!after) throw new ErpError(404, "NOT_FOUND");
+    await audit(tx, ctx, {
+      action: "erp.team.update",
+      entityType: "ErpTeam",
+      entityId: id,
+      changedFields,
+      before: { name: before.name, description: before.description, capacity: before.capacity },
+      after: { name: after.name, description: after.description, capacity: after.capacity },
+    });
+    return toTeam(after);
+  });
+}
+
+export async function addTeamMember(ctx: ErpCtx, teamId: string, input: TeamMemberAddInput): Promise<IdempotentSuccess<ErpTeamMember>> {
+  const c = await client();
+  const organizationId = ctx.scope.organizationId;
+  let outcome;
+  try {
+    outcome = await runIdempotentWrite<ErpTeamMember, ErpTx>({
+      store: c,
+      organizationId,
+      actorUserId: ctx.scope.userId,
+      operation: "erp.team.member.add",
+      rawKey: await requireKey(ctx),
+      payload: { teamId, ...input },
+      write: async tx => {
+        const team = await tx.erpTeam.findFirst({ where: { id: teamId, organizationId } });
+        if (!team) throw new ErpError(404, "NOT_FOUND");
+        // Only an ACTIVE member of THIS organization can join a team.
+        const membership = await tx.organizationMember.findFirst({
+          where: { organizationId, userId: input.userId, status: "ACTIVE" },
+        });
+        if (!membership) throw new ErpError(422, "MEMBER_NOT_IN_ORGANIZATION");
+        const exists = await tx.erpTeamMember.findFirst({ where: { organizationId, teamId, userId: input.userId } });
+        if (exists) throw new ErpError(409, "ALREADY_MEMBER");
+
+        const row = await tx.erpTeamMember.create({
+          data: { organizationId, teamId, userId: input.userId, role: input.role, availability: input.availability },
+        });
+        await audit(tx, ctx, {
+          action: "erp.team.member.add",
+          entityType: "ErpTeamMember",
+          entityId: row.id,
+          changedFields: ["userId", "role", "availability"],
+          after: { teamId, role: input.role, availability: input.availability },
+        });
+        return { resultType: "ErpTeamMember", resultId: row.id, value: toMember(row) };
+      },
+      replay: async (_type, id) => {
+        const row = await c.erpTeamMember.findFirst({ where: { id, organizationId } });
+        return row ? toMember(row) : null;
+      },
+    });
+  } catch (err) {
+    // Two requests racing to add the same member: the loser's transaction rolls
+    // back on the (teamId, userId) unique constraint. That is a conflict, not an outage.
+    if (isUniqueViolation(err)) throw new ErpError(409, "ALREADY_MEMBER");
+    throw err;
+  }
+  if (outcome.kind === "refused") idempotencyFailure(outcome.reason);
+  return outcome;
+}
+
+/**
+ * Removes a member. DELETE carries no Idempotency-Key: the parent team must belong
+ * to the caller's organization (404 otherwise, whatever the member row says), and
+ * a member that is already gone answers `removed: false`, so a retry is a 204 too.
+ * Only the first effective removal writes an audit row.
+ */
+export async function removeTeamMember(ctx: ErpCtx, teamId: string, userId: string): Promise<{ removed: boolean }> {
+  const c = await client();
+  const organizationId = ctx.scope.organizationId;
+  return c.$transaction(async tx => {
+    const team = await tx.erpTeam.findFirst({ where: { id: teamId, organizationId } });
+    if (!team) throw new ErpError(404, "NOT_FOUND");
+    const res = await tx.erpTeamMember.deleteMany({ where: { teamId, userId, organizationId } });
+    if (res.count === 0) return { removed: false };
+    await audit(tx, ctx, {
+      action: "erp.team.member.remove",
+      entityType: "ErpTeamMember",
+      entityId: teamId,
+      changedFields: ["userId"],
+      before: { teamId },
+    });
+    return { removed: true };
+  });
+}
+
+// ── Resources ────────────────────────────────────────────────────────────────
+
+export async function listResources(ctx: ErpCtx, q: ListQuery): Promise<ChildPage<ErpResourceView>> {
+  const c = await client();
+  const organizationId = ctx.scope.organizationId;
+  if (q.cursor) {
+    const anchor = await c.erpResource.findFirst({ where: { id: q.cursor, organizationId } });
+    if (!anchor) throw new ErpError(400, "INVALID_REQUEST");
+  }
+  const rows = await c.erpResource.findMany({
+    where: { organizationId, ...(q.type ? { type: q.type } : {}) },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: q.limit + 1,
+    ...cursorArgs(q.cursor),
+  });
+  return pageOf(rows, q.limit, r => toResource(r, ctx.scope.canViewCompensation));
+}
+
+export async function getResource(ctx: ErpCtx, id: string): Promise<ErpResourceView> {
+  const c = await client();
+  const row = await c.erpResource.findFirst({ where: { id, organizationId: ctx.scope.organizationId } });
+  if (!row) throw new ErpError(404, "NOT_FOUND");
+  return toResource(row, ctx.scope.canViewCompensation);
+}
+
+export async function createResource(ctx: ErpCtx, input: ResourceCreateInput): Promise<IdempotentSuccess<ErpResourceView>> {
+  assertCompensationAccess(ctx, input.costRate !== undefined);
+  const c = await client();
+  const organizationId = ctx.scope.organizationId;
+  const outcome = await runIdempotentWrite<ErpResourceView, ErpTx>({
+    store: c,
+    organizationId,
+    actorUserId: ctx.scope.userId,
+    operation: "erp.resource.create",
+    rawKey: await requireKey(ctx),
+    payload: input,
+    write: async tx => {
+      const row = await tx.erpResource.create({
+        data: {
+          organizationId,
+          name: input.name,
+          type: input.type,
+          description: input.description ?? null,
+          costRate: input.costRate ?? null,
+        },
+      });
+      await audit(tx, ctx, {
+        action: "erp.resource.create",
+        entityType: "ErpResource",
+        entityId: row.id,
+        // Field names only for sensitive data: never the costRate value.
+        changedFields: ["name", "type", "description", ...(input.costRate !== undefined ? ["costRate"] : [])],
+        after: { type: input.type },
+      });
+      return { resultType: "ErpResource", resultId: row.id, value: toResource(row, ctx.scope.canViewCompensation) };
+    },
+    replay: async (_type, id) => {
+      const row = await c.erpResource.findFirst({ where: { id, organizationId } });
+      return row ? toResource(row, ctx.scope.canViewCompensation) : null;
+    },
+  });
+  if (outcome.kind === "refused") idempotencyFailure(outcome.reason);
+  return outcome;
+}
+
+export async function updateResource(ctx: ErpCtx, id: string, input: ResourceUpdateInput): Promise<ErpResourceView> {
+  assertCompensationAccess(ctx, input.costRate !== undefined);
+  const c = await client();
+  const organizationId = ctx.scope.organizationId;
+  const changes: Record<string, unknown> = {};
+  if (input.name !== undefined) changes.name = input.name;
+  if (input.type !== undefined) changes.type = input.type;
+  if (input.description !== undefined) changes.description = input.description;
+  if (input.costRate !== undefined) changes.costRate = input.costRate;
+  if (input.isAvailable !== undefined) changes.isAvailable = input.isAvailable;
+  const changedFields = Object.keys(changes);
+
+  return c.$transaction(async tx => {
+    const before = await tx.erpResource.findFirst({ where: { id, organizationId } });
+    if (!before) throw new ErpError(404, "NOT_FOUND");
+    if (before.version !== input.version) throw new ErpError(409, "VERSION_CONFLICT");
+
+    const res = await tx.erpResource.updateMany({
+      where: { id, organizationId, version: input.version },
+      data: { ...changes, version: { increment: 1 } },
+    });
+    if (res.count === 0) throw new ErpError(409, "VERSION_CONFLICT");
+
+    const after = await tx.erpResource.findFirst({ where: { id, organizationId } });
+    if (!after) throw new ErpError(404, "NOT_FOUND");
+    await audit(tx, ctx, {
+      action: "erp.resource.update",
+      entityType: "ErpResource",
+      entityId: id,
+      changedFields,
+      before: { type: before.type, isAvailable: before.isAvailable },
+      after: { type: after.type, isAvailable: after.isAvailable },
+    });
+    return toResource(after, ctx.scope.canViewCompensation);
+  });
 }

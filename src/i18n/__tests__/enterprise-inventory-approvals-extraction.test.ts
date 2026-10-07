@@ -147,32 +147,41 @@ describe("enterpriseOperations inventory/approvals — catalog structure & parit
     expect(deEO).toBeTruthy();
   });
 
-  it("top-level objects are exactly the eleven post-D sub-objects", () => {
+  // PINNED CHANGE (ERP child pagination): moduleUnavailable removed (its keys were unused); lists gained loadMore and loadFailed.
+  // Still: the eleven post-D sub-objects, the HRIS-0.5 tenant-status blocks, and the operational-UX blocks.
+  it("top-level objects are the eleven post-D sub-objects plus the three HRIS-0.5 tenant-status blocks and the three operational-UX blocks", () => {
     const expected = [
-      "approvals", "dashboard", "inventory", "kpis", "nav", "projects",
-      "resources", "settings", "tasks", "teams", "workOrders",
+      "approvals", "dashboard", "financials", "inventory", "kpis", "lists", "moduleAccess", "nav",
+      "projects", "resources", "settings", "tasks", "teams", "tenantScope", "utilization", "workOrders",
     ];
     expect(Object.keys(enEO).sort()).toEqual(expected);
     expect(Object.keys(faEO).sort()).toEqual(expected);
     expect(Object.keys(deEO).sort()).toEqual(expected);
   });
 
-  it("inventory has exactly 18 leaves, approvals 9 (27 combined new)", () => {
+  // PINNED CHANGE (ERP child pagination): inventory 19 -> 18 (movementsLimited removed: the movement list is now
+  // a cursor-paged child collection). approvals 11 unchanged; newLeaves 30 -> 29 (approvals.reasonLabel, decisionFailed).
+  it("inventory has exactly 18 leaves, approvals 11 (29 combined new)", () => {
     expect(flatten(enEO.inventory).size).toBe(18);
-    expect(flatten(enEO.approvals).size).toBe(9);
-    expect(newLeaves(enEO).size).toBe(27);
+    expect(flatten(enEO.approvals).size).toBe(11);
+    expect(newLeaves(enEO).size).toBe(29);
   });
 
-  it("enterpriseOperations total is exactly 144 leaves (117 prior + 27 new)", () => {
-    expect(flatten(enEO).size).toBe(144);
+  // PINNED CHANGE (ERP child pagination): 178 -> 175 (-5 unused keys, +2 lists.loadMore and loadFailed). Earlier: 160 -> 178 (+18): dashboard +1 (activityLimited), kpis +8
+  // (recentLimited, completion*), inventory +1, approvals +2, and the new financials (+1), utilization (+4)
+  // and lists (+1) blocks.
+  it("enterpriseOperations total is exactly 175 leaves", () => {
+    // ERP-LIST-CURSOR: -2 leaves (lists.limited, projects.count removed with the silent cap note)
+    // +13 team member-management leaves (add/remove picker, confirmations, failures)
+    expect(flatten(enEO).size).toBe(186);
     // Prior sub-objects unchanged by this phase
     expect(flatten(enEO.nav).size).toBe(11);
-    expect(flatten(enEO.dashboard).size).toBe(20);
-    expect(flatten(enEO.kpis).size).toBe(14);
+    expect(flatten(enEO.dashboard).size).toBe(21);
+    expect(flatten(enEO.kpis).size).toBe(22);
     expect(flatten(enEO.settings).size).toBe(5);
-    expect(flatten(enEO.projects).size).toBe(21);
+    expect(flatten(enEO.projects).size).toBe(20);
     expect(flatten(enEO.tasks).size).toBe(14);
-    expect(flatten(enEO.teams).size).toBe(7);
+    expect(flatten(enEO.teams).size).toBe(20);
     expect(flatten(enEO.resources).size).toBe(10);
     expect(flatten(enEO.workOrders).size).toBe(15);
   });
@@ -263,9 +272,10 @@ describe("inventory/approvals — Persian translation quality (Phase 86C4B2B1D-F
   const d = newLeaves(deEO);
 
   it("covers all 27 new leaves (guards against vacuous passes)", () => {
-    expect(e.size).toBe(27);
-    expect(f.size).toBe(27);
-    expect(d.size).toBe(27);
+    // PINNED CHANGE: 27 -> 30 (+3 operational-UX leaves: inventory.movementsLimited, approvals.reasonLabel, approvals.decisionFailed)
+    expect(e.size).toBe(29);
+    expect(f.size).toBe(29);
+    expect(d.size).toBe(29);
   });
 
   it("every fa leaf outside the allowlist is translated (fa !== en)", () => {
@@ -366,8 +376,9 @@ describe("inventory/approvals — German translation quality (Phase 86C4B2B1D-DE
   const d = newLeaves(deEO);
 
   it("covers all 27 new leaves (guards against vacuous passes)", () => {
-    expect(e.size).toBe(27);
-    expect(d.size).toBe(27);
+    // PINNED CHANGE: 27 -> 30 (+3 operational-UX leaves, see the fa block above)
+    expect(e.size).toBe(29);
+    expect(d.size).toBe(29);
   });
 
   it("every de leaf outside the allowlist is translated (de !== en)", () => {
@@ -554,11 +565,14 @@ describe("Inventory/Approvals behavior & raw values preserved", () => {
     const src = read("src/components/erp/ApprovalListClient.tsx");
     expect(src).toContain("fetch(`/api/erp/approvals/${id}`");
     expect(src).toContain('method: "PATCH"');
-    expect(src).toContain("JSON.stringify({ status })");
+    // PINNED CHANGE: a decision now carries the row version (optimistic concurrency) and a required reason.
+    expect(src).toContain("JSON.stringify({ version: apr.version, status, reason })");
     expect(src).toContain('decide(apr.id, "APPROVED")');
     expect(src).toContain('decide(apr.id, "REJECTED")');
     // optimistic list update retained
-    expect(src).toContain("useState(initial)");
+    // the optimistic list update now lives in the shared paged state (usePagedItems)
+    expect(src).toContain("usePagedItems(page, endpoint)");
+    expect(src).toContain("setApprovals(prev => prev.map(a => a.id === id ? { ...a, ...updated } : a))");
   });
 
   it("raw inventory movement enum tokens stay raw (color map + untransformed display)", () => {
@@ -625,10 +639,12 @@ describe("Inventory/Approvals behavior & raw values preserved", () => {
   });
 
   it("data-access calls and searchParams filter pass-through are unchanged", () => {
-    expect(read("src/app/[locale]/erp/inventory/page.tsx")).toContain("getInventory(category)");
+    // HRIS-0.5B: calls now take the server-side tenant context (ErpCtx) first; the
+    // list filter is parsed by a strict Zod query schema before it reaches the query.
+    expect(read("src/app/[locale]/erp/inventory/page.tsx")).toContain("listInventory(access.ctx, query)");
     expect(read("src/app/[locale]/erp/inventory/page.tsx")).toContain("const { category } = await searchParams;");
-    expect(read(DELEGATING_PAGE)).toContain("getInventoryById(id)");
-    expect(read("src/app/[locale]/erp/approvals/page.tsx")).toContain("getApprovals(status)");
+    expect(read(DELEGATING_PAGE)).toContain("getInventoryById(access.ctx, id)");
+    expect(read("src/app/[locale]/erp/approvals/page.tsx")).toContain("listApprovals(access.ctx, query)");
     expect(read("src/app/[locale]/erp/approvals/page.tsx")).toContain("const { status } = await searchParams;");
   });
 

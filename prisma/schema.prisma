@@ -654,6 +654,24 @@ model Organization {
   createdAt     DateTime                 @default(now())
   updatedAt     DateTime                 @updatedAt
   members              OrganizationMember[]
+  erpProjects ErpProject[]
+  erpProjectMilestones ErpProjectMilestone[]
+  erpTasks ErpTask[]
+  erpTaskComments ErpTaskComment[]
+  erpTeams ErpTeam[]
+  erpTeamMembers ErpTeamMember[]
+  erpResources ErpResource[]
+  erpInventoryItems ErpInventoryItem[]
+  erpInventoryMovements ErpInventoryMovement[]
+  erpWorkOrders ErpWorkOrder[]
+  erpWorkOrderActivities ErpWorkOrderActivity[]
+  erpOperationalKpis ErpOperationalKpi[]
+  erpProjectCosts ErpProjectCost[]
+  erpApprovalRequests ErpApprovalRequest[]
+  erpApprovalSteps ErpApprovalStep[]
+  erpAuditEvents ErpAuditEvent[]
+  idempotencyKeys IdempotencyKey[]
+  activeOrganizationSelections ActiveOrganizationSelection[]
   subscriptions        Subscription[]
   invoices             Invoice[]
   usageRecords         UsageRecord[]
@@ -799,6 +817,7 @@ model OrganizationMember {
   department     Department?              @relation("DepartmentMembers", fields: [departmentId], references: [id], onDelete: SetNull)
   managedDepts   Department[]             @relation("DepartmentManager")
   hiringManagerJobs AtsJob[] @relation("AtsJobHiringManager")
+  erpTeamMembers    ErpTeamMember[]
   // B1.2 — the composite target the hiring-manager tenant FK references.
   @@unique([organizationId, id])
 
@@ -5400,6 +5419,7 @@ enum ErpApprovalStatus {
 }
 
 model ErpProject {
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   id               String           @id @default(cuid())
   organizationId   String?
   name             String
@@ -5416,6 +5436,7 @@ model ErpProject {
   deletedAt        DateTime?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+  version        Int      @default(1)
 
   milestones       ErpProjectMilestone[]
   tasks            ErpTask[]
@@ -5431,6 +5452,10 @@ model ErpProject {
 }
 
 model ErpProjectMilestone {
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
   id          String     @id @default(cuid())
   projectId   String
   project     ErpProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -5445,6 +5470,10 @@ model ErpProjectMilestone {
 }
 
 model ErpTask {
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
   id             String          @id @default(cuid())
   projectId      String?
   project        ErpProject?     @relation(fields: [projectId], references: [id])
@@ -5463,6 +5492,7 @@ model ErpTask {
   deletedAt      DateTime?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  version        Int      @default(1)
 
   comments       ErpTaskComment[]
 
@@ -5474,6 +5504,10 @@ model ErpTask {
 }
 
 model ErpTaskComment {
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
   id        String   @id @default(cuid())
   taskId    String
   task      ErpTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
@@ -5485,12 +5519,14 @@ model ErpTaskComment {
 }
 
 model ErpTeam {
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   id             String   @id @default(cuid())
   organizationId String?
   name           String
   description    String?
   leadId         String?
   capacity       Int      @default(0)
+  version        Int      @default(1)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -5498,14 +5534,20 @@ model ErpTeam {
   tasks      ErpTask[]
   workOrders ErpWorkOrder[]
 
-  @@index([organizationId])
+  @@unique([organizationId, id])
+  @@index([organizationId, createdAt, id])
 }
 
 model ErpTeamMember {
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
   id           String   @id @default(cuid())
   teamId       String
-  team         ErpTeam  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  team         ErpTeam? @relation(fields: [organizationId, teamId], references: [organizationId, id], onDelete: Cascade)
   userId       String
+  member       OrganizationMember? @relation(fields: [organizationId, userId], references: [organizationId, userId], onDelete: Restrict)
   role         String   @default("member")
   availability Int      @default(100)
   joinedAt     DateTime @default(now())
@@ -5516,6 +5558,7 @@ model ErpTeamMember {
 }
 
 model ErpResource {
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   id             String          @id @default(cuid())
   organizationId String?
   name           String
@@ -5526,15 +5569,19 @@ model ErpResource {
   isAvailable    Boolean         @default(true)
   projectId      String?
   workOrderId    String?
+  version        Int             @default(1)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
+  @@unique([organizationId, id])
+  @@index([organizationId, createdAt, id])
   @@index([type])
   @@index([isAvailable])
   @@index([organizationId])
 }
 
 model ErpInventoryItem {
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   id             String   @id @default(cuid())
   organizationId String?
   sku            String
@@ -5550,6 +5597,7 @@ model ErpInventoryItem {
   deletedAt      DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  version        Int      @default(1)
 
   movements      ErpInventoryMovement[]
 
@@ -5560,6 +5608,10 @@ model ErpInventoryItem {
 }
 
 model ErpInventoryMovement {
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
   id        String                   @id @default(cuid())
   itemId    String
   item      ErpInventoryItem         @relation(fields: [itemId], references: [id], onDelete: Cascade)
@@ -5576,6 +5628,7 @@ model ErpInventoryMovement {
 }
 
 model ErpWorkOrder {
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   id               String             @id @default(cuid())
   organizationId   String?
   projectId        String?
@@ -5595,6 +5648,7 @@ model ErpWorkOrder {
   deletedAt        DateTime?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+  version        Int      @default(1)
 
   activities       ErpWorkOrderActivity[]
   approvalRequests ErpApprovalRequest[]
@@ -5606,6 +5660,10 @@ model ErpWorkOrder {
 }
 
 model ErpWorkOrderActivity {
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
   id          String       @id @default(cuid())
   workOrderId String
   workOrder   ErpWorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
@@ -5618,6 +5676,10 @@ model ErpWorkOrderActivity {
 }
 
 model ErpOperationalKpi {
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
   id          String      @id @default(cuid())
   projectId   String?
   project     ErpProject? @relation(fields: [projectId], references: [id])
@@ -5637,6 +5699,10 @@ model ErpOperationalKpi {
 }
 
 model ErpProjectCost {
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
   id          String     @id @default(cuid())
   projectId   String
   project     ErpProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -5653,6 +5719,7 @@ model ErpProjectCost {
 }
 
 model ErpApprovalRequest {
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   id             String            @id @default(cuid())
   organizationId String?
   projectId      String?
@@ -5668,6 +5735,7 @@ model ErpApprovalRequest {
   decision       String?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
+  version        Int      @default(1)
 
   steps          ErpApprovalStep[]
 
@@ -5678,6 +5746,10 @@ model ErpApprovalRequest {
 }
 
 model ErpApprovalStep {
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
   id           String             @id @default(cuid())
   requestId    String
   request      ErpApprovalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
@@ -5693,6 +5765,9 @@ model ErpApprovalStep {
 }
 
 model ErpAuditEvent {
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
   id             String   @id @default(cuid())
   organizationId String?
   entityType     String
@@ -8565,4 +8640,42 @@ model ReasoningReplayAttempt {
   run          ReasoningRun @relation(fields: [organizationId, runId], references: [organizationId, id], onDelete: Cascade, onUpdate: Cascade, map: "ReasoningReplayAttempt_run_tenant_fkey")
 
   @@index([organizationId, runId, createdAt])
+}
+
+// HRIS-0.5 — generic write idempotency (src/lib/idempotency). Scope is
+// (organizationId, operation, keyHash): the same raw key used by another
+// tenant or another operation is a different row. The row is inserted in the
+// SAME transaction as the mutation and its audit event, so a committed result
+// always has its key and a rolled-back write never leaves a key behind.
+model IdempotencyKey {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  actorUserId    String
+  operation      String
+  keyHash        String
+  payloadHash    String
+  resultType     String
+  resultId       String
+  createdAt      DateTime     @default(now())
+  expiresAt      DateTime
+
+  @@unique([organizationId, operation, keyHash])
+  @@index([expiresAt])
+}
+
+// HRIS-0.5A — server-side active organization. Keyed by the session row id (sid)
+// the server issued at login, so a client cannot choose or forge a session, and
+// a new login (new sid) starts with no selection. Every ERP request re-checks the
+// ACTIVE membership; this row is a pointer, never a grant.
+model ActiveOrganizationSelection {
+  sessionId      String       @id
+  userId         String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([organizationId])
 }
