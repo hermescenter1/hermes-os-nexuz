@@ -1,7 +1,32 @@
 import { defineConfig, configDefaults } from "vitest/config";
 import path from "path";
 
+/**
+ * Keep a shebang from destroying the module it heads.
+ *
+ * Vite's SSR transform writes the hoisted `__vite_ssr_import__` preamble at
+ * `getFileStartIndex(code)`, whose pattern requires a LINE FEED right after the
+ * shebang. JavaScript's `.` excludes CR, so a CRLF shebang (a Windows checkout
+ * under core.autocrlf=true) makes that index 0 and the preamble lands ABOVE the
+ * `#!` line. `#` is then an invalid token, V8 rejects the module with a
+ * location-less SyntaxError, and every suite importing it collects ZERO tests.
+ *
+ * Rewriting a leading `#!` to `//` removes the token entirely. The substitution
+ * is length preserving, so offsets and line/column positions are unchanged, and
+ * `map: null` tells Rollup the transform did not move code. Only what Vitest
+ * compiles is rewritten; the scripts keep their shebang on disk.
+ */
+const neutralizeShebang = {
+  name: "hermes:neutralize-shebang",
+  enforce: "pre" as const,
+  transform(code: string) {
+    if (!code.startsWith("#!")) return null;
+    return { code: `//${code.slice(2)}`, map: null };
+  },
+};
+
 export default defineConfig({
+  plugins: [neutralizeShebang],
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
   },

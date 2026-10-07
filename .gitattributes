@@ -9,6 +9,11 @@ scripts/openbao-operator-backup-static-check.mjs text eol=lf
 # checkout (Windows autocrlf) breaks parsing. Force LF on every platform.
 scripts/security/check-env-example.mjs text eol=lf
 scripts/security/__tests__/check-env-example.test.mjs text eol=lf
+# Same hazard, same remedy: the dependency-audit gate is a shebang .mjs imported
+# by two Vitest suites, and its committed blob is LF. Without this pin a Windows
+# checkout (core.autocrlf) stores it CRLF and both suites collect zero tests while
+# CI keeps enforcing the gate. vitest.config.ts neutralises the shebang as well.
+scripts/ci/dependency-audit-gate.mjs text eol=lf
 
 # PHASE 104 — the Figma visual-system plugin is fingerprinted by RAW BYTES.
 #
