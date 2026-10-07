@@ -142,12 +142,33 @@ export default async function ArticleDetailPage({
     console.error("[articles] viewCount increment failed:", e instanceof Error ? e.message : String(e));
   });
 
-  // Related: same category, excluding current article, up to 3
+  // Related: deterministic topical ranking across category boundaries.
+  // Category remains the strongest signal, but shared tags let adjacent clusters
+  // (for example OPC-UA <-> SCADA/Historian) reinforce each other.
+  const articleTags = new Set(article.tags.map(tag => tag.slug));
   const related = feed.latest
-    .filter(a => a.id !== article.id && a.category?.slug === article.category?.slug)
-    .slice(0, 3);
+    .filter(a => a.id !== article.id)
+    .map((candidate, order) => {
+      const sharedTags = candidate.tags.reduce(
+        (count, tag) => count + (articleTags.has(tag.slug) ? 1 : 0),
+        0,
+      );
+      const sameCategory =
+        article.category?.slug != null &&
+        candidate.category?.slug === article.category.slug;
 
-  // Fallback to trending if no related
+      return {
+        candidate,
+        order,
+        score: (sameCategory ? 4 : 0) + sharedTags * 2,
+      };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score || a.order - b.order)
+    .slice(0, 3)
+    .map(({ candidate }) => candidate);
+
+  // Fallback to trending only when the corpus has no topical relation at all.
   const finalRelated = related.length > 0
     ? related
     : feed.trending.filter(a => a.id !== article.id).slice(0, 3);
