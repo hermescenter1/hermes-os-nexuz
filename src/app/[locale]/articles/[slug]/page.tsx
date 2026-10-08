@@ -1,4 +1,4 @@
-import { notFound }              from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { setRequestLocale }       from "next-intl/server";
 import { getCurrentUser }         from "@/lib/auth/session";
 import { can }                    from "@/lib/auth/roles";
@@ -8,7 +8,7 @@ import { ArticleDetailClient }    from "@/components/articles/ArticleDetailClien
 import { buildMetadata }          from "@/lib/seo/metadata";
 import { JsonLd }                 from "@/components/seo/JsonLd";
 import { BASE_URL }               from "@/lib/seo/config";
-import { langTagForArticleLanguage } from "@/lib/articles/locale";
+import { articleLanguageForLocale, langTagForArticleLanguage, localeForArticleLanguage } from "@/lib/articles/locale";
 import { getPublicArticleLanguagesBySlug, resolveArticleContentLocales } from "@/lib/articles/seo";
 import type { ArticleDetail }     from "@/lib/articles/types";
 
@@ -126,14 +126,24 @@ export default async function ArticleDetailPage({
   const { locale, slug } = await params;
   setRequestLocale(locale);
 
-  const [article, feed] = await Promise.all([
-    getArticleDetailBySlug(slug, locale),
-    getArticleFeed(locale),
-  ]);
+  const article = await getArticleDetailBySlug(slug, locale);
 
   if (!article || article.status !== "PUBLISHED" || article.visibility !== "PUBLIC") {
     notFound();
   }
+
+  // A partial/legacy translation group may resolve through the DB fallback to
+  // an edition written for another locale. Never render that document under a
+  // mismatched locale URL: permanently redirect to the persisted edition.
+  const requestedLanguage = articleLanguageForLocale(locale);
+  if (requestedLanguage && article.language !== requestedLanguage) {
+    const servedLocale = localeForArticleLanguage(article.language);
+    if (!servedLocale) notFound();
+    permanentRedirect(`/${servedLocale}/articles/${article.slug}`);
+  }
+
+  // Do not spend a feed query on a request that is about to redirect.
+  const feed = await getArticleFeed(locale);
 
   // Phase 75: Fire-and-forget view count increment.
   // Only reached after PUBLISHED + PUBLIC check above.
