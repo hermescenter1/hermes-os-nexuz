@@ -2636,7 +2636,9 @@
       "safetyTitle": "نکات ایمنی",
       "commissioningTitle": "نکات راه‌اندازی",
       "conceptsTitle": "مفاهیم مرتبط",
-      "brainUseTitle": "مغز هرمس چه زمانی از این مقاله استفاده می‌کند"
+      "brainUseTitle": "مغز هرمس چه زمانی از این مقاله استفاده می‌کند",
+      "deepDiveLabel": "مطالعهٔ فنی عمیق",
+      "deepDiveCta": "راهنمای مهندسی جامع {name} را بخوانید"
     },
     "stats": {
       "recentTitle": "استفادهٔ اخیر مغز هرمس",
