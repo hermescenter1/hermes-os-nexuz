@@ -11,6 +11,10 @@ import { articleSchema }      from "@/lib/seo/schemas";
 import { buildMetadata }      from "@/lib/seo/metadata";
 import { BASE_URL }           from "@/lib/seo/config";
 
+const JOURNAL_DEEP_DIVES: Readonly<Record<string, string>> = {
+  s71500: "siemens-s7-1500-architecture-engineering-practice",
+};
+
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) =>
     KNOWLEDGE.map((l) => ({ locale, article: l.id }))
@@ -64,6 +68,7 @@ export default async function ArticlePage({
   const k = await getTranslations("knowledge");
   const related = relatedArticles(lib.id);
   const cases   = relatedCases(lib.id);
+  const deepDiveSlug = JOURNAL_DEEP_DIVES[lib.id];
 
   const name    = k(`${lib.id}.name`    as Parameters<typeof k>[0]);
   const summary = k(`${lib.id}.summary` as Parameters<typeof k>[0]);
@@ -191,6 +196,20 @@ export default async function ArticlePage({
           home: generateMetadata() above emits it as <meta name="keywords">.
           Search behaviour is unchanged — the array is untouched.
         */}
+
+        {deepDiveSlug && (
+          <aside className="mt-10 rounded-xl border border-line bg-surface p-5">
+            <p className="font-mono text-xs uppercase tracking-widest text-muted">
+              {t("article.deepDiveLabel")}
+            </p>
+            <Link
+              href={`/articles/${deepDiveSlug}`}
+              className="mt-2 inline-block font-display text-base font-semibold text-ink underline decoration-signal/50 underline-offset-4 transition-colors hover:text-signal"
+            >
+              {t("article.deepDiveCta", { name })}
+            </Link>
+          </aside>
+        )}
 
         {/* Engineering case links */}
         {cases.length > 0 && (

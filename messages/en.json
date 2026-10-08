@@ -2636,7 +2636,9 @@
       "safetyTitle": "Safety notes",
       "commissioningTitle": "Commissioning notes",
       "conceptsTitle": "Related concepts",
-      "brainUseTitle": "When Hermes Brain uses this article"
+      "brainUseTitle": "When Hermes Brain uses this article",
+      "deepDiveLabel": "Technical deep dive",
+      "deepDiveCta": "Read the in-depth {name} engineering guide"
     },
     "stats": {
       "recentTitle": "Recently used by Hermes Brain",
