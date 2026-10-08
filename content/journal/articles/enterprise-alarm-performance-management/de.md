@@ -6,7 +6,7 @@ Einen Alarmbestand zu rationalisieren ist ein Projekt mit Enddatum. Ihn rational
 
 Dieser Beitrag behandelt die dauerhafte Hälfte dieses Problems: die Master-Alarmdatenbank als maßgebliche Aufzeichnung, die Messgrößen, die Verfall sichtbar machen, bevor das Bedienpersonal pauschal quittiert, und die Governance, die eine Änderung am Alarmsystem zu einer Entscheidung statt zu einer Bearbeitung macht.
 
-> Ein begleitender Beitrag behandelt das Rationalisierungsprojekt selbst — die Kriterien dafür, was ein Alarm sein darf, die aus Konsequenz und verfügbarer Zeit abgeleitete Priorität und die Ursache-Folge-Unterdrückung. Dieser hier beginnt, wenn jene Arbeit getan ist, und fragt, wie das Ergebnis fünf Jahre Anlagenänderungen übersteht.
+> Ein [begleitender Beitrag zur Alarmrationalisierung](/de/articles/industrial-alarm-management-rationalisation) behandelt das Rationalisierungsprojekt selbst — die Kriterien dafür, was ein Alarm sein darf, die aus Konsequenz und verfügbarer Zeit abgeleitete Priorität und die Ursache-Folge-Unterdrückung. Dieser hier beginnt, wenn jene Arbeit getan ist, und fragt, wie das Ergebnis fünf Jahre Anlagenänderungen übersteht.
 
 ## Die Master-Alarmdatenbank
 
