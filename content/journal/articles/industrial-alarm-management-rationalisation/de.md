@@ -4,7 +4,7 @@
 
 Ein Alarm existiert aus genau einem Grund: um dem Bedienpersonal mitzuteilen, dass eine bestimmte Handlung innerhalb einer bestimmten Zeit erforderlich ist, um eine bestimmte Konsequenz zu vermeiden. Jeder projektierte Alarm, der diesen Test nicht besteht, entwertet diejenigen, die ihn bestehen — denn die Aufmerksamkeit des Bedienpersonals ist eine feste Größe, die auf eine wachsende Zahl von Ansprüchen aufgeteilt wird.
 
-Dieser Beitrag behandelt Alarmrationalisierung als Ingenieuraufgabe mit definierten Eingangsgrößen und definiertem Ergebnis — nicht als periodische Bereinigung der Alarmdatenbank.
+Dieser Beitrag behandelt Alarmrationalisierung als Ingenieuraufgabe mit definierten Eingangsgrößen und definiertem Ergebnis — nicht als periodische Bereinigung der Alarmdatenbank. Wie ein rationalisierter Bestand anschließend über Kennzahlen, Master-Alarmdatenbank und Governance dauerhaft wirksam gehalten wird, behandelt der Begleitbeitrag zum [Alarmperformance-Management](/de/articles/enterprise-alarm-performance-management).
 
 ## Warum das relevant ist
 
