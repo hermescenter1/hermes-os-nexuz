@@ -2636,7 +2636,9 @@
       "safetyTitle": "Sicherheitshinweise",
       "commissioningTitle": "Hinweise zur Inbetriebnahme",
       "conceptsTitle": "Verwandte Konzepte",
-      "brainUseTitle": "Wann Hermes Brain diesen Artikel nutzt"
+      "brainUseTitle": "Wann Hermes Brain diesen Artikel nutzt",
+      "deepDiveLabel": "Technische Vertiefung",
+      "deepDiveCta": "Ausführlichen Engineering-Leitfaden zu {name} lesen"
     },
     "stats": {
       "recentTitle": "Zuletzt von Hermes Brain verwendet",
