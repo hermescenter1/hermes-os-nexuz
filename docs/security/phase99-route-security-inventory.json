@@ -16,11 +16,11 @@
   ],
   "summary": {
     "routeFiles": 412,
-    "handlers": 570,
+    "handlers": 572,
     "byClassification": {
       "PUBLIC_READ": 36,
       "PUBLIC_WRITE": 14,
-      "AUTHENTICATED_USER": 186,
+      "AUTHENTICATED_USER": 188,
       "TENANT_MEMBER": 195,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
@@ -791,8 +791,34 @@
       "senderAuthenticated": null
     },
     {
+      "apiPath": "/api/assets",
+      "method": "POST",
+      "file": "src/app/api/assets/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
       "apiPath": "/api/assets/[id]",
       "method": "GET",
+      "file": "src/app/api/assets/[id]/route.ts",
+      "classification": "AUTHENTICATED_USER",
+      "authEvidence": [
+        "getCurrentUser"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/assets/[id]",
+      "method": "PATCH",
       "file": "src/app/api/assets/[id]/route.ts",
       "classification": "AUTHENTICATED_USER",
       "authEvidence": [

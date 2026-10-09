@@ -300,8 +300,8 @@ describe("CMMS components and pages are fully catalog-backed", () => {
 });
 
 describe("Phase 86C4B1-PRE combined — prior extractions and German state intact", () => {
-  it("assetOperations still has exactly 209 leaves", () => {
-    expect(flatten((en as Tree).assetOperations).size).toBe(209);
+  it("assetOperations still has exactly 247 leaves", () => {
+    expect(flatten((en as Tree).assetOperations).size).toBe(247);
   });
 
   it("ACTIVE_LOCALES is fa + en + de (87L.6 activation)", () => {

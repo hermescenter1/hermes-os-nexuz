@@ -437,6 +437,10 @@ describe("102 — migration ordering", () => {
     // and one index. Additive only; touches no Phase 102 table (asserted below).
     "20260925120000_f2_document_tenant_fk",
     "20261004120000_hris05_erp_tenant_isolation",
+    // Asset-registry write integrity — tenant-safe composite foreign keys and
+    // an organization-scoped asset-number uniqueness constraint. Touches no
+    // Phase 102 table (asserted below).
+    "20261009150000_asset_registry_write_integrity",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {

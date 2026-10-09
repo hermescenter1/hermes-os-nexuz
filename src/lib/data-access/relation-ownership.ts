@@ -100,6 +100,13 @@ export const DOWNTIME_RELATIONS: readonly RelationCheck[] = [
   { field: "taskId", model: "maintenanceTask", scope: "own" },
 ];
 
+/** Foreign keys accepted by Enterprise Asset Registry create/update writes. */
+export const ASSET_REGISTRY_RELATIONS: readonly RelationCheck[] = [
+  { field: "siteId", model: "industrialSite", scope: "own" },
+  { field: "locationId", model: "assetLocation", scope: "own" },
+  { field: "parentAssetId", model: "registryAsset", scope: "own" },
+];
+
 interface Finder {
   findFirst: (args: unknown) => Promise<unknown | null>;
 }

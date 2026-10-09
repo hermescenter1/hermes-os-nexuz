@@ -214,8 +214,11 @@ describe("representative experience states — evidence of the audited behaviour
   it("Assets/CMMS/Documents listings are SERVER-rendered — no client loading phase exists to go blank", () => {
     // the page awaits the data and hands a complete array to the client
     const page = read("src/app/[locale]/assets/registry/page.tsx");
-    expect(page).toContain("await getAssets()");
-    expect(page).toContain("<AssetsRegistryClient assets={assets} />");
+    expect(page).toContain("const [assets, locations, sites] = await Promise.all([");
+    expect(page).toContain("getAssets(),");
+    expect(page).toContain("getAssetLocations(),");
+    expect(page).toContain("getAssetSites(),");
+    expect(page).toContain("<AssetsRegistryClient assets={assets} locations={locations} sites={sites} />");
     // so the client legitimately has no isLoading branch
     expect(read("src/components/assets/AssetsRegistryClient.tsx")).not.toMatch(/isLoading|useEffect\(.*fetch/);
   });

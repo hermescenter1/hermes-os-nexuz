@@ -408,7 +408,7 @@ describe("ERP Core behavior and navigation preserved (allowlisted)", () => {
 describe("Phase 86C4B2B1A-PRE combined — prior work and German state intact", () => {
   it("automation (276), asset (209), maintenance (233) leaf counts unchanged", () => {
     expect(flatten((en as Tree).automationOperations).size).toBe(276);
-    expect(flatten((en as Tree).assetOperations).size).toBe(209);
+    expect(flatten((en as Tree).assetOperations).size).toBe(247);
     expect(flatten((en as Tree).maintenanceOperations).size).toBe(233);
   });
 
