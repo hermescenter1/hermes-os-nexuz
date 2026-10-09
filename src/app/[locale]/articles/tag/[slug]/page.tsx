@@ -2,7 +2,7 @@ import { notFound }              from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { getArticlesByTag_, getTagBySlug, getAllCategories, getArticleFeed } from "@/lib/articles/db";
 import { ArticlesFeedClient }     from "@/components/articles/ArticlesFeedClient";
-import { buildMetadata }          from "@/lib/seo/metadata";
+import { taxonomyMetadata }       from "@/lib/seo/taxonomy-indexability";
 
 export async function generateMetadata({
   params,
@@ -11,15 +11,21 @@ export async function generateMetadata({
 }) {
   const { locale, slug } = await params;
   const tag = await getTagBySlug(slug);
-  if (!tag) return { title: "Tag Not Found", robots: { index: false, follow: false } };
   const t = await getTranslations({ locale, namespace: "journal" });
-  const name = locale === "fa" ? (tag.nameFa ?? tag.name) : tag.name;
-  return buildMetadata({
-    locale,
-    path:        `/articles/tag/${slug}`,
-    title:       t("meta.tagTitle", { name }),
-    description: t("meta.tagDescription", { name }),
-  });
+  const name = tag ? (locale === "fa" ? (tag.nameFa ?? tag.name) : tag.name) : "";
+  // One call owns BOTH outcomes, so there is no second path by which a tag page
+  // could acquire a canonical or an hreflang set. `ArticleTag` has no
+  // description column, so a tag archive can never prove editorial copy of its
+  // own and is always noindex/follow; a missing tag keeps the previous 404
+  // metadata. The policy module holds the reasoning and the exact shapes.
+  return taxonomyMetadata(
+    { exists: Boolean(tag) },
+    {
+      notFoundTitle: "Tag Not Found",
+      title:         t("meta.tagTitle", { name }),
+      description:   t("meta.tagDescription", { name }),
+    },
+  );
 }
 
 export const dynamic = "force-dynamic";
