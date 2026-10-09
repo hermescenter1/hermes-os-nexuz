@@ -1199,8 +1199,11 @@ model IndustrialSite {
   // Phase 112: reasoning runs recorded against this site (Restrict — a site with
   // historical reasoning runs cannot be deleted out from under them).
   reasoningRuns       ReasoningRun[]
+  // Enterprise registry records may be organization-wide or assigned here.
+  registryAssets      RegistryAsset[] @relation("RegistryAssetSite")
 
   @@unique([organizationId, slug])
+  @@unique([organizationId, id])
   @@index([organizationId])
 }
 
@@ -6805,9 +6808,10 @@ model RegistryAsset {
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
-  location         AssetLocation?              @relation(fields: [locationId], references: [id])
+  site             IndustrialSite?             @relation("RegistryAssetSite", fields: [organizationId, siteId], references: [organizationId, id], onDelete: Restrict)
+  location         AssetLocation?              @relation("RegistryAssetLocation", fields: [organizationId, locationId], references: [organizationId, id], onDelete: Restrict)
   children         RegistryAsset[]             @relation("RegistryAssetHierarchy")
-  parent           RegistryAsset?              @relation("RegistryAssetHierarchy", fields: [parentAssetId], references: [id])
+  parent           RegistryAsset?              @relation("RegistryAssetHierarchy", fields: [organizationId, parentAssetId], references: [organizationId, id], onDelete: Restrict)
   criticalities    AssetCriticalityAssessment[]
   healthSnapshots  AssetHealthSnapshot[]
   lifecycleEvents  AssetLifecycleEvent[]
@@ -6816,7 +6820,8 @@ model RegistryAsset {
   telemetryLinks   AssetTelemetryLink[]
   registryTags     RegistryAssetTag[]
 
-  @@index([organizationId])
+  @@unique([organizationId, id])
+  @@unique([organizationId, assetNumber])
   @@index([siteId])
   @@index([assetType])
   @@index([status])
@@ -6845,8 +6850,9 @@ model AssetLocation {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  assets RegistryAsset[]
+  assets RegistryAsset[] @relation("RegistryAssetLocation")
 
+  @@unique([organizationId, id])
   @@index([organizationId])
   @@index([siteId])
   @@index([code])

@@ -70,6 +70,15 @@ export interface AssetLocation {
   updatedAt:     string;
 }
 
+export interface AssetRegistrySite {
+  id:             string;
+  organizationId: string;
+  name:           string;
+  slug:           string;
+  location:       string | null;
+  status:         string;
+}
+
 export interface AssetCriticalityAssessment {
   id:                   string;
   assetId:              string;

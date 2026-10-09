@@ -123,6 +123,11 @@ export const POST_PHASE102_MIGRATIONS = [
   // row would fail the era-count equality, and silently widening that check to
   // `>=` would retire the gate.
   "20261004120000_hris05_erp_tenant_isolation",
+  // Asset registry write integrity — tenant-scoped asset numbers and
+  // organization-safe foreign keys for sites, locations, and parent assets.
+  // This is a post-Phase-102 migration, so the legacy Phase 102 equality gate
+  // must subtract it while continuing to reject any undeclared migration.
+  "20261009150000_asset_registry_write_integrity",
 ];
 
 /**

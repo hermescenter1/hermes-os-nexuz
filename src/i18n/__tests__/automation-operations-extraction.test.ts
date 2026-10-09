@@ -408,8 +408,8 @@ describe("Automation behavior and raw values are preserved (allowlisted)", () =>
 });
 
 describe("Phase 86C4B2A-PRE combined — prior work and German state intact", () => {
-  it("assetOperations (209) and maintenanceOperations (233) leaf counts unchanged", () => {
-    expect(flatten((en as Tree).assetOperations).size).toBe(209);
+  it("assetOperations (247) and maintenanceOperations (233) leaf counts unchanged", () => {
+    expect(flatten((en as Tree).assetOperations).size).toBe(247);
     expect(flatten((en as Tree).maintenanceOperations).size).toBe(233);
   });
 

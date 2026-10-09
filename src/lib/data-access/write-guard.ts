@@ -80,8 +80,11 @@ export interface VerifiedWriteScope<P extends OrgPermission = OrgPermission> ext
   readonly verifiedFor: P;
 }
 
-/** The only scope the five CMMS write functions accept. */
+/** The scope accepted by the CMMS write functions. */
 export type CmmsWriteScope = VerifiedWriteScope<"manage_industrial">;
+
+/** The scope accepted by Enterprise Asset Registry writes. */
+export type AssetRegistryWriteScope = VerifiedWriteScope<"manage_industrial">;
 
 /**
  * The precondition a state-changing request must satisfy, and the permission it
