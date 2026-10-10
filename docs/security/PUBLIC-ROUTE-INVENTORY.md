@@ -200,19 +200,53 @@ allowlist** which never carries `organizationId`, `siteId`, `categoryId`, `instr
 
 The single finding is about availability, not disclosure:
 
-| **Finding H-7** | **They borrow another feature's rate-limit bucket.** `media/public/videos/route.ts:66` and `[slug]/route.ts:41` both set `PUBLIC_READ_LIMIT_ACTION = "copilot-demo-get"`, and `[slug]/view/route.ts:57` sets `BEACON_LIMIT_ACTION = "copilot-demo-post"`. The reason is sound and the files say it: `checkRateLimit` returns `true` — **unlimited** — for an unregistered action, so inventing a name would have silently removed the limit, and borrowing a registered one was the safe choice. The consequence is bucket collision: browsing the public video hub consumes the Copilot demo's budget for that IP and vice versa, so one public feature can exhaust another's allowance and neither limit can be tuned independently. |
+| **Finding H-7** | **They borrow another feature's rate-limit bucket.** `media/public/videos/route.ts:66` and `[slug]/route.ts:41` both set `PUBLIC_READ_LIMIT_ACTION = "copilot-demo-get"`, and `[slug]/view/route.ts:57` sets `BEACON_LIMIT_ACTION = "copilot-demo-post"`. The consequence is bucket collision: browsing the public video hub consumes the Copilot demo's budget for that IP and vice versa, so one public feature can exhaust another's allowance and neither limit can be tuned independently. The files' own stated *reason* for borrowing is **incorrect** — see §6.1 — but the collision itself is real and this finding stands on that alone. |
 |---|---|
 | Required remediation | Register `media-public-read` and `media-view-beacon` actions and point these three at them. |
 
-### 6.1 The systemic property behind H-7
+### 6.1 CORRECTED — the limiter fails CLOSED on an unknown action
 
-`checkRateLimit(action, …)` **fails open on an unknown action**. `src/lib/auth/rate-limiter.ts` carries a registry
-of 34 actions and `src/lib/auth/__tests__/phase102-rate-limit-registry.test.ts` exists precisely to keep callers
-inside it. Verified for this inventory: **every action string used by all 48 public route files is registered** —
-`accept-invite`, `access-request`, `candidate-register`, `careers-apply`, `cookie-consent`, `copilot-demo-get`,
-`copilot-demo-post`, `derived-graph`, `forgot-password`, `indexnow`, `industrial-brain-analyze`,
-`journal-comment-create`, `journal-reaction-set`, `reset-password`, `vendor-apply`, `verify-email`. The registry
-enforces that an action **exists**, not that it is **semantically distinct** — which is exactly the gap H-7 sits in.
+> **This section replaces an incorrect claim made in the first version of this document.** It previously stated
+> that `checkRateLimit` "returns `true` — i.e. UNLIMITED — for an unregistered action" and therefore "fails open
+> on an unknown action". **That is wrong, and inverted.** The claim was taken from a comment in the media route
+> files instead of from the limiter itself.
+
+Verified in `src/lib/auth/rate-limiter.ts` at this commit, the behaviour on an **undeclared** action is
+comprehensively **`FAIL_CLOSED`**:
+
+```ts
+export async function checkRateLimit(action, identifier) {
+  const limit = LIMITS[action];
+  if (!limit) {
+    refuseUndeclaredAction(action, "checkRateLimit");
+    return false;                  // ← refused, not permitted
+  }
+  …
+}
+```
+
+| Function | Behaviour on an undeclared action |
+|---|---|
+| `checkRateLimit` | returns **`false`** → the caller answers 429 |
+| `memCheck` (the in-process fallback) | returns **`false`** |
+| `retryAfter` | returns `DEFAULT_WINDOW_SECONDS`, explicitly so a refusal does not advertise `Retry-After: 0` |
+| `refuseUndeclaredAction` | logs `"Undeclared rate-limit bucket — failing closed."` at error level **and** writes an audit event, `INFRA_AUDIT.RATE_LIMITER_DEGRADED`, with the bucket name and the calling site |
+
+So inventing a new action name would **not** have removed the limit — it would have blocked the route outright
+and raised an audited error. The registry (`LIMITS`, 34 actions, kept honest by
+`src/lib/auth/__tests__/phase102-rate-limit-registry.test.ts`) enforces that an action **exists**; it does not
+enforce that an action is **semantically distinct**, and that second gap is the one H-7 actually sits in.
+
+Verified for this inventory, and unaffected by the correction: **every action string used by all 48 public route
+files is registered** — `accept-invite`, `access-request`, `candidate-register`, `careers-apply`,
+`cookie-consent`, `copilot-demo-get`, `copilot-demo-post`, `derived-graph`, `forgot-password`, `indexnow`,
+`industrial-brain-analyze`, `journal-comment-create`, `journal-reaction-set`, `reset-password`, `vendor-apply`,
+`verify-email`. No public handler is silently unlimited — and, given the corrected behaviour, none could have been.
+
+The stale comments that caused this error remain in the product source and are recorded as finding **EDGE-04** in
+`EDGE-ORIGIN-AND-CLIENT-IP.md`: `media/public/videos/route.ts:58-60` and `[slug]/route.ts:38-39` both assert the
+fail-open behaviour the limiter does not have, misstating a safety property in the dangerous direction. **No
+product file or comment was changed** — S0 is audit-only.
 
 ---
 
@@ -296,7 +330,8 @@ None of these accepts an `organizationId`, `siteId`, `userId` or `role` from the
 - No public handler returns another tenant's data. `PUBLIC_UNSAFE` is zero.
 - No public handler accepts a tenant, user or role identifier from the client. Every privileged column written by
   a public writer (`source`, `status`, `role`, `emailVerified`) is **hardcoded**.
-- Every public route file's rate-limit action is registered, so none of them is silently unlimited.
+- Every public route file's rate-limit action is registered, and the limiter **fails closed** on an undeclared
+  one (§6.1, corrected), so no public handler is silently unlimited by either route.
 - The repository's anti-enumeration posture is real and mostly consistent (`accept-invite`, `careers/jobs/[jobId]`,
   `access-request`, `forgot-password`), with **one documented contradiction** (`candidate/register`, H-5).
 
