@@ -58,6 +58,24 @@
 # What is deliberately NOT done here: no database restore, ever. Rolling the
 # application back and recovering the database are separate, human-decided
 # operations (see docs/release/phase99.7-production-cutover-contract.md).
+#
+# POST-DEPLOY HEALTH GATE — "the container started" is not "the release is healthy".
+#
+# `up -d` returns once the new hermes-web container is STARTED, long before its
+# first health probe (docker-compose.prod.yml: start_period 45s, interval 30s).
+# The workflow used to print one `ps` snapshot — normally "(health: starting)" —
+# and finish green, so a release that crash-looped, never turned healthy or could
+# not reach PostgreSQL still read as a successful deploy. The gate at the end of
+# the remote script now, within a bounded time:
+#   - waits for the container's own healthcheck to report "healthy";
+#   - requires the container to be running, not restarting, with RestartCount 0;
+#   - asks /api/health/ready from inside the container for exactly
+#     status "ready" with database true (PostgreSQL reachable);
+#   - fails the job on unhealthy, a restart loop, a timeout or any other answer.
+# On failure it prints validated state fields only — never container logs, never a
+# response body. It changes NOTHING: no restart, no rebuild, no image tag, no
+# migration, no automatic rollback. `hermes-web:previous-good` remains the
+# rollback target and using it stays a separate, human-decided operation.
 
 name: Production Deploy
 
@@ -482,6 +500,131 @@ jobs:
           # ── Replace ONLY hermes-web (image already built above) ──────────────
           docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d --no-deps hermes-web
           docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production ps hermes-web
+
+          # ── POST-DEPLOY health gate (fail closed, bounded, changes nothing) ──
+          # `up -d` returns once the new container is STARTED, long before its
+          # first health probe, so the `ps` snapshot above normally reads
+          # "(health: starting)". Without this gate a release that crash-loops,
+          # never turns healthy or cannot reach PostgreSQL still finished green.
+          #
+          # It waits (bounded) for the container's own healthcheck to report
+          # healthy, requires the container to be running and never restarted,
+          # then asks /api/health/ready — from inside the container — for exactly
+          # status "ready" with database true. unhealthy, a restart loop, a
+          # timeout, an unreadable state or any other response fails the job.
+          #
+          # On failure only validated state fields are printed: never container
+          # logs, never a response body. It restarts, tags, rebuilds and rolls
+          # back NOTHING; `hermes-web:previous-good` stays the rollback target and
+          # using it is a separate, human-decided operation.
+          #
+          # Every child process gets </dev/null: this script arrives over
+          # `bash -s`, so a command that reads stdin would swallow the script.
+          # >>> post-deploy-health-gate
+          hg_refuse() { echo "Post-deploy health gate FAILED: $*" >&2; exit 1; }
+          hg_uint() {
+            case "$2" in
+              *[!0-9]*|''|0*) hg_refuse "$1 must be a positive integer without leading zeros." ;;
+            esac
+            if [ "${#2}" -gt 4 ] || [ "$2" -gt "$3" ]; then
+              hg_refuse "$1 must be between 1 and $3."
+            fi
+          }
+          HG_WAIT="${DEPLOY_HEALTH_WAIT_SECONDS:-240}"
+          HG_POLL="${DEPLOY_HEALTH_POLL_SECONDS:-5}"
+          HG_READY_TRIES="${DEPLOY_READY_ATTEMPTS:-6}"
+          HG_READY_PAUSE="${DEPLOY_READY_PAUSE_SECONDS:-5}"
+          hg_uint DEPLOY_HEALTH_WAIT_SECONDS "${HG_WAIT}" 900
+          hg_uint DEPLOY_HEALTH_POLL_SECONDS "${HG_POLL}" 60
+          hg_uint DEPLOY_READY_ATTEMPTS "${HG_READY_TRIES}" 30
+          hg_uint DEPLOY_READY_PAUSE_SECONDS "${HG_READY_PAUSE}" 60
+
+          # Reads the container state in ONE inspect call and accepts it only if
+          # every field is a short plain token, so nothing unexpected is ever echoed.
+          hg_state() {
+            local raw extra v
+            raw="$(docker inspect -f '{{.State.Status}} {{.State.Restarting}} {{.RestartCount}} {{if .State.Health}}{{.State.Health.Status}} {{.State.Health.FailingStreak}}{{else}}none 0{{end}} {{.State.ExitCode}} {{.State.OOMKilled}}' "${HG_CID}" </dev/null 2>/dev/null)" || return 1
+            read -r HG_STATUS HG_RESTARTING HG_RESTARTS HG_HEALTH HG_STREAK HG_EXIT HG_OOM extra <<<"${raw}" || return 1
+            [ -z "${extra}" ] || return 1
+            for v in "${HG_STATUS}" "${HG_RESTARTING}" "${HG_RESTARTS}" "${HG_HEALTH}" "${HG_STREAK}" "${HG_EXIT}" "${HG_OOM}"; do
+              case "${v}" in *[!A-Za-z0-9_-]*|'') return 1 ;; esac
+              [ "${#v}" -le 32 ] || return 1
+            done
+          }
+          hg_fail() {
+            echo "Post-deploy health gate FAILED: $*" >&2
+            echo "hermes-web state: status=${HG_STATUS:-unknown} restarting=${HG_RESTARTING:-unknown} restart_count=${HG_RESTARTS:-unknown} health=${HG_HEALTH:-unknown} failing_streak=${HG_STREAK:-unknown} exit_code=${HG_EXIT:-unknown} oom_killed=${HG_OOM:-unknown}" >&2
+            echo "Nothing was rolled back, restarted or changed by this gate; hermes-web:previous-good is preserved. Recovery is a separate, human-decided operation." >&2
+            exit 1
+          }
+
+          HG_CID="$(docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production ps -q hermes-web </dev/null | head -n 1 || true)"
+          if [ -z "${HG_CID}" ]; then
+            hg_refuse "no hermes-web container exists after the cutover."
+          fi
+          case "${HG_CID}" in
+            *[!0-9a-f]*) hg_refuse "the hermes-web container id is malformed." ;;
+          esac
+
+          hg_waited=0
+          while :; do
+            hg_state || hg_refuse "could not read the hermes-web container state."
+            if [ "${HG_RESTARTING}" != "false" ] || [ "${HG_RESTARTS}" != "0" ]; then
+              hg_fail "hermes-web is in a restart loop."
+            fi
+            if [ "${HG_STATUS}" != "running" ]; then
+              hg_fail "hermes-web is not running."
+            fi
+            case "${HG_HEALTH}" in
+              healthy) break ;;
+              unhealthy) hg_fail "hermes-web reported unhealthy." ;;
+              starting) ;;
+              *) hg_fail "hermes-web exposes no usable healthcheck status." ;;
+            esac
+            if [ "${hg_waited}" -ge "${HG_WAIT}" ]; then
+              hg_fail "hermes-web did not become healthy within ${HG_WAIT}s."
+            fi
+            sleep "${HG_POLL}" </dev/null
+            hg_waited=$((hg_waited + HG_POLL))
+          done
+
+          # The readiness body is public by design (booleans and a status string
+          # only), but it is validated here and never printed.
+          HG_READY_RE_A='^\{[[:space:]]*"status"[[:space:]]*:[[:space:]]*"ready"[[:space:]]*,[[:space:]]*"database"[[:space:]]*:[[:space:]]*true[[:space:]]*\}[[:space:]]*$'
+          HG_READY_RE_B='^\{[[:space:]]*"database"[[:space:]]*:[[:space:]]*true[[:space:]]*,[[:space:]]*"status"[[:space:]]*:[[:space:]]*"ready"[[:space:]]*\}[[:space:]]*$'
+          HG_READY_OK=0
+          HG_PROBE_CLASS="no readiness probe ran"
+          hg_try=0
+          while [ "${hg_try}" -lt "${HG_READY_TRIES}" ]; do
+            hg_try=$((hg_try + 1))
+            HG_RC=0
+            HG_BODY="$(docker exec "${HG_CID}" wget -qO- -T 8 http://127.0.0.1:3000/api/health/ready </dev/null 2>/dev/null | head -c 512)" || HG_RC=$?
+            if [ "${HG_RC}" -ne 0 ]; then
+              HG_PROBE_CLASS="the readiness request failed (exit code ${HG_RC})"
+            elif [ -z "${HG_BODY}" ]; then
+              HG_PROBE_CLASS="the readiness response was empty"
+            elif [[ "${HG_BODY}" =~ ${HG_READY_RE_A} ]] || [[ "${HG_BODY}" =~ ${HG_READY_RE_B} ]]; then
+              HG_READY_OK=1
+              break
+            else
+              HG_PROBE_CLASS="the readiness response was not status=ready with database=true"
+            fi
+            if [ "${hg_try}" -lt "${HG_READY_TRIES}" ]; then
+              sleep "${HG_READY_PAUSE}" </dev/null
+            fi
+          done
+          if [ "${HG_READY_OK}" -ne 1 ]; then
+            hg_state || true
+            hg_fail "/api/health/ready did not report ready after ${hg_try} attempt(s): ${HG_PROBE_CLASS}."
+          fi
+
+          # A restart that happens AFTER the readiness answer is still a failure.
+          hg_state || hg_refuse "could not re-read the hermes-web container state."
+          if [ "${HG_STATUS}" != "running" ] || [ "${HG_HEALTH}" != "healthy" ] || [ "${HG_RESTARTING}" != "false" ] || [ "${HG_RESTARTS}" != "0" ]; then
+            hg_fail "hermes-web was not stable after the readiness check."
+          fi
+          echo "Post-deploy health gate passed: hermes-web healthy after ${hg_waited}s, restart_count=0, /api/health/ready reported status=ready database=true."
+          # <<< post-deploy-health-gate
           REMOTE
 
       # Gate 0D-A (scripts/production-compose-project-static-check.mjs) is the
