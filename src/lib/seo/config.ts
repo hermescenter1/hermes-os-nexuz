@@ -6,6 +6,13 @@ import {
   OG_LOCALE as CENTRAL_OG_LOCALE,
   type ActiveLocale,
 } from "@/i18n/locales";
+import {
+  CORPORATE_EMAIL,
+  CORPORATE_LEGAL_NAME_EN,
+  CORPORATE_PROFILES,
+  CORPORATE_WEBSITES,
+  publishedProfiles,
+} from "@/lib/corporate/contact";
 
 export const BASE_URL =
   process.env.NEXT_PUBLIC_BASE_URL ?? "https://hermesnovin.com";
@@ -25,7 +32,7 @@ export const SITE_NAME    = "Hermes OS";
  * This constant must never carry the product name, and `SITE_NAME` must never
  * carry the company name:
  *
- *     ZHARFA Vira Pouyesh Fanavari  = company / platform operator / developer
+ *     Zharfa Vira Pouyesh Fanavari  = company / platform operator / developer
  *     Hermes OS                     = the industrial intelligence product
  *
  * The retired identity "Hermes Novin Mehr IRIC" (and its short forms) is no
@@ -34,7 +41,7 @@ export const SITE_NAME    = "Hermes OS";
  * trades under, and publishing it would keep merging the old entity into the
  * new one in every retrieval system that reads this graph.
  */
-export const ORG_NAME       = "ZHARFA Vira Pouyesh Fanavari";
+export const ORG_NAME       = CORPORATE_LEGAL_NAME_EN;
 export const ORG_SHORT_NAME = "ZHARFA";
 
 /**
@@ -63,7 +70,7 @@ export const ORG_SHORT_NAME = "ZHARFA";
  * are two identities to be merged, which is exactly the kind of sloppy claim
  * this phase removed elsewhere. `ORG_SAME_AS` therefore stays empty.
  */
-export const ORG_URL = "https://zharfavira.com";
+export const ORG_URL = CORPORATE_WEBSITES.zharfa.url;
 
 /**
  * The canonical product category. Used verbatim by the product schema and the
@@ -94,7 +101,7 @@ export const LOCALES        = ACTIVE_LOCALES;
 export type  SeoLocale      = ActiveLocale;
 
 export const OG_IMAGE_URL   = `${BASE_URL}/brand/og-default.jpg`;
-export const CONTACT_EMAIL  = "info@hermesnovin.com";
+export const CONTACT_EMAIL  = CORPORATE_EMAIL.support;
 
 /*
  * ORGANIZATION LOGO — INTENTIONALLY OMITTED.
@@ -142,7 +149,7 @@ export const CONTACT_EMAIL  = "info@hermesnovin.com";
  * OPERATOR ACTION: supply verified ZHARFA corporate profile URLs to populate
  * this list.
  */
-export const ORG_SAME_AS: readonly string[] = [];
+export const ORG_SAME_AS: readonly string[] = publishedProfiles("zharfaLinkedIn");
 
 /**
  * VERIFIED external profiles for the PRODUCT (`SoftwareApplication.sameAs`).
@@ -163,13 +170,11 @@ export const PRODUCT_SAME_AS: readonly string[] = [
 /**
  * VERIFIED external profiles for the founder (`Person.sameAs`).
  *
- * Sourced from the LinkedIn URL this site itself publishes on its public
- * contact page (`contact.linkedinUrl`), so it is self-evidently the profile the
- * organisation claims as its own point of contact.
+ * Sourced from `lib/corporate/contact`, the same canonical value the public
+ * Contact and About pages render, so the structured data cannot drift from the
+ * profile the organisation publishes as its own point of contact.
  */
-export const FOUNDER_SAME_AS: readonly string[] = [
-  "https://www.linkedin.com/in/hamid-reza-forozandeh",
-];
+export const FOUNDER_SAME_AS: readonly string[] = [CORPORATE_PROFILES.founderLinkedIn];
 
 /**
  * The founder's public identity, as already published on the About page

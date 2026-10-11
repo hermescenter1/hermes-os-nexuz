@@ -10,7 +10,6 @@ import {
   ORG_SHORT_NAME,
   ORG_URL,
   PRODUCT_CATEGORY,
-  CONTACT_EMAIL,
   OG_IMAGE_URL,
   ORG_ID,
   WEBSITE_ID,
@@ -22,6 +21,12 @@ import {
   FOUNDER_NAME,
   FOUNDER_ROLE,
 } from "./config";
+import {
+  CORPORATE_ADDRESS_MACHINE,
+  CORPORATE_EMAIL,
+  CORPORATE_IDENTIFIERS,
+  CORPORATE_PHONES,
+} from "@/lib/corporate/contact";
 import {
   ACTIVE_LOCALES,
   DEFAULT_LOCALE,
@@ -127,12 +132,53 @@ export function organizationSchema() {
     // note in ./config.ts. A favicon is not a corporate logo.
     founder: ref(FOUNDER_ID),
     knowsAbout: [...ORG_KNOWS_ABOUT],
-    contactPoint: {
-      "@type": "ContactPoint",
-      email: CONTACT_EMAIL,
-      contactType: "customer support",
-      availableLanguage: ACTIVE_LOCALES.map((locale) => LOCALE_ACCESSIBLE_NAME[locale]),
+    // The registered office — the ONLY address the company publishes. Latin,
+    // locale-invariant machine values from `lib/corporate/contact`.
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: CORPORATE_ADDRESS_MACHINE.streetAddress,
+      addressLocality: CORPORATE_ADDRESS_MACHINE.addressLocality,
+      postalCode: CORPORATE_ADDRESS_MACHINE.postalCode,
+      addressCountry: CORPORATE_ADDRESS_MACHINE.addressCountry,
     },
+    identifier: [
+      {
+        "@type": "PropertyValue",
+        propertyID: "national-id",
+        name: "National ID",
+        value: CORPORATE_IDENTIFIERS.nationalId,
+      },
+      {
+        "@type": "PropertyValue",
+        propertyID: "registration-number",
+        name: "Registration number",
+        value: CORPORATE_IDENTIFIERS.registrationNumber,
+      },
+    ],
+    // One ContactPoint per real channel. Telephone numbers are E.164; they are
+    // published on the support and general channels because those are the
+    // lines the Contact page presents. No sales telephone line exists.
+    contactPoint: [
+      {
+        "@type": "ContactPoint",
+        contactType: "sales",
+        email: CORPORATE_EMAIL.sales,
+        availableLanguage: ACTIVE_LOCALES.map((locale) => LOCALE_ACCESSIBLE_NAME[locale]),
+      },
+      {
+        "@type": "ContactPoint",
+        contactType: "customer support",
+        email: CORPORATE_EMAIL.support,
+        telephone: CORPORATE_PHONES.map((p) => p.e164),
+        availableLanguage: ACTIVE_LOCALES.map((locale) => LOCALE_ACCESSIBLE_NAME[locale]),
+      },
+      {
+        "@type": "ContactPoint",
+        contactType: "legal and corporate affairs",
+        email: CORPORATE_EMAIL.general,
+        availableLanguage: ACTIVE_LOCALES.map((locale) => LOCALE_ACCESSIBLE_NAME[locale]),
+      },
+    ],
     // PHASE 113 — emitted only when there is something verified to emit. An
     // empty `sameAs: []` is not a useful claim, and the list is deliberately
     // empty until the operator supplies verified ZHARFA corporate profiles
