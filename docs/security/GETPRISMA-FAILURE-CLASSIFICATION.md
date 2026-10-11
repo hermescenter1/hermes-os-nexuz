@@ -2,7 +2,7 @@
 
 **Program:** Hermes Security Dragon
 **Addresses:** `S0-B-05` — what does every `getPrisma()` call site do when Prisma is unavailable?
-**Revision:** 4 · **Produced:** 2026-10-11 · **Rule set:** `s0-b05.5`
+**Revision:** 4 (erratum, §9.2) · **Produced:** 2026-10-11 · **Rule set:** `s0-b05.5`
 **Status:** every call site, every consumer edge and every residual site is accounted for.
 All **nineteen** gate counters are zero, including the three accounting invariants added in this
 revision: the primary classification is an exact partition, every outcome class is a deduplicated
@@ -401,12 +401,42 @@ done and would stop measuring how much of the inventory rests on a shape match.
 | One **residual screening** fingerprint corrupted | exit **8**, naming the stale id |
 | A **residual screening** for a site no longer in the residual set | exit **9** — which is how `ats/application.ts#L83C26` leaving the residual was caught |
 
+### 9.2 Erratum — the commit that broke its own gate
+
+The figures above were produced while the tool was still untracked, and committing it invalidated
+them for one revision. `sourceFiles()` enumerates through `git ls-files`, so the moment the eight
+B-05 files became tracked the scanner was offered its own sources and read its own selftest: **392
+call sites became 394 and 835 textual occurrences became 877**, and `check` exited **2** on a commit
+whose contents were otherwise correct. The two extra sites were not call sites at all — one was a
+`//` comment at selftest L243 and one a string literal at L365, both false positives of the
+regex-literal limitation documented in §8.1, which is itself the reason the tool must never be asked
+to read a file written to talk *about* `getPrisma()`.
+
+Two things close it, neither of which touches a rule:
+
+- An explicit **path-based** exclusion, `EXCLUDED_PATH_PREFIXES = ["scripts/security/s0/"]`, applied
+  before tokenizing in both the `git ls-files` path and the filesystem fallback. It is a path prefix
+  and not a name in `SKIP_DIR` on purpose: a bare `"s0"` would silently drop any future directory
+  that happened to share the name, anywhere in the tree. `scripts/security/` outside this subtree
+  stays in scope, and four selftests pin both halves of that.
+- `.gitattributes` pins `/scripts/security/s0/**`, the inventory and this document to `eol=lf`. With
+  `core.autocrlf=true` a Windows checkout would rewrite every line ending and change the sha256 of a
+  file nobody edited, staling the inventory hash and all 187 + 268 + 69 fingerprints at once.
+
+The exclusion changes **which files are offered**, never how a call site is classified, so
+`RULESET_VERSION` deliberately stays at `s0-b05.5` and the regenerated inventory is byte-identical to
+the committed blob — same `0fea9170…`. Every count in this document is therefore unchanged; what
+changed is that the count is now reproducible from a clean checkout on either platform.
+
 ---
 
 ## 10. Fixture and test coverage
 
-`node --test scripts/security/s0/__tests__/getprisma-inventory.selftest.mjs` → **75 tests, 75 passed, 0 failed**,
-about 2.8 s.
+`node --test scripts/security/s0/__tests__/getprisma-inventory.selftest.mjs` → **79 tests, 79 passed, 0 failed**,
+about 34 s. The four added in the erratum revision (§9.2) prove that `sourceFiles()` offers nothing
+under `scripts/security/s0/`, that it still offers `scripts/security/check-env-example.mjs` and
+`scripts/security/phase100/*`, that `scripts/security/s0extra/` and `scripts/s0/` are **not** caught
+by the prefix, and that no audited record originates in the tool itself.
 
 New fixture scenarios for the edge model: one factory with a local accessor and five consumers — a read fallback,
 a write fallback, a fail-closed `throw`, an unreadable result-object refusal, and an unconditional delegation —

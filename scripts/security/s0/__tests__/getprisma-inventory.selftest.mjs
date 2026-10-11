@@ -20,6 +20,9 @@ import { fileURLToPath } from "node:url";
 
 import {
   RULESET_VERSION,
+  EXCLUDED_PATH_PREFIXES,
+  isExcludedPath,
+  sourceFiles,
   blankCommentsAndStrings,
   countTextualOccurrences,
   findCallSites,
@@ -857,4 +860,84 @@ test("the residual screening found and corrected real misclassifications", () =>
   assert.equal(sess.autoConfidence, "HIGH", "the rule's own verdict must still be visible");
   assert.notEqual(sess.ruleId, undefined);
   assert.ok(sess.adjudication, "and it must carry the manual trace that corrected it");
+});
+
+// ──────── the tool must not scan itself (s0-b05.5 corrective fix) ───────────
+//
+// The first commit of this tool made its own files TRACKED, so `git ls-files`
+// started offering them to the scanner and the scanner read this very selftest:
+// 392 call sites became 394 and 835 textual occurrences became 877. Both extra
+// sites were false positives — one `//` comment and one string literal, the
+// documented regex-literal limitation of the tokenizer. The remedy is to never
+// offer the tool's own subtree to the scanner at all.
+
+test("isExcludedPath covers the tool's own subtree and nothing that merely resembles it", () => {
+  assert.deepEqual([...EXCLUDED_PATH_PREFIXES], ["scripts/security/s0/"]);
+  for (const p of [
+    "scripts/security/s0/getprisma-callsite-inventory.mjs",
+    "scripts/security/s0/__tests__/getprisma-inventory.selftest.mjs",
+    "scripts/security/s0/fixtures/scenarios.fixture.txt",
+    "scripts/security/s0/getprisma-manual-adjudications.json",
+    "scripts/security/s0",
+  ]) {
+    assert.equal(isExcludedPath(p), true, `${p} must be excluded`);
+  }
+
+  // It is a PATH prefix, not a directory NAME. Adding a bare "s0" to SKIP_DIR
+  // would silently have dropped every one of these the day one was created.
+  for (const p of [
+    "scripts/security/check-env-example.mjs",
+    "scripts/security/phase99/route-inventory.mjs",
+    "scripts/security/phase100/closure-evaluation.mjs",
+    "scripts/security/s0extra/thing.mjs",
+    "scripts/s0/thing.mjs",
+    "src/lib/s0/thing.ts",
+    "src/lib/db/prisma.ts",
+  ]) {
+    assert.equal(isExcludedPath(p), false, `${p} must stay in scope`);
+  }
+});
+
+test("sourceFiles drops every path under scripts/security/s0/", () => {
+  const files = sourceFiles();
+  const inside = files.filter((f) => f.startsWith("scripts/security/s0/"));
+  assert.deepEqual(
+    inside,
+    [],
+    `the tool must not offer its own files; got ${inside.slice(0, 5).join(", ")}`,
+  );
+  // and the exclusion must be the reason, not an accident of the current tree
+  for (const f of files) {
+    assert.equal(isExcludedPath(f), false, `${f} slipped past the exclusion`);
+  }
+});
+
+test("sourceFiles still lists scripts/ files OUTSIDE the excluded subtree", () => {
+  const files = sourceFiles();
+  const scripts = files.filter((f) => f.startsWith("scripts/"));
+  assert.ok(scripts.length > 100, `the rest of scripts/ must stay scannable, got ${scripts.length}`);
+  // a named negative control that lives under scripts/security/ but outside s0/
+  assert.ok(
+    files.includes("scripts/security/check-env-example.mjs"),
+    "scripts/security/check-env-example.mjs must still be scanned",
+  );
+  assert.ok(
+    scripts.some((f) => f.startsWith("scripts/security/phase100/")),
+    "scripts/security/phase100/* must still be scanned",
+  );
+  assert.ok(files.some((f) => f.startsWith("src/lib/")), "src/ must still be scanned");
+});
+
+test("the exclusion is output-neutral: no audited record comes from the tool", () => {
+  // The exclusion changes which FILES are offered, never how a call site is
+  // classified, so the rule-set version deliberately does not move and the
+  // rendered inventory keeps the hash it had before the tool became tracked.
+  assert.equal(RULESET_VERSION, "s0-b05.5");
+  const { records } = INVENTORY_LAZY();
+  assert.equal(records.length, 392, "the audited call-site count must not move");
+  assert.equal(
+    records.filter((r) => r.file.startsWith("scripts/security/s0/")).length,
+    0,
+    "the tool must contribute no call site of its own",
+  );
 });

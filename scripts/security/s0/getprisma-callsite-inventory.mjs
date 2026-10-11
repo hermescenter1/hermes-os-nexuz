@@ -47,6 +47,12 @@ export const EDGE_TRACES_PATH = join(HERE, "getprisma-consumer-edge-traces.json"
 export const RESIDUAL_SCREENING_PATH = join(HERE, "getprisma-residual-reachability.json");
 
 /**
+ * The scan-scope exclusion added in `EXCLUDED_PATH_PREFIXES` deliberately does
+ * NOT move this version: it changes which FILES are offered to the scanner, not
+ * the rule table, the tokenizer or the record shape, and it provably produces
+ * byte-identical output to the run before the tool was committed. Leaving the
+ * version alone is what lets that identity be checked by hash.
+ *
  * RULESET VERSION — bump on ANY change to the rule table, the tokenizer or the
  * record shape. The generated inventory carries it, so a stale inventory is
  * detectable even when the call sites themselves have not moved.
@@ -61,6 +67,40 @@ const SOURCE_EXT = new Set([".ts", ".tsx", ".mts", ".mjs", ".js"]);
 
 /** Never scanned: build output, worktrees, dependencies, and this tool's own fixtures. */
 const SKIP_DIR = new Set(["node_modules", ".next", ".claude", ".git", "fixtures"]);
+
+/**
+ * Paths removed from the file list ENTIRELY, before any file is read, tokenized
+ * or classified.
+ *
+ * WHY THIS EXISTS. The tool lives under `scripts/`, which is one of its own scan
+ * roots. While its files were untracked, `git ls-files` did not list them and
+ * they were never scanned. Committing them made them TRACKED, and the very next
+ * run scanned the scanner's own selftest: 392 call sites became 394 and the
+ * textual-occurrence count went from 835 to 877, so `check` reported drift
+ * against an inventory that had not actually changed. **A scanner that lives
+ * under its own scan root changes its own output the moment it is committed.**
+ *
+ * Worse, the two extra "call sites" were at selftest lines 243 and 365 — one
+ * inside a `//` comment and one inside a string literal, both of which should
+ * have been blanked. That is limitation 1 (regex literals are not tokenized)
+ * biting on a real file: the selftest is dense with regex literals and escaped
+ * backticks, and the tokenizer desynchronises there. So the self-scan produced
+ * FALSE POSITIVES, not merely extra rows.
+ *
+ * This is a PATH prefix, not a directory NAME in `SKIP_DIR`. A bare name `"s0"`
+ * would silently delete any future directory that happens to share it, anywhere
+ * in the tree — a scanner must never drop files it was not asked to drop.
+ * `scripts/security/` outside this one subtree stays fully scannable: 140 source
+ * files under `scripts/` remain in scope, among them
+ * `scripts/security/check-env-example.mjs` and `scripts/security/phase100/*`.
+ */
+export const EXCLUDED_PATH_PREFIXES = Object.freeze(["scripts/security/s0/"]);
+
+/** Is this repository-relative path inside an excluded subtree? */
+export function isExcludedPath(rel) {
+  const p = String(rel).split(sep).join("/").replace(/^\.\//, "");
+  return EXCLUDED_PATH_PREFIXES.some((prefix) => p.startsWith(prefix) || p === prefix.replace(/\/$/, ""));
+}
 
 // ───────────────────────────── primary classifications ─────────────────────────
 
@@ -1295,13 +1335,17 @@ function walk(absDir, acc, root) {
     if (st.isDirectory()) { walk(abs, acc, root); continue; }
     const dot = name.lastIndexOf(".");
     if (dot === -1 || !SOURCE_EXT.has(name.slice(dot))) continue;
-    acc.push(relative(root, abs).split(sep).join("/"));
+    const rel = relative(root, abs).split(sep).join("/");
+    // The filesystem fallback must drop exactly what the git path drops.
+    if (isExcludedPath(rel)) continue;
+    acc.push(rel);
   }
   return acc;
 }
 
 /** True when the path is a source file inside a scan root and not skipped. */
 function inScope(rel) {
+  if (isExcludedPath(rel)) return false;
   if (!SCAN_ROOTS.some((r) => rel === r || rel.startsWith(`${r}/`))) return false;
   if (rel.split("/").some((seg) => SKIP_DIR.has(seg))) return false;
   const dot = rel.lastIndexOf(".");
