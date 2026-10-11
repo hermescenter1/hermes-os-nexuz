@@ -350,7 +350,7 @@ const SEO_FILES: AuditItem[] = [
       {
         name: "Organization uses its full legal name",
         // PHASE 113 — the company identity is ZHARFA Vira Pouyesh Fanavari.
-        run: (c) => expectMatch(c, /ORG_NAME\s*=\s*"ZHARFA Vira Pouyesh Fanavari"/, "legal name is canonical", "ORG_NAME is not the full legal identity"),
+        run: (c) => expectMatch(c, /ORG_NAME\s*=\s*CORPORATE_LEGAL_NAME_EN/, "legal name is canonical", "ORG_NAME is not the full legal identity"),
       },
       {
         name: "Company and product are two separate identities",

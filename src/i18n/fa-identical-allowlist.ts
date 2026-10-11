@@ -114,16 +114,9 @@ export const FA_IDENTICAL_ALLOWLIST: Record<string, FaIdenticalCategory> = {
   // B1-F03 R3: candidate-source platform names, rendered verbatim in Persian.
   "ats.sourceLinkedin": "vendor-or-thirdparty",
   "ats.sourceIndeed": "vendor-or-thirdparty",
-  "about.website": "contact-url-or-propernoun",
   "auth.emailPlaceholder": "contact-url-or-propernoun",
   "authExperience.forgot.emailPlaceholder": "contact-url-or-propernoun",
   "automationOperations.webhooks.urlPlaceholder": "contact-url-or-propernoun",
-  "contact.generalEmail": "contact-url-or-propernoun",
-  "contact.githubUrl": "contact-url-or-propernoun",
-  "contact.linkedinUrl": "contact-url-or-propernoun",
-  "contact.salesEmail": "contact-url-or-propernoun",
-  "contact.supportEmail": "contact-url-or-propernoun",
-  "contact.websiteUrl": "contact-url-or-propernoun",
   "publicSite.footer.domain": "contact-url-or-propernoun",
   "admin.metrics.none": "non-linguistic",
   "journalWriter.guide.0.code": "non-linguistic",
@@ -150,7 +143,8 @@ export const FA_IDENTICAL_COUNTS: Record<FaIdenticalCategory, number> = {
   // B1-F03 R3: +2 — LinkedIn and Indeed as candidate-source labels.
   "vendor-or-thirdparty": 5,
   // 104-I3: +2 — vendor application sample tokens (sample e-mail, sample URL).
-  "contact-url-or-propernoun": 13,
+  // CORPORATE-CONTACT: -7 — mailboxes and URLs moved to lib/corporate/contact.
+  "contact-url-or-propernoun": 6,
   // 109-C1: +1 — the command-palette keyboard shortcut. Persian keyboards use
   // the Latin key name, so "Ctrl K" is correct Persian usage rather than
   // untranslated English. German differs ("Strg K").

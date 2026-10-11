@@ -11,14 +11,15 @@
 //
 //   1  CHARTER PLATE      the claim, stamped, over a measured tick band
 //   2  TITLE BLOCK        the real title block of an engineering sheet:
-//                         entity · practice · sites · domain (verified data)
+//                         entity · practice · founder · location (verified data)
 //   3  MEMORY SPINE       the mission as a four-step reasoning run, with the
 //                         one human-decision node carrying Beacon
 //   4  DISCIPLINE REGISTER the four capability entries as a measured ledger
 //                         with ordinals and depth bars — a register, not cards
 //   5  PROVENANCE RECORD  the founder as a signed provenance block plus a
 //                         monospaced specimen strip of the verified stack
-//   6  OPERATING NETWORK  the two verified sites drawn in code
+//   6  OPERATING NETWORK  registered address, both websites and the LinkedIn
+//                         profiles, from lib/corporate/contact
 //   7  CLOSURE            the two existing paths onward
 //
 // Truthfulness: every string still comes from the `about` catalogue, which is
@@ -37,6 +38,11 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { PublicPageShell } from "@/components/public-site";
 import { buildMetadata } from "@/lib/seo/metadata";
+import {
+  CorporateAddress,
+  CorporateProfiles,
+  CorporateWebsites,
+} from "@/components/corporate/CorporateBlocks";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -49,6 +55,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("about");
+  const tc = await getTranslations("contact");
 
   /* The mission, read as the reasoning run it describes. The first three steps
      restate the mission's own sentence structure; the fourth is the decision
@@ -104,9 +111,8 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               <span className="hc-tb-val">{t("founderName")}</span>
             </div>
             <div className="hc-tb-cell">
-              <span className="hc-tb-key">{t("website")}</span>
-              {/* a domain is a locale-invariant identifier: kept LTR inside RTL */}
-              <span className="hc-tb-val font-mono text-[0.8125rem]" dir="ltr">{t("website")}</span>
+              <span className="hc-tb-key">{t("siteKey")}</span>
+              <span className="hc-tb-val">{t("locationIran")}</span>
             </div>
           </div>
         </div>
@@ -198,19 +204,11 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
       <section className="hc-sheet">
         <div className="mx-auto w-full max-w-[78rem] px-5 py-14 md:px-10 md:py-20">
           <h2 className="text-title-lg font-bold text-text-primary">{t("companyTitle")}</h2>
+          <p className="mt-3 max-w-[40rem] text-body text-text-secondary">{tc("brandRelation")}</p>
           <div className="hc-network mt-6 max-w-[58rem]">
-            <div className="hc-site">
-              <span className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-text-metadata">
-                {t("companyEyebrow")}
-              </span>
-              <span className="text-body-lg text-text-primary">{t("locationIran")}</span>
-            </div>
-            <div className="hc-site">
-              <span className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-text-metadata">
-                {t("companyEyebrow")}
-              </span>
-              <span className="text-body-lg text-text-primary">{t("locationUK")}</span>
-            </div>
+            <CorporateAddress locale={locale} />
+            <CorporateWebsites locale={locale} />
+            <CorporateProfiles locale={locale} />
           </div>
         </div>
       </section>
