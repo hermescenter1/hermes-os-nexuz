@@ -1,14 +1,13 @@
 import { getPrisma }          from "@/lib/db/prisma";
+import { DT_AUDIT }          from "@/lib/audit/audit-service";
 import type { TwinRelationRecord, DigitalTwinRelationType } from "./types";
 import { BIDIRECTIONAL_RELATIONS, MAX_TRAVERSAL_DEPTH } from "./types";
+import { TWIN_LIMITS }       from "./schemas";
+import { TwinDomainError, isUniqueViolation, twinNotFound } from "./errors";
+import { assertPartOfAcyclic, lockHierarchy } from "./hierarchy";
+import { auditInTx, runTwinTransaction, type Row, type TwinModel } from "./tx";
 
-type RelModel = {
-  findMany:  (a: unknown) => Promise<Record<string, unknown>[]>;
-  findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
-  create:    (a: unknown) => Promise<Record<string, unknown>>;
-  update:    (a: unknown) => Promise<Record<string, unknown>>;
-  count:     (a: unknown) => Promise<number>;
-};
+type RelModel = TwinModel;
 
 export function rowToRelation(r: Record<string, unknown>): TwinRelationRecord {
   return {
@@ -22,20 +21,46 @@ export function rowToRelation(r: Record<string, unknown>): TwinRelationRecord {
   };
 }
 
+/**
+ * Relations of an organisation. A relation is visible only when BOTH endpoints
+ * are at sites the caller may reach (`allowedSiteIds` — same contract as
+ * `listNodesPage`), decided in the query via the relation's node joins.
+ */
+export async function listRelationsPage(organizationId: string, opts?: {
+  sourceNodeId?:   string;
+  targetNodeId?:   string;
+  allowedSiteIds?: string[];
+  limit?:          number;
+}): Promise<{ relations: TwinRelationRecord[]; truncated: boolean }> {
+  if (opts?.allowedSiteIds !== undefined && opts.allowedSiteIds.length === 0) {
+    return { relations: [], truncated: false };
+  }
+  const prisma = await getPrisma();
+  if (!prisma) return { relations: [], truncated: false };
+
+  const where: Record<string, unknown> = { organizationId };
+  if (opts?.sourceNodeId) where.sourceNodeId = opts.sourceNodeId;
+  if (opts?.targetNodeId) where.targetNodeId = opts.targetNodeId;
+  if (opts?.allowedSiteIds !== undefined) {
+    where.sourceNode = { siteId: { in: opts.allowedSiteIds } };
+    where.targetNode = { siteId: { in: opts.allowedSiteIds } };
+  }
+
+  const limit = opts?.limit ?? TWIN_LIMITS.LIST_RELATIONS;
+  const rows = await (prisma.digitalTwinRelation as unknown as RelModel).findMany({
+    where,
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    take: limit + 1,
+  });
+  return { relations: rows.slice(0, limit).map(rowToRelation), truncated: rows.length > limit };
+}
+
+/** Back-compat wrapper (internal callers). */
 export async function listRelations(organizationId: string, opts?: {
   sourceNodeId?: string;
   targetNodeId?: string;
 }): Promise<TwinRelationRecord[]> {
-  const prisma = await getPrisma();
-  if (!prisma) return [];
-  const where: Record<string, unknown> = { organizationId };
-  if (opts?.sourceNodeId) where.sourceNodeId = opts.sourceNodeId;
-  if (opts?.targetNodeId) where.targetNodeId = opts.targetNodeId;
-  const rows = await (prisma.digitalTwinRelation as unknown as RelModel).findMany({
-    where,
-    orderBy: { createdAt: "asc" },
-  });
-  return rows.map(rowToRelation);
+  return (await listRelationsPage(organizationId, opts)).relations;
 }
 
 export async function getRelation(id: string, organizationId: string): Promise<TwinRelationRecord | null> {
@@ -47,41 +72,146 @@ export async function getRelation(id: string, organizationId: string): Promise<T
   return r ? rowToRelation(r) : null;
 }
 
+/** A relation with the sites of its two endpoints, so a route can authorise both. */
+export async function getRelationWithSites(
+  id: string,
+  organizationId: string,
+): Promise<{ relation: TwinRelationRecord; siteIds: string[] } | null> {
+  const prisma = await getPrisma();
+  if (!prisma) return null;
+  const r = await (prisma.digitalTwinRelation as unknown as RelModel).findFirst({
+    where: { id, organizationId },
+    include: {
+      sourceNode: { select: { siteId: true } },
+      targetNode: { select: { siteId: true } },
+    },
+  });
+  if (!r) return null;
+  const src = (r.sourceNode as Row | null)?.siteId;
+  const tgt = (r.targetNode as Row | null)?.siteId;
+  const siteIds = [...new Set([src, tgt].filter((x): x is string => typeof x === "string"))];
+  return { relation: rowToRelation(r), siteIds };
+}
+
 export async function createRelation(params: {
   organizationId: string;
   sourceNodeId:   string;
   targetNodeId:   string;
   relationType:   DigitalTwinRelationType;
   metadata?:      Record<string, unknown>;
+  actorUserId?:   string | null;
 }): Promise<TwinRelationRecord | null> {
-  const prisma = await getPrisma();
-  if (!prisma) return null;
-  const r = await (prisma.digitalTwinRelation as unknown as RelModel).create({
-    data: {
-      organizationId: params.organizationId,
-      sourceNodeId:   params.sourceNodeId,
-      targetNodeId:   params.targetNodeId,
-      relationType:   params.relationType,
-      metadata:       params.metadata ?? {},
-    },
-  });
-  return rowToRelation(r);
+  try {
+    const created = await runTwinTransaction(async (tx) => {
+      // PART_OF is the hierarchy: serialise its writers so two concurrent
+      // inserts cannot each pass the cycle check and together close a loop.
+      if (params.relationType === "PART_OF") await lockHierarchy(tx, params.organizationId);
+
+      const [src, tgt] = await Promise.all([
+        tx.digitalTwinNode.findFirst({
+          where: { id: params.sourceNodeId, organizationId: params.organizationId },
+          select: { id: true, siteId: true },
+        }),
+        tx.digitalTwinNode.findFirst({
+          where: { id: params.targetNodeId, organizationId: params.organizationId },
+          select: { id: true, siteId: true },
+        }),
+      ]);
+      if (!src) throw twinNotFound.source();
+      if (!tgt) throw twinNotFound.target();
+
+      if (src.id === tgt.id) {
+        throw new TwinDomainError("SELF_RELATION", 422, "A node cannot be related to itself");
+      }
+      // The schema has no organisation-level (cross-site) relation model, so an
+      // edge between two sites has nowhere legitimate to live. Refused, not
+      // "allowed if the caller can see both".
+      if (src.siteId !== tgt.siteId) {
+        throw new TwinDomainError("CROSS_SITE_RELATION", 422, "Both nodes of a relation must belong to the same site");
+      }
+
+      // The unique index covers (source, target, type) only. For a bidirectional
+      // type the reverse pair is the SAME link, so it is checked explicitly.
+      const reverse = BIDIRECTIONAL_RELATIONS.has(params.relationType)
+        ? [{ sourceNodeId: params.targetNodeId, targetNodeId: params.sourceNodeId }]
+        : [];
+      const existing = await tx.digitalTwinRelation.findFirst({
+        where: {
+          organizationId: params.organizationId,
+          relationType:   params.relationType,
+          OR: [{ sourceNodeId: params.sourceNodeId, targetNodeId: params.targetNodeId }, ...reverse],
+        },
+        select: { id: true },
+      });
+      if (existing) throw new TwinDomainError("DUPLICATE_RELATION", 409, "This relation already exists");
+
+      if (params.relationType === "PART_OF") {
+        await assertPartOfAcyclic(tx, params.organizationId, params.sourceNodeId, params.targetNodeId);
+      }
+
+      const r = await tx.digitalTwinRelation.create({
+        data: {
+          organizationId: params.organizationId,
+          sourceNodeId:   params.sourceNodeId,
+          targetNodeId:   params.targetNodeId,
+          relationType:   params.relationType,
+          metadata:       params.metadata ?? {},
+        },
+      });
+
+      await auditInTx(tx, {
+        organizationId: params.organizationId,
+        userId:         params.actorUserId ?? null,
+        action:         DT_AUDIT.RELATION_CREATED,
+        entityId:       String(r.id),
+        siteId:         String(src.siteId),
+        details: {
+          relationType: params.relationType,
+          sourceNodeId: params.sourceNodeId,
+          targetNodeId: params.targetNodeId,
+        },
+      });
+      return r;
+    });
+    return created ? rowToRelation(created) : null;
+  } catch (err) {
+    // The unique index lost a race with a concurrent identical insert.
+    if (isUniqueViolation(err)) {
+      throw new TwinDomainError("DUPLICATE_RELATION", 409, "This relation already exists");
+    }
+    throw err;
+  }
 }
 
-export async function updateRelation(id: string, organizationId: string, patch: {
-  metadata?: Record<string, unknown>;
-}): Promise<TwinRelationRecord | null> {
-  const prisma = await getPrisma();
-  if (!prisma) return null;
-  const exists = await (prisma.digitalTwinRelation as unknown as RelModel).findFirst({
-    where: { id, organizationId },
+export async function updateRelation(
+  id: string,
+  organizationId: string,
+  patch: { metadata?: Record<string, unknown> },
+  actorUserId?: string | null,
+): Promise<TwinRelationRecord | null> {
+  const updated = await runTwinTransaction(async (tx) => {
+    const current = await tx.digitalTwinRelation.findFirst({
+      where: { id, organizationId },
+      include: { sourceNode: { select: { siteId: true } } },
+    });
+    if (!current) throw twinNotFound.relation();
+
+    const data: Record<string, unknown> = {};
+    if (patch.metadata !== undefined) data.metadata = patch.metadata;
+    if (Object.keys(data).length === 0) return current;
+
+    const r = await tx.digitalTwinRelation.update({ where: { id, organizationId }, data });
+    await auditInTx(tx, {
+      organizationId,
+      userId:   actorUserId ?? null,
+      action:   DT_AUDIT.RELATION_UPDATED,
+      entityId: id,
+      siteId:   (current.sourceNode as Row | null)?.siteId as string | undefined,
+      details:  { changedFields: Object.keys(data).sort() },
+    });
+    return r;
   });
-  if (!exists) return null;
-  const r = await (prisma.digitalTwinRelation as unknown as RelModel).update({
-    where: { id },
-    data:  patch,
-  });
-  return rowToRelation(r);
+  return updated ? rowToRelation(updated) : null;
 }
 
 export async function countRelations(organizationId: string): Promise<number> {

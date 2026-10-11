@@ -1,12 +1,11 @@
 import { getPrisma }      from "@/lib/db/prisma";
+import { DT_AUDIT }       from "@/lib/audit/audit-service";
 import type { TwinLayoutRecord } from "./types";
+import { TWIN_LIMITS }    from "./schemas";
+import { twinNotFound }   from "./errors";
+import { auditInTx, runTwinTransaction, type TwinModel } from "./tx";
 
-type LayoutModel = {
-  findMany:  (a: unknown) => Promise<Record<string, unknown>[]>;
-  findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
-  create:    (a: unknown) => Promise<Record<string, unknown>>;
-  update:    (a: unknown) => Promise<Record<string, unknown>>;
-};
+type LayoutModel = TwinModel;
 
 function rowToLayout(r: Record<string, unknown>): TwinLayoutRecord {
   return {
@@ -20,16 +19,44 @@ function rowToLayout(r: Record<string, unknown>): TwinLayoutRecord {
   };
 }
 
-export async function listLayouts(organizationId: string, siteId?: string): Promise<TwinLayoutRecord[]> {
+/**
+ * Layouts of an organisation. `allowedSiteIds` follows the `listAssets`
+ * contract (undefined = unrestricted internal call, [] = nothing, a requested
+ * `siteId` narrows the allowed set and never replaces it).
+ */
+export async function listLayoutsPage(
+  organizationId: string,
+  siteId?: string,
+  allowedSiteIds?: string[],
+): Promise<{ layouts: TwinLayoutRecord[]; truncated: boolean }> {
+  if (allowedSiteIds !== undefined && allowedSiteIds.length === 0) {
+    return { layouts: [], truncated: false };
+  }
   const prisma = await getPrisma();
-  if (!prisma) return [];
+  if (!prisma) return { layouts: [], truncated: false };
   const where: Record<string, unknown> = { organizationId };
-  if (siteId) where.siteId = siteId;
+  if (allowedSiteIds !== undefined) {
+    if (siteId && !allowedSiteIds.includes(siteId)) return { layouts: [], truncated: false };
+    where.siteId = siteId ?? { in: allowedSiteIds };
+  } else if (siteId) {
+    where.siteId = siteId;
+  }
+  const limit = TWIN_LIMITS.LIST_LAYOUTS;
   const rows = await (prisma.digitalTwinLayout as unknown as LayoutModel).findMany({
     where,
-    orderBy: { updatedAt: "desc" },
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+    take: limit + 1,
   });
-  return rows.map(rowToLayout);
+  return { layouts: rows.slice(0, limit).map(rowToLayout), truncated: rows.length > limit };
+}
+
+/** Array-returning form for internal callers. Bounded, no `truncated` flag. */
+export async function listLayouts(
+  organizationId: string,
+  siteId?: string,
+  allowedSiteIds?: string[],
+): Promise<TwinLayoutRecord[]> {
+  return (await listLayoutsPage(organizationId, siteId, allowedSiteIds)).layouts;
 }
 
 export async function getLayout(id: string, organizationId: string): Promise<TwinLayoutRecord | null> {
@@ -46,18 +73,34 @@ export async function createLayout(params: {
   siteId:         string;
   name:           string;
   layoutData?:    Record<string, unknown>;
+  actorUserId?:   string | null;
 }): Promise<TwinLayoutRecord | null> {
-  const prisma = await getPrisma();
-  if (!prisma) return null;
-  const r = await (prisma.digitalTwinLayout as unknown as LayoutModel).create({
-    data: {
+  const created = await runTwinTransaction(async (tx) => {
+    const site = await tx.industrialSite.findFirst({
+      where: { id: params.siteId, organizationId: params.organizationId },
+      select: { id: true },
+    });
+    if (!site) throw twinNotFound.site();
+
+    const r = await tx.digitalTwinLayout.create({
+      data: {
+        organizationId: params.organizationId,
+        siteId:         params.siteId,
+        name:           params.name,
+        layoutData:     params.layoutData ?? {},
+      },
+    });
+    await auditInTx(tx, {
       organizationId: params.organizationId,
+      userId:         params.actorUserId ?? null,
+      action:         DT_AUDIT.LAYOUT_UPDATED,
+      entityId:       String(r.id),
       siteId:         params.siteId,
-      name:           params.name,
-      layoutData:     params.layoutData ?? {},
-    },
+      details:        { operation: "create" },
+    });
+    return r;
   });
-  return rowToLayout(r);
+  return created ? rowToLayout(created) : null;
 }
 
 export async function updateLayout(id: string, organizationId: string, patch: {

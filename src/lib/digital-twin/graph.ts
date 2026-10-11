@@ -10,6 +10,7 @@
 import { getPrisma }     from "@/lib/db/prisma";
 import { rowToNode }     from "./nodes";
 import { rowToRelation, buildAdjacency, traverseDownstream, traverseUpstream } from "./relations";
+import { TWIN_LIMITS }   from "./schemas";
 import type {
   AssetGraph, GraphNode, TwinNodeRecord, TwinRelationRecord,
   DigitalTwinRelationType,
@@ -29,10 +30,29 @@ export async function getAssetGraph(
   const prisma = await getPrisma();
   if (!prisma) return null;
 
+  // Slice 1: both reads are bounded and scoped IN THE QUERY. Relations used to be
+  // fetched for the whole organisation and discarded in memory; now only edges
+  // whose two endpoints are at this site are read, and a graph past the ceiling is
+  // reported as `truncated` rather than loaded without limit.
   const [rawNodes, rawRelations] = await Promise.all([
-    (prisma.digitalTwinNode     as unknown as NodeModel).findMany({ where: { organizationId, siteId } }),
-    (prisma.digitalTwinRelation as unknown as RelModel).findMany({ where: { organizationId } }),
+    (prisma.digitalTwinNode as unknown as NodeModel).findMany({
+      where:   { organizationId, siteId },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      take:    TWIN_LIMITS.GRAPH_NODES + 1,
+    }),
+    (prisma.digitalTwinRelation as unknown as RelModel).findMany({
+      where: {
+        organizationId,
+        sourceNode: { siteId },
+        targetNode: { siteId },
+      },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      take:    TWIN_LIMITS.GRAPH_RELATIONS + 1,
+    }),
   ]);
+  const truncated = rawNodes.length > TWIN_LIMITS.GRAPH_NODES || rawRelations.length > TWIN_LIMITS.GRAPH_RELATIONS;
+  rawNodes.length     = Math.min(rawNodes.length,     TWIN_LIMITS.GRAPH_NODES);
+  rawRelations.length = Math.min(rawRelations.length, TWIN_LIMITS.GRAPH_RELATIONS);
 
   const nodeMap = new Map<string, GraphNode>();
   for (const r of rawNodes) {
@@ -56,7 +76,7 @@ export async function getAssetGraph(
     }
   }
 
-  return { siteId, nodes: nodeMap, relations };
+  return { siteId, nodes: nodeMap, relations, truncated };
 }
 
 /**
@@ -65,22 +85,46 @@ export async function getAssetGraph(
 export async function getNodeRelations(
   nodeId:         string,
   organizationId: string,
-): Promise<{ outbound: TwinRelationRecord[]; inbound: TwinRelationRecord[] }> {
+  opts?: { allowedSiteIds?: string[] },
+): Promise<{ outbound: TwinRelationRecord[]; inbound: TwinRelationRecord[]; truncated: boolean }> {
+  if (opts?.allowedSiteIds !== undefined && opts.allowedSiteIds.length === 0) {
+    return { outbound: [], inbound: [], truncated: false };
+  }
   const prisma = await getPrisma();
-  if (!prisma) return { outbound: [], inbound: [] };
+  if (!prisma) return { outbound: [], inbound: [], truncated: false };
 
+  // With `allowedSiteIds`, an edge is only reported when both its endpoints are at
+  // sites the caller may reach, so a legacy edge to a node at another site does
+  // not disclose that node's id.
+  const siteScope: Record<string, unknown> = opts?.allowedSiteIds !== undefined
+    ? {
+        sourceNode: { siteId: { in: opts.allowedSiteIds } },
+        targetNode: { siteId: { in: opts.allowedSiteIds } },
+      }
+    : {};
+
+  // Each direction is capped independently at LIST_RELATIONS, in a total order
+  // (createdAt, id) so WHICH rows survive the cap is deterministic. `limit + 1`
+  // rows are requested so exactly `limit` is not mistaken for a truncated result.
+  const limit = TWIN_LIMITS.LIST_RELATIONS;
+  const order = [{ createdAt: "asc" }, { id: "asc" }];
   const [outRaw, inRaw] = await Promise.all([
     (prisma.digitalTwinRelation as unknown as RelModel).findMany({
-      where: { organizationId, sourceNodeId: nodeId },
+      where:   { organizationId, sourceNodeId: nodeId, ...siteScope },
+      orderBy: order,
+      take:    limit + 1,
     }),
     (prisma.digitalTwinRelation as unknown as RelModel).findMany({
-      where: { organizationId, targetNodeId: nodeId },
+      where:   { organizationId, targetNodeId: nodeId, ...siteScope },
+      orderBy: order,
+      take:    limit + 1,
     }),
   ]);
 
   return {
-    outbound: outRaw.map(rowToRelation),
-    inbound:  inRaw.map(rowToRelation),
+    outbound:  outRaw.slice(0, limit).map(rowToRelation),
+    inbound:   inRaw.slice(0, limit).map(rowToRelation),
+    truncated: outRaw.length > limit || inRaw.length > limit,
   };
 }
 

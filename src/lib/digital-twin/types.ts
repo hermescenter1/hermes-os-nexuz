@@ -79,6 +79,8 @@ export interface AssetGraph {
   siteId:    string;
   nodes:     Map<string, GraphNode>;
   relations: TwinRelationRecord[];
+  /** True when the node/relation ceiling was reached and the graph is a prefix. */
+  truncated?: boolean;
 }
 
 // ── Traversal results ─────────────────────────────────────────────────────────

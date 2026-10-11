@@ -191,8 +191,20 @@ describe("Part 3 — PATCH routes reject injected tenant/ownership fields", () =
       requirePlatformAuth: async () => ({ ctx: { userId: "u1", orgId: "org-A", authMethod: "jwt", scopes: ["admin"] } }),
     }));
     vi.doMock("@/lib/org/context", () => ({ requireOrgActor: async () => ({ ctx: { role: "ADMIN", userId: "u1", orgId: "org-A" } }) }));
+    // Digital Twin Slice 1: the route now resolves the node and authorises its SITE
+    // before writing, so the harness supplies a node at a reachable site. The
+    // assertion below — an injected organizationId never reaches updateNode — is
+    // unchanged.
+    vi.doMock("@/lib/site/context", () => ({
+      requireSiteActor: async (_req: unknown, orgId: string, siteId: string) => ({ ctx: { userId: "u1", orgId, siteId, role: "SITE_ADMIN", implicit: true } }),
+      getAllowedSiteIds: async () => ["site-1"],
+    }));
     const updateNode = vi.fn(async () => ({ id: "n1" }));
-    vi.doMock("@/lib/digital-twin/nodes", () => ({ updateNode, listNodes: async () => [] }));
+    vi.doMock("@/lib/digital-twin/nodes", () => ({
+      updateNode,
+      listNodes: async () => [],
+      getNode: async () => ({ id: "n1", siteId: "site-1", organizationId: "org-A" }),
+    }));
     const { PATCH } = await import("../../../app/api/digital-twin/nodes/[id]/route");
     const res = await PATCH(patchReq("/api/digital-twin/nodes/n1", { displayName: "N", organizationId: "org-EVIL", assetId: "ok" }), { params: Promise.resolve({ id: "n1" }) });
     expect(res.status).toBe(200);

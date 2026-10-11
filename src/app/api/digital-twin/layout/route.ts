@@ -1,54 +1,76 @@
-import { NextRequest, NextResponse }          from "next/server";
-import { requirePlatformAuth }               from "@/lib/api/auth";
-import { requireOrgActor }                   from "@/lib/org/context";
-import { requirePermission }                 from "@/lib/org/rbac";
-import { listLayouts, createLayout }         from "@/lib/digital-twin/layout";
-import { recordAuditEvent, DT_AUDIT }        from "@/lib/audit/audit-service";
+import { NextRequest, NextResponse }  from "next/server";
+import { requirePlatformAuth }          from "@/lib/api/auth";
+import { requireOrgActor }              from "@/lib/org/context";
+import { requirePermission }            from "@/lib/org/rbac";
+import { getAllowedSiteIds }          from "@/lib/site/context";
+import { listLayoutsPage, createLayout }  from "@/lib/digital-twin/layout";
+import { authorizeTwinSite, requireSessionAuth, twinAuthRefusal, type TwinCtx } from "@/lib/digital-twin/guard";
+import { parseJsonBody }              from "@/lib/digital-twin/request";
+import { TWIN_LIMITS, createLayoutBody, siteIdQuery } from "@/lib/digital-twin/schemas";
+import { twinErrorResponse, twinJsonError, twinNotFound } from "@/lib/digital-twin/errors";
 
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-  const { ctx } = auth;
+  if ("error" in auth) return twinAuthRefusal(auth);
+  const sessionRefusal = requireSessionAuth(auth.ctx);
+  if (sessionRefusal) return sessionRefusal;
 
-  const member = await requireOrgActor(req, ctx.orgId);
-  if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
+  const member = await requireOrgActor(req, auth.ctx.orgId);
+  if ("error" in member) return twinAuthRefusal(member);
   const perm = requirePermission(member.ctx.role, "view_digital_twin");
-  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  if (!perm.ok) return twinAuthRefusal(perm);
+  const ctx: TwinCtx = { orgId: auth.ctx.orgId, userId: member.ctx.userId };
 
-  const siteId  = req.nextUrl.searchParams.get("siteId") ?? undefined;
-  const layouts = await listLayouts(ctx.orgId, siteId);
-  return NextResponse.json({ layouts });
+  let siteId: string | undefined;
+  const rawSite = req.nextUrl.searchParams.get("siteId");
+  if (rawSite !== null) {
+    const parsed = siteIdQuery.safeParse(rawSite);
+    if (!parsed.success) return twinJsonError(400, "VALIDATION_FAILED", "siteId is invalid");
+    siteId = parsed.data;
+  }
+
+  try {
+    const allowedSiteIds = await getAllowedSiteIds(ctx.userId, ctx.orgId);
+    const { layouts, truncated } = await listLayoutsPage(ctx.orgId, siteId, allowedSiteIds);
+    return NextResponse.json({ layouts, truncated });
+  } catch (err) {
+    return twinErrorResponse(err, "layout.list");
+  }
 }
 
 export async function POST(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-  const { ctx } = auth;
+  if ("error" in auth) return twinAuthRefusal(auth);
+  const sessionRefusal = requireSessionAuth(auth.ctx);
+  if (sessionRefusal) return sessionRefusal;
 
-  const member = await requireOrgActor(req, ctx.orgId);
-  if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
+  const member = await requireOrgActor(req, auth.ctx.orgId);
+  if ("error" in member) return twinAuthRefusal(member);
   const perm = requirePermission(member.ctx.role, "manage_digital_twin");
-  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  if (!perm.ok) return twinAuthRefusal(perm);
+  const ctx: TwinCtx = { orgId: auth.ctx.orgId, userId: member.ctx.userId };
 
-  const body = await req.json().catch(() => ({}));
-  const { siteId, name, layoutData } = body as Record<string, unknown>;
-  if (!siteId || typeof siteId !== "string") return NextResponse.json({ error: "siteId is required" }, { status: 400 });
-  if (!name   || typeof name   !== "string") return NextResponse.json({ error: "name is required"   }, { status: 400 });
+  const body = await parseJsonBody(req, createLayoutBody, TWIN_LIMITS.LAYOUT_BODY_BYTES);
+  if (!body.ok) return body.response;
+  const input = body.data;
 
-  const layout = await createLayout({
-    organizationId: ctx.orgId,
-    siteId:   siteId as string,
-    name:     name   as string,
-    layoutData: layoutData as Record<string, unknown> | undefined,
-  });
-  if (!layout) return NextResponse.json({ error: "Failed to create layout" }, { status: 503 });
+  const site = await authorizeTwinSite(req, ctx, input.siteId, "manage", twinNotFound.site);
+  if (!site.ok) return site.response;
 
-  recordAuditEvent({
-    action:     DT_AUDIT.LAYOUT_UPDATED,
-    entityType: "digital_twin",
-    userId:     ctx.userId ?? undefined,
-    entityId:   layout.id,
-    metadata:   { name, siteId, organizationId: ctx.orgId },
-  });
-  return NextResponse.json({ layout }, { status: 201 });
+  try {
+    const layout = await createLayout({
+      organizationId: ctx.orgId,
+      siteId:         input.siteId,
+      name:           input.name,
+      layoutData:     input.layoutData,
+      actorUserId:    ctx.userId,
+    });
+    if (!layout) {
+      const e = twinNotFound.unavailable();
+      return twinJsonError(e.status, e.code, e.message);
+    }
+    return NextResponse.json({ layout }, { status: 201 });
+  } catch (err) {
+    return twinErrorResponse(err, "layout.create");
+  }
 }

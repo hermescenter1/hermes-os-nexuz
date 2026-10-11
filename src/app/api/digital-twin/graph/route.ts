@@ -1,29 +1,53 @@
 import { NextRequest, NextResponse }  from "next/server";
-import { requirePlatformAuth }        from "@/lib/api/auth";
-import { requireOrgActor }            from "@/lib/org/context";
-import { requirePermission }          from "@/lib/org/rbac";
+import { requirePlatformAuth }          from "@/lib/api/auth";
+import { requireOrgActor }              from "@/lib/org/context";
+import { requirePermission }            from "@/lib/org/rbac";
 import { getAssetGraph }              from "@/lib/digital-twin/graph";
 import { meterIndustrialEvent }       from "@/lib/api/meter";
+import { authorizeTwinSite, requireSessionAuth, twinAuthRefusal, type TwinCtx } from "@/lib/digital-twin/guard";
+import { siteIdQuery }                from "@/lib/digital-twin/schemas";
+import { twinErrorResponse, twinJsonError, twinNotFound } from "@/lib/digital-twin/errors";
 
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-  const { ctx } = auth;
+  if ("error" in auth) return twinAuthRefusal(auth);
+  const sessionRefusal = requireSessionAuth(auth.ctx);
+  if (sessionRefusal) return sessionRefusal;
 
-  const member = await requireOrgActor(req, ctx.orgId);
-  if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
+  const member = await requireOrgActor(req, auth.ctx.orgId);
+  if ("error" in member) return twinAuthRefusal(member);
   const perm = requirePermission(member.ctx.role, "view_digital_twin");
-  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  if (!perm.ok) return twinAuthRefusal(perm);
+  const ctx: TwinCtx = { orgId: auth.ctx.orgId, userId: member.ctx.userId };
 
-  const siteId = req.nextUrl.searchParams.get("siteId");
-  if (!siteId) return NextResponse.json({ error: "siteId is required" }, { status: 400 });
+  const rawSite = req.nextUrl.searchParams.get("siteId");
+  if (!rawSite) return twinJsonError(400, "VALIDATION_FAILED", "siteId is required");
+  const parsed = siteIdQuery.safeParse(rawSite);
+  if (!parsed.success) return twinJsonError(400, "VALIDATION_FAILED", "siteId is invalid");
+  const siteId = parsed.data;
 
-  const graph = await getAssetGraph(ctx.orgId, siteId);
-  if (!graph) return NextResponse.json({ error: "No graph data available" }, { status: 503 });
+  // An unreachable site is indistinguishable from one that does not exist.
+  const site = await authorizeTwinSite(req, ctx, siteId, "view", twinNotFound.site);
+  if (!site.ok) return site.response;
 
-  meterIndustrialEvent(ctx.orgId, "digital_twin_queries");
+  try {
+    const graph = await getAssetGraph(ctx.orgId, siteId);
+    if (!graph) {
+      const e = twinNotFound.unavailable();
+      return twinJsonError(e.status, e.code, e.message);
+    }
 
-  // Serialize Map to plain object for JSON response
-  const nodes = Object.fromEntries(graph.nodes);
-  return NextResponse.json({ siteId: graph.siteId, nodes, relations: graph.relations });
+    meterIndustrialEvent(ctx.orgId, "digital_twin_queries");
+
+    // Serialize Map to plain object for JSON response
+    const nodes = Object.fromEntries(graph.nodes);
+    return NextResponse.json({
+      siteId: graph.siteId,
+      nodes,
+      relations: graph.relations,
+      truncated: graph.truncated ?? false,
+    });
+  } catch (err) {
+    return twinErrorResponse(err, "graph.get");
+  }
 }
