@@ -73,14 +73,16 @@ describe("89B.1 — course schema inLanguage", () => {
 describe("89B.1 — organization / website language metadata", () => {
   it("organization availableLanguage lists Persian, English and German", () => {
     const org = organizationSchema();
-    expect(org.contactPoint.availableLanguage).toEqual(["Persian", "English", "German"]);
+    for (const point of org.contactPoint) {
+      expect(point.availableLanguage).toEqual(["Persian", "English", "German"]);
+    }
   });
 
   it("organization shape is otherwise unchanged and valid", () => {
     const org = organizationSchema();
     expect(org["@context"]).toBe("https://schema.org");
     expect(org["@type"]).toBe("Organization");
-    expect(org.contactPoint["@type"]).toBe("ContactPoint");
+    for (const point of org.contactPoint) expect(point["@type"]).toBe("ContactPoint");
     // PHASE 105 widened this pin: the organisation now carries a stable `@id`,
     // its full legal name, a `founder` reference into the entity graph and
     // `knowsAbout`. The assertion stays exact — it is the guard that stops an
@@ -98,8 +100,8 @@ describe("89B.1 — organization / website language metadata", () => {
     // profile is supplied.
     expect(Object.keys(org).sort()).toEqual(
       [
-        "@context", "@id", "@type", "alternateName", "contactPoint", "founder",
-        "knowsAbout", "legalName", "name", "url",
+        "@context", "@id", "@type", "address", "alternateName", "contactPoint", "founder",
+        "identifier", "knowsAbout", "legalName", "name", "sameAs", "url",
       ].sort(),
     );
   });

@@ -195,6 +195,8 @@ const PRESERVED_VALUES = new Set([
   "Stripe", "Visa", "Mastercard", "Zarinpal",
   // social platforms / labels
   "LinkedIn", "GitHub", "Website",
+  // CORPORATE-CONTACT: the two brand names shown as website labels
+  "Hermes OS", "Zharfa Vira",
   // example placeholders & proper nouns
   "Ada Lovelace", "Acme Manufacturing", "Isfahan, Iran",
 ]);
@@ -331,9 +333,14 @@ describe("de.json — Phase 86C1 translation audit", () => {
     //      (capDigitalTwin, capPredictiveMaintenance, capMultiSite, capOtEdge, plus
     //      the group label) are genuinely German. batch 560->593 (+33),
     //      translated 508->537 (+29), preserved 52->56 (+4).
-    expect(batch.length).toBe(593);
-    expect(translated.length).toBe(537);
-    expect(preservedInBatch.length).toBe(56);
+    // CORPORATE-CONTACT: contact namespace -12 identical machine leaves (mailboxes,
+    //      numbers, URLs, LinkedIn label; now in lib/corporate/contact) -1 translated
+    //      (locationUK), +17 new leaves of which 2 are the preserved brand names
+    //      "Hermes OS" / "Zharfa Vira". batch 593->598, translated 537->551,
+    //      preserved 56->47.
+    expect(batch.length).toBe(598);
+    expect(translated.length).toBe(551);
+    expect(preservedInBatch.length).toBe(47);
   });
 
   it("every same-as-English batch value is a legitimate preserved term", () => {

@@ -287,8 +287,9 @@ describe("104-I1 — the Company family stays fully localised in en / de / fa", 
     //   missionEyebrow "Mission" — the German noun is identical
     // Persian translates all of these except the domain, so its allowlist is
     // asserted separately and is deliberately smaller.
-    const IDENTICAL_DE = new Set(["companyTitle", "website", "founderName", "locationIran", "missionEyebrow"]);
-    const IDENTICAL_FA = new Set(["website"]);
+    // CORPORATE-CONTACT: `website` is gone — the domain now lives in lib/corporate/contact.
+    const IDENTICAL_DE = new Set(["companyTitle", "founderName", "locationIran", "missionEyebrow"]);
+    const IDENTICAL_FA = new Set<string>();
     // the allowlists must stay minimal: any growth is a real fallback to review
     expect(IDENTICAL_DE.size).toBeLessThanOrEqual(5);
     expect(IDENTICAL_FA.size).toBeLessThanOrEqual(1);
@@ -514,9 +515,13 @@ describe("104-I1 — /contact is a triage protocol, not three equal cards", () =
   it("invents no address, number or SLA — every value comes from the catalogue", () => {
     const src = activeSrc(CONTACT);
     const contactKeys = Object.keys((en as unknown as { contact: Record<string, string> }).contact);
-    const used = new Set([...src.matchAll(/\bt\("([a-zA-Z0-9]+)"\)/g)].map((m) => m[1]));
+    // CORPORATE-CONTACT: the registry blocks moved to the shared corporate
+    // components, so keys are read from the page AND from those blocks.
+    const blocks = activeSrc("src/components/corporate/CorporateBlocks.tsx");
+    const used = new Set([...(src + blocks).matchAll(/\bt\("([a-zA-Z0-9]+)"(?:\)|,)/g)].map((m) => m[1]));
     expect(used.size).toBeGreaterThan(15);
     for (const k of used) expect(contactKeys, `contact.${k} is not in the catalogue`).toContain(k);
+    expect(blocks).not.toMatch(/@[a-z0-9.-]+\.(com|org|net)/i);
     // no literal address or response-time promise in the markup
     expect(src).not.toMatch(/@[a-z0-9.-]+\.(com|org|net)/i);
     expect(src).not.toMatch(/business day|Werktag|\bSLA\b|response time|within \d/);
@@ -527,11 +532,13 @@ describe("104-I1 — /contact is a triage protocol, not three equal cards", () =
     expect(src).toMatch(/<PublicPageShell visualMode="company">/);
     expect(src).not.toMatch(/observatory|journal/);
     // every anchor in the page body is an operational control here
-    const anchors = src.split("<a").slice(1).map((chunk) => chunk.slice(0, chunk.indexOf(">")));
-    // three anchor ELEMENTS in source (email / phone / profile); each is
-    // rendered once per catalogue entry by its own .map()
-    expect(anchors.length).toBe(3);
-    for (const a of anchors) expect(a, `anchor without a 44px target: ${a.slice(0, 80)}`).toMatch(/min-h-11/);
+    // CORPORATE-CONTACT: anchors now live in the page (mailto) and in the shared
+    // corporate blocks (tel / external). Each must keep a 44px target: `min-h-11`,
+    // or `he-ext`, whose CSS sets min-block-size 2.75rem.
+    const blocks = activeSrc("src/components/corporate/CorporateBlocks.tsx");
+    const anchors = [...(src + blocks).matchAll(/<a\s[^>]*>/g)].map((m) => m[0]);
+    expect(anchors.length).toBeGreaterThanOrEqual(3);
+    for (const a of anchors) expect(a, `anchor without a 44px target: ${a.slice(0, 80)}`).toMatch(/min-h-11|he-ext/);
   });
 });
 

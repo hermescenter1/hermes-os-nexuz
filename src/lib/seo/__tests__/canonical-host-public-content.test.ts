@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { CORPORATE_WEBSITES } from "@/lib/corporate/contact";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import en from "../../../../messages/en.json";
@@ -70,20 +71,20 @@ describe("9 - no active public content carries the non-canonical host", () => {
     expect(offenders).toEqual([]);
   });
 
-  it.each(CATALOGS)("messages/%s.json still publishes the site URL, on the apex", (_name, catalog) => {
-    const c = catalog as { about: { website: string }; contact: { websiteUrl: string } };
+  it("the published Hermes OS website is the apex, from the canonical corporate source", () => {
     // A gate that only forbids `www` would also pass if the value were deleted.
-    // These two leaves are the ones production rendered, so pin their content.
-    expect(c.about.website).toBe(APEX_HOST);
-    expect(c.contact.websiteUrl).toBe(`https://${APEX_HOST}`);
-  });
-
-  it("the clickable Contact link resolves to the apex with no redirect hop", () => {
+    // The URL now lives in lib/corporate/contact (not in the catalogues), so pin
+    // its content there and prove the catalogues no longer carry a second copy.
+    expect(CORPORATE_WEBSITES.hermes.host).toBe(APEX_HOST);
+    expect(CORPORATE_WEBSITES.hermes.url).toBe(`https://${APEX_HOST}`);
+    const url = new URL(CORPORATE_WEBSITES.hermes.url);
+    expect(url.protocol).toBe("https:");
+    expect(url.host).toBe(APEX_HOST);
+    expect(url.host.startsWith("www.")).toBe(false);
     for (const [name, catalog] of CATALOGS) {
-      const url = new URL((catalog as { contact: { websiteUrl: string } }).contact.websiteUrl);
-      expect(url.protocol, name).toBe("https:");
-      expect(url.host, name).toBe(APEX_HOST);
-      expect(url.host.startsWith("www."), name).toBe(false);
+      const c = catalog as { about: Record<string, unknown>; contact: Record<string, unknown> };
+      expect(c.about.website, name).toBeUndefined();
+      expect(c.contact.websiteUrl, name).toBeUndefined();
     }
   });
 });

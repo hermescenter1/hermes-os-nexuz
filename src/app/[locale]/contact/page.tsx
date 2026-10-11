@@ -13,16 +13,16 @@
 //                         as numbered channels, each stating what it handles
 //                         and its own verified address — a triage path, not a
 //                         card deck
-//   3  CONTACT REGISTRY   the verified phone numbers and sites as a ruled
-//                         register with ISO country marks (no flag emoji)
+//   3  CONTACT REGISTRY   the verified phone numbers, the registered address,
+//                         both websites — ruled rows, LTR-isolated numbers
 //   4  COMMAND SURFACE    the existing form, framed as the submit instrument
 //   5  NETWORK PATHS      the verified external profiles
+//   6  LEGAL INFORMATION  registered identity, from lib/corporate/contact
 //
-// Truthfulness: every address, number, location and URL is the existing
-// `contact` catalogue value (39 keys, already at en/de/fa parity). This
-// increment adds NO key and invents no address, phone, capability or response
-// time — there is no SLA claim anywhere on the page, because the catalogue
-// does not contain one. `<ContactForm />` is imported UNCHANGED: its fields,
+// Truthfulness: every mailbox, number, address, identifier and URL is read from
+// the canonical corporate source (`lib/corporate/contact`); labels are `contact`
+// catalogue values. Nothing is invented — there is no SLA claim anywhere on the
+// page, and a profile the owner has not supplied is omitted, never guessed. `<ContactForm />` is imported UNCHANGED: its fields,
 // validation, submit handler, API call and error/success states are untouched.
 //
 // Every rule and node is aria-hidden; the channels and registry are real
@@ -32,6 +32,14 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { PublicPageShell } from "@/components/public-site";
 import { ContactForm } from "./ContactForm";
 import { buildMetadata } from "@/lib/seo/metadata";
+import {
+  CorporateAddress,
+  CorporateLegal,
+  CorporatePhones,
+  CorporateProfiles,
+  CorporateWebsites,
+  getCorporateChannels,
+} from "@/components/corporate/CorporateBlocks";
 
 export async function generateMetadata({
   params,
@@ -59,30 +67,10 @@ export default async function ContactPage({
   setRequestLocale(locale);
   const t = await getTranslations("contact");
 
-  /* The three triage channels. Ordinals are structure; every label,
-     description and address is a catalogue value. */
-  const channels = [
-    { ord: "01", title: t("salesTitle"),   desc: t("salesDesc"),   email: t("salesEmail") },
-    { ord: "02", title: t("supportTitle"), desc: t("supportDesc"), email: t("supportEmail") },
-    { ord: "03", title: t("generalTitle"), desc: t("generalDesc"), email: t("generalEmail") },
-  ];
-
-  /* Verified contact points. `mark` is the ISO 3166 alpha-2 code set in the
-     mono face — a country mark that renders identically everywhere, unlike the
-     flag emoji the previous page used. `tel:` targets are the shipped numbers. */
-  const phones = [
-    { mark: "IR", label: t("phoneIran"), href: "tel:+989134116492" },
-    { mark: "GB", label: t("phoneUK"),   href: "tel:+447960545833" },
-  ];
-  const sites = [
-    { mark: "IR", label: t("locationIran") },
-    { mark: "GB", label: t("locationUK") },
-  ];
-  const profiles = [
-    { label: t("linkedinLabel"), url: t("linkedinUrl") },
-    { label: t("githubLabel"),   url: t("githubUrl") },
-    { label: t("websiteLabel"),  url: t("websiteUrl") },
-  ];
+  /* The three triage channels. Mailboxes come from the canonical corporate
+     source (`lib/corporate/contact`); titles and descriptions are catalogue
+     values. */
+  const channels = await getCorporateChannels(locale);
 
   return (
     <PublicPageShell visualMode="company">
@@ -113,6 +101,7 @@ export default async function ContactPage({
               <p className="min-w-0 text-body text-text-secondary">{c.desc}</p>
               <a
                 href={"mailto:" + c.email}
+                aria-label={c.ariaLabel}
                 className="ds-focus inline-flex min-h-11 items-center rounded-sm font-mono text-[0.8125rem] text-brand-primary transition-colors duration-fast hover:text-text-primary motion-reduce:transition-none"
                 dir="ltr"
               >
@@ -127,61 +116,11 @@ export default async function ContactPage({
       <section className="he-plate">
         <div className="mx-auto grid w-full max-w-[78rem] gap-10 px-5 py-12 md:px-10 md:py-16 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
           <div className="flex min-w-0 flex-col gap-8">
-            <div>
-              <h2 className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-metadata">
-                {t("phoneTitle")}
-              </h2>
-              <ul className="he-registry mt-3">
-                {phones.map((ph) => (
-                  <li key={ph.mark} className="he-row">
-                    <span aria-hidden="true" className="he-mark">{ph.mark}</span>
-                    <a
-                      href={ph.href}
-                      className="ds-focus inline-flex min-h-11 items-center rounded-sm font-mono text-[0.8125rem] text-text-secondary transition-colors duration-fast hover:text-text-primary motion-reduce:transition-none"
-                      dir="ltr"
-                    >
-                      {ph.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h2 className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-metadata">
-                {t("locationTitle")}
-              </h2>
-              <ul className="he-registry mt-3">
-                {sites.map((s) => (
-                  <li key={s.mark} className="he-row">
-                    <span aria-hidden="true" className="he-mark">{s.mark}</span>
-                    <span className="text-body text-text-secondary">{s.label}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
+            <CorporatePhones locale={locale} />
+            <CorporateAddress locale={locale} />
+            <CorporateWebsites locale={locale} />
             {/* ── 5 · NETWORK PATHS ──────────────────────────────────────── */}
-            <div>
-              <h2 className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-metadata">
-                {t("socialTitle")}
-              </h2>
-              <ul className="he-registry mt-3">
-                {profiles.map((pr) => (
-                  <li key={pr.label} className="he-row">
-                    <span aria-hidden="true" className="he-mark">EXT</span>
-                    <a
-                      href={pr.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ds-focus inline-flex min-h-11 items-center rounded-sm text-body text-text-secondary transition-colors duration-fast hover:text-text-primary motion-reduce:transition-none"
-                    >
-                      {pr.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <CorporateProfiles locale={locale} />
           </div>
 
           {/* The submit instrument. ContactForm is imported unchanged: fields,
@@ -192,6 +131,11 @@ export default async function ContactPage({
             <ContactForm />
           </div>
         </div>
+      </section>
+
+      {/* ── 6 · LEGAL INFORMATION ────────────────────────────────────────── */}
+      <section className="mx-auto w-full max-w-[78rem] px-5 py-12 md:px-10 md:py-16">
+        <CorporateLegal locale={locale} />
       </section>
     </PublicPageShell>
   );
