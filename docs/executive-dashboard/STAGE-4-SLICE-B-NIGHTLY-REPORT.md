@@ -169,6 +169,30 @@ worker-spawn failure, unrelated to this slice).
 
 ---
 
+## 6b. `origin/main` moved during this slice — what the merge needs
+
+This branch is based on `e9961048` and is green there. While slice B was being
+built, `origin/main` advanced to **`560d4af9`** (PR #131, corporate contact and
+legal), which touches three files this slice also changes:
+`messages/{en,fa,de}.json`, `src/i18n/__tests__/de-catalog.test.ts` and
+`src/i18n/__tests__/german-final-gate.test.ts`.
+
+Merging was **not** performed — it is outside this stage's authorization. The
+arithmetic whoever merges will need, measured on both sides:
+
+| | Catalogue total asserted | Actual `en.json` leaves |
+| --- | --- | --- |
+| The base this branch sits on (`e9961048`) | 8252 | 8252 |
+| This branch (`0beec154`) | 8395 | 8395 |
+| `origin/main` today (`560d4af9`) | 8256 | 8256 |
+| **After the merge** | **8399** | **8399** |
+
+This slice contributes **143** leaves: the 142-leaf `executive` namespace plus
+`appShell.nav.items.executiveCenter`. PR #131 contributed 4. The two sets are
+disjoint — a new top-level namespace and one nav key on this side — so the
+catalogue conflicts are mechanical; the only judgement call is setting the gate
+total to 8399 in `german-final-gate.test.ts` (two assertions) after the merge.
+
 ## 7. Still open after this slice
 
 | Brief | Item | Why |
