@@ -54,3 +54,10 @@ tools/figma/hermes-phase104-visual-system/** text eol=lf
 /docs/security/GETPRISMA-FAILURE-CLASSIFICATION.md text eol=lf
 /docs/security/s0-getprisma-callsite-inventory.json text eol=lf
 /scripts/security/s0/** text eol=lf
+
+# S0-B-03 — the edge/origin evidence document is identified by the sha256 of its
+# bytes in the S0 closure report (0d44a6c2…). `core.autocrlf=true` would rewrite
+# every line ending on a fresh Windows checkout and change that hash without an
+# edit, so the evidence would stop reproducing. Same hazard, same remedy as the
+# B-05 artifacts above.
+/docs/security/EDGE-ORIGIN-AND-CLIENT-IP.md text eol=lf
