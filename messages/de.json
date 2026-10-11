@@ -6937,7 +6937,8 @@
         "admin": "Admin-Konsole",
         "observability": "Beobachtbarkeit",
         "otEdge": "OT-Edge",
-        "videoHub": "Videothek"
+        "videoHub": "Videothek",
+        "executiveCenter": "Leitungszentrale"
       }
     },
     "shell": {
@@ -10890,5 +10891,158 @@
       "simulated": "Simulierte Daten"
     },
     "metaTitle": "Studio für Automatisierungstechnik"
+  },
+  "executive": {
+    "eyebrow": "Unternehmensführung",
+    "title": "Zentrale der Geschäftsleitung",
+    "lede": "Die heutige Lage, die Entscheidungen, die auf Sie warten, und die Datensätze hinter jeder Zahl.",
+    "ranges": {
+      "today": "Heute",
+      "last7Days": "Letzte 7 Tage",
+      "last30Days": "Letzte 30 Tage"
+    },
+    "rangeLabel": "Berichtszeitraum",
+    "lastUpdated": "Aktualisiert {time}",
+    "loading": "Aktuelle Lage wird geladen…",
+    "retry": "Erneut versuchen",
+    "sections": {
+      "operations": "Betrieb",
+      "financial": "Projektfinanzen",
+      "industrial": "Werke und Datenanbindung",
+      "customers": "Kunden",
+      "actions": "Erfordert Ihre Entscheidung",
+      "dataQuality": "Datenqualität"
+    },
+    "sectionLede": {
+      "operations": "Projekte, Aufgaben, Arbeitsaufträge und Freigaben dieser Organisation.",
+      "financial": "Budget und erfasste Kosten der Projekte dieser Organisation.",
+      "industrial": "Datenanbindung und offene Meldungen der Werke, auf die Sie Zugriff haben."
+    },
+    "status": {
+      "OPERATIONAL": "Aktiv",
+      "EMPTY": "Noch keine Datensätze",
+      "FORBIDDEN": "Für Ihre Rolle nicht verfügbar",
+      "UNAVAILABLE": "Quelle nicht erreichbar",
+      "NO_SOURCE": "Keine Datenquelle"
+    },
+    "freshness": {
+      "FRESH": "Aktuell",
+      "STALE": "Verzögert",
+      "DISCONNECTED": "Kein Signal",
+      "NEVER": "Nie gemeldet",
+      "INVALID": "Ungültiger Zeitstempel"
+    },
+    "delta": {
+      "noChange": "Unverändert",
+      "fromZero": "{absolute} mehr als keine",
+      "lowBaselineNote": "Kleine Vergleichsbasis — lesen Sie die absolute Veränderung.",
+      "incomparable": {
+        "PARTIAL_PERIOD": "Nicht vergleichbar: der vorherige Zeitraum ist noch nicht abgeschlossen.",
+        "NO_BASELINE": "Nicht vergleichbar: es ist kein früherer Wert erfasst.",
+        "NO_CURRENT": "Nicht vergleichbar: kein aktueller Wert."
+      }
+    },
+    "metrics": {
+      "activeProjects": "Aktive Projekte",
+      "overdueTasks": "Überfällige Aufgaben",
+      "openWorkOrders": "Offene Arbeitsaufträge",
+      "pendingApprovals": "Freigaben, die auf eine Entscheidung warten",
+      "inventoryWarnings": "Artikel unter dem Meldebestand",
+      "tasksCompleted": "Abgeschlossene Aufgaben",
+      "approvalsDecided": "Entschiedene Freigaben",
+      "projectBudget": "Genehmigtes Projektbudget",
+      "projectActualCost": "Erfasste Projektkosten",
+      "costVariance": "Verbleibendes Budget",
+      "openCriticalAlerts": "Offene kritische Meldungen",
+      "connectedSites": "Werke, die Daten senden",
+      "alertsRaised": "Ausgelöste Meldungen",
+      "sitesWithoutData": "Werke ohne aktuelle Daten"
+    },
+    "definitions": {
+      "activeProjects": "Projekte dieser Organisation mit dem Status ACTIVE, gezählt in diesem Augenblick.",
+      "overdueTasks": "Aufgaben, deren Fälligkeitsdatum verstrichen ist und die weder erledigt noch abgebrochen sind.",
+      "openWorkOrders": "Arbeitsaufträge, die weder abgeschlossen noch abgebrochen sind.",
+      "approvalsDecided": "Freigabeanträge, über die im gewählten Zeitraum entschieden wurde.",
+      "pendingApprovals": "Freigabeanträge mit dem Status PENDING, gezählt in diesem Augenblick.",
+      "inventoryWarnings": "Lagerartikel, deren Menge den Meldebestand erreicht oder unterschritten hat.",
+      "tasksCompleted": "Aufgaben, deren Abschluss im gewählten Zeitraum erfasst wurde.",
+      "projectBudget": "Summe des genehmigten Budgets der laufenden Projekte dieser Organisation.",
+      "projectActualCost": "Summe der auf diese Projekte gebuchten Kosten. Dies ist Projektkostenkontrolle, keine Buchhaltung.",
+      "costVariance": "Genehmigtes Budget abzüglich erfasster Kosten. Wird nur gezeigt, wenn beide Zahlen vorliegen.",
+      "openCriticalAlerts": "Kritische und hohe Anlagenmeldungen, die weder verworfen noch behoben sind, auf den für Sie sichtbaren Werken.",
+      "connectedSites": "Werke, deren neuester Gateway-Herzschlag jung genug ist, um belastbar zu sein.",
+      "alertsRaised": "Anlagenmeldungen, die im gewählten Zeitraum erstmals erfasst wurden."
+    },
+    "sources": {
+      "erpProject": "ERP — Projekte",
+      "erpTask": "ERP — Aufgaben",
+      "erpWorkOrder": "ERP — Arbeitsaufträge",
+      "erpApproval": "ERP — Freigabeanträge",
+      "erpInventory": "ERP — Lager",
+      "gatewayHeartbeat": "Herzschlag des Industrie-Gateways",
+      "telemetry": "Industrietelemetrie, bei Eingang",
+      "assetAlert": "Anlagenmeldungen"
+    },
+    "reasons": {
+      "forbiddenOperations": "Ihre Rolle umfasst die Betriebsdaten dieser Organisation nicht.",
+      "forbiddenFinancial": "Ihre Rolle umfasst keine Finanzzahlen.",
+      "forbiddenIndustrial": "Ihre Rolle umfasst den Industriebetrieb nicht.",
+      "noSites": "In dieser Organisation ist Ihrem Konto kein Werk zugewiesen.",
+      "noRows": "Diese Organisation hat noch keine Datensätze dieser Art.",
+      "sourceUnavailable": "Diese Quelle war für diese Anfrage nicht lesbar. Aus ihrem Fehlen wird nichts geschlossen.",
+      "noLedger": "Dieses Produkt führt kein Hauptbuch; diese Zahlen sind Projektkostenkontrolle und keine Buchhaltung.",
+      "customersNotTenantScoped": "Kundendatensätze liegen auf Plattformebene und nicht je Organisation, daher gibt es hier keine auf diese Organisation begrenzte Kundenzahl."
+    },
+    "causes": {
+      "approvalBlocksWork": "Die Arbeit wartet auf eine Freigabeentscheidung.",
+      "dueDatePassed": "Der vereinbarte Termin ist verstrichen.",
+      "belowReorderPoint": "Der Bestand hat den Meldebestand erreicht.",
+      "unresolvedCriticalAlert": "Eine kritische Meldung ist weder verworfen noch behoben.",
+      "noRecentSignal": "Ein Werk hat keine aktuellen Daten gesendet."
+    },
+    "quality": {
+      "title": "Datenqualität",
+      "invalidTimeZoneConfig": "Die konfigurierte Berichtszeitzone wurde abgelehnt; es gilt die Produktvorgabe. Die Tagesgrenze kann von Ihrer Erwartung abweichen.",
+      "sitesNeverReported": "{count, plural, one {# Werk hat noch nie Daten gesendet.} other {# Werke haben noch nie Daten gesendet.}}",
+      "futureDatedSignal": "{count, plural, one {# Werk meldet einen Zeitstempel in der Zukunft; das ist ein Uhren- oder Eingangsfehler.} other {# Werke melden Zeitstempel in der Zukunft; das ist ein Uhren- oder Eingangsfehler.}}",
+      "noGeneralLedger": "Die Finanzzahlen stammen aus Projektdatensätzen. Dieses Produkt führt kein Hauptbuch."
+    },
+    "priority": {
+      "HIGH": "Verletzt",
+      "MEDIUM": "Gefährdet"
+    },
+    "provenance": {
+      "definition": "Begriffsbestimmung",
+      "source": "Quelle",
+      "period": "Zeitraum",
+      "pointInTime": "Gezählt in diesem Augenblick",
+      "computedAt": "Berechnet am",
+      "dataAsOf": "Datenstand",
+      "detail": "Datensätze öffnen",
+      "timeZone": "Zeitzone"
+    },
+    "sites": {
+      "title": "Werke",
+      "columnName": "Werk",
+      "columnGateways": "Aktive Gateways",
+      "columnFreshness": "Daten",
+      "columnLastSignal": "Letztes Signal",
+      "noGateway": "Kein Gateway registriert"
+    },
+    "actionCenter": {
+      "empty": "In diesem Zeitraum wartet nichts auf eine Entscheidung.",
+      "viewRecords": "Datensätze öffnen",
+      "affected": "{count, plural, one {# Datensatz} other {# Datensätze}}"
+    },
+    "errors": {
+      "AUTHENTICATION_REQUIRED": "Bitte melden Sie sich erneut an.",
+      "FORBIDDEN": "Diese Oberfläche ist für Ihr Konto nicht verfügbar.",
+      "NOT_FOUND": "Diese Organisation ist für Ihr Konto nicht verfügbar.",
+      "ACTIVE_ORGANIZATION_REQUIRED": "Wählen Sie, über welche Organisation berichtet werden soll.",
+      "NO_ACCESSIBLE_AXIS": "Ihre Rolle umfasst weder die betriebliche noch die finanzielle noch die industrielle Sicht.",
+      "INVALID_REQUEST": "Dieser Berichtszeitraum ist unbekannt.",
+      "SERVICE_UNAVAILABLE": "Die Leitungszentrale konnte nicht zusammengestellt werden. Daraus wird nichts geschlossen.",
+      "chooseOrganization": "Organisation auswählen"
+    }
   }
 }

@@ -174,6 +174,30 @@ export const GUARD_TOKENS = [
   // routes really delegate to it, and it really performs the checks this entry
   // vouches for.
   { token: "resolveReasoningRunActor", scope: "tenant" },
+  // EXECUTIVE DASHBOARD - the executive scope resolver (`src/lib/executive/scope.ts`).
+  //
+  // Registered for the same reason as `requireVoiceCopilotActor`, `requireAtsActor`
+  // and `resolveReasoningRunActor` above: it COMPOSES tenant-scope checks already
+  // vouched for here into one ordered, fail-closed chain, and a classifier that
+  // cannot see through the delegation would call the route UNKNOWN while it is in
+  // fact strictly gated.
+  //
+  // What this entry vouches for, in this order:
+  //   1. `getCurrentUser()` - signed session cookie, revocation enforced;
+  //   2. `can(user.role, "admin")` - the platform capability that already fronts
+  //      every ERP tenant surface;
+  //   3. `getActiveOrganizationContext()` - the acting organization resolved
+  //      SERVER-side from a session-keyed selection, with the ACTIVE
+  //      OrganizationMember row re-read on every call. No organizationId is ever
+  //      read from the request;
+  //   4. three INDEPENDENT org permissions (`view_erp`, `view_erp_compensation`,
+  //      `view_industrial`), with a refusal when the reader holds none;
+  //   5. `getAllowedSiteIds()` - the canonical site allow-list, consulted only when
+  //      the industrial axis is held.
+  //
+  // scripts/__tests__/executive-guard-recognition.test.ts locks both halves: that
+  // the route really delegates to it, and that it really performs these checks.
+  { token: "resolveExecutiveScope", scope: "tenant" },
   // Platform / API-key authority
   { token: "requirePlatformAuth", scope: "platform" },
   { token: "requirePlatformSuperadmin", scope: "platform" },

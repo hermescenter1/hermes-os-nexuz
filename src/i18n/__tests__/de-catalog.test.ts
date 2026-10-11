@@ -306,6 +306,10 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // contamination; no allowlist entry was needed, because no DE leaf is
     // identical to its EN counterpart.
     "cookiePolicy",
+    // EXECUTIVE DASHBOARD - the Executive Management Center (executive).
+    // 115 leaves, genuinely German throughout; zero DE==EN and zero FA==EN, so
+    // every leaf reconciles as a translation and no allowlist entry was needed.
+    "executive",
     // SPRINT 1C-A - the Academy public header (academy). Three leaves,
     // genuinely German: the eyebrow, the h1 and the lede that were previously
     // hard-coded English literals in academy/layout.tsx and rendered verbatim

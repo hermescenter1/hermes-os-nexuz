@@ -59,6 +59,10 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
   {
     groupKey: "intelligence",
     items: [
+      // EXECUTIVE DASHBOARD - the manager's entry point. `pageCapability: "admin"`
+      // tracks the real guard, `can(user.role, "admin")` inside
+      // resolveExecutiveScope(), the same platform capability that fronts /erp.
+      { labelKey: "executiveCenter", href: "/dashboard/executive", pageCapability: "admin" },
       { labelKey: "dashboard", href: "/dashboard", match: "exact" },
       { labelKey: "copilot", href: "/dashboard/copilot" },
       { labelKey: "industrialBrain", href: "/industrial-brain" },
