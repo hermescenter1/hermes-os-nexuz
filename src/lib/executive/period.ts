@@ -198,6 +198,12 @@ export interface BusinessDayWindow {
   /** `YYYY-MM-DD` of the day this window represents, in `timeZone`. */
   readonly dateKey: string;
   readonly timeZone: string;
+  /**
+   * The cutoff this window was cut with, carried so that stepping to an
+   * adjacent day keeps the same boundary. Without it, `previousBusinessDay`
+   * had to guess and silently fell back to midnight.
+   */
+  readonly cutoffMinutes: number;
   /** False when a DST gap moved either boundary off its requested wall time. */
   readonly wallClockExact: boolean;
 }
@@ -238,6 +244,7 @@ export function businessDayWindow(args: {
     endMs: end.utcMs,
     dateKey,
     timeZone,
+    cutoffMinutes: cutoff,
     wallClockExact: start.wallClockExact && end.wallClockExact,
   };
 }
@@ -264,14 +271,40 @@ export function businessDayOf(args: {
 }
 
 /** The business day immediately before the given one. */
+/**
+ * The business day immediately before the given one.
+ *
+ * WHY THIS IS CALENDAR ARITHMETIC AND NOT A SUBTRACTION FROM `startMs`
+ * --------------------------------------------------------------------
+ * The first implementation stepped back one hour from the window's start and
+ * re-read the wall clock. At a midnight cutoff that lands on 23:00 the previous
+ * date and looks correct — but at a 06:00 cutoff it lands on 05:00 the SAME
+ * date, so the function returned the day it was given. The nightly report then
+ * compared a day against itself, and `lastCompletedBusinessDay` never stepped
+ * back at all. Found by the report, not by the slice's own tests, because those
+ * only exercised a midnight cutoff.
+ *
+ * Subtracting 24 hours instead would be wrong a different way: a DST day is 23
+ * or 25 hours long. "The previous business day" is the previous CALENDAR DATE
+ * in that zone, so the date label is what gets decremented, and the window is
+ * then rebuilt from it with the same cutoff.
+ */
 export function previousBusinessDay(window: BusinessDayWindow, cutoffMinutes?: number): BusinessDayWindow {
-  // Step back from the window's own start by a whole day plus an hour of slack,
-  // then re-read the wall clock, so a 23-hour DST day cannot land on the wrong date.
-  const probe = wallClockAt(window.startMs - 3_600_000, window.timeZone);
+  const { year, month, day } = parseBusinessDateKey(window.dateKey);
+  // UTC arithmetic on the LABEL. No zone is involved, so month lengths, leap
+  // days and year rollovers are handled without touching a timestamp.
+  const previous = new Date(Date.UTC(year, month - 1, day));
+  previous.setUTCDate(previous.getUTCDate() - 1);
+
   return businessDayWindow({
-    dateKey: businessDateKey(probe),
+    dateKey: businessDateKey({
+      year: previous.getUTCFullYear(),
+      month: previous.getUTCMonth() + 1,
+      day: previous.getUTCDate(),
+    }),
     timeZone: window.timeZone,
-    cutoffMinutes: cutoffMinutes ?? DEFAULT_DAY_CUTOFF_MINUTES,
+    // Default to the window's OWN cutoff, not to midnight.
+    cutoffMinutes: cutoffMinutes ?? window.cutoffMinutes,
   });
 }
 
@@ -361,4 +394,57 @@ export function resolveRange(args: {
     baselineStartMs,
     baselineEndMs,
   };
+}
+
+/**
+ * The window for a NIGHTLY REPORT: one business day that has already finished.
+ *
+ * This is deliberately NOT `resolveRange("today")`. A live dashboard reports a
+ * window that ends *now* and is therefore incomplete; a nightly report covers a
+ * day that is over, so its window is marked **complete** and its figures are
+ * comparable against the day before without the `PARTIAL_PERIOD` refusal.
+ *
+ * Getting here by passing `nowMs = periodEnd` to `resolveRange` would be wrong
+ * by a whole day: `periodEnd` is the EXCLUSIVE end, which already belongs to the
+ * next business day, so `businessDayOf` would resolve to tomorrow.
+ */
+export function resolveCompletedDay(args: {
+  dateKey: string;
+  timeZone?: string;
+  cutoffMinutes?: number;
+}): ResolvedRange {
+  const timeZone = args.timeZone ?? DEFAULT_TIME_ZONE;
+  const cutoff = args.cutoffMinutes ?? DEFAULT_DAY_CUTOFF_MINUTES;
+  assertTimeZone(timeZone);
+
+  const day = businessDayWindow({ dateKey: args.dateKey, timeZone, cutoffMinutes: cutoff });
+  const previous = previousBusinessDay(day, cutoff);
+
+  return {
+    range: "today",
+    // complete: TRUE. The day is over; this is the whole of it.
+    current: descriptor(day.startMs, day.endMs, timeZone, true),
+    baseline: descriptor(previous.startMs, previous.endMs, timeZone, true),
+    currentStartMs: day.startMs,
+    currentEndMs: day.endMs,
+    baselineStartMs: previous.startMs,
+    baselineEndMs: previous.endMs,
+  };
+}
+
+/**
+ * The most recent business day that has FINISHED at `nowMs`.
+ *
+ * A report must never cover the day currently in progress, so this steps back
+ * one business day from the one `nowMs` falls in.
+ */
+export function lastCompletedBusinessDay(args: {
+  nowMs: number;
+  timeZone?: string;
+  cutoffMinutes?: number;
+}): BusinessDayWindow {
+  const timeZone = args.timeZone ?? DEFAULT_TIME_ZONE;
+  const cutoff = args.cutoffMinutes ?? DEFAULT_DAY_CUTOFF_MINUTES;
+  const today = businessDayOf({ nowMs: args.nowMs, timeZone, cutoffMinutes: cutoff });
+  return previousBusinessDay(today, cutoff);
 }

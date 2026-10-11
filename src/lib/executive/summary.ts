@@ -707,17 +707,32 @@ export async function buildExecutiveSummary(args: {
   scope: ExecutiveScope;
   range: ExecutiveRange;
   nowMs: number;
+  /**
+   * A pre-resolved window, used by the nightly report.
+   *
+   * The report covers a business day that has already FINISHED, so its window
+   * is complete and its comparison against the previous day is defined. The
+   * live dashboard leaves this out and gets a window ending at `nowMs`, which
+   * is incomplete by construction.
+   *
+   * Passing the window in — rather than giving the report its own aggregation —
+   * is what keeps one set of numbers in the product: the screen and the report
+   * are the same code over different bounds.
+   */
+  window?: ResolvedRange;
 }): Promise<ExecutiveSummary> {
   const { scope, range: rangeKey, nowMs } = args;
   const nowIso = new Date(nowMs).toISOString();
   const zone = resolveReportingZone();
 
-  const range = resolveRange({
-    range: rangeKey,
-    nowMs,
-    timeZone: scope.timeZone,
-    cutoffMinutes: scope.dayCutoffMinutes,
-  });
+  const range =
+    args.window ??
+    resolveRange({
+      range: rangeKey,
+      nowMs,
+      timeZone: scope.timeZone,
+      cutoffMinutes: scope.dayCutoffMinutes,
+    });
 
   const client = await db();
 

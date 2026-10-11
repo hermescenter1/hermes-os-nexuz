@@ -11043,6 +11043,35 @@
       "INVALID_REQUEST": "Dieser Berichtszeitraum ist unbekannt.",
       "SERVICE_UNAVAILABLE": "Die Leitungszentrale konnte nicht zusammengestellt werden. Daraus wird nichts geschlossen.",
       "chooseOrganization": "Organisation auswählen"
+    },
+    "reports": {
+      "navLink": "Nächtliche Berichte",
+      "title": "Nächtliche Berichte",
+      "lede": "Ein eingefrorener Bericht je Geschäftstag. Die Zahlen sind die der Nacht, in der er lief, und werden nie neu berechnet.",
+      "archiveEmpty": "Es wurde noch kein Bericht erzeugt. Der erste erscheint nach dem nächsten abgeschlossenen Geschäftstag.",
+      "archiveUnavailable": "Das Archiv war für diese Anfrage nicht lesbar. Aus seinem Fehlen wird nichts geschlossen.",
+      "columnDate": "Geschäftstag",
+      "columnVersion": "Fassung",
+      "columnGenerated": "Erzeugt",
+      "columnCoverage": "Abdeckung",
+      "open": "Bericht öffnen",
+      "backToArchive": "Zurück zu den Berichten",
+      "notFound": "Für diesen Tag gibt es in dieser Organisation keinen Bericht.",
+      "detailTitle": "Bericht vom {date}",
+      "coverageComplete": "Alle Abschnitte haben geantwortet",
+      "coveragePartial": "{count, plural, one {# Abschnitt hat nicht geantwortet} other {# Abschnitte haben nicht geantwortet}}",
+      "frozenNotice": "Dies ist ein eingefrorener Bericht. Er zeigt die Zahlen zum unten genannten Datenstand, nicht den heutigen Stand.",
+      "calcVersion": "Berechnungsfassung",
+      "dataCutoff": "Datenstand",
+      "period": "Abgedeckter Zeitraum",
+      "generatedAt": "Erzeugt am",
+      "versionLabel": "Fassung {version}",
+      "supersedes": "Ersetzt Fassung {version}",
+      "isSuperseded": "Von diesem Tag existiert eine neuere Fassung.",
+      "regeneratedBy": "Neu erzeugt von",
+      "regenerationReason": "Grund",
+      "original": "Ursprung",
+      "corrected": "Korrektur"
     }
   }
 }

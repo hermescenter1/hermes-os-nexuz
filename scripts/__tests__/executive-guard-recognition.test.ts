@@ -27,6 +27,8 @@ import { analyzeTenantPredicates } from "../security/phase99/tenant-predicates.m
 const REPO = process.cwd();
 const RESOLVER = "src/lib/executive/scope.ts";
 const ROUTE = "src/app/api/executive/summary/route.ts";
+const WORKER_AUTH = "src/lib/executive/report/auth.ts";
+const WORKER_ROUTE = "src/app/api/executive/reports/run/route.ts";
 
 const live = (rel: string) => stripComments(readFileSync(join(REPO, rel), "utf8"));
 
@@ -113,10 +115,55 @@ describe("the route delegates to the resolver and classifies as tenant-scoped on
     expect(handler?.tenantScoped).toBe(true);
   });
 
+  it("the worker route is PLATFORM_ADMIN via its OWN registered token", () => {
+    const entries = (GUARD_TOKENS as { token: string; scope: string }[]).filter(
+      g => g.token === "authorizeExecutiveReportWorker",
+    );
+    expect(entries).toHaveLength(1);
+    expect(entries[0].scope).toBe("platform");
+
+    const handler = inventory.find(
+      r => r.apiPath === "/api/executive/reports/run" && r.method === "POST",
+    );
+    expect(handler).toBeDefined();
+    expect(handler?.classification).toBe("PLATFORM_ADMIN");
+    expect(handler?.authEvidence).toContain("authorizeExecutiveReportWorker");
+    expect(handler?.declaredSurface).toBe(false);
+  });
+
+  it("the worker guard performs the checks its registration vouches for", () => {
+    const src = live(WORKER_AUTH);
+    // A constant-time comparison, never a plain ===.
+    expect(src).toMatch(/timingSafeEqual/);
+    expect(src).toMatch(/EXECUTIVE_REPORT_WORKER_TOKEN/);
+    // The documented fallback chain.
+    expect(src).toMatch(/METERING_WORKER_TOKEN/);
+    expect(src).toMatch(/METRICS_TOKEN/);
+    // The session alternative, and the admin capability on it.
+    expect(src).toMatch(/getCurrentUser\s*\(/);
+    expect(src).toMatch(/can\s*\(\s*user\.role\s*,\s*"admin"\s*\)/);
+    // Fails closed: with nothing configured and no session it refuses.
+    expect(src).toMatch(/configured\.length === 0/);
+    expect(src).toMatch(/status: 401/);
+  });
+
+  it("the worker route really delegates to that guard and short-circuits on refusal", () => {
+    const src = live(WORKER_ROUTE);
+    expect(src).toMatch(/authorizeExecutiveReportWorker\s*\(/);
+    expect(src).toMatch(/if\s*\(\s*!auth\.ok\s*\)/);
+    // It must NOT quietly reuse the metering credential's guard.
+    expect(src).not.toMatch(/authorizeWorkerRequest/);
+  });
+
   it("is a read-only handler — the executive surface mutates nothing", () => {
-    const handlers = inventory.filter(r => r.apiPath.startsWith("/api/executive"));
-    expect(handlers.length).toBeGreaterThan(0);
-    for (const h of handlers) {
+    // The READER surface. The worker entrypoint is deliberately excluded: it is
+    // a scheduler trigger that writes reports, and it is gated PLATFORM_ADMIN
+    // rather than TENANT_MEMBER.
+    const readers = inventory.filter(
+      r => r.apiPath.startsWith("/api/executive") && r.apiPath !== "/api/executive/reports/run",
+    );
+    expect(readers.length).toBeGreaterThan(0);
+    for (const h of readers) {
       expect(h.method, h.apiPath).toBe("GET");
       expect(h.mutates, h.apiPath).toBe(false);
     }

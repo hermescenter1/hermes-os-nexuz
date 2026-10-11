@@ -196,6 +196,40 @@ describe("previousBusinessDay", () => {
     const first = businessDayWindow({ dateKey: "2026-11-01", timeZone: "Asia/Tehran" });
     expect(previousBusinessDay(first).dateKey).toBe("2026-10-31");
   });
+
+  /*
+    REGRESSION. The first implementation stepped back one hour from the window's
+    start and re-read the wall clock. At a midnight cutoff that lands on 23:00
+    the previous date and looks right; at a 06:00 cutoff it lands on 05:00 the
+    SAME date, so the function returned the day it was given — the nightly
+    report then compared a day against itself. These cases fail against that
+    implementation and pass against the calendar arithmetic that replaced it.
+  */
+  it("steps back a real day at a NON-MIDNIGHT cutoff", () => {
+    const day = businessDayWindow({ dateKey: "2026-10-11", timeZone: "Europe/Berlin", cutoffMinutes: 6 * 60 });
+    const previous = previousBusinessDay(day);
+    expect(previous.dateKey).toBe("2026-10-10");
+    // And it keeps the cutoff rather than silently reverting to midnight.
+    expect(previous.cutoffMinutes).toBe(6 * 60);
+    expect(wallClockAt(previous.startMs, "Europe/Berlin")).toMatchObject({ day: 10, hour: 6 });
+    expect(previous.endMs).toBe(day.startMs);
+  });
+
+  it("carries its own cutoff, so a caller need not re-supply it", () => {
+    const day = businessDayWindow({ dateKey: "2026-10-11", timeZone: "Asia/Tehran", cutoffMinutes: 90 });
+    expect(day.cutoffMinutes).toBe(90);
+    expect(previousBusinessDay(day).cutoffMinutes).toBe(90);
+  });
+
+  it("steps back across a month boundary at a non-midnight cutoff too", () => {
+    const first = businessDayWindow({ dateKey: "2026-11-01", timeZone: "Asia/Tehran", cutoffMinutes: 8 * 60 });
+    expect(previousBusinessDay(first).dateKey).toBe("2026-10-31");
+  });
+
+  it("steps back across a leap day", () => {
+    const mar1 = businessDayWindow({ dateKey: "2028-03-01", timeZone: "Asia/Tehran", cutoffMinutes: 5 * 60 });
+    expect(previousBusinessDay(mar1).dateKey).toBe("2028-02-29");
+  });
 });
 
 describe("resolveRange — the baseline is complete, the current window is not", () => {

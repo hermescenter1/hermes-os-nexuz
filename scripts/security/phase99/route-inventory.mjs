@@ -219,6 +219,22 @@ export const GUARD_TOKENS = [
   // halves — that the routes really delegate to it, and that it really performs
   // the checks claimed here.
   { token: "authorizeWorkerRequest", scope: "platform" },
+  // EXECUTIVE DASHBOARD slice B - the nightly-report worker guard
+  // (`src/lib/executive/report/auth.ts`).
+  //
+  // The same two-key shape as `authorizeWorkerRequest` above, on its own
+  // variable. It is a SEPARATE token rather than a reuse because sharing one
+  // credential would mean the right to produce management reports is also the
+  // right to drive billing metering - different blast radii, different keys.
+  //
+  // What this entry vouches for: a constant-time comparison against a token
+  // that exists ONLY in the environment (EXECUTIVE_REPORT_WORKER_TOKEN, falling
+  // back to METERING_WORKER_TOKEN then METRICS_TOKEN), or `getCurrentUser()`
+  // plus `can(role, "admin")`. Neither is ever derived from the request, and
+  // with neither configured nor present it answers 401.
+  //
+  // scripts/__tests__/executive-guard-recognition.test.ts locks both halves.
+  { token: "authorizeExecutiveReportWorker", scope: "platform" },
   // ATS-S1 — the AI-review worker guard (`src/lib/ats/review/worker-auth.ts`).
   // The same two-key shape as `authorizeWorkerRequest` above and vouched for on
   // the same terms: a constant-time comparison against ATS_REVIEW_WORKER_TOKEN,

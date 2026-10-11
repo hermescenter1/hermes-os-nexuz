@@ -798,6 +798,8 @@ model Organization {
   documents               Document[]
   // F-2 FU-F2-R2-3: pending object-storage cleanups of deleted documents (RESTRICT)
   documentStorageCleanups DocumentStorageCleanup[]
+  // EXECUTIVE DASHBOARD slice B: the frozen nightly management report.
+  executiveDailyReports   ExecutiveDailyReport[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -8684,4 +8686,70 @@ model ActiveOrganizationSelection {
 
   @@index([userId])
   @@index([organizationId])
+}
+
+/// EXECUTIVE DASHBOARD slice B - one frozen nightly management report.
+///
+/// A report is a SNAPSHOT, never a view. The numbers are computed once, by a
+/// named calculation version, over an explicitly bounded window, and are never
+/// recomputed on read - so a report opened months later says what it said on
+/// the night it ran, even if the underlying rows have since changed.
+///
+/// CORRECTIONS DO NOT OVERWRITE. The unique key carries `version`, so a
+/// corrected report is a NEW row (version + 1) naming the version it
+/// supersedes, together with who authorised the regeneration and why. Version 1
+/// is never mutated and never deleted.
+model ExecutiveDailyReport {
+  id                 String   @id @default(cuid())
+  organizationId     String
+
+  /// The business day covered, as YYYY-MM-DD read in `timeZone`. A string, not
+  /// a date: the day is a label in a zone, and storing it as an instant invites
+  /// exactly the off-by-one this whole design exists to prevent.
+  businessDate       String   @db.VarChar(10)
+  /// 1 for the night's own report. A correction is version + 1, never an edit.
+  version            Int      @default(1)
+
+  /// The zone and cutoff the day boundary was cut with, frozen alongside the
+  /// numbers, so changing the product's reporting zone later cannot silently
+  /// reinterpret which hours an existing report covered.
+  timeZone           String   @db.VarChar(64)
+  dayCutoffMinutes   Int      @default(0)
+
+  /// The covered window as real instants: inclusive start, exclusive end. On a
+  /// DST day these are 23 or 25 hours apart, not 24.
+  periodStart        DateTime @db.Timestamptz(6)
+  periodEnd          DateTime @db.Timestamptz(6)
+
+  /// When the generation ran, and the newest moment the data reflects. They
+  /// differ whenever a source lags, and the UI shows the older one.
+  generatedAt        DateTime @default(now()) @db.Timestamptz(6)
+  dataCutoffAt       DateTime @db.Timestamptz(6)
+
+  /// The deterministic calculation version. Two reports with different values
+  /// here were produced by different code and are not directly comparable.
+  calcVersion        String   @db.VarChar(32)
+
+  /// The frozen summary, exactly as it was rendered.
+  snapshot           Json
+  /// Which sections answered and which did not, each with its stated reason, so
+  /// a gap in the report is attributable rather than invisible.
+  sourceCoverage     Json
+
+  /// Claimed exactly once, by whichever replica won the conditional update, so
+  /// a retried or concurrent run cannot notify twice.
+  notifiedAt         DateTime? @db.Timestamptz(6)
+
+  /// Set only on a correction. The audit trail of why the night was restated.
+  supersedesVersion  Int?
+  regeneratedBy      String?
+  regenerationReason String?
+
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  /// The idempotency mechanism itself: a second run for the same night cannot
+  /// insert a second version-1 row, it loses on this constraint.
+  @@unique([organizationId, businessDate, version])
+  @@index([organizationId, businessDate])
+  @@index([notifiedAt])
 }

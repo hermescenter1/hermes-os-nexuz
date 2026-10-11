@@ -15,8 +15,8 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 413,
-    "handlers": 573,
+    "routeFiles": 414,
+    "handlers": 574,
     "byClassification": {
       "PUBLIC_READ": 36,
       "PUBLIC_WRITE": 14,
@@ -24,7 +24,7 @@
       "TENANT_MEMBER": 196,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
-      "PLATFORM_ADMIN": 135,
+      "PLATFORM_ADMIN": 136,
       "WEBHOOK": 2,
       "INTERNAL_HEALTH": 2,
       "UNKNOWN": 0
@@ -35,11 +35,11 @@
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 331,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 331,
-    "TENANT_IDENTITY_SERVER_DERIVED": 331,
+    "TENANT_BOUND_HANDLERS_TOTAL": 332,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 332,
+    "TENANT_IDENTITY_SERVER_DERIVED": 332,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 331,
+    "OBJECT_SCOPED_HANDLERS": 332,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -5236,6 +5236,19 @@
       ],
       "declaredSurface": false,
       "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/executive/reports/run",
+      "method": "POST",
+      "file": "src/app/api/executive/reports/run/route.ts",
+      "classification": "PLATFORM_ADMIN",
+      "authEvidence": [
+        "authorizeExecutiveReportWorker"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": false,
       "mutates": false,
       "senderAuthenticated": null
     },

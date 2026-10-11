@@ -437,12 +437,33 @@ function RangeSelector({
 
 /* ── the view ─────────────────────────────────────────────────────────────── */
 
+/**
+ * The envelope of a FROZEN report, when this view is rendering one from the
+ * archive rather than the live screen.
+ *
+ * Its presence replaces the range selector — a frozen report has no range to
+ * choose — with the report's own identity: which night, which version, which
+ * calculation produced it and how current its data was. Reusing this renderer
+ * rather than writing a second one is what guarantees the archive shows exactly
+ * what the screen showed.
+ */
+export interface FrozenReportHeader {
+  readonly businessDate: string;
+  readonly version: number;
+  readonly calcVersion: string;
+  readonly dataCutoffIso: string;
+  readonly supersedesVersion: number | null;
+  readonly regenerationReason: string | null;
+}
+
 export async function ExecutiveSummaryView({
   summary,
   locale,
+  frozen,
 }: {
   summary: ExecutiveSummary;
   locale: string;
+  frozen?: FrozenReportHeader;
 }) {
   const t = await getTranslations("executive");
   const tz = summary.timeZone;
@@ -454,22 +475,72 @@ export async function ExecutiveSummaryView({
 
   return (
     <div className="space-y-5">
-      {/* Period, zone and data cutoff — stated once, at the top, so no figure
-          below has to be interpreted against an unknown clock. */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <RangeSelector active={summary.range} locale={locale} t={t} />
-        <p className="text-xs text-muted">
-          {t("lastUpdated", {
-            time: formatDateTime(summary.generatedAtIso, locale, {
-              dateStyle: "medium",
-              timeStyle: "short",
-              timeZone: tz,
-            }),
-          })}
-          {" · "}
-          {t("provenance.timeZone")}: {tz}
-        </p>
-      </div>
+      {frozen ? (
+        /* A frozen report states WHEN it was true instead of offering a range.
+           The data cutoff is shown, not the generation time, because that is
+           the moment the figures actually describe. */
+        <div className="rounded-lg border border-line bg-base/40 px-4 py-3">
+          <p className="text-sm text-fg">{t("reports.frozenNotice")}</p>
+          <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted">
+            <div className="flex gap-1">
+              <dt className="font-medium">{t("reports.dataCutoff")}:</dt>
+              <dd>
+                {formatDateTime(frozen.dataCutoffIso, locale, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                  timeZone: tz,
+                })}
+              </dd>
+            </div>
+            <div className="flex gap-1">
+              <dt className="font-medium">{t("reports.period")}:</dt>
+              <dd>
+                {formatDateTime(summary.period.current.fromIso, locale, { dateStyle: "short", timeStyle: "short", timeZone: tz })}
+                {" – "}
+                {formatDateTime(summary.period.current.toIso, locale, { dateStyle: "short", timeStyle: "short", timeZone: tz })}
+              </dd>
+            </div>
+            <div className="flex gap-1">
+              <dt className="font-medium">{t("provenance.timeZone")}:</dt>
+              <dd>{tz}</dd>
+            </div>
+            <div className="flex gap-1">
+              <dt className="font-medium">{t("reports.calcVersion")}:</dt>
+              <dd>{frozen.calcVersion}</dd>
+            </div>
+          </dl>
+          {frozen.supersedesVersion !== null && (
+            <p className="mt-2 text-xs text-warn">
+              {t("reports.supersedes", { version: frozen.supersedesVersion })}
+              {frozen.regenerationReason ? ` — ${frozen.regenerationReason}` : null}
+            </p>
+          )}
+        </div>
+      ) : (
+        /* Period, zone and data cutoff — stated once, at the top, so no figure
+           below has to be interpreted against an unknown clock. */
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <RangeSelector active={summary.range} locale={locale} t={t} />
+          <p className="text-xs text-muted">
+            {t("lastUpdated", {
+              time: formatDateTime(summary.generatedAtIso, locale, {
+                dateStyle: "medium",
+                timeStyle: "short",
+                timeZone: tz,
+              }),
+            })}
+            {" · "}
+            {t("provenance.timeZone")}: {tz}
+            {" · "}
+            <Link
+              href={`/${locale}/dashboard/executive/reports`}
+              className="text-signal underline underline-offset-2"
+            >
+              {t("reports.navLink")}
+            </Link>
+          </p>
+        </div>
+      )}
 
       {/* LAYER B first on the screen: what needs a decision outranks what is
           merely true. */}

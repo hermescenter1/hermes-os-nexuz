@@ -11043,6 +11043,35 @@
       "INVALID_REQUEST": "این بازه گزارش شناخته نمی‌شود.",
       "SERVICE_UNAVAILABLE": "مرکز مدیریت ساخته نشد. از این وضعیت هیچ نتیجه‌ای گرفته نمی‌شود.",
       "chooseOrganization": "انتخاب سازمان"
+    },
+    "reports": {
+      "navLink": "گزارش‌های شبانه",
+      "title": "گزارش‌های شبانه",
+      "lede": "برای هر روز کاری یک گزارش ثابت. ارقام همان‌هایی است که در شب اجرا بوده و هرگز بازمحاسبه نمی‌شود.",
+      "archiveEmpty": "هنوز گزارشی تولید نشده است. نخستین گزارش پس از پایان روز کاری بعدی ظاهر می‌شود.",
+      "archiveUnavailable": "آرشیو برای این درخواست خوانده نشد. از نبودن آن هیچ نتیجه‌ای گرفته نمی‌شود.",
+      "columnDate": "روز کاری",
+      "columnVersion": "نسخه",
+      "columnGenerated": "زمان تولید",
+      "columnCoverage": "پوشش",
+      "open": "گشودن گزارش",
+      "backToArchive": "بازگشت به گزارش‌ها",
+      "notFound": "برای آن روز در این سازمان گزارشی وجود ندارد.",
+      "detailTitle": "گزارش {date}",
+      "coverageComplete": "همه بخش‌ها پاسخ دادند",
+      "coveragePartial": "{count, plural, one {# بخش پاسخ نداد} other {# بخش پاسخ ندادند}}",
+      "frozenNotice": "این یک گزارش ثابت است. ارقام را همان‌گونه که در cutoff داده زیر بوده نشان می‌دهد، نه وضعیت کنونی.",
+      "calcVersion": "نسخه محاسبات",
+      "dataCutoff": "cutoff داده",
+      "period": "بازه پوشش‌داده‌شده",
+      "generatedAt": "زمان تولید",
+      "versionLabel": "نسخه {version}",
+      "supersedes": "جایگزین نسخه {version}",
+      "isSuperseded": "نسخه جدیدتری از این روز وجود دارد.",
+      "regeneratedBy": "بازتولید توسط",
+      "regenerationReason": "دلیل",
+      "original": "نسخه اولیه",
+      "corrected": "اصلاحیه"
     }
   }
 }
