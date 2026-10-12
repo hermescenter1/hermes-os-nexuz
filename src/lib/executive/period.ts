@@ -301,17 +301,31 @@ export function businessDayOf(args: {
  * then rebuilt from it with the same cutoff.
  */
 export function previousBusinessDay(window: BusinessDayWindow, cutoffMinutes?: number): BusinessDayWindow {
+  return shiftBusinessDay(window, -1, cutoffMinutes);
+}
+
+/**
+ * The business day after `window`, by the same calendar arithmetic as
+ * `previousBusinessDay` — so "the end of tomorrow" is the end of the next
+ * calendar date in that zone, 23 or 25 hours away on a DST day, never a fixed
+ * 24 hours.
+ */
+export function nextBusinessDay(window: BusinessDayWindow, cutoffMinutes?: number): BusinessDayWindow {
+  return shiftBusinessDay(window, 1, cutoffMinutes);
+}
+
+function shiftBusinessDay(window: BusinessDayWindow, days: number, cutoffMinutes?: number): BusinessDayWindow {
   const { year, month, day } = parseBusinessDateKey(window.dateKey);
   // UTC arithmetic on the LABEL. No zone is involved, so month lengths, leap
   // days and year rollovers are handled without touching a timestamp.
-  const previous = new Date(Date.UTC(year, month - 1, day));
-  previous.setUTCDate(previous.getUTCDate() - 1);
+  const shifted = new Date(Date.UTC(year, month - 1, day));
+  shifted.setUTCDate(shifted.getUTCDate() + days);
 
   return businessDayWindow({
     dateKey: businessDateKey({
-      year: previous.getUTCFullYear(),
-      month: previous.getUTCMonth() + 1,
-      day: previous.getUTCDate(),
+      year: shifted.getUTCFullYear(),
+      month: shifted.getUTCMonth() + 1,
+      day: shifted.getUTCDate(),
     }),
     timeZone: window.timeZone,
     // Default to the window's OWN cutoff, not to midnight.
