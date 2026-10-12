@@ -11,7 +11,9 @@
  *      If no benchmark exists: 404 with instructions to POST.
  *      Includes stale: true if computedAt > SNAPSHOT_STALE_HOURS old.
  *
- * POST: Triggers a full benchmark run (RUNNING → SUCCESS | FAILED).
+ * POST: Triggers a full benchmark run (RUNNING → SUCCESS | FAILED) over EVERY active site of the organisation.
+ *       The result is the organisation's SHARED snapshot, so only an actor who may read every active site
+ *       (OWNER/ADMIN) may produce it; anyone else is refused before anything is written (slice D1, MS-02).
  *       Returns 409 if a run is already in flight for this org.
  *       Computation aggregates pre-computed Phase 37/39/40 data — no raw telemetry scan.
  *
@@ -26,6 +28,7 @@ import { getLatestBenchmark, runBenchmark, isBenchmarkInFlight } from "@/lib/mul
 import { MIN_SITES_FOR_COMPARISON }             from "@/lib/multi-site/types";
 import { projectBenchmark, projectPersistedPatterns } from "@/lib/multi-site/projection";
 import { resolveMultiSiteScope }                from "@/lib/multi-site/scope";
+import { hasOrganizationLevelAccess }           from "@/lib/knowledge-graph/visibility";
 import { getPrisma }                            from "@/lib/db/prisma";
 import { recordAuditEvent, MULTI_SITE_AUDIT }   from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }                 from "@/lib/api/meter";
@@ -102,6 +105,15 @@ export async function POST(req: NextRequest) {
   const perm = requirePermission(member.ctx.role, "view_multi_site");
   if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
+  // The snapshot is shared by the whole organisation: only a role that may read EVERY active site may
+  // write it. Refused here — before the in-flight flag, metering, any row or any audit event.
+  if (!hasOrganizationLevelAccess(member.ctx.role)) {
+    return NextResponse.json(
+      { error: "Only an organization owner or administrator can generate the shared benchmark." },
+      { status: 403 },
+    );
+  }
+
   if (isBenchmarkInFlight(ctx.orgId)) {
     return NextResponse.json(
       { error: "A benchmark is already in progress for this organization. Try again shortly." },
@@ -111,11 +123,9 @@ export async function POST(req: NextRequest) {
 
   meterIndustrialEvent(ctx.orgId, "site_benchmark_runs");
 
-  // Phase 43: scope benchmark run to the caller's accessible (ACTIVE) sites
-  const allowedSiteIds = await resolveMultiSiteScope(member.ctx.userId, ctx.orgId);
-
   try {
-    const result = await runBenchmark(ctx.orgId, allowedSiteIds);
+    // Every ACTIVE site of the organisation, derived server side; nothing in the request can narrow it.
+    const result = await runBenchmark(ctx.orgId);
 
     recordAuditEvent({
       userId:     ctx.userId ?? undefined,

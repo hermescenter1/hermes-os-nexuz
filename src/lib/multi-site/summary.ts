@@ -26,9 +26,11 @@
  * SAME semantics the benchmark itself used, so the summary agrees with the
  * detail pages a scoped caller can actually open.
  *
- * `allowedSiteIds === undefined` means "no site scope applies" — the caller has
- * no user context (API-key auth). That path is byte-for-byte unchanged: no
- * filter is added and the stored benchmark summary fields are used as before.
+ * SCOPE IS MANDATORY (slice D1, MS-03). There is no unscoped path any more: the
+ * caller passes the viewer's readable ACTIVE sites (OWNER/ADMIN: every active
+ * site; others: their granted active sites). Omitting it is a compile error and
+ * a runtime refusal; an EMPTY scope yields the empty summary and reads nothing.
+ * Nothing from the stored organisation-wide benchmark summary is reported.
  */
 
 import { getPrisma }                    from "@/lib/db/prisma";
@@ -37,7 +39,6 @@ import { getLatestBenchmark } from "./benchmarks";
 import { projectPersistedPatterns } from "./projection";
 import {
   type EnterpriseIndustrialSummary,
-  type BenchmarkSummary,
 } from "./types";
 
 type SiteModel   = { count: (a: unknown) => Promise<number> };
@@ -54,8 +55,25 @@ function mean(arr: number[]): number | null {
  * one the sibling Phase 43 routes build, so the summary and the detail views
  * can never disagree about what "in scope" means.
  */
-function siteFilter(allowedSiteIds: string[] | undefined): Record<string, unknown> {
-  return allowedSiteIds ? { siteId: { in: allowedSiteIds } } : {};
+function siteFilter(allowedSiteIds: readonly string[]): Record<string, unknown> {
+  return { siteId: { in: [...allowedSiteIds] } };
+}
+
+/** The answer for a viewer with no readable site: nothing about the organisation, no benchmark claimed. */
+function emptySummary(orgId: string): EnterpriseIndustrialSummary {
+  return {
+    organizationId:    orgId,
+    siteCount:         0,
+    latestBenchmarkId: null,
+    latestBenchmarkAt: null,
+    benchmarkStale:    false,
+    stalenessWarning:  null,
+    riskSummary: { sitesRanked: 0, highestRiskSiteId: null, avgOrgRiskScore: null },
+    kpiSummary:  { sitesCompared: 0, avgOrgAvailability: null, avgOrgHealthScore: null },
+    patternCount:          0,
+    knowledgeGraphStale:   false,
+    knowledgeGraphBuiltAt: null,
+  };
 }
 
 /**
@@ -90,7 +108,7 @@ async function scopedPatternCount(
   db: Record<string, unknown>,
   orgId: string,
   benchmarkId: string,
-  allowedSiteIds: string[],
+  allowedSiteIds: readonly string[],
 ): Promise<number> {
   const rows = await (db.crossSiteFailurePattern as unknown as PatternModel)
     .findMany({ where: { benchmarkId, organizationId: orgId } })
@@ -99,15 +117,15 @@ async function scopedPatternCount(
 }
 
 /**
- * @param allowedSiteIds Sites the caller may see. `undefined` = no user context
- *                       (API-key auth), which applies no site filter. An EMPTY
- *                       array is a caller with no accessible sites; the route
- *                       answers that case before calling this function.
+ * @param allowedSiteIds REQUIRED — the viewer's readable ACTIVE sites, server derived. An empty list yields
+ *                       the empty summary. Anything that is not an array is refused at runtime too.
  */
 export async function getEnterpriseIndustrialSummary(
   orgId: string,
-  allowedSiteIds?: string[],
+  allowedSiteIds: readonly string[],
 ): Promise<EnterpriseIndustrialSummary> {
+  if (!Array.isArray(allowedSiteIds)) throw new TypeError("SUMMARY_SCOPE_REQUIRED");
+  if (allowedSiteIds.length === 0) return emptySummary(orgId);
   const prisma = await getPrisma();
 
   // Site count — always live (cheap). Scoped: the caller's ACCESSIBLE active
@@ -122,7 +140,7 @@ export async function getEnterpriseIndustrialSummary(
         where: {
           organizationId: orgId,
           status: "ACTIVE",
-          ...(allowedSiteIds ? { id: { in: allowedSiteIds } } : {}),
+          id: { in: [...allowedSiteIds] },
         },
       })
       .catch(() => 0);
@@ -157,8 +175,6 @@ export async function getEnterpriseIndustrialSummary(
     };
   }
 
-  const summary = bm.summary as BenchmarkSummary;
-
   // Compute KPI/risk means from the latest benchmark's child rows, narrowed to
   // the caller's accessible sites.
   let avgOrgRiskScore:   number | null = null;
@@ -166,10 +182,9 @@ export async function getEnterpriseIndustrialSummary(
   let avgOrgHealthScore: number | null = null;
   let sitesRanked = 0;
   let sitesCompared = 0;
-  // Default to the stored ORG-WIDE values; both are replaced below whenever a
-  // site scope applies.
-  let highestRiskSiteId: string | null = summary.highestRiskSiteId;
-  let patternCount = summary.patternCount;
+  // Never the stored ORG-WIDE values: both are recomputed within the scope below.
+  let highestRiskSiteId: string | null = null;
+  let patternCount = 0;
 
   if (prisma) {
     const db = prisma as unknown as Record<string, unknown>;
@@ -203,13 +218,10 @@ export async function getEnterpriseIndustrialSummary(
     avgOrgAvailability  = mean(avails);
     avgOrgHealthScore   = mean(healths);
 
-    if (allowedSiteIds) {
-      // Both of these come from the org-wide stored summary and must not be
-      // reported to a scoped caller: one NAMES a possibly-inaccessible site, the
-      // other counts patterns the caller cannot open.
-      highestRiskSiteId = highestRiskSiteIdFrom(riskRows);
-      patternCount      = await scopedPatternCount(db, orgId, bm.id, allowedSiteIds);
-    }
+    // The stored org-wide summary would NAME a possibly-inaccessible site and count patterns the caller
+    // cannot open; both are recomputed from the caller's own rows.
+    highestRiskSiteId = highestRiskSiteIdFrom(riskRows);
+    patternCount      = await scopedPatternCount(db, orgId, bm.id, allowedSiteIds);
   }
 
   return {

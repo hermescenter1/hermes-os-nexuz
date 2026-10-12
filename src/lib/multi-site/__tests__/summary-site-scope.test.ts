@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, expectTypeOf, vi, beforeEach, afterEach } from "vitest";
 
 /**
  * PHASE 43 — the enterprise summary must be constrained to the caller's
@@ -163,7 +163,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function summarize(allowed?: string[]) {
+async function summarize(allowed: string[]) {
   const { getEnterpriseIndustrialSummary } = await import("../summary");
   return getEnterpriseIndustrialSummary(ORG, allowed);
 }
@@ -249,23 +249,43 @@ describe("enterprise summary — an OWNER/ADMIN holding every site", () => {
   });
 });
 
-describe("enterprise summary — no user context (API-key auth)", () => {
-  it("applies NO site filter and keeps the stored org-wide summary fields", async () => {
-    const s = await summarize(undefined);
+describe("enterprise summary — the scope is mandatory (slice D1, MS-03)", () => {
+  it("the scope parameter is a required site list at compile time", async () => {
+    const { getEnterpriseIndustrialSummary } = await import("../summary");
+    expectTypeOf(getEnterpriseIndustrialSummary).parameter(1).toEqualTypeOf<readonly string[]>();
+    expectTypeOf(getEnterpriseIndustrialSummary).parameters.toEqualTypeOf<[orgId: string, allowedSiteIds: readonly string[]]>();
+  });
 
-    expect(s.siteCount).toBe(2);
-    expect(s.riskSummary.sitesRanked).toBe(2);
-    expect(s.riskSummary.avgOrgRiskScore).toBe(51);
-    // Unchanged behaviour: the stored benchmark values are used as before.
-    expect(s.riskSummary.highestRiskSiteId).toBe(FORBIDDEN);
-    expect(s.patternCount).toBe(2);
+  it("an omitted or non-array scope is refused at runtime and reads NOTHING — there is no unscoped path", async () => {
+    const { getEnterpriseIndustrialSummary } = await import("../summary");
+    // A future caller that bypasses the type (e.g. from untyped JavaScript) still gets nothing.
+    const untyped = getEnterpriseIndustrialSummary as unknown as (orgId: string, scope?: unknown) => Promise<unknown>;
+    for (const scope of [undefined, null, "site_allowed", { in: [ALLOWED] }]) {
+      await expect(untyped(ORG, scope), String(scope)).rejects.toThrow("SUMMARY_SCOPE_REQUIRED");
+    }
+    expect(getLatestBenchmarkMock).not.toHaveBeenCalled();
+    expect(captured).toEqual({});
+  });
 
-    // No siteId predicate was added to any query.
-    expect(captured.risk).not.toHaveProperty("siteId");
-    expect(captured.kpi).not.toHaveProperty("siteId");
-    expect(captured.siteCount).not.toHaveProperty("id");
-    // The extra pattern query is only issued when a scope applies.
-    expect(captured.pattern).toBeUndefined();
+  it("an EMPTY scope is the empty summary: no organisation figure, no benchmark claimed, nothing read", async () => {
+    const s = await summarize([]);
+    expect(s).toEqual({
+      organizationId: ORG, siteCount: 0, latestBenchmarkId: null, latestBenchmarkAt: null, benchmarkStale: false, stalenessWarning: null,
+      riskSummary: { sitesRanked: 0, highestRiskSiteId: null, avgOrgRiskScore: null },
+      kpiSummary: { sitesCompared: 0, avgOrgAvailability: null, avgOrgHealthScore: null },
+      patternCount: 0, knowledgeGraphStale: false, knowledgeGraphBuiltAt: null,
+    });
+    expect(getLatestBenchmarkMock).not.toHaveBeenCalled();
+    expect(getPrismaMock).not.toHaveBeenCalled();
+    expect(JSON.stringify(s)).not.toContain(FORBIDDEN);
+  });
+
+  it("the stored org-wide summary values are never reported, even to a caller holding every site", async () => {
+    getLatestBenchmarkMock.mockResolvedValue({ ...BENCHMARK, summary: { highestRiskSiteId: "site_elsewhere", patternCount: 99 } });
+    const s = await summarize([ALLOWED, FORBIDDEN]);
+    expect(s.riskSummary.highestRiskSiteId).toBe(FORBIDDEN);      // recomputed from the rows (91 > 11)
+    expect(s.patternCount).toBe(1);                                // the visible projection, not 99
+    expect(JSON.stringify(s)).not.toContain("site_elsewhere");
   });
 });
 

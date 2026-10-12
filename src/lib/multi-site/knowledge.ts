@@ -8,18 +8,34 @@
  * coverageScore = (assetsWithLinks / assetCount) × 100, clamped 0–100.
  * A site with 0 assets gets coverageScore = 0, assetsWithLinks = 0.
  * Link counts are totals per type — one asset can contribute to multiple buckets.
+ *
+ * SCOPE (slice D1, MS-04). Coverage is computed for a server-built viewer scope only: sites outside
+ * `scope.allowedSiteIds` (the viewer's readable ACTIVE sites) and their assets contribute nothing, and a
+ * CASE link counts only if the case itself is visible to the viewer under the canonical engineering-case
+ * policy (knowledge/case-visibility.ts) — a hidden, foreign-asset, site/asset-inconsistent or (for a
+ * site-limited viewer) organisation-level case adds nothing to any count, ratio or score. Catalogue links
+ * (article, failure mode, procedure) are organisation-level knowledge attached to a visible asset.
  */
 
 import { getPrisma } from "@/lib/db/prisma";
+import { listVisibleCaseIds, MAX_VISIBLE_CASE_IDS } from "@/lib/knowledge/case-visibility";
+import type { GraphViewerScope } from "@/lib/knowledge-graph/visibility";
 import type { SiteKnowledgeCoverageData } from "./types";
 
 type LinkModel = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
 
 export async function getSiteKnowledgeCoverage(
-  orgId:        string,
+  scope:        GraphViewerScope,
   siteMap:      Map<string, string>,
   siteAssetMap: Map<string, string[]>,
 ): Promise<SiteKnowledgeCoverageData[]> {
+  const orgId = scope.organizationId;
+  // Defence in depth: whatever the caller built, only the scope's sites are reported.
+  const allowed = new Set(scope.allowedSiteIds);
+  siteMap = new Map([...siteMap].filter(([siteId]) => allowed.has(siteId)));
+  siteAssetMap = new Map([...siteAssetMap].filter(([siteId]) => allowed.has(siteId)));
+  if (siteMap.size === 0) return [];
+
   const prisma = await getPrisma();
   if (!prisma) return [];
   const db = prisma as unknown as Record<string, unknown>;
@@ -35,17 +51,27 @@ export async function getSiteKnowledgeCoverage(
     }));
   }
 
-  // Load all AssetKnowledgeLink rows for assets in this org
-  const linkRows = await (db.assetKnowledgeLink as unknown as LinkModel).findMany({
-    where:  { organizationId: orgId, assetId: { in: allAssetIds } },
-    select: { assetId: true, articleId: true, failureModeId: true, procedureId: true, caseId: true },
-  });
+  // Load the AssetKnowledgeLink rows of the scope's assets, and the cases the viewer may read.
+  const [linkRows, visibleCaseIds] = await Promise.all([
+    (db.assetKnowledgeLink as unknown as LinkModel).findMany({
+      where:  { organizationId: orgId, assetId: { in: allAssetIds } },
+      select: { assetId: true, articleId: true, failureModeId: true, procedureId: true, caseId: true },
+    }),
+    listVisibleCaseIds(db, scope, { limit: MAX_VISIBLE_CASE_IDS }).then((ids) => new Set(ids)),
+  ]);
+  const scopedAssets = new Set(allAssetIds);
 
   // Per-asset link counts
   type LinkCounts = { article: number; failureMode: number; procedure: number; case: number };
   const assetLinkMap = new Map<string, LinkCounts>();
   for (const link of linkRows) {
     const aid = link.assetId as string;
+    if (!scopedAssets.has(aid)) continue;
+    // A case link counts only when the case is visible to this viewer; otherwise the link is dropped
+    // entirely (it must not make the asset look "covered").
+    const caseId = typeof link.caseId === "string" && link.caseId.length > 0 ? link.caseId : null;
+    const caseVisible = caseId !== null && visibleCaseIds.has(caseId);
+    if (!link.articleId && !link.failureModeId && !link.procedureId && !caseVisible) continue;
     if (!assetLinkMap.has(aid)) {
       assetLinkMap.set(aid, { article: 0, failureMode: 0, procedure: 0, case: 0 });
     }
@@ -53,7 +79,7 @@ export async function getSiteKnowledgeCoverage(
     if (link.articleId)     c.article++;
     if (link.failureModeId) c.failureMode++;
     if (link.procedureId)   c.procedure++;
-    if (link.caseId)        c.case++;
+    if (caseVisible)        c.case++;
   }
 
   const results: SiteKnowledgeCoverageData[] = [];
@@ -90,7 +116,7 @@ export async function getSiteKnowledgeCoverage(
     });
   }
 
-  // Sort by coverageScore DESC
-  results.sort((a, b) => b.coverageScore - a.coverageScore);
+  // Sort by coverageScore DESC, then name and id (deterministic)
+  results.sort((a, b) => b.coverageScore - a.coverageScore || a.siteName.localeCompare(b.siteName) || a.siteId.localeCompare(b.siteId));
   return results;
 }

@@ -13,6 +13,12 @@
  *
  * STALENESS:
  *   getLatestBenchmark() returns stale:true if computedAt > SNAPSHOT_STALE_HOURS old.
+ *
+ * SHARED SNAPSHOT (slice D1, MS-02). The benchmark is ONE organisation-wide snapshot that every reader
+ * projects through its own scope (./projection.ts). It is therefore always computed over EVERY active site
+ * of the organisation, derived here, server side — never over a caller's site list — and only a caller that
+ * may read every active site (OWNER/ADMIN, enforced by the route) may run it. A RUNNING or FAILED run is
+ * never "the latest"; the SUCCESS status and every child row are written in one transaction.
  */
 
 import { getPrisma }    from "@/lib/db/prisma";
@@ -76,17 +82,17 @@ export async function getLatestBenchmark(orgId: string): Promise<BenchmarkRecord
   const db = prisma as unknown as Record<string, unknown>;
   const r = await (db.multiSiteBenchmark as unknown as BMModel).findFirst({
     where:   { organizationId: orgId, status: "SUCCESS" },
-    orderBy: { computedAt: "desc" },
+    orderBy: [{ computedAt: "desc" }, { id: "desc" }],
   });
   return r ? bmRow(r) : null;
 }
 
 /**
- * Phase 43: allowedSiteIds scopes the benchmark to the user's accessible sites.
- * Pass undefined only if caller has verified OWNER/ADMIN implicit access.
- * Pass [] for a user with no site access — returns a FAILED benchmark immediately.
+ * Computes and persists the organisation's shared benchmark over EVERY active site of the organisation.
+ * There is deliberately no site parameter: a partial run must never become the snapshot every reader sees.
+ * The caller must already have verified that the actor may read every active site (OWNER/ADMIN).
  */
-export async function runBenchmark(orgId: string, allowedSiteIds?: string[]): Promise<BenchmarkRecord> {
+export async function runBenchmark(orgId: string): Promise<BenchmarkRecord> {
   if (inFlight.has(orgId)) {
     throw Object.assign(new Error("Benchmark already in progress"), { code: "BENCHMARK_IN_FLIGHT" });
   }
@@ -102,21 +108,27 @@ export async function runBenchmark(orgId: string, allowedSiteIds?: string[]): Pr
 
   const startedAt = new Date();
 
-  // Create RUNNING record
-  const bmCreated = await bmModel.create({
-    data: {
-      organizationId: orgId,
-      status:         "RUNNING",
-      periodLabel:    KPI_PERIOD,
-      siteCount:      0,
-      summary:        {},
-      startedAt,
-    },
-  });
+  // Create RUNNING record. A failure here must release the per-org flag, or every later run is refused.
+  let bmCreated: Record<string, unknown>;
+  try {
+    bmCreated = await bmModel.create({
+      data: {
+        organizationId: orgId,
+        status:         "RUNNING",
+        periodLabel:    KPI_PERIOD,
+        siteCount:      0,
+        summary:        {},
+        startedAt,
+      },
+    });
+  } catch (err) {
+    inFlight.delete(orgId);
+    throw err;
+  }
   const bmId = bmCreated.id as string;
 
   try {
-    const result = await compareSites(orgId, allowedSiteIds);
+    const result = await compareSites(orgId);
     if (!result) {
       await bmModel.update({
         where: { id: bmId },

@@ -397,9 +397,8 @@ describe("organisation isolation", () => {
 
 // ── the generator (producer) uses the same eligibility ──────────────────────
 describe("the benchmark generator builds its patterns from eligible cases only", () => {
-  // NOTE: `POST /api/multi-site/benchmarks` cannot run end to end on a database that has assets: `kpis.ts` reads the
-  // Prisma delegate as `db.kpiRecord` (the generated name is `kPIRecord`). That pre-existing defect is outside this
-  // slice, so the producer is exercised directly.
+  // The full POST path (generation, persistence, authorisation of the shared writer) is proven in
+  // `multi-site-generation.pg.test.ts`; here the producer's eligibility is exercised directly.
   it("for every active site: only the failure modes with two valid sites, and evidence free of corrupt, inactive and foreign cases", async () => {
     const { findCrossSiteFailurePatterns } = await import("@/lib/multi-site/failure-patterns");
     const out = await findCrossSiteFailurePatterns(ORG_A, [A1, A2, A3]);
@@ -421,12 +420,11 @@ describe("the benchmark generator builds its patterns from eligible cases only",
     expect(await findCrossSiteFailurePatterns(ORG_A, [])).toEqual([]);
   });
 
-  it("POST by a member whose only grant is an inactive site is a FAILED run with no snapshot rows (the scope is the active one)", async () => {
-    const before = await db.siteRiskSnapshot.count({ where: { organizationId: ORG_A } });
+  it("POST by a member whose only grant is an inactive site is refused (only OWNER/ADMIN write the shared snapshot) and writes nothing", async () => {
+    const before = await db.multiSiteBenchmark.count({ where: { organizationId: ORG_A } });
     const run = await call(benchmarksRoute.POST, U.V4, "/api/multi-site/benchmarks", ORG_A, "POST");
-    expect(run.status).toBe(200);
-    expect(run.json.benchmark).toMatchObject({ status: "FAILED", errorMessage: "No active sites found" });
-    expect(await db.siteRiskSnapshot.count({ where: { organizationId: ORG_A } })).toBe(before);
+    expect(run.status).toBe(403);
+    expect(await db.multiSiteBenchmark.count({ where: { organizationId: ORG_A } })).toBe(before);
     // a FAILED run is never "the latest benchmark": the readers still serve the SUCCESS snapshot
     expect(sitesOf(await benchmarks(U.V12), "riskRanking")).toEqual([A2, A1]);
   });

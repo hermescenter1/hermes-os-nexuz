@@ -54,8 +54,8 @@ export async function GET(req: NextRequest) {
   // endpoint the one Phase 43 read surface that was not actually site-scoped: a
   // member granted one site still received org-wide means, an org-wide site
   // count and pattern count, and `highestRiskSiteId` — which NAMES a site they
-  // may not access. `undefined` (API-key auth, no user context) applies no
-  // filter, exactly as before.
+  // may not access. The scope is mandatory (slice D1, MS-03): there is no
+  // unscoped path — every caller passes the server-derived active-site scope.
   const summary = await getEnterpriseIndustrialSummary(ctx.orgId, allowedSiteIds);
 
   recordAuditEvent({

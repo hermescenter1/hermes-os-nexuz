@@ -16,6 +16,7 @@
  *   Assets without data are counted but NOT zeroed into the mean.
  */
 
+import type { PrismaClient } from "@prisma/client";
 import { getPrisma }  from "@/lib/db/prisma";
 import { getPeriodRange } from "@/lib/time-series/periods";
 import {
@@ -26,9 +27,13 @@ import {
   type SiteDataStatus,
 } from "./types";
 
-type KPIModel  = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
-type HHModel   = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
-type AssetModel = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
+/**
+ * The generated delegates this module reads. Their NAMES and argument shapes are checked against the
+ * generated Prisma client at compile time: the model `KPIRecord` is exposed as `kPIRecord`. The previous
+ * untyped `db.kpiRecord` was `undefined`, so every benchmark of an organisation that had assets failed
+ * with a 500 (slice D1, MS-01). `getPrisma()` is untyped repository-wide; this is its one narrowing here.
+ */
+type KpiClient = Pick<PrismaClient, "kPIRecord" | "assetHealthHistory">;
 
 function staleStatus(lastTs: Date | null): SiteDataStatus {
   if (!lastTs) return "insufficientData";
@@ -47,7 +52,7 @@ export async function compareSiteKPIs(
 ): Promise<SiteKPIData[]> {
   const prisma = await getPrisma();
   if (!prisma) return [];
-  const db = prisma as unknown as Record<string, unknown>;
+  const client = prisma as unknown as KpiClient;
 
   const period = KPI_PERIOD;
   const range  = getPeriodRange(period);
@@ -55,39 +60,44 @@ export async function compareSiteKPIs(
 
   if (allAssetIds.length === 0) return [];
 
-  // Load all KPIRecord rows for the org in the period (availability + efficiency)
-  const kpiRows = await (db.kpiRecord as unknown as KPIModel).findMany({
+  // KPIRecord rows of the compared assets in the period (availability + efficiency). Bounded to the
+  // analysed assets and ordered totally, so "latest per asset" is deterministic.
+  const kpiRows = await client.kPIRecord.findMany({
     where: {
       organizationId: orgId,
+      assetId:        { in: allAssetIds },
       kpiName:        { in: ["availability", "efficiency"] },
       calculatedAt:   { gte: range.from, lte: range.to },
     },
-    orderBy: { calculatedAt: "desc" },
+    orderBy: [{ calculatedAt: "desc" }, { id: "asc" }],
     select: { assetId: true, kpiName: true, value: true, calculatedAt: true },
   });
 
-  // Load latest AssetHealthHistory per asset (no period filter — just latest)
-  const healthRows = await (db.assetHealthHistory as unknown as HHModel).findMany({
-    where: { organizationId: orgId },
-    orderBy: { createdAt: "desc" },
-    select: { assetId: true, healthScore: true, createdAt: true },
+  // The latest AssetHealthHistory row per compared asset (no period filter — just latest): one row per
+  // asset, instead of the whole organisation's history.
+  const healthRows = await client.assetHealthHistory.findMany({
+    where:    { organizationId: orgId, assetId: { in: allAssetIds } },
+    orderBy:  [{ createdAt: "desc" }, { id: "asc" }],
+    distinct: ["assetId"],
+    select:   { assetId: true, healthScore: true, createdAt: true },
   });
 
   // Build in-memory maps: assetId → latest value per kpiName
   const kpiLatest = new Map<string, Map<string, number>>();    // assetId → kpiName → value
   for (const row of kpiRows) {
-    const aid = row.assetId as string;
-    const kn  = row.kpiName  as string;
+    const aid = row.assetId;
+    if (!aid) continue;
+    const kn  = row.kpiName;
     if (!kpiLatest.has(aid)) kpiLatest.set(aid, new Map());
-    if (!kpiLatest.get(aid)!.has(kn)) kpiLatest.get(aid)!.set(kn, row.value as number);
+    if (!kpiLatest.get(aid)!.has(kn)) kpiLatest.get(aid)!.set(kn, row.value);
   }
 
   // Health: latest per asset
   const healthLatest = new Map<string, { score: number; at: Date }>();
   for (const row of healthRows) {
-    const aid = row.assetId as string;
+    const aid = row.assetId;
     if (!healthLatest.has(aid)) {
-      healthLatest.set(aid, { score: row.healthScore as number, at: new Date(row.createdAt as string) });
+      healthLatest.set(aid, { score: row.healthScore, at: new Date(row.createdAt) });
     }
   }
 
