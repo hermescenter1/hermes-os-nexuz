@@ -11076,6 +11076,66 @@
       "regenerationReason": "دلیل",
       "original": "نسخه اولیه",
       "corrected": "اصلاحیه"
+    },
+    "oversight": {
+      "pageTitle": "فعالیت مالی و تأییدها",
+      "pageLede": "هزینه‌های ثبت‌شده روی پروژه‌ها، ثبت‌کنندهٔ آن‌ها و تأییدهایی که منتظر تصمیم‌اند.",
+      "linkFromSummary": "فعالیت مالی و تأییدها",
+      "truncated": "فقط نخستین موارد نمایش داده شده‌اند؛ موارد بیشتری وجود دارد.",
+      "unresolvedUser": "کاربر نامشخص",
+      "cost": {
+        "title": "هزینهٔ ثبت‌شدهٔ پروژه",
+        "lede": "اقلام هزینهٔ ثبت‌شده روی پروژه‌های این سازمان، هر کدام به ارز خودش.",
+        "byCurrencyTitle": "به تفکیک ارز",
+        "currencyLabel": "هزینه به {currency}",
+        "entries": "{count, plural, one {# قلم} other {# قلم}}",
+        "noneInPeriod": "در این بازه هزینه‌ای ثبت نشده است.",
+        "noExchangeRate": "هر ارز جداگانه نمایش داده می‌شود. این محصول نرخ تبدیل ارز ندارد، پس مبالغ ارزهای مختلف هرگز با هم جمع نمی‌شوند.",
+        "byCategoryTitle": "به تفکیک دسته",
+        "columnCategory": "دسته",
+        "columnCurrency": "ارز",
+        "columnAmount": "مبلغ",
+        "columnEntries": "تعداد اقلام",
+        "uncategorised": "بدون دسته",
+        "recordersTitle": "ثبت‌کننده",
+        "recordersLede": "بر اساس زمان ورود هر قلم و از روی فردی که روی خودِ قلم ثبت شده شمرده می‌شود.",
+        "noRecorders": "در این بازه قلمی با ثبت‌کنندهٔ مشخص وجود ندارد.",
+        "unattributed": "{count, plural, one {# قلم} other {# قلم}} ثبت‌کنندهٔ مشخصی ندارد.",
+        "overBudgetTitle": "پروژه‌های فراتر از بودجه",
+        "overBudgetSummary": "{over, plural, one {# پروژه} other {# پروژه}} فراتر از بودجه، از میان {total, plural, one {# پروژه} other {# پروژه}} دارای بودجه.",
+        "columnProject": "پروژه",
+        "columnBudget": "بودجه",
+        "columnActual": "هزینهٔ ثبت‌شده",
+        "columnOverrun": "مازاد",
+        "budgetHasNoCurrency": "بودجه و هزینهٔ ثبت‌شدهٔ پروژه در این محصول ارز ندارند، پس این دو ستون همان‌گونه که ذخیره شده‌اند مقایسه می‌شوند.",
+        "notAccounting": "این نظارت بر هزینهٔ ثبت‌شدهٔ پروژه است، نه حسابداری: این محصول دفتر کل، حساب‌های دریافتنی، حساب‌های پرداختنی و مغایرت‌گیری ندارد."
+      },
+      "approvals": {
+        "title": "تأییدها",
+        "lede": "چه چیزی منتظر تصمیم است، تصمیم با کیست و در این بازه چه تصمیم‌هایی گرفته شده است.",
+        "pendingTitle": "منتظر تصمیم",
+        "oldest": "قدیمی‌ترین مورد از {when} در انتظار است",
+        "byRoleTitle": "منتظر تصمیم، به تفکیک نقش تأییدکننده و مدت انتظار",
+        "columnRole": "نقشِ مانع",
+        "columnTotal": "مجموع",
+        "age": {
+          "underOneDay": "کمتر از ۱ روز",
+          "oneToThreeDays": "۱ تا ۳ روز",
+          "threeToSevenDays": "۳ تا ۷ روز",
+          "overSevenDays": "بیش از ۷ روز"
+        },
+        "noPendingStep": "مرحلهٔ در انتظاری تعریف نشده",
+        "sampled": "تفکیک نقش و مدت انتظار، {sampled, number} درخواستِ قدیمی‌تر از میان {total, number} درخواست در انتظار را پوشش می‌دهد.",
+        "waitingDefinition": "نقش مانع، نقش تأییدکنندهٔ نخستین مرحله‌ای است که هنوز در انتظار است. مدت انتظار از زمان ثبت درخواست شمرده می‌شود.",
+        "decidedTitle": "تصمیم‌گرفته‌شده در این بازه",
+        "outcome": {
+          "approved": "تأییدشده",
+          "rejected": "ردشده",
+          "cancelled": "لغوشده"
+        },
+        "deciderSplit": "{approved, number} تأیید · {rejected, number} رد",
+        "unattributed": "{count, plural, one {# تصمیم} other {# تصمیم}} تصمیم‌گیرندهٔ مشخصی ندارد."
+      }
     }
   }
 }

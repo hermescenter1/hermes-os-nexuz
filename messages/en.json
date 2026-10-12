@@ -11076,6 +11076,66 @@
       "regenerationReason": "Reason",
       "original": "Original",
       "corrected": "Correction"
+    },
+    "oversight": {
+      "pageTitle": "Financial activity and approvals",
+      "pageLede": "Cost recorded against projects, who recorded it, and the approvals waiting on a decision.",
+      "linkFromSummary": "Financial activity and approvals",
+      "truncated": "Only the first entries are shown; more exist.",
+      "unresolvedUser": "Unknown user",
+      "cost": {
+        "title": "Recorded project cost",
+        "lede": "Cost entries recorded against this organization's projects, in each entry's own currency.",
+        "byCurrencyTitle": "By currency",
+        "currencyLabel": "Cost in {currency}",
+        "entries": "{count, plural, one {# entry} other {# entries}}",
+        "noneInPeriod": "No cost was recorded in this period.",
+        "noExchangeRate": "Each currency is shown separately. The product holds no exchange rates, so amounts in different currencies are never added together.",
+        "byCategoryTitle": "By category",
+        "columnCategory": "Category",
+        "columnCurrency": "Currency",
+        "columnAmount": "Amount",
+        "columnEntries": "Entries",
+        "uncategorised": "No category",
+        "recordersTitle": "Who recorded it",
+        "recordersLede": "Counted by when each entry was entered, from the person recorded on the entry itself.",
+        "noRecorders": "No attributed entries in this period.",
+        "unattributed": "{count, plural, one {# entry has} other {# entries have}} no recorded author.",
+        "overBudgetTitle": "Projects over budget",
+        "overBudgetSummary": "{over, plural, one {# project} other {# projects}} over budget, out of {total, plural, one {# project} other {# projects}} with a budget.",
+        "columnProject": "Project",
+        "columnBudget": "Budget",
+        "columnActual": "Recorded cost",
+        "columnOverrun": "Overrun",
+        "budgetHasNoCurrency": "Project budget and recorded cost carry no currency in this product, so these two columns are compared as stored.",
+        "notAccounting": "This is oversight of recorded project cost, not accounting: there is no ledger, no receivables, no payables and no reconciliation in this product."
+      },
+      "approvals": {
+        "title": "Approvals",
+        "lede": "What is waiting on a decision, whose decision it is, and what was decided in this period.",
+        "pendingTitle": "Awaiting a decision",
+        "oldest": "Oldest waiting since {when}",
+        "byRoleTitle": "Awaiting a decision, by approver role and age",
+        "columnRole": "Blocking role",
+        "columnTotal": "Total",
+        "age": {
+          "underOneDay": "Under 1 day",
+          "oneToThreeDays": "1–3 days",
+          "threeToSevenDays": "3–7 days",
+          "overSevenDays": "Over 7 days"
+        },
+        "noPendingStep": "No pending step defined",
+        "sampled": "The role and age breakdown covers the {sampled, number} oldest of {total, number} pending requests.",
+        "waitingDefinition": "The blocking role is the approver role of the earliest step still pending. Waiting time is counted from when the request was raised.",
+        "decidedTitle": "Decided in this period",
+        "outcome": {
+          "approved": "Approved",
+          "rejected": "Rejected",
+          "cancelled": "Cancelled"
+        },
+        "deciderSplit": "{approved, number} approved · {rejected, number} rejected",
+        "unattributed": "{count, plural, one {# decision has} other {# decisions have}} no recorded decider."
+      }
     }
   }
 }

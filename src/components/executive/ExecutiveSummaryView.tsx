@@ -45,13 +45,15 @@ import type {
 import { EXECUTIVE_RANGES, type ExecutiveRange } from "@/lib/executive/period";
 
 type T = Awaited<ReturnType<typeof getTranslations<"executive">>>;
+/** Shared with the other executive surfaces so they render with one vocabulary. */
+export type ExecutiveTranslator = T;
 
 /** A translation key that may legitimately be absent is read defensively. */
-const keyOf = (full: string) => full.replace(/^executive\./, "");
+export const keyOf = (full: string) => full.replace(/^executive\./, "");
 
 /* ── status presentation ───────────────────────────────────────────────────── */
 
-const STATUS_VARIANT: Record<SectionStatus, "live" | "neutral" | "warning" | "offline"> = {
+export const STATUS_VARIANT: Record<SectionStatus, "live" | "neutral" | "warning" | "offline"> = {
   OPERATIONAL: "live",
   EMPTY: "neutral",
   FORBIDDEN: "neutral",
@@ -69,7 +71,7 @@ const FRESHNESS_VARIANT: Record<SourceFreshness, "live" | "warning" | "offline" 
 
 /* ── shared shells ─────────────────────────────────────────────────────────── */
 
-function Panel({
+export function Panel({
   title,
   lede,
   badge,
@@ -101,7 +103,7 @@ function Panel({
  * indistinguishable from "everything is fine", which is the single failure this
  * whole surface is built to avoid.
  */
-function SectionBody<D>({
+export function SectionBody<D>({
   section,
   t,
   children,
@@ -127,7 +129,7 @@ function SectionBody<D>({
 
 /* ── metrics ───────────────────────────────────────────────────────────────── */
 
-function DeltaLine({ delta, t, locale }: { delta: MetricDelta; t: T; locale: string }) {
+export function DeltaLine({ delta, t, locale }: { delta: MetricDelta; t: T; locale: string }) {
   if (delta.kind === "NO_CHANGE") {
     return <span className="text-xs text-muted">{t("delta.noChange")}</span>;
   }
@@ -537,6 +539,13 @@ export async function ExecutiveSummaryView({
               className="text-signal underline underline-offset-2"
             >
               {t("reports.navLink")}
+            </Link>
+            {" · "}
+            <Link
+              href={`/${locale}/dashboard/executive/oversight`}
+              className="text-signal underline underline-offset-2"
+            >
+              {t("oversight.linkFromSummary")}
             </Link>
           </p>
         </div>
