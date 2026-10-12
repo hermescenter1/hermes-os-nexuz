@@ -93,8 +93,8 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `NOT_STARTED` |
-| **Evidence** | — |
+| **Status** | `PARTIAL` — rules, reasons and validated parameters shipped by slice D; per-organization storage of the parameters is slice E |
+| **Evidence** | `/dashboard/executive/priorities`: nine ordered written rules, three tiers, a reason sentence per item, the rule set printed with the thresholds in force. Proven on an isolated database with five decoys absent; VIEWER sees an empty list with a stated reason per source. `STAGE-8-SLICE-D-TOMORROWS-PRIORITIES.md`. |
 | **Dependency** | Row 2 and row 5 feed it, but it can ship on today's sources |
 | **Acceptance** | A written, inspectable rule set over criticality, due date, lateness and pending approvals; configurable per organization; **every priority shows the reason it was ranked there**; no opaque score. |
 
@@ -161,7 +161,7 @@ Status vocabulary:
 Rows are taken in this order, smallest reviewable slice first:
 
 1. **Slice C** — row 2's oversight half (no schema change). *Implemented and proven on an isolated database.*
-2. **Slice D** — row 8, priorities with visible reasons.
+2. **Slice D** — row 8, priorities with visible reasons. *Implemented and proven on an isolated database.*
 3. **Slice E** — row 7, per-organization zone and cutoff (one migration).
 4. **Slice F** — row 10, the production runner, with row 9's channel if the
    owner has chosen one by then.
