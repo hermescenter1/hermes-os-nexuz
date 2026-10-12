@@ -547,6 +547,13 @@ export async function ExecutiveSummaryView({
             >
               {t("oversight.linkFromSummary")}
             </Link>
+            {" · "}
+            <Link
+              href={`/${locale}/dashboard/executive/priorities`}
+              className="text-signal underline underline-offset-2"
+            >
+              {t("priorities.linkFromSummary")}
+            </Link>
           </p>
         </div>
       )}

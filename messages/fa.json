@@ -11136,6 +11136,65 @@
         "deciderSplit": "{approved, number} تأیید · {rejected, number} رد",
         "unattributed": "{count, plural, one {# تصمیم} other {# تصمیم}} تصمیم‌گیرندهٔ مشخصی ندارد."
       }
+    },
+    "priorities": {
+      "pageTitle": "اولویت‌های فردا",
+      "pageLede": "آنچه پیش از پایان فردا نیاز به اقدام دارد، به ترتیب، همراه با قاعده‌ای که هر مورد را آنجا قرار داده است.",
+      "linkFromSummary": "اولویت‌های فردا",
+      "horizon": "افق: پیش از {when}",
+      "tiersTitle": "به تفکیک رده",
+      "tier": {
+        "1": "اقدام فوری",
+        "2": "اقدام امروز",
+        "3": "برنامهٔ فردا"
+      },
+      "tierCount": "{count, plural, one {# مورد} other {# مورد}}",
+      "kind": {
+        "TASK": "وظیفه",
+        "WORK_ORDER": "دستورکار",
+        "APPROVAL": "تأیید",
+        "ALERT": "هشدار"
+      },
+      "duration": {
+        "days": "{count, plural, one {# روز} other {# روز}}",
+        "hours": "{count, plural, one {# ساعت} other {# ساعت}}"
+      },
+      "reason": {
+        "CRITICAL_WORK_OVERDUE": "اولویت بحرانی و {duration} از سررسید گذشته است.",
+        "CRITICAL_ALERT_OPEN": "هشدار بحرانی که {duration} باز مانده است.",
+        "APPROVAL_CRITICALLY_LATE": "{duration} در انتظار تصمیم، فراتر از حد بحرانی {threshold, number} روزه.",
+        "HIGH_WORK_OVERDUE": "اولویت بالا و {duration} از سررسید گذشته است.",
+        "URGENT_WORK_DUE_SOON": "اولویت بالا یا بحرانی، سررسید {due}.",
+        "APPROVAL_LATE": "{duration} در انتظار تصمیم، فراتر از حد {threshold, number} روزه.",
+        "HIGH_ALERT_OPEN": "هشدار با شدت بالا که {duration} باز مانده است.",
+        "WORK_OVERDUE": "{duration} از سررسید گذشته است.",
+        "WORK_DUE_SOON": "سررسید {due}."
+      },
+      "rulesTitle": "اولویت‌ها چگونه تعیین می‌شوند",
+      "rulesLede": "قاعده‌ها به همین ترتیب بررسی می‌شوند و نخستین قاعده‌ای که با یک مورد منطبق شود رده‌اش را تعیین می‌کند. در هر رده، موردی که بیشترین مدت زیر فشار بوده نخست می‌آید. هیچ امتیازی در کار نیست.",
+      "rule": {
+        "CRITICAL_WORK_OVERDUE": "وظیفه یا دستورکاری با اولویت بحرانی که از سررسیدش گذشته است.",
+        "CRITICAL_ALERT_OPEN": "هشدار بحرانی که پس از {hours, plural, one {# ساعت} other {# ساعت}} هنوز باز است.",
+        "APPROVAL_CRITICALLY_LATE": "تأییدی که {days, plural, one {# روز} other {# روز}} یا بیشتر در انتظار مانده است.",
+        "HIGH_WORK_OVERDUE": "وظیفه یا دستورکاری با اولویت بالا که از سررسیدش گذشته است.",
+        "URGENT_WORK_DUE_SOON": "کاری با اولویت بالا یا بحرانی که سررسیدش پیش از پایان فرداست.",
+        "APPROVAL_LATE": "تأییدی که {days, plural, one {# روز} other {# روز}} یا بیشتر در انتظار مانده است.",
+        "HIGH_ALERT_OPEN": "هشدار با شدت بالا که پس از {hours, plural, one {# ساعت} other {# ساعت}} هنوز باز است.",
+        "WORK_OVERDUE": "هر وظیفه یا دستورکار باز دیگری که از سررسیدش گذشته است.",
+        "WORK_DUE_SOON": "هر وظیفه یا دستورکار باز دیگری که سررسیدش پیش از پایان فرداست."
+      },
+      "configNote": "این آستانه‌ها پیش‌فرض محصول‌اند. تنظیم آن‌ها برای هر سازمان هنوز در دسترس نیست.",
+      "listTruncated": "{shown, number} اولویت از {total, number} اولویت نمایش داده شده است.",
+      "sourcesTitle": "منابع",
+      "source": {
+        "tasks": "وظایف",
+        "workOrders": "دستورکارها",
+        "approvals": "تأییدها",
+        "alerts": "هشدارها"
+      },
+      "sourceRead": "خوانده شد",
+      "sourceTruncated": "فقط {limit, number} رکورد پرفشارتر خوانده شد.",
+      "noneInTier": "در این رده موردی نیست."
     }
   }
 }

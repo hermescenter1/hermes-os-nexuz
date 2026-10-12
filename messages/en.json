@@ -11136,6 +11136,65 @@
         "deciderSplit": "{approved, number} approved · {rejected, number} rejected",
         "unattributed": "{count, plural, one {# decision has} other {# decisions have}} no recorded decider."
       }
+    },
+    "priorities": {
+      "pageTitle": "Tomorrow's priorities",
+      "pageLede": "What needs action before the end of tomorrow, in order, with the rule that put each item there.",
+      "linkFromSummary": "Tomorrow's priorities",
+      "horizon": "Horizon: before {when}",
+      "tiersTitle": "By tier",
+      "tier": {
+        "1": "Act first",
+        "2": "Act today",
+        "3": "Plan for tomorrow"
+      },
+      "tierCount": "{count, plural, one {# item} other {# items}}",
+      "kind": {
+        "TASK": "Task",
+        "WORK_ORDER": "Work order",
+        "APPROVAL": "Approval",
+        "ALERT": "Alert"
+      },
+      "duration": {
+        "days": "{count, plural, one {# day} other {# days}}",
+        "hours": "{count, plural, one {# hour} other {# hours}}"
+      },
+      "reason": {
+        "CRITICAL_WORK_OVERDUE": "Critical priority and overdue by {duration}.",
+        "CRITICAL_ALERT_OPEN": "Critical alert open for {duration}.",
+        "APPROVAL_CRITICALLY_LATE": "Waiting for a decision for {duration}, past the {threshold, number}-day critical limit.",
+        "HIGH_WORK_OVERDUE": "High priority and overdue by {duration}.",
+        "URGENT_WORK_DUE_SOON": "High or critical priority, due {due}.",
+        "APPROVAL_LATE": "Waiting for a decision for {duration}, past the {threshold, number}-day limit.",
+        "HIGH_ALERT_OPEN": "High-severity alert open for {duration}.",
+        "WORK_OVERDUE": "Overdue by {duration}.",
+        "WORK_DUE_SOON": "Due {due}."
+      },
+      "rulesTitle": "How priorities are decided",
+      "rulesLede": "The rules are checked in this order and the first one an item matches decides its tier. Within a tier, the item under pressure longest comes first. There is no score.",
+      "rule": {
+        "CRITICAL_WORK_OVERDUE": "A critical-priority task or work order past its due date.",
+        "CRITICAL_ALERT_OPEN": "A critical alert still open after {hours, plural, one {# hour} other {# hours}}.",
+        "APPROVAL_CRITICALLY_LATE": "An approval waiting {days, plural, one {# day} other {# days}} or more.",
+        "HIGH_WORK_OVERDUE": "A high-priority task or work order past its due date.",
+        "URGENT_WORK_DUE_SOON": "High- or critical-priority work due before the end of tomorrow.",
+        "APPROVAL_LATE": "An approval waiting {days, plural, one {# day} other {# days}} or more.",
+        "HIGH_ALERT_OPEN": "A high-severity alert still open after {hours, plural, one {# hour} other {# hours}}.",
+        "WORK_OVERDUE": "Any other open task or work order past its due date.",
+        "WORK_DUE_SOON": "Any other open task or work order due before the end of tomorrow."
+      },
+      "configNote": "These thresholds are the product defaults. Setting them per organization is not available yet.",
+      "listTruncated": "Showing {shown, number} of {total, number} priorities.",
+      "sourcesTitle": "Sources",
+      "source": {
+        "tasks": "Tasks",
+        "workOrders": "Work orders",
+        "approvals": "Approvals",
+        "alerts": "Alerts"
+      },
+      "sourceRead": "Read",
+      "sourceTruncated": "Only the {limit, number} most pressing records were read.",
+      "noneInTier": "Nothing in this tier."
     }
   }
 }

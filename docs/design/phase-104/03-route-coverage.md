@@ -1,7 +1,7 @@
 # Phase 104 — Product Route Design Coverage (Increment 104-G)
 
 ```text
-PHASE104_ROUTE_COVERAGE=292/292
+PHASE104_ROUTE_COVERAGE=293/293
 PHASE104_UNCLASSIFIED_ROUTES=0
 ```
 
@@ -45,7 +45,7 @@ screen in two directions, not two design surfaces.
 | `administration/organization` | 15 |
 | `reports/analytics` | 11 |
 | `authentication` | 7 |
-| `workspace/dashboard` | 6 |
+| `workspace/dashboard` | 7 |
 | `error/not-found/access-denied` | 1 |
 | `alarms` | 1 |
 
@@ -53,7 +53,7 @@ screen in two directions, not two design surfaces.
 
 | Coverage status | Routes |
 |---|---|
-| `COVERED_BY_SHARED_LAYOUT` | 251 |
+| `COVERED_BY_SHARED_LAYOUT` | 252 |
 | `VISUAL_ONLY_STATIC_PUBLIC` | 28 |
 | `COVERED_BY_SHARED_TEMPLATE` | 6 |
 | `MIGRATED_DIRECTLY` | 7 |
