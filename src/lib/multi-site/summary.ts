@@ -34,6 +34,7 @@
 import { getPrisma }                    from "@/lib/db/prisma";
 import { getLatestSnapshot, isStaleSince } from "@/lib/knowledge-graph/builder";
 import { getLatestBenchmark } from "./benchmarks";
+import { projectPersistedPatterns } from "./projection";
 import {
   type EnterpriseIndustrialSummary,
   type BenchmarkSummary,
@@ -79,26 +80,22 @@ function highestRiskSiteIdFrom(rows: Record<string, unknown>[]): string | null {
 /**
  * Cross-site patterns visible to the caller.
  *
- * `CrossSiteFailurePattern.siteIds` is a JSON array, so this cannot be filtered
- * at the database layer — the same reason `/api/multi-site/failure-patterns`
- * filters in memory. The predicate is deliberately IDENTICAL to that route's
- * (a pattern counts when it involves at least one accessible site), so the
- * number on the summary card equals the number of rows the caller sees when
- * they open the failure-patterns page.
+ * The number on the summary card is the number of patterns the caller can actually open: it is the length
+ * of the SAME viewer-safe projection `/api/multi-site/failure-patterns` returns (a pattern counts only
+ * when at least two of the caller's sites each contribute valid, policy-eligible evidence). Counting
+ * stored rows that merely touch one accessible site would disclose that patterns involving hidden sites
+ * exist. A lookup error counts as zero (fail closed).
  */
 async function scopedPatternCount(
   db: Record<string, unknown>,
+  orgId: string,
   benchmarkId: string,
   allowedSiteIds: string[],
 ): Promise<number> {
   const rows = await (db.crossSiteFailurePattern as unknown as PatternModel)
-    .findMany({ where: { benchmarkId }, select: { siteIds: true } })
+    .findMany({ where: { benchmarkId, organizationId: orgId } })
     .catch(() => [] as Record<string, unknown>[]);
-  const allowed = new Set(allowedSiteIds);
-  return rows.filter((r) => {
-    const ids = Array.isArray(r.siteIds) ? (r.siteIds as string[]) : [];
-    return ids.some((sid) => allowed.has(sid));
-  }).length;
+  return (await projectPersistedPatterns(db, orgId, allowedSiteIds, rows)).length;
 }
 
 /**
@@ -211,7 +208,7 @@ export async function getEnterpriseIndustrialSummary(
       // reported to a scoped caller: one NAMES a possibly-inaccessible site, the
       // other counts patterns the caller cannot open.
       highestRiskSiteId = highestRiskSiteIdFrom(riskRows);
-      patternCount      = await scopedPatternCount(db, bm.id, allowedSiteIds);
+      patternCount      = await scopedPatternCount(db, orgId, bm.id, allowedSiteIds);
     }
   }
 

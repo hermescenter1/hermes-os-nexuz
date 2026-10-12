@@ -75,10 +75,11 @@ function matches(row: Record<string, unknown>, where: Record<string, unknown>): 
  * workers. It passed locally and failed on CI (`expected 'bm_1' to be null`).
  * One permanent registration removes the race entirely.
  */
-const { getLatestBenchmarkMock, getLatestSnapshotMock, getPrismaMock } = vi.hoisted(() => ({
+const { getLatestBenchmarkMock, getLatestSnapshotMock, getPrismaMock, projectMock } = vi.hoisted(() => ({
   getLatestBenchmarkMock: vi.fn(),
   getLatestSnapshotMock:  vi.fn(),
   getPrismaMock:          vi.fn(),
+  projectMock:            vi.fn(),
 }));
 
 vi.mock("@/lib/knowledge-graph/builder", () => ({
@@ -92,6 +93,17 @@ vi.mock("../benchmarks", () => ({
 
 vi.mock("@/lib/db/prisma", () => ({
   getPrisma: (...a: unknown[]) => getPrismaMock(...a),
+}));
+
+/**
+ * The pattern count is the length of the viewer-safe PROJECTION (slice B / IR-02). Its real behaviour —
+ * live, policy-eligible cases on two or more of the viewer's sites — is proven against PostgreSQL in
+ * `pg/multi-site-visibility.pg.test.ts`; here only the summary's use of it is pinned. The stand-in keeps
+ * the one rule that matters to the count: a stored pattern is visible only if two of the caller's sites
+ * are among its sites.
+ */
+vi.mock("../projection", () => ({
+  projectPersistedPatterns: (...a: unknown[]) => projectMock(...a),
 }));
 
 /** The latest SUCCESS benchmark, whose stored summary is ORG-WIDE. */
@@ -113,6 +125,10 @@ beforeEach(() => {
 
   getLatestBenchmarkMock.mockReset();
   getLatestBenchmarkMock.mockResolvedValue(BENCHMARK);
+
+  projectMock.mockReset();
+  projectMock.mockImplementation(async (_db: unknown, _org: string, sites: string[], rows: { siteIds: string[] }[]) =>
+    rows.filter((r) => r.siteIds.filter((id) => sites.includes(id)).length >= 2));
 
   getPrismaMock.mockReset();
   getPrismaMock.mockResolvedValue({
@@ -190,10 +206,14 @@ describe("enterprise summary — a member scoped to one of two sites", () => {
     expect(captured.kpi).toMatchObject({ siteId: { in: [ALLOWED] } });
   });
 
-  it("counts only patterns that involve an accessible site", async () => {
+  it("counts only the patterns the viewer-safe projection returns — not stored rows that merely touch an accessible site", async () => {
     const s = await summarize([ALLOWED]);
-    // The stored org-wide count is 2; only one pattern touches the allowed site.
-    expect(s.patternCount).toBe(1);
+    // The stored org-wide count is 2 and one stored pattern touches the allowed site, but a pattern is visible
+    // only with two readable sites: none is, so the card must not reveal that patterns elsewhere exist.
+    expect(s.patternCount).toBe(0);
+    expect(projectMock).toHaveBeenCalledTimes(1);
+    expect(projectMock).toHaveBeenCalledWith(expect.anything(), ORG, [ALLOWED], PATTERN_ROWS);
+    expect(captured.pattern).toMatchObject({ benchmarkId: "bm_1", organizationId: ORG });
   });
 
   it("does not fake scoping by adjusting siteCount alone", async () => {
@@ -210,7 +230,7 @@ describe("enterprise summary — a member scoped to one of two sites", () => {
       highestRisk:    s.riskSummary.highestRiskSiteId,
     }).toEqual({
       siteCount: 1, sitesRanked: 1, sitesCompared: 1,
-      avgRisk: 11, avgAvailability: 90, patternCount: 1, highestRisk: ALLOWED,
+      avgRisk: 11, avgAvailability: 90, patternCount: 0, highestRisk: ALLOWED,
     });
   });
 });
@@ -224,7 +244,8 @@ describe("enterprise summary — an OWNER/ADMIN holding every site", () => {
     expect(s.riskSummary.avgOrgRiskScore).toBe(51);      // mean(91, 11)
     expect(s.kpiSummary.avgOrgAvailability).toBe(70);    // mean(50, 90)
     expect(s.riskSummary.highestRiskSiteId).toBe(FORBIDDEN);
-    expect(s.patternCount).toBe(2);
+    // Only the pattern that spans two readable sites is visible, even to someone who can read both.
+    expect(s.patternCount).toBe(1);
   });
 });
 

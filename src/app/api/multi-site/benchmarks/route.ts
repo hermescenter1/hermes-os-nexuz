@@ -1,8 +1,13 @@
 /**
- * GET  /api/multi-site/benchmarks — Return latest SUCCESS benchmark snapshot.
+ * GET  /api/multi-site/benchmarks — Return the latest SUCCESS benchmark, projected for the caller.
  * POST /api/multi-site/benchmarks — Trigger a new benchmark computation.
  *
- * GET: Returns the latest SUCCESS MultiSiteBenchmark with all child snapshots.
+ * GET: The stored benchmark and its child rows are ORGANISATION-wide. The caller receives a viewer-safe
+ *      projection (see lib/multi-site/projection.ts): only rows of the sites the caller may read (ACTIVE
+ *      sites of the organisation they hold a grant for), rankings and summary recomputed from those rows,
+ *      and failure patterns rebuilt from live, policy-eligible cases that span two or more of their sites.
+ *      Nothing from the stored summary or patterns is forwarded.
+ *      With fewer than two readable sites there is no cross-site comparison to show.
  *      If no benchmark exists: 404 with instructions to POST.
  *      Includes stale: true if computedAt > SNAPSHOT_STALE_HOURS old.
  *
@@ -18,17 +23,17 @@ import { requirePlatformAuth }                  from "@/lib/api/auth";
 import { requireOrgActor }                      from "@/lib/org/context";
 import { requirePermission }                    from "@/lib/org/rbac";
 import { getLatestBenchmark, runBenchmark, isBenchmarkInFlight } from "@/lib/multi-site/benchmarks";
+import { MIN_SITES_FOR_COMPARISON }             from "@/lib/multi-site/types";
+import { projectBenchmark, projectPersistedPatterns } from "@/lib/multi-site/projection";
+import { resolveMultiSiteScope }                from "@/lib/multi-site/scope";
 import { getPrisma }                            from "@/lib/db/prisma";
 import { recordAuditEvent, MULTI_SITE_AUDIT }   from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }                 from "@/lib/api/meter";
-import { getAllowedSiteIds }                     from "@/lib/site/context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type RiskModel = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
-type KPIModel  = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
-type PatModel  = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
+type RowModel = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
 
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
@@ -42,13 +47,15 @@ export async function GET(req: NextRequest) {
 
   meterIndustrialEvent(ctx.orgId, "site_benchmark_queries");
 
-  // Phase 43: scope to user's accessible sites
-  const allowedSiteIds = member.ctx.userId
-    ? await getAllowedSiteIds(member.ctx.userId, ctx.orgId)
-    : undefined;
+  // The viewer's scope: official allowed sites ∩ ACTIVE sites of THIS organisation (server derived).
+  const siteIds = await resolveMultiSiteScope(member.ctx.userId, ctx.orgId);
 
-  if (allowedSiteIds !== undefined && allowedSiteIds.length === 0) {
+  if (siteIds.length === 0) {
     return NextResponse.json({ data: null, reason: "No accessible sites." });
+  }
+  // Decided from the caller's OWN scope, before any benchmark is read: no hint whether one exists.
+  if (siteIds.length < MIN_SITES_FOR_COMPARISON) {
+    return NextResponse.json({ data: null, reason: "Insufficient accessible sites for a cross-site benchmark." });
   }
 
   const bm = await getLatestBenchmark(ctx.orgId);
@@ -59,30 +66,29 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Load child snapshots filtered to allowed sites
   const prisma = await getPrisma();
-  const db     = prisma as unknown as Record<string, unknown> | null;
+  if (!prisma) return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
+  const db = prisma as unknown as Record<string, unknown>;
 
-  const siteFilter = allowedSiteIds ? { siteId: { in: allowedSiteIds } } : {};
-
-  const [riskSnaps, kpiSnaps, patterns] = db ? await Promise.all([
-    (db.siteRiskSnapshot as unknown as RiskModel).findMany({
-      where: { benchmarkId: bm.id, ...siteFilter }, orderBy: [{ avgRiskScore: "desc" as unknown as undefined }],
-    }),
-    (db.siteKPIComparison as unknown as KPIModel).findMany({
-      where: { benchmarkId: bm.id, ...siteFilter }, orderBy: [{ avgAvailability: "desc" as unknown as undefined }],
-    }),
-    (db.crossSiteFailurePattern as unknown as PatModel).findMany({
-      where: { benchmarkId: bm.id }, orderBy: [{ siteCount: "desc" as unknown as undefined }],
-    }),
-  ]) : [[], [], []];
+  // Child rows are read with the site predicate inside the query; the pattern rows are organisation-wide
+  // cache and are only ever handed to the projection, never to the response.
+  const [riskRows, kpiRows, patternRows] = await Promise.all([
+    (db.siteRiskSnapshot as unknown as RowModel).findMany({ where: { benchmarkId: bm.id, organizationId: ctx.orgId, siteId: { in: siteIds } } }),
+    (db.siteKPIComparison as unknown as RowModel).findMany({ where: { benchmarkId: bm.id, organizationId: ctx.orgId, siteId: { in: siteIds } } }),
+    (db.crossSiteFailurePattern as unknown as RowModel).findMany({ where: { benchmarkId: bm.id, organizationId: ctx.orgId } }),
+  ]);
+  const patterns = await projectPersistedPatterns(db, ctx.orgId, siteIds, patternRows);
+  const projected = projectBenchmark(bm, riskRows, kpiRows, patterns, siteIds);
+  if (!projected) {
+    return NextResponse.json({ data: null, reason: "Insufficient accessible sites for a cross-site benchmark." });
+  }
 
   return NextResponse.json({
-    benchmark:    bm,
-    riskRanking:  riskSnaps,
-    kpiComparison: kpiSnaps,
-    failurePatterns: patterns,
-    computing:    isBenchmarkInFlight(ctx.orgId),
+    benchmark:       projected.benchmark,
+    riskRanking:     projected.riskRanking,
+    kpiComparison:   projected.kpiComparison,
+    failurePatterns: projected.failurePatterns,
+    computing:       isBenchmarkInFlight(ctx.orgId),
   });
 }
 
@@ -105,10 +111,8 @@ export async function POST(req: NextRequest) {
 
   meterIndustrialEvent(ctx.orgId, "site_benchmark_runs");
 
-  // Phase 43: scope benchmark run to user's accessible sites
-  const allowedSiteIds = member.ctx.userId
-    ? await getAllowedSiteIds(member.ctx.userId, ctx.orgId)
-    : undefined;
+  // Phase 43: scope benchmark run to the caller's accessible (ACTIVE) sites
+  const allowedSiteIds = await resolveMultiSiteScope(member.ctx.userId, ctx.orgId);
 
   try {
     const result = await runBenchmark(ctx.orgId, allowedSiteIds);
