@@ -8,6 +8,7 @@
  */
 
 import { getFailureKnowledge }      from "./failures";
+import type { GraphViewerScope }    from "@/lib/knowledge-graph/visibility";
 import { getRootCauseCandidates }   from "./rootcauses";
 import { getRecommendedProcedures } from "./procedures";
 import { assembleKnowledgeEvidence } from "./evidence";
@@ -29,12 +30,13 @@ export interface KnowledgeRecommendationBundle {
 export async function buildKnowledgeRecommendations(
   organizationId: string,
   assetId:        string,
-  assetType?:     string,
-  symptoms?:      string[],
+  assetType:      string | undefined,
+  symptoms:       string[] | undefined,
+  scope:          GraphViewerScope | null,
 ): Promise<KnowledgeRecommendationBundle> {
   const [failureKnowledge, rootCauseCandidates, procedureRecommendations, assembledEvidence] =
     await Promise.all([
-      getFailureKnowledge(organizationId, assetId, assetType, symptoms),
+      getFailureKnowledge(organizationId, assetId, assetType, symptoms, scope),
       getRootCauseCandidates(organizationId, assetId, assetType),
       getRecommendedProcedures(organizationId, assetId, assetType),
       assembleKnowledgeEvidence(organizationId, assetId),

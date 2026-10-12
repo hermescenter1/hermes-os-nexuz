@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   meterIndustrialEvent(ctx.orgId, "knowledge_queries");
 
   if (q) {
-    const results = await searchKnowledge(ctx.orgId, q, ["article"], limit);
+    const results = await searchKnowledge(ctx.orgId, q, ["article"], limit, null);
     recordAuditEvent({ action: KNOWLEDGE_AUDIT.KNOWLEDGE_QUERY, entityType: "knowledge", userId: ctx.userId ?? undefined, metadata: { organizationId: ctx.orgId, query: q, type: "article" } });
     return NextResponse.json({ results });
   }

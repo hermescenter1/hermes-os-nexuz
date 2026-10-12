@@ -9,6 +9,7 @@
  */
 
 import { getAssetKnowledgeGraph, getFailureModeGraph, getProcedureImpactGraph, getRootCauseGraph, findShortestEvidencePath, type IGNodeRecord, type IGEdgeRecord, type IGStaleness } from "./query";
+import type { GraphViewerScope } from "./visibility";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -102,10 +103,10 @@ function nodeById(nodes: IGNodeRecord[], id: string): IGNodeRecord | undefined {
  * → (CAUSED_BY) → root causes.
  */
 export async function explainAssetRisk(
-  orgId:   string,
+  scope:   GraphViewerScope,
   assetId: string,
 ): Promise<AssetRiskExplanation> {
-  const { rootNode, nodes, edges, staleness } = await getAssetKnowledgeGraph(orgId, assetId, 4);
+  const { rootNode, nodes, edges, staleness } = await getAssetKnowledgeGraph(scope, assetId, 4);
 
   if (!rootNode) {
     return { assetId, assetLabel: null, riskNodes: [], failureModes: [], rootCauses: [], procedures: [], overallRisk: "UNKNOWN", staleness };
@@ -157,10 +158,10 @@ export async function explainAssetRisk(
  * was observed on, which engineering cases document it.
  */
 export async function explainFailureMode(
-  orgId:         string,
+  scope:         GraphViewerScope,
   failureModeId: string,
 ): Promise<FailureModeExplanation> {
-  const { rootNode, nodes, edges, staleness } = await getFailureModeGraph(orgId, failureModeId, 4);
+  const { rootNode, nodes, edges, staleness } = await getFailureModeGraph(scope, failureModeId, 4);
 
   if (!rootNode) {
     return { failureModeId, failureModeLabel: null, rootCauses: [], procedures: [], affectedAssets: [], engineeringCases: [], staleness };
@@ -198,10 +199,10 @@ export async function explainFailureMode(
  * and which assets are affected by those failure modes.
  */
 export async function explainProcedureRecommendation(
-  orgId:       string,
+  scope:       GraphViewerScope,
   procedureId: string,
 ): Promise<ProcedureRecommendationExplanation> {
-  const { rootNode, nodes, edges, staleness } = await getProcedureImpactGraph(orgId, procedureId, 4);
+  const { rootNode, nodes, edges, staleness } = await getProcedureImpactGraph(scope, procedureId, 4);
 
   if (!rootNode) {
     return { procedureId, procedureLabel: null, mitigates: [], applicableAssets: [], evidencePath: [], staleness };
@@ -241,10 +242,10 @@ export async function explainProcedureRecommendation(
  * affected assets, supporting engineering cases.
  */
 export async function explainRootCauseCandidate(
-  orgId:       string,
+  scope:       GraphViewerScope,
   rootCauseId: string,
 ): Promise<RootCauseExplanation> {
-  const { rootNode, nodes, edges, staleness } = await getRootCauseGraph(orgId, rootCauseId, 4);
+  const { rootNode, nodes, edges, staleness } = await getRootCauseGraph(scope, rootCauseId, 4);
 
   if (!rootNode) {
     return { rootCauseId, rootCauseLabel: null, confidenceWeight: 0, parentFailureMode: null, affectedAssets: [], engineeringCases: [], evidencePath: [], staleness };
@@ -288,7 +289,7 @@ export async function explainRootCauseCandidate(
   if (affectedAssets[0]) {
     const sampleAssetEntityId = affectedAssets[0].entityId;
     const pathResult = await findShortestEvidencePath(
-      orgId,
+      scope,
       nodes.find(n => n.nodeType === "ASSET" && n.entityId === sampleAssetEntityId)?.id ?? "",
       rootNode.id,
       6,

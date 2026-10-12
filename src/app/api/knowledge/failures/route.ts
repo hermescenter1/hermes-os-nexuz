@@ -2,6 +2,7 @@ import { NextRequest, NextResponse }               from "next/server";
 import { requirePlatformAuth }                      from "@/lib/api/auth";
 import { requireOrgActor }                          from "@/lib/org/context";
 import { requirePermission }                        from "@/lib/org/rbac";
+import { resolveGraphViewerScope }                from "@/lib/knowledge-graph/visibility";
 import { getAllowedSiteIds }                         from "@/lib/site/context";
 import { getAsset }                                 from "@/lib/industrial/assets";
 import { listFailureModes, createFailureMode, getFailureKnowledge } from "@/lib/knowledge/failures";
@@ -36,7 +37,11 @@ export async function GET(req: NextRequest) {
     if (!asset || !allowedSiteIds.includes(asset.siteId)) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
     }
-    const knowledge = await getFailureKnowledge(ctx.orgId, assetId, assetType, symptoms.length > 0 ? symptoms : undefined);
+    const knowledge = await getFailureKnowledge(
+      ctx.orgId, assetId, assetType, symptoms.length > 0 ? symptoms : undefined,
+      // RV-01: related cases follow the shared case visibility policy
+      await resolveGraphViewerScope(member.ctx.userId, ctx.orgId, member.ctx.role),
+    );
     recordAuditEvent({ action: KNOWLEDGE_AUDIT.KNOWLEDGE_QUERY, entityType: "failure", userId: ctx.userId ?? undefined, metadata: { organizationId: ctx.orgId, assetId } });
     return NextResponse.json({ knowledge });
   }

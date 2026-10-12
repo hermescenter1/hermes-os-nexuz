@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockCaseScope } from "./case-scope-fakes";
 import { NextRequest } from "next/server";
 
 /**
@@ -77,7 +78,7 @@ function engCase(id: string, organizationId: string, over: Row = {}): Row {
   return {
     id, organizationId, title: `Case ${id}`, titleNorm: `case ${id}`, symptoms: [],
     diagnosis: null, resolution: "secret resolution", lessonsLearned: null, assetTypes: [],
-    assetId: null, siteId: null, failureModeId: null, keywords: [], status: "open",
+    assetId: null, siteId: "site-A", failureModeId: null, keywords: [], status: "open",
     severity: "MEDIUM", reportedById: null, resolvedAt: null, createdAt: ISO, updatedAt: ISO, ...over,
   };
 }
@@ -133,6 +134,8 @@ async function loadRoute(routePath: string, auth: AuthState, actorOrg = ORG_A) {
   }));
   vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => tables }));
   vi.doMock("@/lib/api/meter", () => ({ meterIndustrialEvent: meterSpy }));
+  // RV-01: case visibility is a database-side policy; see case-scope-fakes.ts for what is faked.
+  mockCaseScope(vi, () => tables.industrialEngineeringCase.rows);
 
   return import(routePath);
 }
@@ -389,7 +392,7 @@ describe("Search isolation — org-scoped search route", () => {
 describe("Create ownership binding — new records bind to the server-derived org", () => {
   const CREATES = [
     { name: "article", path: "../articles/route", table: "industrialKnowledgeArticle", key: "article", body: { title: "New", summary: "s", content: "c" } },
-    { name: "case", path: "../cases/route", table: "industrialEngineeringCase", key: "case", body: { title: "New" } },
+    { name: "case", path: "../cases/route", table: "industrialEngineeringCase", key: "case", body: { title: "New", siteId: "site-A" } },
     { name: "failure mode", path: "../failures/route", table: "industrialFailureMode", key: "failureMode", body: { name: "New", description: "d" } },
     { name: "procedure", path: "../procedures/route", table: "industrialMaintenanceProcedure", key: "procedure", body: { title: "New", description: "d" } },
   ] as const;
