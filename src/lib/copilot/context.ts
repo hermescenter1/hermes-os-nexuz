@@ -6,6 +6,10 @@
  *
  * INJECTION BOUNDARY: all strings from industrial data pass through escapeUntrustedData().
  * READ-ONLY: imports only list/get functions, never write/ingest/control functions.
+ *
+ * SITE SCOPE (slice C, IR-03): every builder takes a server-built {@link CopilotScope}. An asset, site or
+ * graph outside `scope.siteIds` (the actor's readable ACTIVE sites) is "not found"; there is no
+ * organisation-wide entry point.
  */
 
 import { getPrisma }           from "@/lib/db/prisma";
@@ -17,6 +21,7 @@ import { listTagsForAsset }    from "@/lib/digital-twin/tags";
 import { getAlarmFrequency }   from "@/lib/time-series/alarms";
 import { getPeriodRange }      from "@/lib/time-series/periods";
 import { escapeUntrustedData } from "./safety";
+import type { CopilotScope } from "./scope";
 import type { AssetRecord, SiteRecord } from "@/lib/industrial/types";
 import type { TwinNodeRecord }          from "@/lib/digital-twin/types";
 
@@ -65,27 +70,32 @@ type TelemetryModel = {
   findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
 };
 
-export async function getAssetContextSummary(
-  organizationId: string,
-  assetId:        string,
-): Promise<AssetContextSummary | null> {
+type AssetModel = { findFirst: (a: unknown) => Promise<Record<string, unknown> | null> };
+
+/** The asset row, only if it is the organisation's AND stands on one of the scope's sites. */
+async function scopedAsset(scope: CopilotScope, assetId: string): Promise<Record<string, unknown> | null> {
+  if (scope.siteIds.length === 0) return null;
   const prisma = await getPrisma();
   if (!prisma) return null;
-
   const db = prisma as unknown as Record<string, unknown>;
-
-  // Load asset record directly
-  type AssetModel = { findFirst: (a: unknown) => Promise<Record<string, unknown> | null> };
-  const rawAsset = await (db.industrialAsset as unknown as AssetModel).findFirst({
-    where: { id: assetId, organizationId },
+  return (db.industrialAsset as unknown as AssetModel).findFirst({
+    where: { id: assetId, organizationId: scope.organizationId, siteId: { in: [...scope.siteIds] } },
   });
+}
+
+export async function getAssetContextSummary(
+  scope:   CopilotScope,
+  assetId: string,
+): Promise<AssetContextSummary | null> {
+  const organizationId = scope.organizationId;
+  const rawAsset = await scopedAsset(scope, assetId);
   if (!rawAsset) return null;
 
   const range = getPeriodRange("last24Hours");
   const [health, alarmFreq, tags] = await Promise.all([
     calculateHealthScore({ organizationId, assetId, assetStatus: rawAsset.status as string }),
     getAlarmFrequency(organizationId, assetId, range),
-    listTagsForAsset(assetId, organizationId),
+    listTagsForAsset(assetId, organizationId, { allowedSiteIds: [...scope.siteIds] }),
   ]);
 
   return {
@@ -101,18 +111,20 @@ export async function getAssetContextSummary(
 }
 
 export async function getSiteContextSummary(
-  organizationId: string,
-  siteId:         string,
+  scope:  CopilotScope,
+  siteId: string,
 ): Promise<SiteContextSummary | null> {
+  if (!scope.siteIds.includes(siteId)) return null;
+  const organizationId = scope.organizationId;
   const sites  = await listSites(organizationId);
   const site   = sites.find((s) => s.id === siteId);
   if (!site) return null;
 
-  const allAssets = await listAssets(organizationId, { siteId });
+  const allAssets = await listAssets(organizationId, { siteId, allowedSiteIds: [...scope.siteIds] });
   const capped    = allAssets.slice(0, MAX_ASSETS_IN_CONTEXT);
 
   const assetSummaries = await Promise.all(
-    capped.map((a) => getAssetContextSummary(organizationId, a.id)),
+    capped.map((a) => getAssetContextSummary(scope, a.id)),
   );
 
   return {
@@ -125,12 +137,14 @@ export async function getSiteContextSummary(
   };
 }
 
+/** The actor's readable part of the organisation — never every site of it. */
 export async function getOrganizationContextSummary(
-  organizationId: string,
+  scope: CopilotScope,
 ): Promise<OrgContextSummary> {
-  const allSites  = await listSites(organizationId);
+  const organizationId = scope.organizationId;
+  const allSites  = (await listSites(organizationId)).filter((s) => scope.siteIds.includes(s.id));
   const capped    = allSites.slice(0, MAX_SITES_IN_CONTEXT);
-  const allAssets = await listAssets(organizationId);
+  const allAssets = await listAssets(organizationId, { allowedSiteIds: [...scope.siteIds] });
 
   return {
     organizationId,
@@ -146,14 +160,16 @@ export async function getOrganizationContextSummary(
 }
 
 export async function getTelemetryContextSummary(
-  organizationId: string,
-  assetId:        string,
-  tag:            string,
+  scope:   CopilotScope,
+  assetId: string,
+  tag:     string,
 ): Promise<TelemetryContextSummary> {
-  const prisma = await getPrisma();
+  const organizationId = scope.organizationId;
   const empty: TelemetryContextSummary = {
     assetId, tag, lastValue: null, lastReceivedAt: null, quality: null,
   };
+  if (!(await scopedAsset(scope, assetId))) return empty;
+  const prisma = await getPrisma();
   if (!prisma) return empty;
 
   const db  = prisma as unknown as Record<string, unknown>;
@@ -173,10 +189,11 @@ export async function getTelemetryContextSummary(
 }
 
 export async function getDigitalTwinContextSummary(
-  organizationId: string,
-  siteId:         string,
+  scope:  CopilotScope,
+  siteId: string,
 ): Promise<{ nodeCount: number; relationCount: number; nodes: TwinNodeRecord[]; moreNodes: number } | null> {
-  const graph = await getAssetGraph(organizationId, siteId);
+  if (!scope.siteIds.includes(siteId)) return null;
+  const graph = await getAssetGraph(scope.organizationId, siteId);
   if (!graph) return null;
 
   const nodes   = [...graph.nodes.values()];

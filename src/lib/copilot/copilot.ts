@@ -5,15 +5,22 @@
  * Safety check → intent → context → insights → recommendations → confidence → format.
  *
  * READ-ONLY INVARIANT: No control commands, no PLC writes, no actuator actions.
+ *
+ * SITE SCOPE (slice C, IR-03): the engine runs only with a server-built {@link CopilotScope}
+ * (./scope.ts). Every asset, site, telemetry and Digital Twin read below is bounded by it; there is no
+ * organisation-wide entry point and no client value reaches a reader unchecked. Conversations are the
+ * owner's own, and a stored answer is shown again only while the sites it was built from are still
+ * readable by the current actor (see {@link getConversation}).
  */
 
 import { getPrisma }                  from "@/lib/db/prisma";
 import { checkSafetyGuard }           from "./safety";
 import { classifyIntent }             from "./intent";
-import { generateInsights, listInsights } from "./insights";
+import { generateInsights }       from "./insights";
+import { effectiveSiteIds, type CopilotScope } from "./scope";
 import { generateRecommendations }    from "./recommendations";
 import { scoreConfidence, isInsufficientData, INSUFFICIENT_DATA_RESPONSE_EN } from "./confidence";
-import { getAssetContextSummary, getSiteContextSummary } from "./context";
+import { getAssetContextSummary } from "./context";
 import { getUpstreamAssets, getDownstreamAssets }        from "@/lib/digital-twin/graph";
 import { getAlarmFrequency }          from "@/lib/time-series/alarms";
 import { calculateAvailability }      from "@/lib/time-series/kpi";
@@ -34,6 +41,10 @@ type MsgModel = {
   findMany: (a: unknown) => Promise<Record<string, unknown>[]>;
 };
 type TelemetryModel = { findFirst: (a: unknown) => Promise<Record<string, unknown> | null> };
+type TwinNodeModel  = { findMany:  (a: unknown) => Promise<Record<string, unknown>[]> };
+
+/** Upper bound of messages returned for one conversation. */
+const MAX_MESSAGES_PER_CONVERSATION = 500;
 type CountModel     = { count:     (a: unknown) => Promise<number> };
 
 function rowToConv(r: Record<string, unknown>): ConversationRecord {
@@ -72,34 +83,66 @@ export async function createConversation(
   return rowToConv(row);
 }
 
+/**
+ * May the CURRENT actor see a stored assistant answer?
+ *
+ * Every answer stored since slice C records the sites it was built from (`metadata.scope.siteIds`); it is
+ * shown only while every one of them is still readable. An answer stored before that carries no site
+ * attribution, and its counts may have been computed from the whole organisation, so it is withheld
+ * rather than guessed about. Free text cannot be sanitised reliably; it is not attempted.
+ */
+export function storedAnswerReadable(metadata: Record<string, unknown>, readableSiteIds: readonly string[]): boolean {
+  const scope = metadata.scope;
+  if (!scope || typeof scope !== "object") return false;
+  const sites = (scope as Record<string, unknown>).siteIds;
+  if (!Array.isArray(sites) || !sites.every((s) => typeof s === "string" && s.length > 0)) return false;
+  return sites.every((s) => readableSiteIds.includes(s as string));
+}
+
+/** A withheld assistant answer keeps its place in the thread but carries nothing site-derived. */
+function withheld(m: MessageRecord): MessageRecord {
+  return { ...m, content: "", metadata: { withheld: true } };
+}
+
+/**
+ * The actor's OWN conversation (a conversation of another member is "not found", like a missing one), with
+ * every assistant answer re-authorised against the actor's CURRENT readable sites.
+ */
 export async function getConversation(
-  id:             string,
-  organizationId: string,
+  id:     string,
+  viewer: { organizationId: string; userId: string; siteIds: readonly string[] },
 ): Promise<{ conversation: ConversationRecord; messages: MessageRecord[] } | null> {
+  if (!viewer.userId) return null;
   const prisma = await getPrisma();
   if (!prisma) return null;
   const db  = prisma as unknown as Record<string, unknown>;
   const row = await (db.copilotConversation as unknown as ConvModel).findFirst({
-    where: { id, organizationId },
+    where: { id, organizationId: viewer.organizationId, userId: viewer.userId },
   });
   if (!row) return null;
   const msgs = await (db.copilotMessage as unknown as MsgModel).findMany({
     where:   { conversationId: id },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    take:    MAX_MESSAGES_PER_CONVERSATION,
   });
-  return { conversation: rowToConv(row), messages: msgs.map(rowToMsg) };
+  const messages = msgs.map(rowToMsg).map((m) =>
+    m.role === "ASSISTANT" && !storedAnswerReadable(m.metadata, viewer.siteIds) ? withheld(m) : m);
+  return { conversation: rowToConv(row), messages };
 }
 
+/** The actor's own conversations only. */
 export async function listConversations(
   organizationId: string,
+  userId:         string,
   limit           = 20,
 ): Promise<ConversationRecord[]> {
+  if (!userId) return [];
   const prisma = await getPrisma();
   if (!prisma) return [];
   const db   = prisma as unknown as Record<string, unknown>;
   const rows = await (db.copilotConversation as unknown as ConvModel).findMany({
-    where:   { organizationId },
-    orderBy: { updatedAt: "desc" },
+    where:   { organizationId, userId },
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
     take:    limit,
   });
   return rows.map(rowToConv);
@@ -119,12 +162,13 @@ async function appendMessage(
 }
 
 export async function generateResponse(
-  organizationId: string,
-  query:          string,
-  assetId?:       string,
-  siteId?:        string,
-  locale          = "en",
+  scope:  CopilotScope,
+  query:  string,
+  locale  = "en",
 ): Promise<CopilotResponse> {
+  const organizationId = scope.organizationId;
+  const assetId = scope.asset?.id;
+  const siteId  = scope.siteId ?? undefined;
   const prisma = await getPrisma();
   const db     = prisma ? (prisma as unknown as Record<string, unknown>) : null;
 
@@ -145,7 +189,7 @@ export async function generateResponse(
 
   // ── 3. Gather context and insights ────────────────────────────────────────
   const range24h     = getPeriodRange("last24Hours");
-  const insights     = await generateInsights(organizationId, siteId);
+  const insights     = await generateInsights(scope);
   const assetInsights = assetId
     ? insights.filter((i) => i.assetId === assetId)
     : insights;
@@ -153,11 +197,23 @@ export async function generateResponse(
   const observations: CopilotObservation[] = [];
 
   // ── 4. Intent-specific observations ───────────────────────────────────────
-  if (intent === "dependency_question" && assetId) {
-    const [up, down] = await Promise.all([
-      getUpstreamAssets(assetId, organizationId).catch(() => ({ nodes: [], cycleDetected: false, truncated: false })),
-      getDownstreamAssets(assetId, organizationId).catch(() => ({ nodes: [], cycleDetected: false, truncated: false })),
-    ]);
+  if (intent === "dependency_question" && assetId && db) {
+    // The traversal starts at the asset's Digital Twin node, looked up inside the scope's sites, and
+    // never leaves those sites.
+    const startNodes = await (db.digitalTwinNode as unknown as TwinNodeModel).findMany({
+      where:   { organizationId, assetId, siteId: { in: [...scope.siteIds] } },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select:  { id: true },
+      take:    1,
+    }).catch(() => [] as Record<string, unknown>[]);
+    const startNodeId = typeof startNodes[0]?.id === "string" ? (startNodes[0].id as string) : null;
+    const none = { nodes: [], cycleDetected: false, truncated: false };
+    const [up, down] = startNodeId
+      ? await Promise.all([
+          getUpstreamAssets(startNodeId, organizationId, scope.siteIds).catch(() => none),
+          getDownstreamAssets(startNodeId, organizationId, scope.siteIds).catch(() => none),
+        ])
+      : [none, none];
     if (up.nodes.length > 0 || down.nodes.length > 0) {
       const evidence: CopilotEvidence[] = [
         ...up.nodes.map((n) => ({ type: "asset" as const, assetId: n.assetId ?? undefined, description: `Upstream: ${n.displayName}` })),
@@ -197,7 +253,7 @@ export async function generateResponse(
   }
 
   if (intent === "health_question" && assetId) {
-    const ctx = await getAssetContextSummary(organizationId, assetId).catch(() => null);
+    const ctx = await getAssetContextSummary(scope, assetId).catch(() => null);
     if (ctx) {
       observations.push({
         title:       "Asset health",
@@ -262,30 +318,31 @@ export async function generateResponse(
 }
 
 export async function sendMessage(
-  organizationId: string,
+  scope:          CopilotScope,
   conversationId: string,
   content:        string,
-  assetId?:       string,
-  siteId?:        string,
   locale          = "en",
 ): Promise<{ userMessage: MessageRecord; assistantMessage: MessageRecord; response: CopilotResponse } | null> {
+  if (!scope.userId) return null;
   const prisma = await getPrisma();
   if (!prisma) return null;
   const db = prisma as unknown as Record<string, unknown>;
 
-  // Verify conversation belongs to org
+  // The conversation must be the actor's own, in this organisation (one of another member is "not found").
   const conv = await (db.copilotConversation as unknown as ConvModel).findFirst({
-    where: { id: conversationId, organizationId },
+    where: { id: conversationId, organizationId: scope.organizationId, userId: scope.userId },
   });
   if (!conv) return null;
 
   const userMsg   = await appendMessage(db, conversationId, "USER",      content);
-  const response  = await generateResponse(organizationId, content, assetId, siteId, locale);
+  const response  = await generateResponse(scope, content, locale);
   const assistMsg = await appendMessage(db, conversationId, "ASSISTANT", response.summary, {
     intent:      response.intent,
     confidence:  response.confidence,
     insightCount: response.insights.length,
     recCount:    response.recommendations.length,
+    // Site attribution: the answer is shown again only while these sites stay readable.
+    scope:       { siteIds: effectiveSiteIds(scope) },
   });
 
   return { userMessage: userMsg, assistantMessage: assistMsg, response };

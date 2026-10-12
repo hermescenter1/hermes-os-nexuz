@@ -11,6 +11,7 @@ import { getPrisma }     from "@/lib/db/prisma";
 import { rowToNode }     from "./nodes";
 import { rowToRelation, buildAdjacency, traverseDownstream, traverseUpstream } from "./relations";
 import { TWIN_LIMITS }   from "./schemas";
+import { MAX_TRAVERSAL_DEPTH } from "./types";
 import type {
   AssetGraph, GraphNode, TwinNodeRecord, TwinRelationRecord,
   DigitalTwinRelationType,
@@ -128,56 +129,107 @@ export async function getNodeRelations(
   };
 }
 
+/** Hard ceiling of nodes one scoped traversal may return (Copilot context, Brain context). */
+export const MAX_TRAVERSAL_RESULT_NODES = 200;
+
+export interface ScopedTraversalOptions {
+  /** Requested depth; clamped to 1..MAX_TRAVERSAL_DEPTH. */
+  maxDepth?: number;
+  /** Requested result size; clamped to 1..MAX_TRAVERSAL_RESULT_NODES. */
+  maxNodes?: number;
+}
+
+export interface ScopedTraversalResult {
+  nodes:         TwinNodeRecord[];
+  cycleDetected: boolean;
+  /** true when depth, result size or the relation read hit its ceiling — the answer is NOT the complete graph. */
+  truncated:     boolean;
+}
+
+const isId = (v: unknown): v is string => typeof v === "string" && v.length > 0;
+const clamp = (v: number | undefined, lo: number, hi: number, dflt: number): number =>
+  Math.min(hi, Math.max(lo, Number.isFinite(v) ? Math.trunc(v as number) : dflt));
+
 /**
- * Get all assets upstream of the given node (following directed + bidirectional edges backward).
- * Cycle-safe; will not recurse beyond MAX_TRAVERSAL_DEPTH.
+ * Corrective slice C (IR-03). A traversal used to read EVERY relation of the organisation and every node it
+ * reached, whatever its site, with no bound. Now:
+ *   - the start node must itself lie on one of `allowedSiteIds` (otherwise: nothing);
+ *   - only relations whose BOTH endpoints are on allowed sites are read (in the query, bounded and ordered),
+ *     so a traversal can neither reach nor name a node of another site;
+ *   - depth and result size are clamped to server maxima, and `truncated` says when a ceiling was hit;
+ *   - the order is deterministic (relations by createdAt, id; results in traversal order).
+ * An empty `allowedSiteIds` returns nothing.
+ */
+async function scopedTraversal(
+  direction:      "up" | "down",
+  nodeId:         string,
+  organizationId: string,
+  allowedSiteIds: readonly string[],
+  opts:           ScopedTraversalOptions,
+): Promise<ScopedTraversalResult> {
+  const empty: ScopedTraversalResult = { nodes: [], cycleDetected: false, truncated: false };
+  const sites = Array.from(new Set(allowedSiteIds.filter(isId)));
+  if (!isId(nodeId) || !isId(organizationId) || sites.length === 0) return empty;
+  const prisma = await getPrisma();
+  if (!prisma) return empty;
+  const nodeModel = prisma.digitalTwinNode as unknown as NodeModel;
+
+  const start = await nodeModel.findMany({ where: { id: nodeId, organizationId, siteId: { in: sites } }, select: { id: true }, take: 1 });
+  if (start.length === 0) return empty;
+
+  const relLimit = TWIN_LIMITS.GRAPH_RELATIONS;
+  const rawRels = await (prisma.digitalTwinRelation as unknown as RelModel).findMany({
+    where: {
+      organizationId,
+      sourceNode: { organizationId, siteId: { in: sites } },
+      targetNode: { organizationId, siteId: { in: sites } },
+    },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    take:    relLimit + 1,
+  });
+  const relationsTruncated = rawRels.length > relLimit;
+  const { forward, backward } = buildAdjacency(rawRels.slice(0, relLimit).map(rowToRelation));
+
+  const maxDepth = clamp(opts.maxDepth, 1, MAX_TRAVERSAL_DEPTH, MAX_TRAVERSAL_DEPTH);
+  const maxNodes = clamp(opts.maxNodes, 1, MAX_TRAVERSAL_RESULT_NODES, MAX_TRAVERSAL_RESULT_NODES);
+  const walk = direction === "up" ? traverseUpstream(nodeId, backward, maxDepth) : traverseDownstream(nodeId, forward, maxDepth);
+  const ids = walk.nodeIds.slice(0, maxNodes);
+  const truncated = walk.truncated || relationsTruncated || walk.nodeIds.length > maxNodes;
+  if (ids.length === 0) return { nodes: [], cycleDetected: walk.cycleDetected, truncated };
+
+  const rawNodes = await nodeModel.findMany({
+    where: { organizationId, siteId: { in: sites }, id: { in: ids } },
+    take:  maxNodes,
+  });
+  const order = new Map(ids.map((id, i) => [id, i]));
+  const nodes = rawNodes.map(rowToNode).filter((n) => order.has(n.id)).sort((a, b) => order.get(a.id)! - order.get(b.id)!);
+  return { nodes, cycleDetected: walk.cycleDetected, truncated };
+}
+
+/**
+ * Nodes upstream of the given node (following directed + bidirectional edges backward), within
+ * `allowedSiteIds` only. Cycle-safe, depth- and size-bounded (see {@link scopedTraversal}).
  */
 export async function getUpstreamAssets(
   nodeId:         string,
   organizationId: string,
-): Promise<{ nodes: TwinNodeRecord[]; cycleDetected: boolean; truncated: boolean }> {
-  const prisma = await getPrisma();
-  if (!prisma) return { nodes: [], cycleDetected: false, truncated: false };
-
-  const rawRels = await (prisma.digitalTwinRelation as unknown as RelModel).findMany({
-    where: { organizationId },
-  });
-  const relations = rawRels.map(rowToRelation);
-  const { backward } = buildAdjacency(relations);
-  const { nodeIds, cycleDetected, truncated } = traverseUpstream(nodeId, backward);
-
-  if (nodeIds.length === 0) return { nodes: [], cycleDetected, truncated };
-
-  const rawNodes = await (prisma.digitalTwinNode as unknown as NodeModel).findMany({
-    where: { organizationId, id: { in: nodeIds } },
-  });
-  return { nodes: rawNodes.map(rowToNode), cycleDetected, truncated };
+  allowedSiteIds: readonly string[],
+  opts:           ScopedTraversalOptions = {},
+): Promise<ScopedTraversalResult> {
+  return scopedTraversal("up", nodeId, organizationId, allowedSiteIds, opts);
 }
 
 /**
- * Get all assets downstream of the given node (following directed + bidirectional edges forward).
- * Cycle-safe; will not recurse beyond MAX_TRAVERSAL_DEPTH.
+ * Nodes downstream of the given node (following directed + bidirectional edges forward), within
+ * `allowedSiteIds` only. Cycle-safe, depth- and size-bounded (see {@link scopedTraversal}).
  */
 export async function getDownstreamAssets(
   nodeId:         string,
   organizationId: string,
-): Promise<{ nodes: TwinNodeRecord[]; cycleDetected: boolean; truncated: boolean }> {
-  const prisma = await getPrisma();
-  if (!prisma) return { nodes: [], cycleDetected: false, truncated: false };
-
-  const rawRels = await (prisma.digitalTwinRelation as unknown as RelModel).findMany({
-    where: { organizationId },
-  });
-  const relations = rawRels.map(rowToRelation);
-  const { forward } = buildAdjacency(relations);
-  const { nodeIds, cycleDetected, truncated } = traverseDownstream(nodeId, forward);
-
-  if (nodeIds.length === 0) return { nodes: [], cycleDetected, truncated };
-
-  const rawNodes = await (prisma.digitalTwinNode as unknown as NodeModel).findMany({
-    where: { organizationId, id: { in: nodeIds } },
-  });
-  return { nodes: rawNodes.map(rowToNode), cycleDetected, truncated };
+  allowedSiteIds: readonly string[],
+  opts:           ScopedTraversalOptions = {},
+): Promise<ScopedTraversalResult> {
+  return scopedTraversal("down", nodeId, organizationId, allowedSiteIds, opts);
 }
 
 /**

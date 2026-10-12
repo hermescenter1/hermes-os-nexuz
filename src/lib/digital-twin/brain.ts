@@ -66,21 +66,25 @@ export async function getFactoryTopology(
 /**
  * Get full operational context for a single asset node.
  * Includes health score, tag paths, and first-degree neighbors.
+ *
+ * Slice C (IR-03): `allowedSiteIds` is REQUIRED — the caller's readable ACTIVE sites. A node on any other
+ * site is "not found", and the neighbours are limited to the same sites.
  */
 export async function getAssetContext(
   nodeId:         string,
   organizationId: string,
+  allowedSiteIds: readonly string[],
   assetStatus     = "ACTIVE",
 ): Promise<AssetContext | null> {
   const { getNode } = await import("./nodes");
   const node = await getNode(nodeId, organizationId);
-  if (!node) return null;
+  if (!node || !allowedSiteIds.includes(node.siteId)) return null;
 
   const [tagsResult, healthResult, upResult, downResult] = await Promise.all([
-    node.assetId ? listTagsForAsset(node.assetId, organizationId).then((t) => t.map((x) => x.tagPath)) : Promise.resolve([]),
+    node.assetId ? listTagsForAsset(node.assetId, organizationId, { allowedSiteIds: [...allowedSiteIds] }).then((t) => t.map((x) => x.tagPath)) : Promise.resolve([]),
     node.assetId ? calculateHealthScore({ organizationId, assetId: node.assetId, assetStatus }) : Promise.resolve(null),
-    getUpstreamAssets(nodeId, organizationId),
-    getDownstreamAssets(nodeId, organizationId),
+    getUpstreamAssets(nodeId, organizationId, allowedSiteIds),
+    getDownstreamAssets(nodeId, organizationId, allowedSiteIds),
   ]);
 
   if (healthResult) healthResult.nodeId = nodeId;
@@ -102,10 +106,11 @@ export async function getAssetContext(
 export async function getAssetDependencies(
   nodeId:         string,
   organizationId: string,
+  allowedSiteIds: readonly string[],
 ): Promise<AssetDependencies> {
   const [upResult, downResult] = await Promise.all([
-    getUpstreamAssets(nodeId, organizationId),
-    getDownstreamAssets(nodeId, organizationId),
+    getUpstreamAssets(nodeId, organizationId, allowedSiteIds),
+    getDownstreamAssets(nodeId, organizationId, allowedSiteIds),
   ]);
   return {
     nodeId,

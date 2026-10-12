@@ -13,9 +13,15 @@
  *
  * Sorting: candidateScore DESC → failureMode.severity DESC (CRITICAL>HIGH>MEDIUM>LOW) → id ASC.
  * Every factor is logged in scoringFactors for full explainability.
+ *
+ * SITE SCOPE (slice C, IR-04): the candidates read the asset's FailureIndicator and its BAD/STALE telemetry
+ * count, so they are computed only for an {@link AuthorizedAsset} — an asset proven to be the organisation's
+ * and to stand on one of the caller's readable ACTIVE sites (see {@link resolveAuthorizedAsset}). A
+ * client-supplied asset id never reaches those reads directly.
  */
 
 import { getPrisma }            from "@/lib/db/prisma";
+import { logInfraFailure }      from "@/lib/logger/security-events";
 import { confidenceFromWeight } from "./types";
 import {
   RC_BONUS_DECLINING_HEALTH,
@@ -36,6 +42,52 @@ type RCModel = {
 };
 
 const SEVERITY_ORDER: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+
+declare const authorizedAssetBrand: unique symbol;
+
+/** An asset the caller may read. Only {@link resolveAuthorizedAsset} produces one. */
+export interface AuthorizedAsset {
+  readonly [authorizedAssetBrand]: true;
+  readonly id:        string;
+  readonly siteId:    string;
+  /** Server-derived: never taken from the request. */
+  readonly assetType: string | null;
+}
+
+const MAX_ASSET_ID_LENGTH = 128;
+
+/**
+ * The asset, if and only if it belongs to `organizationId` AND stands on one of `allowedSiteIds` (the caller's
+ * readable ACTIVE sites) AND that site is still ACTIVE. A hidden, inactive, foreign, nonexistent or malformed
+ * id is `null` — one answer. Fails closed on a database error.
+ */
+export async function resolveAuthorizedAsset(
+  organizationId: string,
+  assetId:        unknown,
+  allowedSiteIds: readonly string[],
+): Promise<AuthorizedAsset | null> {
+  if (typeof assetId !== "string" || assetId.length === 0 || assetId.length > MAX_ASSET_ID_LENGTH) return null;
+  const sites = Array.from(new Set(allowedSiteIds.filter((s) => typeof s === "string" && s.length > 0)));
+  if (!organizationId || sites.length === 0) return null;
+  const db = await getPrisma();
+  if (!db) return null;
+  try {
+    type AssetFind = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
+    const rows = await ((db as unknown as Record<string, unknown>).industrialAsset as AssetFind).findMany({
+      where:  { id: assetId, organizationId, siteId: { in: sites }, site: { is: { organizationId, status: "ACTIVE" } } },
+      select: { id: true, siteId: true, assetType: true },
+      take:   1,
+    });
+    const row = rows[0];
+    if (!row || typeof row.siteId !== "string" || !sites.includes(row.siteId)) return null;
+    return {
+      id: assetId, siteId: row.siteId, assetType: typeof row.assetType === "string" ? row.assetType : null,
+    } as unknown as AuthorizedAsset;
+  } catch (err) {
+    logInfraFailure("database", "knowledge.resolve_authorized_asset", err);
+    return null;
+  }
+}
 
 export async function listRootCauses(
   organizationId: string,
@@ -92,9 +144,11 @@ export async function createRootCause(
  */
 export async function getRootCauseCandidates(
   organizationId: string,
-  assetId:        string,
-  assetType?:     string,
+  asset:          AuthorizedAsset,
+  opts:           { failureModeId?: string } = {},
 ): Promise<RootCauseCandidate[]> {
+  const assetId   = asset.id;
+  const assetType = asset.assetType ?? undefined;
   const db = await getPrisma();
   if (!db) return [];
   const d = db as unknown as Record<string, unknown>;
@@ -126,8 +180,13 @@ export async function getRootCauseCandidates(
     type FMModel = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
     type RCModel2 = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
     const [fmRows, rcRows] = await Promise.all([
-      (d.industrialFailureMode as FMModel).findMany({ where: { organizationId }, take: 100 }),
-      (d.industrialRootCause as RCModel2).findMany({ where: { organizationId },  take: 500 }),
+      // When a failure mode is named (the failure-detail route), only ITS root causes are candidates.
+      (d.industrialFailureMode as FMModel).findMany({
+        where: { organizationId, ...(opts.failureModeId ? { id: opts.failureModeId } : {}) }, orderBy: { id: "asc" }, take: 100,
+      }),
+      (d.industrialRootCause as RCModel2).findMany({
+        where: { organizationId, ...(opts.failureModeId ? { failureModeId: opts.failureModeId } : {}) }, orderBy: { id: "asc" }, take: 500,
+      }),
     ]);
 
     const fmMap = new Map<string, FailureModeRecord>();

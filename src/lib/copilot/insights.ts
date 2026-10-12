@@ -27,6 +27,7 @@ import { listAssets }               from "@/lib/industrial/assets";
 import { detectDataQualityWarnings } from "@/lib/digital-twin/analytics";
 import { getAssetGraph }            from "@/lib/digital-twin/graph";
 import { escapeUntrustedData }      from "./safety";
+import { effectiveSiteIds, type CopilotScope } from "./scope";
 import type { CopilotInsightRecord, CopilotInsightType, CopilotInsightSeverity } from "./types";
 
 // Named threshold constants with units
@@ -62,15 +63,25 @@ async function persistInsight(
   };
 }
 
+/**
+ * Slice C (IR-03): runs over the sites of a server-built {@link CopilotScope} only — the asset's site, the
+ * selected site, or the actor's readable ACTIVE sites. It used to list every asset of the organisation when
+ * no site was given, and to accept any site id the client sent.
+ */
 export async function generateInsights(
-  organizationId: string,
-  siteId?:        string,
+  scope: CopilotScope,
 ): Promise<CopilotInsightRecord[]> {
+  const organizationId = scope.organizationId;
+  const sites          = effectiveSiteIds(scope).filter((s) => scope.siteIds.includes(s));
+  if (sites.length === 0) return [];
+  // The Digital Twin section needs an explicitly selected, authorised site.
+  const siteId = scope.siteId !== null && scope.siteIds.includes(scope.siteId) ? scope.siteId : undefined;
+
   const prisma = await getPrisma();
   if (!prisma) return [];
 
   const db       = prisma as unknown as Record<string, unknown>;
-  const assets   = await listAssets(organizationId, siteId ? { siteId } : undefined);
+  const assets   = await listAssets(organizationId, { allowedSiteIds: sites });
   const range24h = getPeriodRange("last24Hours");
   const results: CopilotInsightRecord[] = [];
 
