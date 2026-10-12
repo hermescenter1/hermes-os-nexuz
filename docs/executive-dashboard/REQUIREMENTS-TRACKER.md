@@ -34,11 +34,12 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `NOT_STARTED` |
+| **Status** | `PARTIAL` — oversight half shipped by slice C; ledger half not started |
 | **Evidence** | Gap analysed in `STAGE-5-GAPS-AND-NEXT-SLICE.md`: no `JournalEntry` / `Ledger` / `Voucher` / `Receivable` / `Payable` among the models, `Invoice.subscriptionId` is required, and **no exchange-rate model exists anywhere** |
 | **Dependency** | Owner's decision on scope of a ledger domain; none for the oversight slice |
 | **Acceptance** | Recorded cost in the period **grouped per currency** (never summed across currencies), who recorded it, approvals awaiting a decision by role and age, approvals decided with actor and time, budget vs recorded cost per project, and a permanent statement of what is *not* covered. Real rows only. |
 | **Plan** | Slice C from the existing `ErpProjectCost` / `ErpApprovalRequest` / `ErpAuditEvent` models — zero schema change. The ledger itself is a separate domain with its own schema, to be designed after the oversight slice proves the surface. |
+| **Slice C** | `/dashboard/executive/oversight`: cost per currency (never summed), by category, who recorded it, unattributed entries, projects over budget. Proven on an isolated database with two decoys absent; the split axis proven live (ADMIN sees approvals, not money). `STAGE-7-SLICE-C-FINANCIAL-OVERSIGHT.md`. |
 
 ## 3. Customers, sales and follow-ups
 
@@ -68,7 +69,7 @@ Status vocabulary:
 | **Evidence** | Operations section: active projects, overdue tasks, open work orders, approvals awaiting a decision, approvals decided, tasks completed |
 | **Dependency** | — |
 | **Acceptance** | Above, plus the people dimension (who owns what, who is blocking) and an approvals queue a manager can act on rather than a count. |
-| **Open** | No team dimension; approvals are counts with a link, not an actionable queue. |
+| **Open** | No team dimension. Approvals now have a queue by **blocking role and age** (slice C), but it is read-only — the decision itself still happens on the ERP approvals screen. |
 
 ## 6. Nightly report and documented archive
 
@@ -159,7 +160,7 @@ Status vocabulary:
 
 Rows are taken in this order, smallest reviewable slice first:
 
-1. **Slice C** — row 2's oversight half (no schema change).
+1. **Slice C** — row 2's oversight half (no schema change). *Implemented and proven on an isolated database.*
 2. **Slice D** — row 8, priorities with visible reasons.
 3. **Slice E** — row 7, per-organization zone and cutoff (one migration).
 4. **Slice F** — row 10, the production runner, with row 9's channel if the
