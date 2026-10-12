@@ -335,7 +335,7 @@ function SiteTable({
   timeZone: string;
 }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="w-full min-w-[34rem] text-start text-sm">
         <caption className="sr-only">{t("sites.title")}</caption>
         <thead>

@@ -63,7 +63,7 @@ export default async function ExecutiveReportsPage({
       );
     } else {
       body = (
-        <div className="overflow-x-auto rounded-xl border border-line bg-surface p-5 shadow-e2">
+        <div className="relative overflow-x-auto rounded-xl border border-line bg-surface p-5 shadow-e2">
           <table className="w-full min-w-[40rem] text-start text-sm">
             <caption className="sr-only">{t("reports.title")}</caption>
             <thead>
