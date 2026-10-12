@@ -6941,7 +6941,8 @@
         "admin": "Admin Console",
         "observability": "Observability",
         "otEdge": "OT Edge",
-        "videoHub": "Video Hub"
+        "videoHub": "Video Hub",
+        "executiveCenter": "Executive Center"
       }
     },
     "shell": {
@@ -10894,5 +10895,187 @@
       "simulated": "Simulated data"
     },
     "metaTitle": "Automation Engineering Studio"
+  },
+  "executive": {
+    "eyebrow": "Management",
+    "title": "Executive Management Center",
+    "lede": "Today's position, the decisions waiting on you, and the records behind every figure.",
+    "ranges": {
+      "today": "Today",
+      "last7Days": "Last 7 days",
+      "last30Days": "Last 30 days"
+    },
+    "rangeLabel": "Reporting period",
+    "lastUpdated": "Updated {time}",
+    "loading": "Loading the current position…",
+    "retry": "Try again",
+    "sections": {
+      "operations": "Operations",
+      "financial": "Project finance",
+      "industrial": "Plants and connectivity",
+      "customers": "Customers",
+      "actions": "Needs your decision",
+      "dataQuality": "Data quality"
+    },
+    "sectionLede": {
+      "operations": "Projects, tasks, work orders and approvals in this organization.",
+      "financial": "Budget and recorded cost on this organization's projects.",
+      "industrial": "Connectivity and open alerts for the plants you have access to."
+    },
+    "status": {
+      "OPERATIONAL": "Live",
+      "EMPTY": "No records yet",
+      "FORBIDDEN": "Not available to your role",
+      "UNAVAILABLE": "Source unavailable",
+      "NO_SOURCE": "No data source"
+    },
+    "freshness": {
+      "FRESH": "Up to date",
+      "STALE": "Delayed",
+      "DISCONNECTED": "No signal",
+      "NEVER": "Never reported",
+      "INVALID": "Invalid timestamp"
+    },
+    "delta": {
+      "noChange": "Unchanged",
+      "fromZero": "{absolute} more than none",
+      "lowBaselineNote": "Small baseline — read the absolute change.",
+      "incomparable": {
+        "PARTIAL_PERIOD": "Not comparable: the previous period has not finished.",
+        "NO_BASELINE": "Not comparable: no earlier value is recorded.",
+        "NO_CURRENT": "Not comparable: no current value."
+      }
+    },
+    "metrics": {
+      "activeProjects": "Active projects",
+      "overdueTasks": "Overdue tasks",
+      "openWorkOrders": "Open work orders",
+      "pendingApprovals": "Approvals awaiting a decision",
+      "inventoryWarnings": "Items below reorder point",
+      "tasksCompleted": "Tasks completed",
+      "approvalsDecided": "Approvals decided",
+      "projectBudget": "Approved project budget",
+      "projectActualCost": "Recorded project cost",
+      "costVariance": "Budget remaining",
+      "openCriticalAlerts": "Open critical alerts",
+      "connectedSites": "Plants reporting data",
+      "alertsRaised": "Alerts raised",
+      "sitesWithoutData": "Plants without recent data"
+    },
+    "definitions": {
+      "activeProjects": "Projects in this organization whose status is ACTIVE, counted at this moment.",
+      "overdueTasks": "Tasks whose due date has passed and which are neither done nor cancelled.",
+      "openWorkOrders": "Work orders that are neither completed nor cancelled.",
+      "approvalsDecided": "Approval requests decided within the selected period.",
+      "pendingApprovals": "Approval requests with status PENDING, counted at this moment.",
+      "inventoryWarnings": "Inventory items whose quantity is at or below their reorder point.",
+      "tasksCompleted": "Tasks whose completion was recorded within the selected period.",
+      "projectBudget": "Sum of the approved budget of this organization's live projects.",
+      "projectActualCost": "Sum of the cost recorded against those projects. This is project cost control, not accounting.",
+      "costVariance": "Approved budget minus recorded cost. Shown only when both figures exist.",
+      "openCriticalAlerts": "Critical and high asset alerts that are neither dismissed nor resolved, on the plants you may see.",
+      "connectedSites": "Plants whose newest gateway heartbeat is recent enough to be trusted.",
+      "alertsRaised": "Asset alerts first recorded within the selected period."
+    },
+    "sources": {
+      "erpProject": "ERP — projects",
+      "erpTask": "ERP — tasks",
+      "erpWorkOrder": "ERP — work orders",
+      "erpApproval": "ERP — approval requests",
+      "erpInventory": "ERP — inventory",
+      "gatewayHeartbeat": "Industrial gateway heartbeat",
+      "telemetry": "Industrial telemetry, on arrival",
+      "assetAlert": "Asset alerts"
+    },
+    "reasons": {
+      "forbiddenOperations": "Your role does not include operational data for this organization.",
+      "forbiddenFinancial": "Your role does not include financial figures.",
+      "forbiddenIndustrial": "Your role does not include industrial operations.",
+      "noSites": "No plant has been granted to your account in this organization.",
+      "noRows": "This organization has no records of this kind yet.",
+      "sourceUnavailable": "This source could not be read for this request. Nothing is inferred from its absence.",
+      "noLedger": "There is no general ledger in this product, so these figures are project cost control and not accounting.",
+      "customersNotTenantScoped": "Customer records are held at platform level, not per organization, so there is no tenant-scoped customer figure to show here."
+    },
+    "causes": {
+      "approvalBlocksWork": "Work is waiting on an approval decision.",
+      "dueDatePassed": "The agreed due date has passed.",
+      "belowReorderPoint": "Stock has reached the reorder point.",
+      "unresolvedCriticalAlert": "A critical alert is neither dismissed nor resolved.",
+      "noRecentSignal": "A plant has sent no recent data."
+    },
+    "quality": {
+      "title": "Data quality",
+      "invalidTimeZoneConfig": "The configured reporting time zone was rejected; the product default is in use. Day boundaries may not match your expectation.",
+      "sitesNeverReported": "{count, plural, one {# plant has never reported data.} other {# plants have never reported data.}}",
+      "futureDatedSignal": "{count, plural, one {# plant reports a timestamp in the future, which is a clock or ingest fault.} other {# plants report timestamps in the future, which is a clock or ingest fault.}}",
+      "noGeneralLedger": "Financial figures come from project records. This product holds no general ledger."
+    },
+    "priority": {
+      "HIGH": "Breaching",
+      "MEDIUM": "At risk"
+    },
+    "provenance": {
+      "definition": "Definition",
+      "source": "Source",
+      "period": "Period",
+      "pointInTime": "Counted at this moment",
+      "computedAt": "Computed at",
+      "dataAsOf": "Data as of",
+      "detail": "Open the records",
+      "timeZone": "Time zone"
+    },
+    "sites": {
+      "title": "Plants",
+      "columnName": "Plant",
+      "columnGateways": "Gateways online",
+      "columnFreshness": "Data",
+      "columnLastSignal": "Last signal",
+      "noGateway": "No gateway registered"
+    },
+    "actionCenter": {
+      "empty": "Nothing is waiting on a decision in this period.",
+      "viewRecords": "Open the records",
+      "affected": "{count, plural, one {# record} other {# records}}"
+    },
+    "errors": {
+      "AUTHENTICATION_REQUIRED": "Please sign in again.",
+      "FORBIDDEN": "This surface is not available to your account.",
+      "NOT_FOUND": "This organization is not available to your account.",
+      "ACTIVE_ORGANIZATION_REQUIRED": "Choose which organization to report on.",
+      "NO_ACCESSIBLE_AXIS": "Your role includes none of the operational, financial or industrial views.",
+      "INVALID_REQUEST": "That reporting period is not recognised.",
+      "SERVICE_UNAVAILABLE": "The management center could not be assembled. Nothing below is inferred.",
+      "chooseOrganization": "Select an organization"
+    },
+    "reports": {
+      "navLink": "Nightly reports",
+      "title": "Nightly reports",
+      "lede": "One frozen report per business day. The figures are those of the night it ran, and are never recomputed.",
+      "archiveEmpty": "No report has been produced yet. The first one appears after the next completed business day.",
+      "archiveUnavailable": "The archive could not be read for this request. Nothing is inferred from its absence.",
+      "columnDate": "Business day",
+      "columnVersion": "Version",
+      "columnGenerated": "Generated",
+      "columnCoverage": "Coverage",
+      "open": "Open the report",
+      "backToArchive": "Back to the reports",
+      "notFound": "There is no report for that day in this organization.",
+      "detailTitle": "Report for {date}",
+      "coverageComplete": "All sections answered",
+      "coveragePartial": "{count, plural, one {# section did not answer} other {# sections did not answer}}",
+      "frozenNotice": "This is a frozen report. It shows the figures as they stood at the data cutoff below, not as they stand now.",
+      "calcVersion": "Calculation version",
+      "dataCutoff": "Data cutoff",
+      "period": "Covered period",
+      "generatedAt": "Generated at",
+      "versionLabel": "Version {version}",
+      "supersedes": "Supersedes version {version}",
+      "isSuperseded": "A later version of this day exists.",
+      "regeneratedBy": "Regenerated by",
+      "regenerationReason": "Reason",
+      "original": "Original",
+      "corrected": "Correction"
+    }
   }
 }

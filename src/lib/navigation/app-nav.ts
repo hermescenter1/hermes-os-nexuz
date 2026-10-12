@@ -59,7 +59,15 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
   {
     groupKey: "intelligence",
     items: [
+      // `/dashboard` stays FIRST here. Phase 104-H pins the canonical Dashboard
+      // entry to the first slot of the first group, and
+      // dashboard-nav-exposure.test.tsx asserts it - a management screen added
+      // ahead of it would quietly demote the product's own landing page.
       { labelKey: "dashboard", href: "/dashboard", match: "exact" },
+      // EXECUTIVE DASHBOARD - the manager's entry point. `pageCapability: "admin"`
+      // tracks the real guard, `can(user.role, "admin")` inside
+      // resolveExecutiveScope(), the same platform capability that fronts /erp.
+      { labelKey: "executiveCenter", href: "/dashboard/executive", pageCapability: "admin" },
       { labelKey: "copilot", href: "/dashboard/copilot" },
       { labelKey: "industrialBrain", href: "/industrial-brain" },
       { labelKey: "predictive", href: "/dashboard/predictive" },
