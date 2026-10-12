@@ -128,6 +128,12 @@ export const POST_PHASE102_MIGRATIONS = [
   // This is a post-Phase-102 migration, so the legacy Phase 102 equality gate
   // must subtract it while continuing to reject any undeclared migration.
   "20261009150000_asset_registry_write_integrity",
+  // Executive Management Center - one additive table, ExecutiveDailyReport,
+  // holding one frozen report per organization per business day. It creates no
+  // column on an existing table and rewrites no row. Declared for the same
+  // reason as the lines above: an undeclared row would fail the era-count
+  // equality, and silently widening that check to `>=` would retire the gate.
+  "20261011090000_executive_daily_report",
 ];
 
 /**
