@@ -33,6 +33,8 @@ import type { CopilotInsightRecord, CopilotInsightType, CopilotInsightSeverity }
 // Named threshold constants with units
 export const AVAILABILITY_LOW_PCT = 80;    // % availability below this = "abnormal_kpi"
 export const ALARM_RATE_HIGH      = 0.25;  // fraction (25%) alarm rate above this = "frequent_alarms"
+/** Server ceiling of assets examined per insight run (newest first, `id` tie-break). Not client-controllable. */
+export const INSIGHT_MAX_ASSETS   = 50;
 
 type InsightModel = {
   create:   (a: unknown) => Promise<Record<string, unknown>>;
@@ -81,11 +83,13 @@ export async function generateInsights(
   if (!prisma) return [];
 
   const db       = prisma as unknown as Record<string, unknown>;
-  const assets   = await listAssets(organizationId, { allowedSiteIds: sites });
+  // Slice D2: bounded IN the query (it used to read every matching asset and slice to 50 in memory).
+  // Only assets of the scope's sites are read, so a hidden asset can never take a visible one's place.
+  const assets   = await listAssets(organizationId, { allowedSiteIds: sites, limit: INSIGHT_MAX_ASSETS });
   const range24h = getPeriodRange("last24Hours");
   const results: CopilotInsightRecord[] = [];
 
-  for (const asset of assets.slice(0, 50)) {  // cap at 50 assets per run
+  for (const asset of assets) {
     const assetName = escapeUntrustedData(asset.name);
 
     // ── stale telemetry ────────────────────────────────────────────────────

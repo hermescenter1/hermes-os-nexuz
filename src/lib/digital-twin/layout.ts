@@ -20,27 +20,30 @@ function rowToLayout(r: Record<string, unknown>): TwinLayoutRecord {
 }
 
 /**
- * Layouts of an organisation. `allowedSiteIds` follows the `listAssets`
- * contract (undefined = unrestricted internal call, [] = nothing, a requested
- * `siteId` narrows the allowed set and never replaces it).
+ * Layouts of an organisation, within the sites the caller may reach. `[]` =
+ * nothing (no read); a requested `siteId` narrows the allowed set and never
+ * replaces it.
+ *
+ * Slice D2: `allowedSiteIds` is REQUIRED. The unscoped `listLayouts`,
+ * `getLayout` and `updateLayout` exports had no caller (`updateLayout` also
+ * wrote outside a transaction, without the site check or an audit event) and
+ * were removed.
+ *
+ * `layoutData` is OPAQUE: the schema (`layoutDataSchema`) defines no node
+ * reference field, the server never interprets it, never resolves any value in
+ * it as a Digital Twin node and makes no authorisation decision on it. It is
+ * bounded (size, depth) and rejects prototype-pollution keys, nothing more.
  */
 export async function listLayoutsPage(
   organizationId: string,
-  siteId?: string,
-  allowedSiteIds?: string[],
+  siteId: string | undefined,
+  allowedSiteIds: readonly string[],
 ): Promise<{ layouts: TwinLayoutRecord[]; truncated: boolean }> {
-  if (allowedSiteIds !== undefined && allowedSiteIds.length === 0) {
-    return { layouts: [], truncated: false };
-  }
+  if (allowedSiteIds.length === 0) return { layouts: [], truncated: false };
+  if (siteId && !allowedSiteIds.includes(siteId)) return { layouts: [], truncated: false };
   const prisma = await getPrisma();
   if (!prisma) return { layouts: [], truncated: false };
-  const where: Record<string, unknown> = { organizationId };
-  if (allowedSiteIds !== undefined) {
-    if (siteId && !allowedSiteIds.includes(siteId)) return { layouts: [], truncated: false };
-    where.siteId = siteId ?? { in: allowedSiteIds };
-  } else if (siteId) {
-    where.siteId = siteId;
-  }
+  const where: Record<string, unknown> = { organizationId, siteId: siteId ?? { in: [...allowedSiteIds] } };
   const limit = TWIN_LIMITS.LIST_LAYOUTS;
   const rows = await (prisma.digitalTwinLayout as unknown as LayoutModel).findMany({
     where,
@@ -48,24 +51,6 @@ export async function listLayoutsPage(
     take: limit + 1,
   });
   return { layouts: rows.slice(0, limit).map(rowToLayout), truncated: rows.length > limit };
-}
-
-/** Array-returning form for internal callers. Bounded, no `truncated` flag. */
-export async function listLayouts(
-  organizationId: string,
-  siteId?: string,
-  allowedSiteIds?: string[],
-): Promise<TwinLayoutRecord[]> {
-  return (await listLayoutsPage(organizationId, siteId, allowedSiteIds)).layouts;
-}
-
-export async function getLayout(id: string, organizationId: string): Promise<TwinLayoutRecord | null> {
-  const prisma = await getPrisma();
-  if (!prisma) return null;
-  const r = await (prisma.digitalTwinLayout as unknown as LayoutModel).findFirst({
-    where: { id, organizationId },
-  });
-  return r ? rowToLayout(r) : null;
 }
 
 export async function createLayout(params: {
@@ -101,21 +86,4 @@ export async function createLayout(params: {
     return r;
   });
   return created ? rowToLayout(created) : null;
-}
-
-export async function updateLayout(id: string, organizationId: string, patch: {
-  name?:       string;
-  layoutData?: Record<string, unknown>;
-}): Promise<TwinLayoutRecord | null> {
-  const prisma = await getPrisma();
-  if (!prisma) return null;
-  const exists = await (prisma.digitalTwinLayout as unknown as LayoutModel).findFirst({
-    where: { id, organizationId },
-  });
-  if (!exists) return null;
-  const r = await (prisma.digitalTwinLayout as unknown as LayoutModel).update({
-    where: { id },
-    data:  patch,
-  });
-  return rowToLayout(r);
 }

@@ -30,9 +30,9 @@ export const TWIN_LIMITS = {
    * only the first `limit` rows (in a fixed total order) are returned. The
    * responses that report it with `truncated: true`: GET nodes, GET relations,
    * GET graph, GET tags, GET layout, and GET nodes/[id] (as `relations.truncated`,
-   * which covers either direction). Internal array-returning helpers
-   * (listNodes, listRelations, listTagsForAsset, listLayouts) are capped the same
-   * way but, returning arrays, cannot carry the flag.
+   * which covers either direction). The internal array-returning helper
+   * listTagsForAsset is capped the same way but, returning an array, cannot
+   * carry the flag. Every list reader requires the caller's site scope.
    */
   LIST_NODES: 1000,
   LIST_RELATIONS: 5000,

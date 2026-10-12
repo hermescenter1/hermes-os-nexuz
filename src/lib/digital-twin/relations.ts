@@ -25,51 +25,37 @@ export function rowToRelation(r: Record<string, unknown>): TwinRelationRecord {
  * Relations of an organisation. A relation is visible only when BOTH endpoints
  * are at sites the caller may reach (`allowedSiteIds` — same contract as
  * `listNodesPage`), decided in the query via the relation's node joins.
+ *
+ * Slice D2: `allowedSiteIds` is REQUIRED — the unscoped `listRelations`,
+ * `getRelation` and `countRelations` exports had no caller and were removed.
  */
-export async function listRelationsPage(organizationId: string, opts?: {
-  sourceNodeId?:   string;
-  targetNodeId?:   string;
-  allowedSiteIds?: string[];
-  limit?:          number;
+export async function listRelationsPage(organizationId: string, opts: {
+  sourceNodeId?:  string;
+  targetNodeId?:  string;
+  allowedSiteIds: readonly string[];
+  limit?:         number;
 }): Promise<{ relations: TwinRelationRecord[]; truncated: boolean }> {
-  if (opts?.allowedSiteIds !== undefined && opts.allowedSiteIds.length === 0) {
-    return { relations: [], truncated: false };
-  }
+  if (opts.allowedSiteIds.length === 0) return { relations: [], truncated: false };
   const prisma = await getPrisma();
   if (!prisma) return { relations: [], truncated: false };
 
-  const where: Record<string, unknown> = { organizationId };
-  if (opts?.sourceNodeId) where.sourceNodeId = opts.sourceNodeId;
-  if (opts?.targetNodeId) where.targetNodeId = opts.targetNodeId;
-  if (opts?.allowedSiteIds !== undefined) {
-    where.sourceNode = { siteId: { in: opts.allowedSiteIds } };
-    where.targetNode = { siteId: { in: opts.allowedSiteIds } };
-  }
+  const where: Record<string, unknown> = {
+    organizationId,
+    sourceNode: { siteId: { in: [...opts.allowedSiteIds] } },
+    targetNode: { siteId: { in: [...opts.allowedSiteIds] } },
+  };
+  if (opts.sourceNodeId) where.sourceNodeId = opts.sourceNodeId;
+  if (opts.targetNodeId) where.targetNodeId = opts.targetNodeId;
 
-  const limit = opts?.limit ?? TWIN_LIMITS.LIST_RELATIONS;
+  // A caller-supplied limit can only LOWER the server ceiling.
+  const requested = Number.isFinite(opts.limit) ? Math.trunc(opts.limit as number) : TWIN_LIMITS.LIST_RELATIONS;
+  const limit = Math.min(Math.max(1, requested), TWIN_LIMITS.LIST_RELATIONS);
   const rows = await (prisma.digitalTwinRelation as unknown as RelModel).findMany({
     where,
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     take: limit + 1,
   });
   return { relations: rows.slice(0, limit).map(rowToRelation), truncated: rows.length > limit };
-}
-
-/** Back-compat wrapper (internal callers). */
-export async function listRelations(organizationId: string, opts?: {
-  sourceNodeId?: string;
-  targetNodeId?: string;
-}): Promise<TwinRelationRecord[]> {
-  return (await listRelationsPage(organizationId, opts)).relations;
-}
-
-export async function getRelation(id: string, organizationId: string): Promise<TwinRelationRecord | null> {
-  const prisma = await getPrisma();
-  if (!prisma) return null;
-  const r = await (prisma.digitalTwinRelation as unknown as RelModel).findFirst({
-    where: { id, organizationId },
-  });
-  return r ? rowToRelation(r) : null;
 }
 
 /** A relation with the sites of its two endpoints, so a route can authorise both. */
@@ -146,7 +132,7 @@ export async function createRelation(params: {
       if (existing) throw new TwinDomainError("DUPLICATE_RELATION", 409, "This relation already exists");
 
       if (params.relationType === "PART_OF") {
-        await assertPartOfAcyclic(tx, params.organizationId, params.sourceNodeId, params.targetNodeId);
+        await assertPartOfAcyclic(tx, params.organizationId, String(src.siteId), params.sourceNodeId, params.targetNodeId);
       }
 
       const r = await tx.digitalTwinRelation.create({
@@ -212,12 +198,6 @@ export async function updateRelation(
     return r;
   });
   return updated ? rowToRelation(updated) : null;
-}
-
-export async function countRelations(organizationId: string): Promise<number> {
-  const prisma = await getPrisma();
-  if (!prisma) return 0;
-  return (prisma.digitalTwinRelation as unknown as RelModel).count({ where: { organizationId } });
 }
 
 // ── Directed graph traversal ───────────────────────────────────────────────────

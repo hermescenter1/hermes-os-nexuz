@@ -44,7 +44,7 @@ export async function buildKnowledgeRecommendations(
       getFailureKnowledge(organizationId, assetId, assetType, symptoms, scope),
       authorizedAsset ? getRootCauseCandidates(organizationId, authorizedAsset) : Promise.resolve([]),
       getRecommendedProcedures(organizationId, assetId, assetType),
-      assembleKnowledgeEvidence(organizationId, assetId),
+      authorizedAsset && scope ? assembleKnowledgeEvidence(organizationId, authorizedAsset, scope.allowedSiteIds) : Promise.resolve([]),
     ]);
 
   return {

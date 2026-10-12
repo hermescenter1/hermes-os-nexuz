@@ -14,6 +14,7 @@ import { MAX_TRAVERSAL_DEPTH, type TwinRelationRecord } from "../types";
 import type { TwinTx } from "../tx";
 
 const ORG = "org-1";
+const SITE = "site-1";
 
 interface Edge { s: string; t: string; type: string }
 
@@ -22,9 +23,12 @@ function fakeTx(edges: Edge[], parents: Record<string, string | null> = {}) {
   const stats = { relationQueries: 0, nodeQueries: 0 };
   const tx = {
     digitalTwinRelation: {
-      findMany: async (a: { where: { organizationId: string; relationType: string; sourceNodeId: { in: string[] } }; take?: number }) => {
+      findMany: async (a: { where: { organizationId: string; relationType: string; sourceNodeId: { in: string[] }; sourceNode: unknown; targetNode: unknown }; take?: number }) => {
         stats.relationQueries++;
         expect(a.where.organizationId).toBe(ORG); // every query is tenant-scoped
+        // Slice D2: and site-confined — both endpoints of every followed edge are at the node's site.
+        expect(a.where.sourceNode).toEqual({ organizationId: ORG, siteId: SITE });
+        expect(a.where.targetNode).toEqual({ organizationId: ORG, siteId: SITE });
         const rows = edges
           .filter((e) => e.type === a.where.relationType && a.where.sourceNodeId.in.includes(e.s))
           .map((e) => ({ targetNodeId: e.t }));
@@ -32,9 +36,10 @@ function fakeTx(edges: Edge[], parents: Record<string, string | null> = {}) {
       },
     },
     digitalTwinNode: {
-      findFirst: async (a: { where: { id: string; organizationId: string } }) => {
+      findFirst: async (a: { where: { id: string; organizationId: string; siteId: string } }) => {
         stats.nodeQueries++;
         expect(a.where.organizationId).toBe(ORG);
+        expect(a.where.siteId).toBe(SITE);
         return a.where.id in parents ? { parentNodeId: parents[a.where.id] } : null;
       },
     },
@@ -47,41 +52,41 @@ const part = (s: string, t: string): Edge => ({ s, t, type: "PART_OF" });
 describe("assertPartOfAcyclic — adding `source PART_OF target`", () => {
   it("accepts an edge into an empty hierarchy", async () => {
     const { tx } = fakeTx([]);
-    await expect(assertPartOfAcyclic(tx, ORG, "a", "b")).resolves.toBeUndefined();
+    await expect(assertPartOfAcyclic(tx, ORG, SITE, "a", "b")).resolves.toBeUndefined();
   });
 
   it("rejects a self-loop", async () => {
     const { tx } = fakeTx([]);
-    await expect(assertPartOfAcyclic(tx, ORG, "a", "a")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE", status: 422 });
+    await expect(assertPartOfAcyclic(tx, ORG, SITE, "a", "a")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE", status: 422 });
   });
 
   it("rejects a DIRECT cycle (b is already part of a; a becoming part of b)", async () => {
     const { tx } = fakeTx([part("a", "b")]); // a PART_OF b exists
-    await expect(assertPartOfAcyclic(tx, ORG, "b", "a")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
+    await expect(assertPartOfAcyclic(tx, ORG, SITE, "b", "a")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
   });
 
   it("rejects a MULTI-HOP cycle", async () => {
     const { tx } = fakeTx([part("a", "b"), part("b", "c"), part("c", "d")]);
-    await expect(assertPartOfAcyclic(tx, ORG, "d", "a")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
-    await expect(assertPartOfAcyclic(tx, ORG, "c", "a")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
+    await expect(assertPartOfAcyclic(tx, ORG, SITE, "d", "a")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
+    await expect(assertPartOfAcyclic(tx, ORG, SITE, "c", "a")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
   });
 
   it("accepts a graph without a cycle, including a diamond", async () => {
     // d PART_OF b, d PART_OF c, b PART_OF a, c PART_OF a — a diamond is not a cycle.
     const { tx } = fakeTx([part("d", "b"), part("d", "c"), part("b", "a"), part("c", "a")]);
-    await expect(assertPartOfAcyclic(tx, ORG, "e", "d")).resolves.toBeUndefined();
-    await expect(assertPartOfAcyclic(tx, ORG, "a", "z")).resolves.toBeUndefined();
+    await expect(assertPartOfAcyclic(tx, ORG, SITE, "e", "d")).resolves.toBeUndefined();
+    await expect(assertPartOfAcyclic(tx, ORG, SITE, "a", "z")).resolves.toBeUndefined();
   });
 
   it("ignores non-hierarchical relation types", async () => {
     // FEEDS loops are legitimate process topology and must not trip the check.
     const { tx } = fakeTx([{ s: "a", t: "b", type: "FEEDS" }, { s: "b", t: "c", type: "FEEDS" }]);
-    await expect(assertPartOfAcyclic(tx, ORG, "c", "a")).resolves.toBeUndefined();
+    await expect(assertPartOfAcyclic(tx, ORG, SITE, "c", "a")).resolves.toBeUndefined();
   });
 
   it("terminates on pre-existing cyclic data that does not involve the new edge", async () => {
     const { tx } = fakeTx([part("x", "y"), part("y", "x")]);
-    await expect(assertPartOfAcyclic(tx, ORG, "p", "x")).resolves.toBeUndefined();
+    await expect(assertPartOfAcyclic(tx, ORG, SITE, "p", "x")).resolves.toBeUndefined();
   });
 
   it("BOUNDED: refuses (fails closed) when the chain is deeper than the depth cap", async () => {
@@ -89,7 +94,7 @@ describe("assertPartOfAcyclic — adding `source PART_OF target`", () => {
     const n = TWIN_LIMITS.HIERARCHY_MAX_DEPTH + 10;
     for (let i = 0; i < n; i++) edges.push(part(`n${i}`, `n${i + 1}`));
     const { tx, stats } = fakeTx(edges);
-    await expect(assertPartOfAcyclic(tx, ORG, "new", "n0")).rejects.toMatchObject({
+    await expect(assertPartOfAcyclic(tx, ORG, SITE, "new", "n0")).rejects.toMatchObject({
       code: "HIERARCHY_TOO_DEEP",
       status: 422,
     });
@@ -101,7 +106,7 @@ describe("assertPartOfAcyclic — adding `source PART_OF target`", () => {
     const edges: Edge[] = [];
     for (let i = 0; i < TWIN_LIMITS.HIERARCHY_MAX_VISITED + 5; i++) edges.push(part("root", `leaf${i}`));
     const { tx } = fakeTx(edges);
-    await expect(assertPartOfAcyclic(tx, ORG, "new", "root")).rejects.toMatchObject({ code: "HIERARCHY_TOO_DEEP" });
+    await expect(assertPartOfAcyclic(tx, ORG, SITE, "new", "root")).rejects.toMatchObject({ code: "HIERARCHY_TOO_DEEP" });
   });
 
   it("a chain exactly within the cap is still verified (and still finds the cycle at its far end)", async () => {
@@ -109,40 +114,40 @@ describe("assertPartOfAcyclic — adding `source PART_OF target`", () => {
     const n = TWIN_LIMITS.HIERARCHY_MAX_DEPTH - 2;
     for (let i = 0; i < n; i++) edges.push(part(`n${i}`, `n${i + 1}`));
     const { tx } = fakeTx(edges);
-    await expect(assertPartOfAcyclic(tx, ORG, `n${n}`, "n0")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
+    await expect(assertPartOfAcyclic(tx, ORG, SITE, `n${n}`, "n0")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
   });
 });
 
 describe("assertParentChainAcyclic — setting node.parentNodeId", () => {
   it("accepts a parent with no ancestors", async () => {
     const { tx } = fakeTx([], { p: null });
-    await expect(assertParentChainAcyclic(tx, ORG, "n", "p")).resolves.toBeUndefined();
+    await expect(assertParentChainAcyclic(tx, ORG, SITE, "n", "p")).resolves.toBeUndefined();
   });
 
   it("rejects making a node its own parent", async () => {
     const { tx } = fakeTx([], { n: null });
-    await expect(assertParentChainAcyclic(tx, ORG, "n", "n")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
+    await expect(assertParentChainAcyclic(tx, ORG, SITE, "n", "n")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
   });
 
   it("rejects making a DESCENDANT the parent (direct)", async () => {
     // child.parent = n  → n.parent = child would loop.
     const { tx } = fakeTx([], { child: "n", n: null });
-    await expect(assertParentChainAcyclic(tx, ORG, "n", "child")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
+    await expect(assertParentChainAcyclic(tx, ORG, SITE, "n", "child")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
   });
 
   it("rejects making a DESCENDANT the parent (multi-hop)", async () => {
     const { tx } = fakeTx([], { c3: "c2", c2: "c1", c1: "n", n: null });
-    await expect(assertParentChainAcyclic(tx, ORG, "n", "c3")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
+    await expect(assertParentChainAcyclic(tx, ORG, SITE, "n", "c3")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
   });
 
   it("accepts an unrelated branch", async () => {
     const { tx } = fakeTx([], { other: "root", root: null, n: "root" });
-    await expect(assertParentChainAcyclic(tx, ORG, "n", "other")).resolves.toBeUndefined();
+    await expect(assertParentChainAcyclic(tx, ORG, SITE, "n", "other")).resolves.toBeUndefined();
   });
 
   it("refuses when the EXISTING data already loops above the new parent", async () => {
     const { tx } = fakeTx([], { a: "b", b: "a" });
-    await expect(assertParentChainAcyclic(tx, ORG, "n", "a")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
+    await expect(assertParentChainAcyclic(tx, ORG, SITE, "n", "a")).rejects.toMatchObject({ code: "HIERARCHY_CYCLE" });
   });
 
   it("BOUNDED: refuses a parent chain deeper than the cap", async () => {
@@ -151,13 +156,13 @@ describe("assertParentChainAcyclic — setting node.parentNodeId", () => {
     for (let i = 0; i < n; i++) parents[`p${i}`] = `p${i + 1}`;
     parents[`p${n}`] = null;
     const { tx, stats } = fakeTx([], parents);
-    await expect(assertParentChainAcyclic(tx, ORG, "n", "p0")).rejects.toMatchObject({ code: "HIERARCHY_TOO_DEEP" });
+    await expect(assertParentChainAcyclic(tx, ORG, SITE, "n", "p0")).rejects.toMatchObject({ code: "HIERARCHY_TOO_DEEP" });
     expect(stats.nodeQueries).toBeLessThanOrEqual(TWIN_LIMITS.HIERARCHY_MAX_DEPTH);
   });
 
   it("a missing parent row ends the walk (the ownership check, not this one, reports it)", async () => {
     const { tx } = fakeTx([], {});
-    await expect(assertParentChainAcyclic(tx, ORG, "n", "ghost")).resolves.toBeUndefined();
+    await expect(assertParentChainAcyclic(tx, ORG, SITE, "n", "ghost")).resolves.toBeUndefined();
   });
 });
 

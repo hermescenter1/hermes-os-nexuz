@@ -31,6 +31,8 @@ export async function listAssets(organizationId: string, opts?: {
   siteId?:       string;
   gatewayId?:    string;
   allowedSiteIds?: string[];
+  /** Slice D2: a server-controlled row ceiling applied IN the query (Copilot insights). */
+  limit?:        number;
 }): Promise<AssetRecord[]> {
   if (opts?.allowedSiteIds !== undefined && opts.allowedSiteIds.length === 0) return [];
   const prisma = await getPrisma();
@@ -50,9 +52,12 @@ export async function listAssets(organizationId: string, opts?: {
   } else if (opts?.siteId) {
     where.siteId = opts.siteId;
   }
+  // `id` breaks createdAt ties, so a bounded read always selects the same rows.
+  const take = opts?.limit;
   const rows = await (prisma.industrialAsset as unknown as AssetModel).findMany({
     where,
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+    ...(typeof take === "number" && Number.isFinite(take) ? { take: Math.max(0, Math.trunc(take)) } : {}),
   });
   return rows.map(row);
 }

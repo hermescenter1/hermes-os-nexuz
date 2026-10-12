@@ -37,22 +37,21 @@ export function rowToTag(r: Record<string, unknown>): AssetTagRecord {
 }
 
 /**
- * Tags of one asset. With `allowedSiteIds` the asset's SITE must be in the set —
- * an asset at an unreachable site yields an empty list, exactly as an unknown
- * asset does (the `listAssets` convention).
+ * Tags of one asset. The asset's SITE must be in `allowedSiteIds` — an asset at
+ * an unreachable site yields an empty list, exactly as an unknown asset does.
+ *
+ * Slice D2: `allowedSiteIds` is REQUIRED (`[]` = nothing, no read). The unscoped
+ * `resolveTagsForAsset` and `getAssetByTag` exports had no caller and were removed.
  */
 export async function listTagsPage(
   assetId: string,
   organizationId: string,
-  opts?: { allowedSiteIds?: string[] },
+  opts: { allowedSiteIds: readonly string[] },
 ): Promise<{ tags: AssetTagRecord[]; truncated: boolean }> {
-  if (opts?.allowedSiteIds !== undefined && opts.allowedSiteIds.length === 0) {
-    return { tags: [], truncated: false };
-  }
+  if (opts.allowedSiteIds.length === 0) return { tags: [], truncated: false };
   const prisma = await getPrisma();
   if (!prisma) return { tags: [], truncated: false };
-  const where: Record<string, unknown> = { assetId, organizationId };
-  if (opts?.allowedSiteIds !== undefined) where.asset = { siteId: { in: opts.allowedSiteIds } };
+  const where: Record<string, unknown> = { assetId, organizationId, asset: { siteId: { in: [...opts.allowedSiteIds] } } };
   // `limit + 1` rows are requested so a result of exactly `limit` is not mistaken
   // for a truncated one. (assetId, tagPath) is unique, so tagPath is a total order.
   const limit = TWIN_LIMITS.LIST_TAGS;
@@ -68,7 +67,7 @@ export async function listTagsPage(
 export async function listTagsForAsset(
   assetId: string,
   organizationId: string,
-  opts?: { allowedSiteIds?: string[] },
+  opts: { allowedSiteIds: readonly string[] },
 ): Promise<AssetTagRecord[]> {
   return (await listTagsPage(assetId, organizationId, opts)).tags;
 }
@@ -172,26 +171,4 @@ export async function updateTag(
     return r;
   });
   return updated ? rowToTag(updated) : null;
-}
-
-/** Resolve all tag paths registered for a given asset (for Phase 37 telemetry lookup). */
-export async function resolveTagsForAsset(
-  assetId:        string,
-  organizationId: string,
-): Promise<string[]> {
-  const tags = await listTagsForAsset(assetId, organizationId);
-  return tags.map((t) => t.tagPath);
-}
-
-/** Find the asset that owns a given tag path within an org. Returns null if unmapped. */
-export async function getAssetByTag(
-  tagPath:        string,
-  organizationId: string,
-): Promise<AssetTagRecord | null> {
-  const prisma = await getPrisma();
-  if (!prisma) return null;
-  const r = await (prisma.assetTag as unknown as TagModel).findFirst({
-    where: { tagPath, organizationId },
-  });
-  return r ? rowToTag(r) : null;
 }

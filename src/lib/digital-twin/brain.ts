@@ -9,10 +9,13 @@
  * Designed as a foundation for the Industrial Copilot (Phase 38+).
  */
 
+import { getPrisma } from "@/lib/db/prisma";
 import { getAssetGraph, getDownstreamAssets, getUpstreamAssets } from "./graph";
 import { listTagsForAsset } from "./tags";
 import { calculateHealthScore } from "./health";
 import type { TwinNodeRecord, AssetHealthScore } from "./types";
+
+type SiteModel = { findFirst: (a: unknown) => Promise<Record<string, unknown> | null> };
 
 export interface FactoryTopology {
   organizationId: string;
@@ -20,6 +23,8 @@ export interface FactoryTopology {
   nodeCount:      number;
   relationCount:  number;
   nodesByType:    Record<string, number>;
+  /** true when the site graph hit its node/relation ceiling — the counts are then lower bounds. */
+  truncated:      boolean;
 }
 
 export interface AssetContext {
@@ -41,11 +46,27 @@ export interface AssetDependencies {
 /**
  * Summarize the factory topology for a site.
  * Used by Industrial Copilot to answer questions like "what does this site contain?".
+ *
+ * Slice D2: `allowedSiteIds` is REQUIRED — the caller's server-derived readable ACTIVE sites. A site
+ * outside it (hidden, inactive, foreign or nonexistent) is `null` without any graph read, and an empty
+ * scope is `null`. The counts come from {@link getAssetGraph}, which reads only nodes of that site and
+ * relations whose BOTH endpoints are at that site, bounded and ordered; `truncated` is carried through.
  */
 export async function getFactoryTopology(
   organizationId: string,
   siteId:         string,
+  allowedSiteIds: readonly string[],
 ): Promise<FactoryTopology | null> {
+  if (!organizationId || !siteId || !allowedSiteIds.includes(siteId)) return null;
+  // The scope is server-derived and ACTIVE-only; re-checked here so a stale scope cannot read a site
+  // that has since been deactivated.
+  const prisma = await getPrisma();
+  if (!prisma) return null;
+  const site = await (prisma.industrialSite as unknown as SiteModel).findFirst({
+    where:  { id: siteId, organizationId, status: "ACTIVE" },
+    select: { id: true },
+  });
+  if (!site) return null;
   const graph = await getAssetGraph(organizationId, siteId);
   if (!graph) return null;
 
@@ -60,6 +81,7 @@ export async function getFactoryTopology(
     nodeCount:    graph.nodes.size,
     relationCount: graph.relations.length,
     nodesByType,
+    truncated:    graph.truncated ?? false,
   };
 }
 

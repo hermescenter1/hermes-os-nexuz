@@ -60,10 +60,11 @@ export async function POST(req: NextRequest) {
   if (!body.ok) return body.response;
   const input = body.data;
 
-  const site = await authorizeTwinSite(req, ctx, input.siteId, "manage", twinNotFound.site);
-  if (!site.ok) return site.response;
-
   try {
+    // Inside the try (Slice D2): a guard failure gets the normalised error answer.
+    const site = await authorizeTwinSite(req, ctx, input.siteId, "manage", twinNotFound.site);
+    if (!site.ok) return site.response;
+
     const node = await createNode({
       organizationId: ctx.orgId,
       siteId:         input.siteId,

@@ -26,11 +26,12 @@ export async function GET(req: NextRequest) {
   if (!parsed.success) return twinJsonError(400, "VALIDATION_FAILED", "siteId is invalid");
   const siteId = parsed.data;
 
-  // An unreachable site is indistinguishable from one that does not exist.
-  const site = await authorizeTwinSite(req, ctx, siteId, "view", twinNotFound.site);
-  if (!site.ok) return site.response;
-
   try {
+    // An unreachable site is indistinguishable from one that does not exist. Inside the
+    // try (Slice D2) so a guard failure gets the normalised error answer, not a raw 500.
+    const site = await authorizeTwinSite(req, ctx, siteId, "view", twinNotFound.site);
+    if (!site.ok) return site.response;
+
     const graph = await getAssetGraph(ctx.orgId, siteId);
     if (!graph) {
       const e = twinNotFound.unavailable();

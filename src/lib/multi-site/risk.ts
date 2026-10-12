@@ -31,7 +31,51 @@ import {
   type MultiSiteConfidence,
 } from "./types";
 
-type RiskModel  = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
+type RawQuery = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<Record<string, unknown>[]>;
+
+interface LatestRisk { score: number; at: Date; confidence: string }
+
+/**
+ * The authoritative risk record of each compared asset: its LATEST AssetRiskScore, chosen IN THE
+ * DATABASE with `DISTINCT ON ("assetId")` — newest `createdAt` first, `id` ASC breaking a tie — so at
+ * most ONE row per compared asset is read (served by the (organizationId, assetId, createdAt) index).
+ *
+ * Slice D2: this used to read the organisation's ENTIRE risk history, every asset and every age, and
+ * discard all but the first row per asset in memory, with no tie-break. The selected row is the same
+ * (the latest, whatever its age — staleness is judged per site afterwards); only rows of the
+ * organisation's compared assets are read. Prisma's `distinct` is NOT used: without the nativeDistinct
+ * preview feature it fetches every matching row and de-duplicates in memory.
+ */
+async function loadLatestRiskPerAsset(
+  db:       Record<string, unknown>,
+  orgId:    string,
+  assetIds: readonly string[],
+): Promise<Map<string, LatestRisk>> {
+  const latest = new Map<string, LatestRisk>();
+  const ids = [...new Set(assetIds)];
+  if (ids.length === 0) return latest;
+  const raw = (db as { $queryRaw?: RawQuery }).$queryRaw;
+  if (typeof raw !== "function") throw new Error("RISK_QUERY_UNAVAILABLE");
+  const rows = await (db as { $queryRaw: RawQuery }).$queryRaw`
+    SELECT DISTINCT ON (r."assetId")
+           r."assetId"          AS "assetId",
+           r."riskScore"        AS "riskScore",
+           r."confidence"::text AS "confidence",
+           r."createdAt"        AS "createdAt"
+    FROM "AssetRiskScore" r
+    WHERE r."organizationId" = ${orgId}
+      AND r."assetId" = ANY(${ids}::text[])
+    ORDER BY r."assetId" ASC, r."createdAt" DESC, r."id" ASC
+  `;
+  for (const row of rows) {
+    latest.set(String(row.assetId), {
+      score:      Number(row.riskScore),
+      at:         new Date(row.createdAt as string),
+      confidence: String(row.confidence),
+    });
+  }
+  return latest;
+}
 
 function deriveConfidence(
   assetsWithData: number,
@@ -56,25 +100,8 @@ export async function rankSitesByRisk(
 
   const cutoff48h = new Date(Date.now() - RISK_DATA_MAX_STALE_HOURS * 3_600_000);
 
-  // Load latest AssetRiskScore per org (all assets, all ages — we filter per asset)
-  const riskRows = await (db.assetRiskScore as unknown as RiskModel).findMany({
-    where:   { organizationId: orgId },
-    orderBy: { createdAt: "desc" },
-    select:  { assetId: true, riskScore: true, confidence: true, createdAt: true },
-  });
-
-  // Latest per assetId
-  const latestRisk = new Map<string, { score: number; at: Date; confidence: string }>();
-  for (const row of riskRows) {
-    const aid = row.assetId as string;
-    if (!latestRisk.has(aid)) {
-      latestRisk.set(aid, {
-        score:      row.riskScore  as number,
-        at:         new Date(row.createdAt as string),
-        confidence: row.confidence as string,
-      });
-    }
-  }
+  // The latest AssetRiskScore of each compared asset — one row per asset, selected in the database.
+  const latestRisk = await loadLatestRiskPerAsset(db, orgId, [...siteAssetMap.values()].flat());
 
   const results: SiteRiskData[] = [];
 

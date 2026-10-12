@@ -33,7 +33,9 @@ import {
  * untyped `db.kpiRecord` was `undefined`, so every benchmark of an organisation that had assets failed
  * with a 500 (slice D1, MS-01). `getPrisma()` is untyped repository-wide; this is its one narrowing here.
  */
-type KpiClient = Pick<PrismaClient, "kPIRecord" | "assetHealthHistory">;
+type KpiClient = Pick<PrismaClient, "kPIRecord" | "$queryRaw">;
+
+interface LatestHealthRow { assetId: string; healthScore: number; createdAt: Date }
 
 function staleStatus(lastTs: Date | null): SiteDataStatus {
   if (!lastTs) return "insufficientData";
@@ -73,14 +75,20 @@ export async function compareSiteKPIs(
     select: { assetId: true, kpiName: true, value: true, calculatedAt: true },
   });
 
-  // The latest AssetHealthHistory row per compared asset (no period filter — just latest): one row per
-  // asset, instead of the whole organisation's history.
-  const healthRows = await client.assetHealthHistory.findMany({
-    where:    { organizationId: orgId, assetId: { in: allAssetIds } },
-    orderBy:  [{ createdAt: "desc" }, { id: "asc" }],
-    distinct: ["assetId"],
-    select:   { assetId: true, healthScore: true, createdAt: true },
-  });
+  // The latest AssetHealthHistory row per compared asset (no period filter — just latest), chosen IN THE
+  // DATABASE with DISTINCT ON (newest createdAt, id ASC on a tie): at most one row per compared asset.
+  // Slice D2: D1 used Prisma's `distinct`, which — without the nativeDistinct preview feature — reads
+  // every matching history row and de-duplicates in memory, so the history was still fully materialised.
+  const healthRows = await client.$queryRaw<LatestHealthRow[]>`
+    SELECT DISTINCT ON (h."assetId")
+           h."assetId"     AS "assetId",
+           h."healthScore" AS "healthScore",
+           h."createdAt"   AS "createdAt"
+    FROM "AssetHealthHistory" h
+    WHERE h."organizationId" = ${orgId}
+      AND h."assetId" = ANY(${allAssetIds}::text[])
+    ORDER BY h."assetId" ASC, h."createdAt" DESC, h."id" ASC
+  `;
 
   // Build in-memory maps: assetId → latest value per kpiName
   const kpiLatest = new Map<string, Map<string, number>>();    // assetId → kpiName → value

@@ -9,7 +9,7 @@
 
 import { getPrisma }     from "@/lib/db/prisma";
 import { rowToNode }     from "./nodes";
-import { rowToRelation, buildAdjacency, traverseDownstream, traverseUpstream } from "./relations";
+import { rowToRelation, buildAdjacency, findDependencyPath, traverseDownstream, traverseUpstream } from "./relations";
 import { TWIN_LIMITS }   from "./schemas";
 import { MAX_TRAVERSAL_DEPTH } from "./types";
 import type {
@@ -86,23 +86,20 @@ export async function getAssetGraph(
 export async function getNodeRelations(
   nodeId:         string,
   organizationId: string,
-  opts?: { allowedSiteIds?: string[] },
+  opts:           { allowedSiteIds: readonly string[] },
 ): Promise<{ outbound: TwinRelationRecord[]; inbound: TwinRelationRecord[]; truncated: boolean }> {
-  if (opts?.allowedSiteIds !== undefined && opts.allowedSiteIds.length === 0) {
-    return { outbound: [], inbound: [], truncated: false };
-  }
+  // Slice D2: the site scope is REQUIRED — there is no organisation-wide form.
+  const sites = Array.from(new Set(opts.allowedSiteIds.filter(isId)));
+  if (sites.length === 0) return { outbound: [], inbound: [], truncated: false };
   const prisma = await getPrisma();
   if (!prisma) return { outbound: [], inbound: [], truncated: false };
 
-  // With `allowedSiteIds`, an edge is only reported when both its endpoints are at
-  // sites the caller may reach, so a legacy edge to a node at another site does
-  // not disclose that node's id.
-  const siteScope: Record<string, unknown> = opts?.allowedSiteIds !== undefined
-    ? {
-        sourceNode: { siteId: { in: opts.allowedSiteIds } },
-        targetNode: { siteId: { in: opts.allowedSiteIds } },
-      }
-    : {};
+  // An edge is only reported when both its endpoints are at sites the caller may
+  // reach, so a legacy edge to a node at another site does not disclose that node's id.
+  const siteScope: Record<string, unknown> = {
+    sourceNode: { siteId: { in: sites } },
+    targetNode: { siteId: { in: sites } },
+  };
 
   // Each direction is capped independently at LIST_RELATIONS, in a total order
   // (createdAt, id) so WHICH rows survive the cap is deterministic. `limit + 1`
@@ -151,6 +148,28 @@ const clamp = (v: number | undefined, lo: number, hi: number, dflt: number): num
   Math.min(hi, Math.max(lo, Number.isFinite(v) ? Math.trunc(v as number) : dflt));
 
 /**
+ * The relations whose BOTH endpoints lie on `sites` (already de-duplicated and non-empty), read in one
+ * bounded, totally ordered query, as adjacency lists. `truncated` is true when the ceiling was hit.
+ */
+async function loadScopedAdjacency(
+  prisma:         Record<string, unknown>,
+  organizationId: string,
+  sites:          readonly string[],
+): Promise<ReturnType<typeof buildAdjacency> & { truncated: boolean }> {
+  const relLimit = TWIN_LIMITS.GRAPH_RELATIONS;
+  const rawRels = await (prisma.digitalTwinRelation as unknown as RelModel).findMany({
+    where: {
+      organizationId,
+      sourceNode: { organizationId, siteId: { in: [...sites] } },
+      targetNode: { organizationId, siteId: { in: [...sites] } },
+    },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    take:    relLimit + 1,
+  });
+  return { ...buildAdjacency(rawRels.slice(0, relLimit).map(rowToRelation)), truncated: rawRels.length > relLimit };
+}
+
+/**
  * Corrective slice C (IR-03). A traversal used to read EVERY relation of the organisation and every node it
  * reached, whatever its site, with no bound. Now:
  *   - the start node must itself lie on one of `allowedSiteIds` (otherwise: nothing);
@@ -177,18 +196,7 @@ async function scopedTraversal(
   const start = await nodeModel.findMany({ where: { id: nodeId, organizationId, siteId: { in: sites } }, select: { id: true }, take: 1 });
   if (start.length === 0) return empty;
 
-  const relLimit = TWIN_LIMITS.GRAPH_RELATIONS;
-  const rawRels = await (prisma.digitalTwinRelation as unknown as RelModel).findMany({
-    where: {
-      organizationId,
-      sourceNode: { organizationId, siteId: { in: sites } },
-      targetNode: { organizationId, siteId: { in: sites } },
-    },
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-    take:    relLimit + 1,
-  });
-  const relationsTruncated = rawRels.length > relLimit;
-  const { forward, backward } = buildAdjacency(rawRels.slice(0, relLimit).map(rowToRelation));
+  const { forward, backward, truncated: relationsTruncated } = await loadScopedAdjacency(prisma, organizationId, sites);
 
   const maxDepth = clamp(opts.maxDepth, 1, MAX_TRAVERSAL_DEPTH, MAX_TRAVERSAL_DEPTH);
   const maxNodes = clamp(opts.maxNodes, 1, MAX_TRAVERSAL_RESULT_NODES, MAX_TRAVERSAL_RESULT_NODES);
@@ -232,62 +240,108 @@ export async function getDownstreamAssets(
   return scopedTraversal("down", nodeId, organizationId, allowedSiteIds, opts);
 }
 
+/** Result of {@link getConnectedAssets}: one-hop neighbours, in a deterministic order. */
+export interface ConnectedAssetsResult {
+  nodes:     TwinNodeRecord[];
+  /** true when the relation read or the result size hit its ceiling — the list is NOT complete. */
+  truncated: boolean;
+}
+
 /**
- * Get all nodes connected to the given node via any relation type.
- * One-hop only. Bidirectional — includes both inbound and outbound neighbors.
+ * Nodes one hop away from the given node, inbound and outbound, within `allowedSiteIds` only.
+ *
+ * Slice D2: this used to read EVERY relation of the node across the organisation, without a bound, and
+ * then every neighbour whatever its site. Now the start node must itself lie on an allowed site
+ * (otherwise: nothing), each direction is read through {@link getNodeRelations} (both endpoints on allowed
+ * sites, bounded, ordered), the neighbour list is clamped to MAX_TRAVERSAL_RESULT_NODES and `truncated`
+ * says when a ceiling was hit. An empty `allowedSiteIds` returns nothing and reads nothing.
  */
 export async function getConnectedAssets(
   nodeId:         string,
   organizationId: string,
-): Promise<TwinNodeRecord[]> {
+  allowedSiteIds: readonly string[],
+  opts:           Pick<ScopedTraversalOptions, "maxNodes"> = {},
+): Promise<ConnectedAssetsResult> {
+  const empty: ConnectedAssetsResult = { nodes: [], truncated: false };
+  const sites = Array.from(new Set(allowedSiteIds.filter(isId)));
+  if (!isId(nodeId) || !isId(organizationId) || sites.length === 0) return empty;
   const prisma = await getPrisma();
-  if (!prisma) return [];
+  if (!prisma) return empty;
+  const nodeModel = prisma.digitalTwinNode as unknown as NodeModel;
 
-  const [outRaw, inRaw] = await Promise.all([
-    (prisma.digitalTwinRelation as unknown as RelModel).findMany({
-      where: { organizationId, sourceNodeId: nodeId },
-    }),
-    (prisma.digitalTwinRelation as unknown as RelModel).findMany({
-      where: { organizationId, targetNodeId: nodeId },
-    }),
-  ]);
+  const start = await nodeModel.findMany({ where: { id: nodeId, organizationId, siteId: { in: sites } }, select: { id: true }, take: 1 });
+  if (start.length === 0) return empty;
 
-  const neighborIds = new Set<string>();
-  outRaw.map(rowToRelation).forEach((r) => neighborIds.add(r.targetNodeId));
-  inRaw.map(rowToRelation).forEach((r)  => neighborIds.add(r.sourceNodeId));
+  const rels = await getNodeRelations(nodeId, organizationId, { allowedSiteIds: sites });
+  const neighbourIds: string[] = [];
+  const seen = new Set<string>([nodeId]);
+  for (const id of [...rels.outbound.map((r) => r.targetNodeId), ...rels.inbound.map((r) => r.sourceNodeId)]) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    neighbourIds.push(id);
+  }
+  const maxNodes = clamp(opts.maxNodes, 1, MAX_TRAVERSAL_RESULT_NODES, MAX_TRAVERSAL_RESULT_NODES);
+  const ids = neighbourIds.slice(0, maxNodes);
+  const truncated = rels.truncated || neighbourIds.length > maxNodes;
+  if (ids.length === 0) return { nodes: [], truncated };
 
-  if (neighborIds.size === 0) return [];
-  const rawNodes = await (prisma.digitalTwinNode as unknown as NodeModel).findMany({
-    where: { organizationId, id: { in: [...neighborIds] } },
+  const rawNodes = await nodeModel.findMany({
+    where: { organizationId, siteId: { in: sites }, id: { in: ids } },
+    take:  maxNodes,
   });
-  return rawNodes.map(rowToNode);
+  const order = new Map(ids.map((id, i) => [id, i]));
+  const nodes = rawNodes.map(rowToNode).filter((n) => order.has(n.id)).sort((a, b) => order.get(a.id)! - order.get(b.id)!);
+  return { nodes, truncated };
+}
+
+/** Result of {@link getDependencyPath} when both endpoints are visible. */
+export interface DependencyPathResult {
+  /** The shortest forward path (node ids, both ends included), or null if none was found within the bounds. */
+  path:      string[] | null;
+  nodes:     TwinNodeRecord[];
+  /** true when the relation read hit its ceiling — a `null` path then does NOT prove there is none. */
+  truncated: boolean;
 }
 
 /**
- * Find the shortest dependency path from fromId to toId.
- * Cycle-safe via BFS with visited set.
- * Returns null if no path exists.
+ * The shortest forward dependency path from `fromId` to `toId`, within `allowedSiteIds` only.
+ *
+ * Slice D2: this used to read every relation of the organisation without a bound. Now both endpoints
+ * must lie on allowed sites (otherwise `null`, the same answer for hidden, foreign and nonexistent
+ * nodes), only relations with BOTH endpoints on allowed sites are read (bounded, ordered), the search
+ * depth is clamped to MAX_TRAVERSAL_DEPTH, and an empty `allowedSiteIds` returns `null` without reading.
  */
 export async function getDependencyPath(
   fromId:         string,
   toId:           string,
   organizationId: string,
-): Promise<{ path: string[]; nodes: TwinNodeRecord[] } | null> {
+  allowedSiteIds: readonly string[],
+  opts:           Pick<ScopedTraversalOptions, "maxDepth"> = {},
+): Promise<DependencyPathResult | null> {
+  const sites = Array.from(new Set(allowedSiteIds.filter(isId)));
+  if (!isId(fromId) || !isId(toId) || !isId(organizationId) || sites.length === 0) return null;
   const prisma = await getPrisma();
   if (!prisma) return null;
+  const nodeModel = prisma.digitalTwinNode as unknown as NodeModel;
 
-  const rawRels = await (prisma.digitalTwinRelation as unknown as RelModel).findMany({
-    where: { organizationId },
+  const endpoints = await nodeModel.findMany({
+    where:  { organizationId, siteId: { in: sites }, id: { in: [fromId, toId] } },
+    select: { id: true },
+    take:   2,
   });
-  const relations = rawRels.map(rowToRelation);
-  const { forward } = buildAdjacency(relations);
+  const visible = new Set(endpoints.map((r) => String(r.id)));
+  if (!visible.has(fromId) || !visible.has(toId)) return null;
 
-  const { findDependencyPath } = await import("./relations");
-  const path = findDependencyPath(fromId, toId, forward);
-  if (!path) return null;
+  const { forward, truncated } = await loadScopedAdjacency(prisma, organizationId, sites);
+  const maxDepth = clamp(opts.maxDepth, 1, MAX_TRAVERSAL_DEPTH, MAX_TRAVERSAL_DEPTH);
+  const path = findDependencyPath(fromId, toId, forward, maxDepth);
+  if (!path) return { path: null, nodes: [], truncated };
 
-  const rawNodes = await (prisma.digitalTwinNode as unknown as NodeModel).findMany({
-    where: { organizationId, id: { in: path } },
+  const rawNodes = await nodeModel.findMany({
+    where: { organizationId, siteId: { in: sites }, id: { in: path } },
+    take:  path.length,
   });
-  return { path, nodes: rawNodes.map(rowToNode) };
+  const order = new Map(path.map((id, i) => [id, i]));
+  const nodes = rawNodes.map(rowToNode).filter((n) => order.has(n.id)).sort((a, b) => order.get(a.id)! - order.get(b.id)!);
+  return { path, nodes, truncated };
 }

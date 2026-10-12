@@ -30,6 +30,18 @@ const MAX_ASSETS_IN_CONTEXT   = 20;
 const MAX_SITES_IN_CONTEXT    = 10;
 const MAX_NODES_IN_CONTEXT    = 30;
 
+type AssetCountModel = { count: (a: unknown) => Promise<number> };
+
+/** Number of assets on the given (already authorised) sites — counted in the database, not by loading them. */
+async function countScopedAssets(organizationId: string, siteIds: readonly string[]): Promise<number> {
+  if (siteIds.length === 0) return 0;
+  const prisma = await getPrisma();
+  if (!prisma) return 0;
+  return (prisma.industrialAsset as unknown as AssetCountModel).count({
+    where: { organizationId, siteId: { in: [...siteIds] } },
+  });
+}
+
 export interface AssetContextSummary {
   assetId:      string;
   name:         string;
@@ -120,8 +132,12 @@ export async function getSiteContextSummary(
   const site   = sites.find((s) => s.id === siteId);
   if (!site) return null;
 
-  const allAssets = await listAssets(organizationId, { siteId, allowedSiteIds: [...scope.siteIds] });
-  const capped    = allAssets.slice(0, MAX_ASSETS_IN_CONTEXT);
+  // Slice D2: the page is bounded IN the query and the total is a COUNT — the site's assets are no
+  // longer all loaded to be sliced in memory.
+  const [capped, assetCount] = await Promise.all([
+    listAssets(organizationId, { siteId, allowedSiteIds: [...scope.siteIds], limit: MAX_ASSETS_IN_CONTEXT }),
+    countScopedAssets(organizationId, [siteId]),
+  ]);
 
   const assetSummaries = await Promise.all(
     capped.map((a) => getAssetContextSummary(scope, a.id)),
@@ -131,9 +147,9 @@ export async function getSiteContextSummary(
     siteId,
     name:       escapeUntrustedData(site.name),
     status:     site.status,
-    assetCount: allAssets.length,
+    assetCount,
     assets:     assetSummaries.filter(Boolean) as AssetContextSummary[],
-    moreAssets: Math.max(0, allAssets.length - MAX_ASSETS_IN_CONTEXT),
+    moreAssets: Math.max(0, assetCount - MAX_ASSETS_IN_CONTEXT),
   };
 }
 
@@ -142,14 +158,16 @@ export async function getOrganizationContextSummary(
   scope: CopilotScope,
 ): Promise<OrgContextSummary> {
   const organizationId = scope.organizationId;
-  const allSites  = (await listSites(organizationId)).filter((s) => scope.siteIds.includes(s.id));
+  // Slice D2: sites are read for the scope only (not the whole organisation) and assets are COUNTED,
+  // not loaded.
+  const allSites  = (await listSites(organizationId, [...scope.siteIds])).filter((s) => scope.siteIds.includes(s.id));
   const capped    = allSites.slice(0, MAX_SITES_IN_CONTEXT);
-  const allAssets = await listAssets(organizationId, { allowedSiteIds: [...scope.siteIds] });
+  const assetCount = await countScopedAssets(organizationId, scope.siteIds);
 
   return {
     organizationId,
     siteCount:  allSites.length,
-    assetCount: allAssets.length,
+    assetCount,
     sites:      capped.map((s) => ({
       siteId: s.id,
       name:   escapeUntrustedData(s.name),

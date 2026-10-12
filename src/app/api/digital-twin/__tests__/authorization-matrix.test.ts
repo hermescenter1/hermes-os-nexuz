@@ -659,3 +659,56 @@ describe("site scope — inactive sites (IR-01)", () => {
     expect(svc.listTagsPage).toHaveBeenCalledWith("a2", "org-A", { allowedSiteIds: [] });
   });
 });
+
+describe("Slice D2 — legacy multi-site resources and guards inside the error boundary", () => {
+  const missingRelation = async (method: "GET" | "PATCH") =>
+    (relationIdRoute[method] as Handler)(req(method, "/api/digital-twin/relations/r-missing", method === "PATCH" ? { metadata: { a: 1 } } : undefined), params("r-missing"));
+
+  it.each(["GET", "PATCH"] as const)("%s of a legacy relation with an UNREACHABLE endpoint is the not-found answer, whatever the endpoint order", async (method) => {
+    h.orgRole = "MANAGER";
+    h.siteRoles = { s1: "SITE_VIEWER" };                    // s1 reachable but view-only; s2 unreachable
+    h.relations = { "r-ab": { siteIds: ["s1", "s2"] }, "r-ba": { siteIds: ["s2", "s1"] } };
+    const missing = await missingRelation(method);
+    const expected = { status: missing.status, body: await missing.json() };
+    expect(expected).toEqual({ status: 404, body: { error: "Relation not found", code: "RELATION_NOT_FOUND" } });
+    for (const id of ["r-ab", "r-ba"]) {
+      const res = await (relationIdRoute[method] as Handler)(req(method, `/api/digital-twin/relations/${id}`, method === "PATCH" ? { metadata: { a: 1 } } : undefined), params(id));
+      expect({ id, status: res.status, body: await res.json() }).toEqual({ id, ...expected });
+    }
+    expect(svc.updateRelation).not.toHaveBeenCalled();
+  });
+
+  it("PATCH of a relation whose sites are ALL reachable but not manageable is 403, never written", async () => {
+    h.orgRole = "MANAGER";
+    h.siteRoles = { s1: "SITE_VIEWER", s2: "SITE_VIEWER" };
+    h.relations = { "r-ab": { siteIds: ["s1", "s2"] } };
+    const res = await (relationIdRoute.PATCH as Handler)(req("PATCH", "/api/digital-twin/relations/r-ab", { metadata: {} }), params("r-ab"));
+    expect(res.status).toBe(403);
+    expect((await res.json()).code).toBe("INSUFFICIENT_SITE_PERMISSION");
+    expect(svc.updateRelation).not.toHaveBeenCalled();
+  });
+
+  it("a relation with no resolvable endpoint site is refused as not found", async () => {
+    h.relations = { "r-none": { siteIds: [] } };
+    const res = await (relationIdRoute.GET as Handler)(req("GET", "/api/digital-twin/relations/r-none"), params("r-none"));
+    expect(res.status).toBe(404);
+  });
+
+  it.each([
+    ["GET /graph", () => (graphRoute.GET as Handler)(req("GET", "/api/digital-twin/graph?siteId=s1"))],
+    ["POST /layout", () => (layoutRoute.POST as Handler)(req("POST", "/api/digital-twin/layout", { siteId: "s1", name: "L" }))],
+    ["POST /nodes", () => (nodesRoute.POST as Handler)(req("POST", "/api/digital-twin/nodes", { siteId: "s1", displayName: "N", nodeType: "AREA" }))],
+  ] as const)("%s: a failing site guard gets the normalised 500, without a driver message", async (_name, call) => {
+    const { requireSiteActor } = await import("@/lib/site/context");
+    vi.mocked(requireSiteActor).mockRejectedValueOnce(new Error("connect ECONNREFUSED 10.0.0.5:5432 D2-DRIVER-CANARY"));
+    const res = await call();
+    expect(res.status).toBe(500);
+    const text = await res.text();
+    expect(JSON.parse(text)).toEqual({ error: "Internal server error", code: "INTERNAL_ERROR" });
+    expect(text).not.toContain("ECONNREFUSED");
+    expect(text).not.toContain("D2-DRIVER-CANARY");
+    expect(svc.getAssetGraph).not.toHaveBeenCalled();
+    expect(svc.createLayout).not.toHaveBeenCalled();
+    expect(svc.createNode).not.toHaveBeenCalled();
+  });
+});

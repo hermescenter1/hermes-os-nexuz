@@ -45,10 +45,21 @@ const tooDeep = () =>
  * Adding `source PART_OF target` closes a loop iff `target` already reaches
  * `source` by following PART_OF edges forward. Breadth-first, one query per
  * level, so the number of round trips is bounded by the depth cap.
+ *
+ * SITE-CONFINED (Slice D2). Both endpoints of a new relation are at the same
+ * site (`createRelation` refuses anything else), and the walk follows only
+ * PART_OF edges whose BOTH endpoints are at that site. It used to follow every
+ * PART_OF edge of the organisation, so a legacy cross-site edge could carry it
+ * into a site the caller cannot see and turn the refusal into an oracle about
+ * hidden topology. A site's hierarchy is the PART_OF graph among its own nodes:
+ * cross-site edges can no longer be written, no scoped reader returns them, and
+ * every traversal is cycle-safe, so ignoring them here gives up nothing the
+ * caller is entitled to know.
  */
 export async function assertPartOfAcyclic(
   tx: TwinTx,
   organizationId: string,
+  siteId: string,
   sourceNodeId: string,
   targetNodeId: string,
 ): Promise<void> {
@@ -65,8 +76,11 @@ export async function assertPartOfAcyclic(
         organizationId,
         relationType: "PART_OF",
         sourceNodeId: { in: frontier },
+        sourceNode:   { organizationId, siteId },
+        targetNode:   { organizationId, siteId },
       },
       select: { targetNodeId: true },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       take: TWIN_LIMITS.HIERARCHY_MAX_VISITED + 1,
     });
     if (edges.length > TWIN_LIMITS.HIERARCHY_MAX_VISITED) throw tooDeep();
@@ -88,10 +102,15 @@ export async function assertPartOfAcyclic(
  * Setting `node.parentNodeId = newParentId` closes a loop iff `node` is already
  * an ancestor of `newParentId` (or the node is its own parent). Walks the parent
  * chain upward, one lookup per level, bounded.
+ *
+ * SITE-CONFINED (Slice D2): every lookup carries the node's site, so a legacy
+ * parent pointer into another site ends the walk (that ancestor is not part of
+ * this site's hierarchy) instead of reading — and reporting on — a hidden node.
  */
 export async function assertParentChainAcyclic(
   tx: TwinTx,
   organizationId: string,
+  siteId: string,
   nodeId: string,
   newParentId: string,
 ): Promise<void> {
@@ -108,7 +127,7 @@ export async function assertParentChainAcyclic(
     seen.add(cursor);
 
     const row: Record<string, unknown> | null = await tx.digitalTwinNode.findFirst({
-      where: { id: cursor, organizationId },
+      where: { id: cursor, organizationId, siteId },
       select: { parentNodeId: true },
     });
     cursor = row && row.parentNodeId ? String(row.parentNodeId) : null;

@@ -79,7 +79,7 @@ describe("POST /api/multi-site/benchmarks — the shared snapshot writer", () =>
 describe("compareSiteKPIs (MS-01)", () => {
   it("reads the generated kPIRecord delegate, bounded to the compared assets, and computes the site means", async () => {
     const kpiQueries: Record<string, unknown>[] = [];
-    const healthQueries: Record<string, unknown>[] = [];
+    const healthQueries: { sql: string; values: unknown[] }[] = [];
     // Only the GENERATED delegate names exist on this fake, exactly as on the real client.
     h.prisma = {
       kPIRecord: {
@@ -92,8 +92,10 @@ describe("compareSiteKPIs (MS-01)", () => {
           ];
         },
       },
-      assetHealthHistory: {
-        findMany: async (a: Record<string, unknown>) => { healthQueries.push(a); return [{ assetId: "a1", healthScore: 80, createdAt: new Date() }]; },
+      // Slice D2: the latest health row per asset is selected in SQL (DISTINCT ON), not by Prisma's in-memory `distinct`.
+      $queryRaw: async (strings: TemplateStringsArray, ...values: unknown[]) => {
+        healthQueries.push({ sql: strings.join("?"), values });
+        return [{ assetId: "a1", healthScore: 80, createdAt: new Date() }];
       },
     };
     const { compareSiteKPIs } = await import("../kpis");
@@ -103,7 +105,10 @@ describe("compareSiteKPIs (MS-01)", () => {
       ["s2", null, null, null, 1],        // no health row: the existing data-sufficiency rule marks the site insufficient
     ]);
     expect(kpiQueries[0]).toMatchObject({ where: { organizationId: "org-A", assetId: { in: ["a1", "a2"] } } });
-    expect(healthQueries[0]).toMatchObject({ where: { organizationId: "org-A", assetId: { in: ["a1", "a2"] } }, distinct: ["assetId"] });
+    expect(healthQueries).toHaveLength(1);
+    expect(healthQueries[0].sql).toContain(`SELECT DISTINCT ON (h."assetId")`);
+    expect(healthQueries[0].sql).toContain(`ORDER BY h."assetId" ASC, h."createdAt" DESC, h."id" ASC`);
+    expect(healthQueries[0].values).toEqual(["org-A", ["a1", "a2"]]);
   });
 });
 

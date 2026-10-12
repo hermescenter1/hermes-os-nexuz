@@ -91,35 +91,50 @@ export async function authorizeTwinSite(
   access: TwinSiteAccess,
   notFound: () => TwinDomainError,
 ): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
-  const siteAuth = await requireSiteActor(req, ctx.orgId, siteId);
-  if ("error" in siteAuth) {
-    const nf = notFound();
-    return { ok: false, response: twinJsonError(nf.status, nf.code, nf.message) };
-  }
-  const sitePerm = requireSitePermission(
-    siteAuth.ctx.role,
-    access === "manage" ? "manage_assets" : "view_assets",
-  );
-  if (!sitePerm.ok) {
-    return {
-      ok: false,
-      response: twinJsonError(sitePerm.status, "INSUFFICIENT_SITE_PERMISSION", sitePerm.error),
-    };
-  }
-  return { ok: true };
+  return authorizeTwinSites(req, ctx, [siteId], access, notFound);
 }
 
-/** Authorise several sites (deduplicated). Stops at the first refusal. */
+/**
+ * Authorise several sites (deduplicated) — every site of a resource that spans
+ * more than one (a legacy cross-site relation).
+ *
+ * Slice D2: REACH is decided for every site BEFORE any permission is checked. It
+ * used to stop at the first refusal in endpoint order, so a legacy relation whose
+ * first endpoint was at a site the caller could only VIEW answered a PATCH with
+ * 403 INSUFFICIENT_SITE_PERMISSION — confirming the relation exists — even when
+ * its other endpoint was at a site the caller cannot reach, where a GET answered
+ * 404. Now any unreachable site gives the resource's not-found answer, identical
+ * to a resource that does not exist, whatever the order; 403 is only possible
+ * once every site is reachable. An empty list is refused as not found.
+ */
 export async function authorizeTwinSites(
   req: NextRequest,
   ctx: TwinCtx,
-  siteIds: string[],
+  siteIds: readonly string[],
   access: TwinSiteAccess,
   notFound: () => TwinDomainError,
 ): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
-  for (const siteId of new Set(siteIds)) {
-    const r = await authorizeTwinSite(req, ctx, siteId, access, notFound);
-    if (!r.ok) return r;
+  const refuseNotFound = () => {
+    const nf = notFound();
+    return { ok: false as const, response: twinJsonError(nf.status, nf.code, nf.message) };
+  };
+  const unique = [...new Set(siteIds)];
+  if (unique.length === 0) return refuseNotFound();
+
+  const roles: Parameters<typeof requireSitePermission>[0][] = [];
+  for (const siteId of unique) {
+    const siteAuth = await requireSiteActor(req, ctx.orgId, siteId);
+    if ("error" in siteAuth) return refuseNotFound();
+    roles.push(siteAuth.ctx.role);
+  }
+  for (const role of roles) {
+    const sitePerm = requireSitePermission(role, access === "manage" ? "manage_assets" : "view_assets");
+    if (!sitePerm.ok) {
+      return {
+        ok: false,
+        response: twinJsonError(sitePerm.status, "INSUFFICIENT_SITE_PERMISSION", sitePerm.error),
+      };
+    }
   }
   return { ok: true };
 }

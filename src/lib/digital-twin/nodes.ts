@@ -24,47 +24,38 @@ export function rowToNode(r: Record<string, unknown>): TwinNodeRecord {
 }
 
 /**
- * Nodes of an organisation, optionally narrowed to one site and/or to the sites
- * the caller may reach.
+ * Nodes of an organisation, within the sites the caller may reach, optionally
+ * narrowed to one of them.
  *
- * `allowedSiteIds` follows the `listAssets` contract: `undefined` = no site
- * restriction (internal callers only — the routes always pass it), `[]` = the
- * caller reaches no site, so the answer is empty; a requested `siteId` NARROWS
- * the allowed set and never replaces it. The restriction is part of the query,
- * not a filter applied to a fetched result.
+ * Slice D2: `allowedSiteIds` is REQUIRED — there is no organisation-wide form any
+ * more (the unscoped `listNodes` / `countNodes` wrappers had no caller and were
+ * removed). `[]` = the caller reaches no site, so the answer is empty without a
+ * read; a requested `siteId` NARROWS the allowed set and never replaces it. The
+ * restriction is part of the query, not a filter applied to a fetched result.
  */
 export async function listNodesPage(
   organizationId: string,
-  opts?: { siteId?: string; allowedSiteIds?: string[]; limit?: number },
+  opts: { siteId?: string; allowedSiteIds: readonly string[]; limit?: number },
 ): Promise<{ nodes: TwinNodeRecord[]; truncated: boolean }> {
-  if (opts?.allowedSiteIds !== undefined && opts.allowedSiteIds.length === 0) {
-    return { nodes: [], truncated: false };
-  }
+  if (opts.allowedSiteIds.length === 0) return { nodes: [], truncated: false };
+  if (opts.siteId && !opts.allowedSiteIds.includes(opts.siteId)) return { nodes: [], truncated: false };
   const prisma = await getPrisma();
   if (!prisma) return { nodes: [], truncated: false };
 
-  const where: Record<string, unknown> = { organizationId };
-  if (opts?.allowedSiteIds !== undefined) {
-    if (opts.siteId && !opts.allowedSiteIds.includes(opts.siteId)) {
-      return { nodes: [], truncated: false };
-    }
-    where.siteId = opts.siteId ?? { in: opts.allowedSiteIds };
-  } else if (opts?.siteId) {
-    where.siteId = opts.siteId;
-  }
+  const where: Record<string, unknown> = {
+    organizationId,
+    siteId: opts.siteId ?? { in: [...opts.allowedSiteIds] },
+  };
 
-  const limit = opts?.limit ?? TWIN_LIMITS.LIST_NODES;
+  // A caller-supplied limit can only LOWER the server ceiling.
+  const requested = Number.isFinite(opts.limit) ? Math.trunc(opts.limit as number) : TWIN_LIMITS.LIST_NODES;
+  const limit = Math.min(Math.max(1, requested), TWIN_LIMITS.LIST_NODES);
   const rows = await (prisma.digitalTwinNode as unknown as NodeModel).findMany({
     where,
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     take: limit + 1,
   });
   return { nodes: rows.slice(0, limit).map(rowToNode), truncated: rows.length > limit };
-}
-
-/** Back-compat wrapper (internal callers). Bounded, but carries no `truncated` flag. */
-export async function listNodes(organizationId: string, siteId?: string): Promise<TwinNodeRecord[]> {
-  return (await listNodesPage(organizationId, { siteId })).nodes;
 }
 
 export async function getNode(id: string, organizationId: string): Promise<TwinNodeRecord | null> {
@@ -177,7 +168,7 @@ export async function updateNode(
         throw new TwinDomainError("HIERARCHY_CYCLE", 422, "A node cannot be its own parent");
       }
       await assertParentInSite(tx, patch.parentNodeId, organizationId, siteId);
-      await assertParentChainAcyclic(tx, organizationId, id, patch.parentNodeId);
+      await assertParentChainAcyclic(tx, organizationId, siteId, id, patch.parentNodeId);
     }
 
     // Only fields actually supplied are written; `undefined` never reaches Prisma.
@@ -204,10 +195,4 @@ export async function updateNode(
     return r;
   });
   return updated ? rowToNode(updated) : null;
-}
-
-export async function countNodes(organizationId: string): Promise<number> {
-  const prisma = await getPrisma();
-  if (!prisma) return 0;
-  return (prisma.digitalTwinNode as unknown as NodeModel).count({ where: { organizationId } });
 }
