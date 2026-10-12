@@ -49,10 +49,21 @@ export interface ZonedWallClock {
 
 const PART_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
 
+/**
+ * The locale tag is pinned to Gregorian months and Latin digits on purpose.
+ * This formatter never reaches a reader: it is a MACHINE PARSE that turns an
+ * instant into the zone's wall-clock numbers, and `Number(part.value)` only
+ * works if those numbers are Latin and the month is Gregorian. A bare "en-US"
+ * leaves both to ICU locale data, and a Persian calendar or Eastern Arabic
+ * digits would make every reading NaN. Display formatting belongs in
+ * `src/lib/i18n/format.ts`, which is why this is not a locale branch.
+ */
+const PART_LOCALE = "en-US-u-ca-gregory-nu-latn";
+
 function formatterFor(timeZone: string): Intl.DateTimeFormat {
   const cached = PART_FORMATTERS.get(timeZone);
   if (cached) return cached;
-  const made = new Intl.DateTimeFormat("en-US", {
+  const made = new Intl.DateTimeFormat(PART_LOCALE, {
     timeZone,
     hour12: false,
     year: "numeric",
