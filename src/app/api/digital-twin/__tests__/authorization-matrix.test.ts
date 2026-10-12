@@ -25,6 +25,8 @@ const h = vi.hoisted(() => ({
   /** siteId → site role. A site missing from the map is unreachable. */
   siteRoles: {} as Record<string, string>,
   allowed: [] as string[],
+  /** Sites that exist and are granted but are NOT active (IR-01). */
+  inactive: [] as string[],
   nodes: {} as Record<string, { id: string; siteId: string }>,
   relations: {} as Record<string, { siteIds: string[] }>,
   assets: {} as Record<string, { id: string; siteId: string }>,
@@ -60,6 +62,16 @@ vi.mock("@/lib/site/context", () => ({
   }),
 }));
 vi.mock("@/lib/api/meter", () => ({ meterIndustrialEvent: vi.fn() }));
+// The REAL `resolveSiteScope` runs in these tests: only the site table is faked. A granted site that
+// is listed in `h.inactive` is not returned by the ACTIVE-site query, exactly as in the database.
+vi.mock("@/lib/db/prisma", () => ({
+  getPrisma: async () => ({
+    industrialSite: {
+      findMany: async (a: { where: { status: string; id: { in: string[] } } }) =>
+        a.where.status === "ACTIVE" ? a.where.id.in.filter((id) => !h.inactive.includes(id)).map((id) => ({ id })) : [],
+    },
+  }),
+}));
 
 const svc = vi.hoisted(() => ({
   listNodesPage: vi.fn(async () => ({ nodes: [], truncated: false })),
@@ -155,6 +167,7 @@ beforeEach(() => {
   h.refuse = null;
   h.siteRoles = { s1: "SITE_ADMIN", s2: "SITE_ADMIN" };
   h.allowed = ["s1", "s2"];
+  h.inactive = [];
   h.nodes = { n1: { id: "n1", siteId: "s1" }, n2: { id: "n2", siteId: "s1" }, n3: { id: "n3", siteId: "s2" } };
   h.relations = { r1: { siteIds: ["s1"] } };
   h.assets = { a1: { id: "a1", siteId: "s1" }, a2: { id: "a2", siteId: "s2" } };
@@ -604,5 +617,45 @@ describe("POST /relations — hidden and missing endpoints are indistinguishable
   it("no response names the hidden id", async () => {
     const res = await post("n3", "n1");
     expect(JSON.stringify(await res.json())).not.toContain("n3");
+  });
+});
+
+describe("site scope — inactive sites (IR-01)", () => {
+  beforeEach(() => {
+    h.siteRoles = { s1: "SITE_MANAGER", s2: "SITE_MANAGER" };
+    h.allowed = ["s1", "s2"];     // the UserSite grants are both ACTIVE ...
+    h.inactive = ["s2"];          // ... but site s2 itself is not
+  });
+
+  it("every collection route receives ONLY the active granted sites", async () => {
+    await (nodesRoute.GET as Handler)(req("GET", "/api/digital-twin/nodes"));
+    await (relationsRoute.GET as Handler)(req("GET", "/api/digital-twin/relations"));
+    await (layoutRoute.GET as Handler)(req("GET", "/api/digital-twin/layout"));
+    await (tagsRoute.GET as Handler)(req("GET", "/api/digital-twin/tags?assetId=a1"));
+    await (nodeIdRoute.GET as Handler)(req("GET", "/api/digital-twin/nodes/n1"), params("n1"));
+    expect(svc.listNodesPage).toHaveBeenCalledWith("org-A", expect.objectContaining({ allowedSiteIds: ["s1"] }));
+    expect(svc.listRelationsPage).toHaveBeenCalledWith("org-A", expect.objectContaining({ allowedSiteIds: ["s1"] }));
+    expect(svc.listLayoutsPage).toHaveBeenCalledWith("org-A", undefined, ["s1"]);
+    expect(svc.listTagsPage).toHaveBeenCalledWith("a1", "org-A", { allowedSiteIds: ["s1"] });
+    expect(svc.getNodeRelations).toHaveBeenCalledWith("n1", "org-A", { allowedSiteIds: ["s1"] });
+  });
+
+  it("an explicit ?siteId of the inactive site is passed through unchanged but cannot widen the scope", async () => {
+    await (nodesRoute.GET as Handler)(req("GET", "/api/digital-twin/nodes?siteId=s2"));
+    await (layoutRoute.GET as Handler)(req("GET", "/api/digital-twin/layout?siteId=s2"));
+    expect(svc.listNodesPage).toHaveBeenCalledWith("org-A", { siteId: "s2", allowedSiteIds: ["s1"] });
+    expect(svc.listLayoutsPage).toHaveBeenCalledWith("org-A", "s2", ["s1"]);
+  });
+
+  it("a member whose only grant is an inactive site gets the authorised-empty allow-list everywhere", async () => {
+    h.allowed = ["s2"];
+    await (nodesRoute.GET as Handler)(req("GET", "/api/digital-twin/nodes"));
+    await (relationsRoute.GET as Handler)(req("GET", "/api/digital-twin/relations"));
+    await (layoutRoute.GET as Handler)(req("GET", "/api/digital-twin/layout"));
+    await (tagsRoute.GET as Handler)(req("GET", "/api/digital-twin/tags?assetId=a2"));
+    expect(svc.listNodesPage).toHaveBeenCalledWith("org-A", expect.objectContaining({ allowedSiteIds: [] }));
+    expect(svc.listRelationsPage).toHaveBeenCalledWith("org-A", expect.objectContaining({ allowedSiteIds: [] }));
+    expect(svc.listLayoutsPage).toHaveBeenCalledWith("org-A", undefined, []);
+    expect(svc.listTagsPage).toHaveBeenCalledWith("a2", "org-A", { allowedSiteIds: [] });
   });
 });

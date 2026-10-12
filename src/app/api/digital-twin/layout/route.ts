@@ -2,7 +2,7 @@ import { NextRequest, NextResponse }  from "next/server";
 import { requirePlatformAuth }          from "@/lib/api/auth";
 import { requireOrgActor }              from "@/lib/org/context";
 import { requirePermission }            from "@/lib/org/rbac";
-import { getAllowedSiteIds }          from "@/lib/site/context";
+import { resolveSiteScope }          from "@/lib/digital-twin/scope";
 import { listLayoutsPage, createLayout }  from "@/lib/digital-twin/layout";
 import { authorizeTwinSite, requireSessionAuth, twinAuthRefusal, type TwinCtx } from "@/lib/digital-twin/guard";
 import { parseJsonBody }              from "@/lib/digital-twin/request";
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const allowedSiteIds = await getAllowedSiteIds(ctx.userId, ctx.orgId);
+    const allowedSiteIds = await resolveSiteScope(ctx.userId, ctx.orgId);
     const { layouts, truncated } = await listLayoutsPage(ctx.orgId, siteId, allowedSiteIds);
     return NextResponse.json({ layouts, truncated });
   } catch (err) {

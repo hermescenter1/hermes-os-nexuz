@@ -2,7 +2,7 @@ import { NextRequest, NextResponse }  from "next/server";
 import { requirePlatformAuth }          from "@/lib/api/auth";
 import { requireOrgActor }              from "@/lib/org/context";
 import { requirePermission }            from "@/lib/org/rbac";
-import { getAllowedSiteIds }          from "@/lib/site/context";
+import { resolveSiteScope }          from "@/lib/digital-twin/scope";
 import { getNode, updateNode }        from "@/lib/digital-twin/nodes";
 import { getNodeRelations }           from "@/lib/digital-twin/graph";
 import { meterIndustrialEvent }       from "@/lib/api/meter";
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     const site = await authorizeTwinSite(req, ctx, node.siteId, "view", twinNotFound.node);
     if (!site.ok) return site.response;
 
-    const allowedSiteIds = await getAllowedSiteIds(ctx.userId, ctx.orgId);
+    const allowedSiteIds = await resolveSiteScope(ctx.userId, ctx.orgId);
     const relations = await getNodeRelations(id, ctx.orgId, { allowedSiteIds });
     meterIndustrialEvent(ctx.orgId, "digital_twin_queries");
     return NextResponse.json({ node, relations });

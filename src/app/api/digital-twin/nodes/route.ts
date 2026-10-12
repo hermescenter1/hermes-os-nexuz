@@ -2,7 +2,7 @@ import { NextRequest, NextResponse }   from "next/server";
 import { requirePlatformAuth }          from "@/lib/api/auth";
 import { requireOrgActor }              from "@/lib/org/context";
 import { requirePermission }            from "@/lib/org/rbac";
-import { getAllowedSiteIds }           from "@/lib/site/context";
+import { resolveSiteScope }           from "@/lib/digital-twin/scope";
 import { listNodesPage, createNode }   from "@/lib/digital-twin/nodes";
 import { meterIndustrialEvent }        from "@/lib/api/meter";
 import { authorizeTwinSite, requireSessionAuth, twinAuthRefusal, type TwinCtx } from "@/lib/digital-twin/guard";
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   try {
     // Site scope is part of the query: the caller's reachable sites, narrowed (never
     // replaced) by an explicit ?siteId.
-    const allowedSiteIds = await getAllowedSiteIds(ctx.userId, ctx.orgId);
+    const allowedSiteIds = await resolveSiteScope(ctx.userId, ctx.orgId);
     const { nodes, truncated } = await listNodesPage(ctx.orgId, { siteId, allowedSiteIds });
 
     meterIndustrialEvent(ctx.orgId, "digital_twin_queries");

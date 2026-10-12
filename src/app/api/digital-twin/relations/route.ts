@@ -2,7 +2,7 @@ import { NextRequest, NextResponse }  from "next/server";
 import { requirePlatformAuth }          from "@/lib/api/auth";
 import { requireOrgActor }              from "@/lib/org/context";
 import { requirePermission }            from "@/lib/org/rbac";
-import { getAllowedSiteIds }          from "@/lib/site/context";
+import { resolveSiteScope }          from "@/lib/digital-twin/scope";
 import { listRelationsPage, createRelation } from "@/lib/digital-twin/relations";
 import { getNode }                    from "@/lib/digital-twin/nodes";
 import { meterIndustrialEvent }       from "@/lib/api/meter";
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
   if (!target.ok) return twinJsonError(400, "VALIDATION_FAILED", "targetNodeId is invalid");
 
   try {
-    const allowedSiteIds = await getAllowedSiteIds(ctx.userId, ctx.orgId);
+    const allowedSiteIds = await resolveSiteScope(ctx.userId, ctx.orgId);
     const { relations, truncated } = await listRelationsPage(ctx.orgId, {
       sourceNodeId: source.value,
       targetNodeId: target.value,
