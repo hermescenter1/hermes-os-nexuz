@@ -441,6 +441,11 @@ describe("102 — migration ordering", () => {
     // an organization-scoped asset-number uniqueness constraint. Touches no
     // Phase 102 table (asserted below).
     "20261009150000_asset_registry_write_integrity",
+    // Executive Management Center — one additive table, ExecutiveDailyReport,
+    // holding one frozen report per organization per business day. Creates no
+    // column on an existing table and touches no Phase 102 table (asserted
+    // below).
+    "20261011090000_executive_daily_report",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {
