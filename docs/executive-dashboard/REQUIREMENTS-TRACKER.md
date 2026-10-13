@@ -45,7 +45,8 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `NOT_STARTED` |
+| **Status** | `PARTIAL` — data, API and audit built and unit-tested (slice G1, not yet merged); UI (G2) and the management-view section (G3) not started |
+| **Slice G1** | `STAGE-11-SLICE-G1-CUSTOMERS-DATA.md`: tenant-owned `Party` (the counterparty the accounting plan names for A2, so no parallel customer model) + append-only `PartyInteraction` + `ErpProject.partyId`, all linked by **composite** `(organizationId, partyId)` foreign keys so a cross-tenant link cannot be stored; `/api/tenant/customers/**` (8 handlers, `TENANT_MEMBER`); `view_customers`/`manage_customers` for OWNER/ADMIN/MANAGER; versioned edits, archive not delete, audited writes without PII |
 | **Evidence** | `CrmAccount.organizationId` and `CustomerAccount.organizationId` are both `@unique`, and `CrmOpportunity` has no tenant column at all — so no tenant can have many customers today |
 | **Dependency** | A new `TenantCustomer` domain (schema + migration + RBAC + UI) |
 | **Acceptance** | A tenant-scoped customer record with contacts and follow-ups, created through a real authenticated write path, isolated per organization, with the dashboard reading those rows rather than a fixture. |
@@ -169,7 +170,7 @@ Rows are taken in this order, smallest reviewable slice first:
 3. **Slice E** — row 7, per-organization zone and cutoff (one migration). *Implemented and proven on an isolated database.*
 4. **Slice F** — row 10, the production runner, with row 9's channel if the
    owner has chosen one by then. *Code and packaging done and tested; production start needs the owner.*
-5. **Slice G** — row 3, the tenant customer domain (new schema).
+5. **Slice G** — row 3, the tenant customer domain (new schema). *G1 (data/API) built and unit-tested; G2 (UI + live proof) and G3 (management view) next.*
 6. **Slice H** — rows 4 and 5, assets and the people dimension.
 7. **Slice I** — row 11, the performance baseline.
 8. **Slice J** — row 12's accessibility pass.
