@@ -11076,6 +11076,66 @@
       "regenerationReason": "Grund",
       "original": "Ursprung",
       "corrected": "Korrektur"
+    },
+    "oversight": {
+      "pageTitle": "Finanzaktivität und Freigaben",
+      "pageLede": "Auf Projekte gebuchte Kosten, wer sie erfasst hat, und die Freigaben, die auf eine Entscheidung warten.",
+      "linkFromSummary": "Finanzaktivität und Freigaben",
+      "truncated": "Nur die ersten Einträge werden angezeigt; es gibt weitere.",
+      "unresolvedUser": "Unbekannter Benutzer",
+      "cost": {
+        "title": "Erfasste Projektkosten",
+        "lede": "Auf die Projekte dieser Organisation gebuchte Kostenposten, jeweils in ihrer eigenen Währung.",
+        "byCurrencyTitle": "Nach Währung",
+        "currencyLabel": "Kosten in {currency}",
+        "entries": "{count, plural, one {# Posten} other {# Posten}}",
+        "noneInPeriod": "In diesem Zeitraum wurden keine Kosten erfasst.",
+        "noExchangeRate": "Jede Währung wird getrennt ausgewiesen. Das Produkt führt keine Wechselkurse, daher werden Beträge in verschiedenen Währungen nie addiert.",
+        "byCategoryTitle": "Nach Kategorie",
+        "columnCategory": "Kategorie",
+        "columnCurrency": "Währung",
+        "columnAmount": "Betrag",
+        "columnEntries": "Posten",
+        "uncategorised": "Ohne Kategorie",
+        "recordersTitle": "Erfasst von",
+        "recordersLede": "Gezählt nach dem Zeitpunkt der Erfassung, anhand der Person, die am Posten selbst vermerkt ist.",
+        "noRecorders": "In diesem Zeitraum gibt es keine zugeordneten Posten.",
+        "unattributed": "{count, plural, one {# Posten hat} other {# Posten haben}} keinen erfassten Urheber.",
+        "overBudgetTitle": "Projekte über Budget",
+        "overBudgetSummary": "{over, plural, one {# Projekt} other {# Projekte}} über Budget, von {total, plural, one {# Projekt} other {# Projekten}} mit Budget.",
+        "columnProject": "Projekt",
+        "columnBudget": "Projektbudget",
+        "columnActual": "Erfasste Kosten",
+        "columnOverrun": "Überschreitung",
+        "budgetHasNoCurrency": "Projektbudget und erfasste Kosten tragen in diesem Produkt keine Währung, daher werden diese beiden Spalten wie gespeichert verglichen.",
+        "notAccounting": "Dies ist eine Aufsicht über erfasste Projektkosten, keine Buchhaltung: Das Produkt hat kein Hauptbuch, keine Forderungen, keine Verbindlichkeiten und keinen Abgleich."
+      },
+      "approvals": {
+        "title": "Freigaben",
+        "lede": "Was auf eine Entscheidung wartet, wessen Entscheidung es ist und was in diesem Zeitraum entschieden wurde.",
+        "pendingTitle": "Wartet auf Entscheidung",
+        "oldest": "Ältester wartender Antrag seit {when}",
+        "byRoleTitle": "Wartet auf Entscheidung, nach Freigaberolle und Wartezeit",
+        "columnRole": "Blockierende Rolle",
+        "columnTotal": "Gesamt",
+        "age": {
+          "underOneDay": "Unter 1 Tag",
+          "oneToThreeDays": "1–3 Tage",
+          "threeToSevenDays": "3–7 Tage",
+          "overSevenDays": "Über 7 Tage"
+        },
+        "noPendingStep": "Kein offener Schritt definiert",
+        "sampled": "Die Aufschlüsselung nach Rolle und Wartezeit umfasst die {sampled, number} ältesten von {total, number} offenen Anträgen.",
+        "waitingDefinition": "Die blockierende Rolle ist die Freigaberolle des frühesten noch offenen Schritts. Die Wartezeit zählt ab dem Stellen des Antrags.",
+        "decidedTitle": "In diesem Zeitraum entschieden",
+        "outcome": {
+          "approved": "Freigegeben",
+          "rejected": "Abgelehnt",
+          "cancelled": "Zurückgezogen"
+        },
+        "deciderSplit": "{approved, number} freigegeben · {rejected, number} abgelehnt",
+        "unattributed": "{count, plural, one {# Entscheidung hat} other {# Entscheidungen haben}} keinen erfassten Entscheider."
+      }
     }
   }
 }
