@@ -630,6 +630,7 @@ export async function ExecutiveSummaryView({
 
       <Panel
         title={t("sections.customers")}
+        lede={t("sectionLede.customers")}
         badge={
           <PageStatusBadge
             label={t(`status.${customers.status}`)}
@@ -638,7 +639,18 @@ export async function ExecutiveSummaryView({
         }
       >
         <SectionBody section={customers} t={t}>
-          {() => null}
+          {data => (
+            <div className="space-y-3">
+              <MetricGrid metrics={data.metrics} t={t} locale={locale} timeZone={tz} />
+              {/* Stated on the surface, as for project cost: a customer's
+                  receivable or revenue needs an accounting ledger this product
+                  does not have. These counts are relationships, never money. */}
+              <p className="text-xs text-muted">{t("reasons.noCustomerFinancials")}</p>
+              <Link href={`/${locale}/dashboard/clients`} className="inline-block text-xs text-signal underline">
+                {t("customers.linkFromSummary")}
+              </Link>
+            </div>
+          )}
         </SectionBody>
       </Panel>
 

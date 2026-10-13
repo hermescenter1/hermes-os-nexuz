@@ -10921,7 +10921,8 @@
     "sectionLede": {
       "operations": "Projects, tasks, work orders and approvals in this organization.",
       "financial": "Budget and recorded cost on this organization's projects.",
-      "industrial": "Connectivity and open alerts for the plants you have access to."
+      "industrial": "Connectivity and open alerts for the plants you have access to.",
+      "customers": "The organization's own customers: who is active, which follow-ups are late and what was recorded this period."
     },
     "status": {
       "OPERATIONAL": "Live",
@@ -10961,7 +10962,12 @@
       "openCriticalAlerts": "Open critical alerts",
       "connectedSites": "Plants reporting data",
       "alertsRaised": "Alerts raised",
-      "sitesWithoutData": "Plants without recent data"
+      "sitesWithoutData": "Plants without recent data",
+      "customersActive": "Active customers",
+      "customersOverdueFollowUp": "Overdue follow-ups",
+      "customersUnassigned": "Customers with no owner",
+      "customersNew": "New customers",
+      "customerInteractions": "Recorded contacts"
     },
     "definitions": {
       "activeProjects": "Projects in this organization whose status is ACTIVE, counted at this moment.",
@@ -10976,7 +10982,12 @@
       "costVariance": "Approved budget minus recorded cost. Shown only when both figures exist.",
       "openCriticalAlerts": "Critical and high asset alerts that are neither dismissed nor resolved, on the plants you may see.",
       "connectedSites": "Plants whose newest gateway heartbeat is recent enough to be trusted.",
-      "alertsRaised": "Asset alerts first recorded within the selected period."
+      "alertsRaised": "Asset alerts first recorded within the selected period.",
+      "customersActive": "Customers of this organization whose status is active, excluding archived ones. A point-in-time count.",
+      "customersOverdueFollowUp": "Customers whose next action was due before now and has not been rescheduled. A point-in-time count.",
+      "customersUnassigned": "Customers with nobody named as follow-up owner. A point-in-time count.",
+      "customersNew": "Customers created inside the period, compared with the previous period of the same length.",
+      "customerInteractions": "Contacts recorded as having happened inside the period, by the time they happened, not the time they were typed."
     },
     "sources": {
       "erpProject": "ERP — projects",
@@ -10986,7 +10997,9 @@
       "erpInventory": "ERP — inventory",
       "gatewayHeartbeat": "Industrial gateway heartbeat",
       "telemetry": "Industrial telemetry, on arrival",
-      "assetAlert": "Asset alerts"
+      "assetAlert": "Asset alerts",
+      "party": "Customer records (this organization)",
+      "partyInteraction": "Customer contact log (this organization)"
     },
     "reasons": {
       "forbiddenOperations": "Your role does not include operational data for this organization.",
@@ -10996,7 +11009,7 @@
       "noRows": "This organization has no records of this kind yet.",
       "sourceUnavailable": "This source could not be read for this request. Nothing is inferred from its absence.",
       "noLedger": "There is no general ledger in this product, so these figures are project cost control and not accounting.",
-      "customersNotTenantScoped": "Customer records are held at platform level, not per organization, so there is no tenant-scoped customer figure to show here."
+      "noCustomerFinancials": "These are relationship figures. A customer's receivable, revenue or balance needs an accounting ledger, which this product does not have yet."
     },
     "causes": {
       "approvalBlocksWork": "Work is waiting on an approval decision.",
@@ -11384,7 +11397,8 @@
         "noLinkable": "Every project of this organization is already linked to another customer.",
         "elsewhere": "That project is already linked to another customer.",
         "failed": "The link could not be changed. Reload the page and try again."
-      }
+      },
+      "linkFromSummary": "Open the customers"
     }
   }
 }

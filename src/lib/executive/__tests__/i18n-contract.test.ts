@@ -99,11 +99,13 @@ describe("every key the aggregation puts in the payload resolves in all three lo
     expectResolvable(payloadKeys, "payload keys");
   });
 
-  it("covers all eight refusal reasons and all eight named sources", () => {
+  it("covers every refusal reason and every named source the aggregation can emit", () => {
     const reasons = [...payloadKeys].filter(k => k.startsWith("executive.reasons."));
     const sources = [...payloadKeys].filter(k => k.startsWith("executive.sources."));
-    expect(reasons.length).toBe(8);
-    expect(sources.length).toBe(8);
+    // Slice G3: customersNotTenantScoped is gone (the tenant customer source
+    // exists now), and party / partyInteraction joined the named sources.
+    expect(reasons.length).toBe(7);
+    expect(sources.length).toBe(10);
   });
 });
 

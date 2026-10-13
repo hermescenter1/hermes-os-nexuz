@@ -10921,7 +10921,8 @@
     "sectionLede": {
       "operations": "Projekte, Aufgaben, Arbeitsaufträge und Freigaben dieser Organisation.",
       "financial": "Budget und erfasste Kosten der Projekte dieser Organisation.",
-      "industrial": "Datenanbindung und offene Meldungen der Werke, auf die Sie Zugriff haben."
+      "industrial": "Datenanbindung und offene Meldungen der Werke, auf die Sie Zugriff haben.",
+      "customers": "Die eigenen Kunden der Organisation: wer aktiv ist, welche Nachverfolgungen überfällig sind und was in diesem Zeitraum erfasst wurde."
     },
     "status": {
       "OPERATIONAL": "Aktiv",
@@ -10961,7 +10962,12 @@
       "openCriticalAlerts": "Offene kritische Meldungen",
       "connectedSites": "Werke, die Daten senden",
       "alertsRaised": "Ausgelöste Meldungen",
-      "sitesWithoutData": "Werke ohne aktuelle Daten"
+      "sitesWithoutData": "Werke ohne aktuelle Daten",
+      "customersActive": "Aktive Kunden",
+      "customersOverdueFollowUp": "Überfällige Nachverfolgungen",
+      "customersUnassigned": "Kunden ohne Betreuer",
+      "customersNew": "Neue Kunden",
+      "customerInteractions": "Erfasste Kontakte"
     },
     "definitions": {
       "activeProjects": "Projekte dieser Organisation mit dem Status ACTIVE, gezählt in diesem Augenblick.",
@@ -10976,7 +10982,12 @@
       "costVariance": "Genehmigtes Budget abzüglich erfasster Kosten. Wird nur gezeigt, wenn beide Zahlen vorliegen.",
       "openCriticalAlerts": "Kritische und hohe Anlagenmeldungen, die weder verworfen noch behoben sind, auf den für Sie sichtbaren Werken.",
       "connectedSites": "Werke, deren neuester Gateway-Herzschlag jung genug ist, um belastbar zu sein.",
-      "alertsRaised": "Anlagenmeldungen, die im gewählten Zeitraum erstmals erfasst wurden."
+      "alertsRaised": "Anlagenmeldungen, die im gewählten Zeitraum erstmals erfasst wurden.",
+      "customersActive": "Kunden dieser Organisation mit dem Status aktiv, ohne archivierte. Eine Zählung zum Zeitpunkt.",
+      "customersOverdueFollowUp": "Kunden, deren nächster Schritt vor dem jetzigen Zeitpunkt fällig war und nicht neu terminiert wurde. Eine Zählung zum Zeitpunkt.",
+      "customersUnassigned": "Kunden, für die niemand als Betreuer eingetragen ist. Eine Zählung zum Zeitpunkt.",
+      "customersNew": "Im Zeitraum angelegte Kunden, verglichen mit dem vorangegangenen Zeitraum gleicher Länge.",
+      "customerInteractions": "Kontakte, die im Zeitraum stattgefunden haben — nach dem Zeitpunkt des Kontakts, nicht dem der Erfassung."
     },
     "sources": {
       "erpProject": "ERP — Projekte",
@@ -10986,7 +10997,9 @@
       "erpInventory": "ERP — Lager",
       "gatewayHeartbeat": "Herzschlag des Industrie-Gateways",
       "telemetry": "Industrietelemetrie, bei Eingang",
-      "assetAlert": "Anlagenmeldungen"
+      "assetAlert": "Anlagenmeldungen",
+      "party": "Kundenstammsätze (diese Organisation)",
+      "partyInteraction": "Kundenkontaktverlauf (diese Organisation)"
     },
     "reasons": {
       "forbiddenOperations": "Ihre Rolle umfasst die Betriebsdaten dieser Organisation nicht.",
@@ -10996,7 +11009,7 @@
       "noRows": "Diese Organisation hat noch keine Datensätze dieser Art.",
       "sourceUnavailable": "Diese Quelle war für diese Anfrage nicht lesbar. Aus ihrem Fehlen wird nichts geschlossen.",
       "noLedger": "Dieses Produkt führt kein Hauptbuch; diese Zahlen sind Projektkostenkontrolle und keine Buchhaltung.",
-      "customersNotTenantScoped": "Kundendatensätze liegen auf Plattformebene und nicht je Organisation, daher gibt es hier keine auf diese Organisation begrenzte Kundenzahl."
+      "noCustomerFinancials": "Dies sind Beziehungskennzahlen. Forderungen, Erlöse oder der Saldo eines Kunden brauchen ein Buchhaltungsjournal, das dieses Produkt noch nicht hat."
     },
     "causes": {
       "approvalBlocksWork": "Die Arbeit wartet auf eine Freigabeentscheidung.",
@@ -11384,7 +11397,8 @@
         "noLinkable": "Jedes Projekt dieser Organisation ist bereits mit einem anderen Kunden verknüpft.",
         "elsewhere": "Dieses Projekt ist bereits mit einem anderen Kunden verknüpft.",
         "failed": "Die Verknüpfung konnte nicht geändert werden. Laden Sie die Seite neu und versuchen Sie es erneut."
-      }
+      },
+      "linkFromSummary": "Kunden öffnen"
     }
   }
 }
