@@ -6942,7 +6942,8 @@
         "observability": "Beobachtbarkeit",
         "otEdge": "OT-Edge",
         "videoHub": "Videothek",
-        "executiveCenter": "Leitungszentrale"
+        "executiveCenter": "Leitungszentrale",
+        "clients": "Kunden"
       }
     },
     "shell": {
@@ -11235,6 +11236,154 @@
         "NOT_AN_INTEGER": "Geben Sie eine ganze Zahl ein.",
         "OUT_OF_RANGE": "Dieser Wert liegt außerhalb des zulässigen Bereichs.",
         "NOT_AFTER_STALE": "Muss größer sein als die Anzahl der Tage, nach denen eine Freigabe verspätet ist."
+      }
+    },
+    "customers": {
+      "pageTitle": "Kunden",
+      "pageLede": "Die Kunden dieser Organisation: wer sie betreut, der letzte Kontakt und der nächste Schritt.",
+      "linkNew": "Neuer Kunde",
+      "newTitle": "Neuer Kunde",
+      "newLede": "Erfassen Sie einen Kunden dieser Organisation. Nur der Name ist erforderlich.",
+      "back": "Alle Kunden",
+      "readOnly": "Sie können Kunden sehen, ändern dürfen sie nur Eigentümer, Administratoren und Manager.",
+      "search": {
+        "label": "Suche",
+        "placeholder": "Name, Firmenname, E-Mail oder Telefon",
+        "status": "Kundenstatus",
+        "statusAll": "Jeder Status",
+        "followUp": "Nachverfolgung",
+        "followUpAll": "Jede Nachverfolgung",
+        "owner": "Betreuer",
+        "ownerAll": "Alle",
+        "ownerMe": "Meine",
+        "archived": "Archiv",
+        "archivedExclude": "Aktuelle Kunden",
+        "archivedOnly": "Nur archivierte",
+        "submit": "Anwenden",
+        "reset": "Zurücksetzen"
+      },
+      "status": {
+        "PROSPECT": "Interessent",
+        "ACTIVE": "Aktiv",
+        "INACTIVE": "Inaktiv"
+      },
+      "followUp": {
+        "overdue": "Überfällig",
+        "scheduled": "Geplant",
+        "none": "Kein nächster Schritt"
+      },
+      "table": {
+        "caption": "Kunden dieser Organisation",
+        "name": "Kunde",
+        "status": "Kundenstatus",
+        "owner": "Betreuer",
+        "nextAction": "Nächster Schritt",
+        "lastInteraction": "Letzter Kontakt"
+      },
+      "empty": {
+        "none": "Diese Organisation hat noch keine Kunden.",
+        "noneCanCreate": "Diese Organisation hat noch keine Kunden. Erfassen Sie den ersten.",
+        "noMatch": "Kein Kunde entspricht diesen Filtern."
+      },
+      "pager": {
+        "next": "Nächste Seite",
+        "first": "Zurück zur ersten Seite"
+      },
+      "detail": {
+        "details": "Angaben",
+        "followUpTitle": "Nachverfolgung",
+        "archivedNote": "Dieser Kunde ist archiviert. Er bleibt mit seinem Verlauf erhalten und kann wiederhergestellt werden.",
+        "edit": "Bearbeiten",
+        "legalName": "Firmenname",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "city": "Ort",
+        "country": "Land",
+        "notes": "Notizen",
+        "owner": "Betreuer",
+        "ownerNone": "Niemand zugewiesen",
+        "nextActionAt": "Nächster Schritt fällig",
+        "nextActionNote": "Nächster Schritt",
+        "lastInteraction": "Letzter Kontakt",
+        "never": "Noch nie",
+        "notSet": "Nicht festgelegt",
+        "updated": "Zuletzt geändert {when}"
+      },
+      "form": {
+        "displayName": "Kundenname",
+        "legalName": "Firmenname",
+        "status": "Kundenstatus",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "city": "Ort",
+        "country": "Ländercode",
+        "countryHelp": "Zwei Buchstaben, zum Beispiel IR oder DE.",
+        "notes": "Notizen",
+        "owner": "Betreuer",
+        "ownerNone": "Niemand",
+        "nextActionAt": "Nächster Schritt fällig",
+        "nextActionAtHelp": "In Ihrer eigenen Ortszeit.",
+        "nextActionNote": "Nächster Schritt",
+        "create": "Kunden anlegen",
+        "save": "Änderungen speichern",
+        "saving": "Wird gespeichert…",
+        "saved": "Gespeichert.",
+        "conflict": "Jemand anderes hat diesen Kunden inzwischen geändert. Laden Sie die Seite neu, um die Änderung zu sehen, bevor Sie erneut speichern.",
+        "duplicate": "Ein anderer aktueller Kunde trägt bereits diesen Namen.",
+        "ownerNotEligible": "Diese Person kann nicht Betreuer sein.",
+        "archivedLocked": "Dieser Kunde ist archiviert. Stellen Sie ihn wieder her, bevor Sie ihn ändern.",
+        "invalid": "Bitte prüfen Sie die markierten Felder.",
+        "failed": "Der Kunde konnte nicht gespeichert werden. Bitte erneut versuchen.",
+        "fieldInvalid": "Dieser Wert ist ungültig.",
+        "fieldTooLong": "Dieser Wert ist zu lang."
+      },
+      "archive": {
+        "archive": "Kunden archivieren",
+        "restore": "Kunden wiederherstellen",
+        "working": "Wird ausgeführt…",
+        "failed": "Das hat nicht funktioniert. Laden Sie die Seite neu und versuchen Sie es erneut."
+      },
+      "interactions": {
+        "title": "Kontaktverlauf",
+        "empty": "Es wurde noch kein Kontakt erfasst.",
+        "older": "Ältere Kontakte",
+        "newest": "Zurück zu den neuesten",
+        "recordedBy": "Erfasst von {name}",
+        "kind": {
+          "CALL": "Anruf",
+          "MEETING": "Besprechung",
+          "EMAIL": "E-Mail",
+          "VISIT": "Besuch",
+          "NOTE": "Notiz"
+        },
+        "form": {
+          "title": "Kontakt erfassen",
+          "kind": "Art",
+          "occurredAt": "Zeitpunkt",
+          "summary": "Was ist passiert",
+          "add": "Kontakt erfassen",
+          "adding": "Wird erfasst…",
+          "added": "Erfasst.",
+          "future": "Ein Kontakt kann nicht in der Zukunft liegen.",
+          "archived": "Dieser Kunde ist archiviert; stellen Sie ihn wieder her, um einen Kontakt zu erfassen.",
+          "failed": "Der Kontakt konnte nicht erfasst werden. Bitte erneut versuchen."
+        }
+      },
+      "projects": {
+        "title": "Projekte",
+        "none": "Kein Projekt dieser Organisation ist mit diesem Kunden verknüpft.",
+        "forbidden": "Projekte sind ERP-Daten; Ihre Rolle darf sie nicht sehen.",
+        "cost": "Erfasste Kosten dieser Projekte",
+        "costNone": "Auf diesen Projekten sind keine Kosten erfasst.",
+        "perCurrency": "Je Währung angezeigt; verschiedene Währungen werden nie addiert.",
+        "truncated": "Nur die ersten {count, number} verknüpften Projekte werden aufgeführt.",
+        "linkTitle": "Projekt verknüpfen",
+        "choose": "Projekt",
+        "link": "Verknüpfen",
+        "unlink": "Verknüpfung lösen",
+        "noLinkable": "Jedes Projekt dieser Organisation ist bereits mit einem anderen Kunden verknüpft.",
+        "elsewhere": "Dieses Projekt ist bereits mit einem anderen Kunden verknüpft.",
+        "failed": "Die Verknüpfung konnte nicht geändert werden. Laden Sie die Seite neu und versuchen Sie es erneut."
       }
     }
   }

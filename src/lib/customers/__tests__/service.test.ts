@@ -21,7 +21,9 @@ import {
   addInteraction,
   createCustomer,
   CustomerError,
+  eligibleOwners,
   getCustomer,
+  linkableProjects,
   linkedProjects,
   listCustomers,
   listInteractions,
@@ -397,5 +399,45 @@ describe("projects", () => {
     expect(out.projects.map(p => p.name).sort()).toEqual(["Line 2", "Line 3"]);
     expect(out.recordedCost).toEqual(expect.arrayContaining([{ currency: "IRR", amount: 1500 }, { currency: "EUR", amount: 7 }]));
     expectScoped(calls);
+  });
+});
+
+describe("form choices (slice G2)", () => {
+  it("offers only active members of THIS organization who may see customers, by name", async () => {
+    const { db, state, calls } = fakeDb();
+    state.members.push(
+      { organizationId: ORG, userId: "u-owner", status: "ACTIVE", role: "OWNER" },
+      { organizationId: ORG, userId: "u-gone", status: "SUSPENDED", role: "ADMIN" },
+    );
+    const owners = await eligibleOwners(ctx, { db });
+    const ids = owners.map(o => o.userId).sort();
+    expect(ids).toEqual(["u-manager", "u-owner"]);
+    expect(ids).not.toContain("u-viewer");
+    expect(ids).not.toContain("u-foreign");
+    const q = calls.find(c => c.model === "organizationMember" && c.op === "findMany")!.args as { where: Record<string, unknown>; take: number };
+    expect(q.where).toMatchObject({ organizationId: ORG, status: "ACTIVE" });
+    expect(q.take).toBe(100);
+  });
+
+  it("offers only this organization's free projects and the ones already linked here", async () => {
+    const { db, state } = fakeDb();
+    state.parties.push(party({ id: "p-1" }), party({ id: "p-2", displayName: "Two" }));
+    state.projects.push(
+      { id: "prj-free", organizationId: ORG, partyId: null, deletedAt: null, name: "Free" },
+      { id: "prj-mine", organizationId: ORG, partyId: "p-1", deletedAt: null, name: "Mine" },
+      { id: "prj-theirs", organizationId: ORG, partyId: "p-2", deletedAt: null, name: "Theirs" },
+      { id: "prj-foreign", organizationId: OTHER, partyId: null, deletedAt: null, name: "Foreign" },
+    );
+    const out = await linkableProjects(ctx, "p-1", { db });
+    expect(out.map(p => [p.id, p.linked]).sort()).toEqual([
+      ["prj-free", false],
+      ["prj-mine", true],
+    ]);
+  });
+
+  it("refuses to list projects for another organization's customer", async () => {
+    const { db, state } = fakeDb();
+    state.parties.push(party({ id: "p-x", organizationId: OTHER }));
+    await expect(linkableProjects(ctx, "p-x", { db })).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });
