@@ -15,13 +15,13 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 414,
-    "handlers": 574,
+    "routeFiles": 415,
+    "handlers": 576,
     "byClassification": {
       "PUBLIC_READ": 36,
       "PUBLIC_WRITE": 14,
       "AUTHENTICATED_USER": 188,
-      "TENANT_MEMBER": 196,
+      "TENANT_MEMBER": 198,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
       "PLATFORM_ADMIN": 136,
@@ -30,16 +30,16 @@
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 196,
+    "tenantBoundHandlers": 198,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 332,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 332,
-    "TENANT_IDENTITY_SERVER_DERIVED": 332,
+    "TENANT_BOUND_HANDLERS_TOTAL": 334,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 334,
+    "TENANT_IDENTITY_SERVER_DERIVED": 334,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 332,
+    "OBJECT_SCOPED_HANDLERS": 334,
     "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
     "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
@@ -5249,6 +5249,32 @@
       ],
       "declaredSurface": false,
       "tenantScoped": false,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/executive/settings",
+      "method": "GET",
+      "file": "src/app/api/executive/settings/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "resolveExecutiveScope"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/executive/settings",
+      "method": "PUT",
+      "file": "src/app/api/executive/settings/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "authorizeExecutiveSettingsWrite"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
       "mutates": false,
       "senderAuthenticated": null
     },

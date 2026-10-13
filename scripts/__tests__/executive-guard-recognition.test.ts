@@ -29,6 +29,9 @@ const RESOLVER = "src/lib/executive/scope.ts";
 const ROUTE = "src/app/api/executive/summary/route.ts";
 const WORKER_AUTH = "src/lib/executive/report/auth.ts";
 const WORKER_ROUTE = "src/app/api/executive/reports/run/route.ts";
+/** Slice E: the ONE mutating route on the executive surface, and its guard. */
+const SETTINGS_ROUTE = "src/app/api/executive/settings/route.ts";
+const SETTINGS_AUTH = "src/lib/executive/settings-auth.ts";
 
 const live = (rel: string) => stripComments(readFileSync(join(REPO, rel), "utf8"));
 
@@ -155,18 +158,75 @@ describe("the route delegates to the resolver and classifies as tenant-scoped on
     expect(src).not.toMatch(/authorizeWorkerRequest/);
   });
 
-  it("is a read-only handler — the executive surface mutates nothing", () => {
-    // The READER surface. The worker entrypoint is deliberately excluded: it is
-    // a scheduler trigger that writes reports, and it is gated PLATFORM_ADMIN
-    // rather than TENANT_MEMBER.
+  it("every READER handler is read-only — the only writes are the two named, separately guarded routes", () => {
+    // The READER surface. Two writes are deliberately excluded and asserted on
+    // their own below: the worker entrypoint (a scheduler trigger, gated
+    // PLATFORM_ADMIN) and the settings PUT (an organization-administration act,
+    // gated update_org). Any OTHER mutating executive route fails here.
     const readers = inventory.filter(
-      r => r.apiPath.startsWith("/api/executive") && r.apiPath !== "/api/executive/reports/run",
+      r =>
+        r.apiPath.startsWith("/api/executive") &&
+        r.apiPath !== "/api/executive/reports/run" &&
+        !(r.apiPath === "/api/executive/settings" && r.method === "PUT"),
     );
     expect(readers.length).toBeGreaterThan(0);
     for (const h of readers) {
       expect(h.method, h.apiPath).toBe("GET");
       expect(h.mutates, h.apiPath).toBe(false);
     }
+  });
+
+  it("the settings write is TENANT_MEMBER via its OWN registered token", () => {
+    const entries = (GUARD_TOKENS as { token: string; scope: string }[]).filter(
+      g => g.token === "authorizeExecutiveSettingsWrite",
+    );
+    expect(entries).toHaveLength(1);
+    expect(entries[0].scope).toBe("tenant");
+
+    const put = inventory.find(r => r.apiPath === "/api/executive/settings" && r.method === "PUT");
+    expect(put).toBeDefined();
+    expect(put?.classification).toBe("TENANT_MEMBER");
+    expect(put?.authEvidence).toContain("authorizeExecutiveSettingsWrite");
+    // `mutates` is NOT asserted for the PUT: it is a lexical heuristic over the
+    // handler body (235 of 270 write routes in this tree read false because they
+    // delegate their writes), and it exists to catch state-CHANGING GETs. That is
+    // asserted below for the GET, where it means something.
+    expect(put?.declaredSurface).toBe(false);
+
+    const get = inventory.find(r => r.apiPath === "/api/executive/settings" && r.method === "GET");
+    expect(get?.classification).toBe("TENANT_MEMBER");
+    expect(get?.authEvidence).toContain("resolveExecutiveScope");
+    expect(get?.mutates).toBe(false);
+  });
+
+  it("the settings guard performs every check its registration vouches for, in order", () => {
+    const src = live(SETTINGS_AUTH);
+    const origin = src.search(/requireTrustedOrigin\s*\(\s*req\s*,\s*"jwt"\s*\)/);
+    const json = src.search(/isJsonContentType\s*\(\s*req\s*\)/);
+    const scope = src.search(/resolveExecutiveScope\s*\(\s*\)/);
+    const perm = src.search(/canUpdateExecutiveSettings\s*\(\s*resolved\.scope\.role\s*\)/);
+    for (const [name, at] of Object.entries({ origin, json, scope, perm })) expect(at, name).toBeGreaterThan(-1);
+    // CSRF before anything is read; permission last, on the server-resolved role.
+    expect(origin).toBeLessThan(json);
+    expect(json).toBeLessThan(scope);
+    expect(scope).toBeLessThan(perm);
+  });
+
+  it("the settings permission is update_org on a KNOWN role, failing closed on anything else", () => {
+    const src = live(SETTINGS_AUTH);
+    expect(src).toMatch(/ORGANIZATION_ROLES as readonly string\[\]\)\.includes\(role\)/);
+    expect(src).toMatch(/known && orgCan\(role as OrganizationRole, "update_org"\)/);
+  });
+
+  it("the settings route delegates to that guard and writes only the server-resolved organization", () => {
+    const src = live(SETTINGS_ROUTE);
+    expect(src).toMatch(/authorizeExecutiveSettingsWrite\s*\(\s*req\s*\)/);
+    expect(src).toMatch(/if\s*\(\s*!auth\.ok\s*\)/);
+    expect(src).toMatch(/organizationId:\s*auth\.scope\.organizationId/);
+    expect(src).toMatch(/actorUserId:\s*auth\.scope\.userId/);
+    // The body is bounded and never trusted for the tenant.
+    expect(src).toMatch(/readBoundedJson\s*\(/);
+    expect(src).not.toMatch(/body\.value\.organizationId|parsed\.values\.organizationId/);
   });
 
   it("leaves the whole-tree tenant analysis at zero violations on every dimension", () => {

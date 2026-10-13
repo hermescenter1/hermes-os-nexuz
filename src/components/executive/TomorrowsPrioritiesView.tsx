@@ -20,6 +20,7 @@ import {
   type PriorityTier,
   type TomorrowsPriorities,
 } from "@/lib/executive/priorities";
+import type { SettingsSource } from "@/lib/executive/settings";
 import {
   keyOf,
   Panel,
@@ -82,13 +83,13 @@ function ItemRow({
   config: TomorrowsPriorities["config"];
 }) {
   return (
-    <li className={`rounded-lg border border-line bg-base/40 px-4 py-3 ${TIER_ACCENT[item.tier]}`}>
+    <li className={`rounded-lg border border-line bg-surface-glass px-4 py-3 ${TIER_ACCENT[item.tier]}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="flex min-w-0 flex-wrap items-baseline gap-2">
           <span className="rounded-sm border border-line px-1.5 py-0.5 text-[11px] text-muted">
             {t(`priorities.kind.${item.kind}` as never)}
           </span>
-          <Link href={`/${locale}/${item.detailPath}`} className="text-sm text-fg underline underline-offset-2">
+          <Link href={`/${locale}/${item.detailPath}`} className="text-sm text-text-primary underline underline-offset-2">
             {item.title}
           </Link>
         </span>
@@ -115,9 +116,9 @@ function ListBody({
     <div className="space-y-6">
       <dl className="grid grid-cols-3 gap-3">
         {TIERS.map(tier => (
-          <div key={tier} className={`rounded-lg border border-line bg-base/40 p-3 ${TIER_ACCENT[tier]}`}>
+          <div key={tier} className={`rounded-lg border border-line bg-surface-glass p-3 ${TIER_ACCENT[tier]}`}>
             <dt className="text-xs text-muted">{t(`priorities.tier.${tier}` as never)}</dt>
-            <dd className="mt-1 text-xl font-semibold tabular-nums text-fg">{formatNumber(data.tierCounts[tier], locale)}</dd>
+            <dd className="mt-1 text-xl font-semibold tabular-nums text-text-primary">{formatNumber(data.tierCounts[tier], locale)}</dd>
           </div>
         ))}
       </dl>
@@ -126,7 +127,7 @@ function ListBody({
         const items = data.items.filter(i => i.tier === tier);
         return (
           <section key={tier} aria-labelledby={`tier-${tier}`}>
-            <h3 id={`tier-${tier}`} className="mb-2 flex items-baseline gap-2 text-sm font-medium text-fg">
+            <h3 id={`tier-${tier}`} className="mb-2 flex items-baseline gap-2 text-sm font-medium text-text-primary">
               {t(`priorities.tier.${tier}` as never)}
               <span className="text-xs font-normal text-muted">
                 {t("priorities.tierCount", { count: data.tierCounts[tier] })}
@@ -152,11 +153,11 @@ function ListBody({
       )}
 
       <div>
-        <h3 className="mb-2 text-sm font-medium text-fg">{t("priorities.sourcesTitle")}</h3>
+        <h3 className="mb-2 text-sm font-medium text-text-primary">{t("priorities.sourcesTitle")}</h3>
         <ul className="divide-y divide-line/50 rounded-lg border border-line">
           {data.sources.map(s => (
             <li key={s.source} className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-2 text-xs">
-              <span className="text-fg">{t(`priorities.source.${s.source}` as never)}</span>
+              <span className="text-text-primary">{t(`priorities.source.${s.source}` as never)}</span>
               <span className={s.excludedReasonKey ? "text-warn" : "text-muted"}>
                 {s.excludedReasonKey
                   ? t(keyOf(s.excludedReasonKey) as never)
@@ -172,13 +173,23 @@ function ListBody({
   );
 }
 
-function RulesPanel({ t, config, locale }: { t: T; config: TomorrowsPriorities["config"]; locale: string }) {
+function RulesPanel({
+  t,
+  config,
+  locale,
+  configSource,
+}: {
+  t: T;
+  config: TomorrowsPriorities["config"];
+  locale: string;
+  configSource: SettingsSource;
+}) {
   return (
     <Panel title={t("priorities.rulesTitle")} lede={t("priorities.rulesLede")}>
       <ol className="space-y-2">
         {PRIORITY_RULES.map((rule, index) => (
-          <li key={rule.id} className={`rounded-lg border border-line bg-base/40 px-4 py-2 ${TIER_ACCENT[rule.tier]}`}>
-            <p className="text-sm text-fg">
+          <li key={rule.id} className={`rounded-lg border border-line bg-surface-glass px-4 py-2 ${TIER_ACCENT[rule.tier]}`}>
+            <p className="text-sm text-text-primary">
               {/* Through the locale formatter: a raw {index + 1} printed Latin
                   digits in the Persian view. */}
               <span className="me-2 tabular-nums text-muted">{formatNumber(index + 1, locale)}.</span>
@@ -191,7 +202,12 @@ function RulesPanel({ t, config, locale }: { t: T; config: TomorrowsPriorities["
           </li>
         ))}
       </ol>
-      <p className="mt-3 text-xs text-muted">{t("priorities.configNote")}</p>
+      <p className="mt-3 text-xs text-muted">
+        {configSource === "ORGANIZATION" ? t("priorities.configNoteOrganization") : t("priorities.configNote")}{" "}
+        <Link href={`/${locale}/dashboard/executive/settings`} className="text-signal underline underline-offset-2">
+          {t("settings.linkFromPriorities")}
+        </Link>
+      </p>
     </Panel>
   );
 }
@@ -199,9 +215,12 @@ function RulesPanel({ t, config, locale }: { t: T; config: TomorrowsPriorities["
 export async function TomorrowsPrioritiesView({
   result,
   locale,
+  configSource,
 }: {
   result: TomorrowsPriorities;
   locale: string;
+  /** Whose thresholds these are: the organization's own, or the defaults. */
+  configSource: SettingsSource;
 }) {
   const t = await getTranslations("executive");
   const { priorities, timeZone, config } = result;
@@ -229,7 +248,7 @@ export async function TomorrowsPrioritiesView({
         </SectionBody>
       </Panel>
 
-      <RulesPanel t={t} config={config} locale={locale} />
+      <RulesPanel t={t} config={config} locale={locale} configSource={configSource} />
     </div>
   );
 }

@@ -51,13 +51,13 @@ export default async function ExecutiveReportsPage({
 
     if (total === null) {
       body = (
-        <p className="rounded-lg border border-line bg-base/40 px-4 py-3 text-sm text-muted" role="alert">
+        <p className="rounded-lg border border-line bg-surface-glass px-4 py-3 text-sm text-muted" role="alert">
           {t("reports.archiveUnavailable")}
         </p>
       );
     } else if (entries.length === 0) {
       body = (
-        <p className="rounded-lg border border-line bg-base/40 px-4 py-3 text-sm text-muted">
+        <p className="rounded-lg border border-line bg-surface-glass px-4 py-3 text-sm text-muted">
           {t("reports.archiveEmpty")}
         </p>
       );
@@ -84,8 +84,8 @@ export default async function ExecutiveReportsPage({
                   c => c.status !== "OPERATIONAL" && c.status !== "EMPTY",
                 ).length;
                 return (
-                  <tr key={`${entry.businessDate}-${entry.version}`} className="border-b border-line/50 last:border-0">
-                    <th scope="row" className="py-2 pe-3 text-start font-normal text-fg">
+                  <tr key={`${entry.businessDate}-${entry.version}`} className="border-b border-border-subtle last:border-0">
+                    <th scope="row" className="py-2 pe-3 text-start font-normal text-text-primary">
                       {entry.businessDate}
                     </th>
                     <td className="py-2 pe-3">

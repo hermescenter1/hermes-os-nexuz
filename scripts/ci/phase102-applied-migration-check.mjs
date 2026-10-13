@@ -134,6 +134,11 @@ export const POST_PHASE102_MIGRATIONS = [
   // reason as the lines above: an undeclared row would fail the era-count
   // equality, and silently widening that check to `>=` would retire the gate.
   "20261011090000_executive_daily_report",
+  // Executive Management Center slice E - one additive table, ExecutiveSettings,
+  // keyed by the organization. No column on an existing table, no backfill, no
+  // row rewritten. Declared for the same reason as the lines above: an
+  // undeclared row would fail the era-count equality.
+  "20261012120000_executive_settings",
 ];
 
 /**

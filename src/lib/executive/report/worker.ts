@@ -28,7 +28,7 @@
 import { getPrisma } from "@/lib/db/prisma";
 import { acquireLease, type LeaseHandle } from "@/lib/industrial/metering-worker";
 import { getNotificationService } from "@/lib/notifications/service";
-import { resolveReportingZone } from "../config";
+import { defaultSettings, loadExecutiveSettingsMany, type SettingsDb } from "../settings";
 import { lastCompletedBusinessDay } from "../period";
 import type { ExecutiveScope } from "../contract";
 import { claimNotification, generateDailyReport } from "./generate";
@@ -46,7 +46,13 @@ export const DEFAULT_MAX_ORGANIZATIONS = 50;
 export interface PassReport {
   readonly ranAt: string;
   readonly leaseHeld: boolean;
+  /**
+   * The night in the DEFAULT zone. Each organization reports its own last
+   * completed day in its own zone; `distinctBusinessDates` lists every night
+   * this pass actually targeted.
+   */
   readonly businessDate: string | null;
+  readonly distinctBusinessDates: readonly string[];
   readonly considered: number;
   readonly created: number;
   readonly alreadyReported: number;
@@ -70,6 +76,7 @@ const emptyPass = (nowMs: number, leaseHeld: boolean): PassReport => ({
   ranAt: new Date(nowMs).toISOString(),
   leaseHeld,
   businessDate: null,
+  distinctBusinessDates: [],
   considered: 0,
   created: 0,
   alreadyReported: 0,
@@ -160,11 +167,13 @@ export async function runReportPass(args: {
     if (!lease) return emptyPass(nowMs, false);
   }
 
-  const zone = resolveReportingZone();
+  // The night in the DEFAULT zone, reported at pass level for operators. The
+  // per-organization target is resolved below from each tenant's own zone.
+  const fallbackZone = defaultSettings().values;
   const target = lastCompletedBusinessDay({
     nowMs,
-    timeZone: zone.timeZone,
-    cutoffMinutes: zone.dayCutoffMinutes,
+    timeZone: fallbackZone.timeZone,
+    cutoffMinutes: fallbackZone.dayCutoffMinutes,
   }).dateKey;
 
   const orgs = (client as unknown as { organization?: OrgDelegate }).organization;
@@ -183,9 +192,26 @@ export async function runReportPass(args: {
   let failed = 0;
   let notified = 0;
   const failures: Array<{ organizationId: string; reasonKey: string }> = [];
+  const targets = new Set<string>();
+
+  // ONE bounded read for every organization in this pass, not one per tenant.
+  const settingsByOrg = await loadExecutiveSettingsMany(
+    rows.map(r => String(r.id)),
+    client as unknown as SettingsDb,
+  );
 
   for (const row of rows) {
     const organizationId = String(row.id);
+    // Each tenant's OWN zone and cutoff decide which night is finished for it.
+    // Two organizations in different zones can legitimately be reporting
+    // different dates in the same pass.
+    const zone = (settingsByOrg.get(organizationId) ?? defaultSettings()).values;
+    const orgTarget = lastCompletedBusinessDay({
+      nowMs,
+      timeZone: zone.timeZone,
+      cutoffMinutes: zone.dayCutoffMinutes,
+    }).dateKey;
+    targets.add(orgTarget);
     const scope = systemScopeFor({
       organizationId,
       timeZone: zone.timeZone,
@@ -195,7 +221,7 @@ export async function runReportPass(args: {
 
     let outcome: GenerationOutcome;
     try {
-      outcome = await generateDailyReport({ scope, nowMs, businessDate: target });
+      outcome = await generateDailyReport({ scope, nowMs, businessDate: orgTarget });
     } catch {
       failed += 1;
       failures.push({ organizationId, reasonKey: "executive.reasons.sourceUnavailable" });
@@ -229,6 +255,7 @@ export async function runReportPass(args: {
     ranAt: new Date(nowMs).toISOString(),
     leaseHeld: lease !== null,
     businessDate: target,
+    distinctBusinessDates: [...targets].sort(),
     considered: rows.length,
     created,
     alreadyReported,

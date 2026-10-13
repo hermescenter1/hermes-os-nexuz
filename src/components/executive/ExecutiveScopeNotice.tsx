@@ -49,7 +49,7 @@ export async function ExecutiveScopeNotice({ code, memberships = [] }: Executive
       className="max-w-xl space-y-4 rounded-xl border border-line bg-surface p-6 shadow-e2"
       role="alert"
     >
-      <p className="text-sm text-fg">{t(key as never)}</p>
+      <p className="text-sm text-text-primary">{t(key as never)}</p>
       {code === "ACTIVE_ORGANIZATION_REQUIRED" && memberships.length > 0 && (
         <ErpOrganizationChooser memberships={[...memberships]} />
       )}

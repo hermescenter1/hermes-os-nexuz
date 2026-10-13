@@ -24,6 +24,9 @@ const h = vi.hoisted(() => ({
   claimGrants: true,
   notifications: [] as Array<Record<string, unknown>>,
   zone: { timeZone: "Asia/Tehran", dayCutoffMinutes: 0, configuredValid: true },
+  /** Slice E: per-organization settings rows. `null` = the model is absent. */
+  settingsRows: null as Array<Record<string, unknown>> | null,
+  settingsQueries: [] as Array<Record<string, unknown>>,
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
@@ -49,6 +52,16 @@ vi.mock("@/lib/db/prisma", () => ({
               return { userId: "owner-1" };
             },
           },
+          ...(h.settingsRows === null
+            ? {}
+            : {
+                executiveSettings: {
+                  async findMany(args: unknown) {
+                    h.settingsQueries.push(args as Record<string, unknown>);
+                    return h.settingsRows ?? [];
+                  },
+                },
+              }),
         },
 }));
 
@@ -116,6 +129,60 @@ beforeEach(() => {
   h.claimGrants = true;
   h.notifications = [];
   h.zone = { timeZone: "Asia/Tehran", dayCutoffMinutes: 0, configuredValid: true };
+  h.settingsRows = null;
+  h.settingsQueries = [];
+});
+
+describe("each organization reports ITS OWN last completed night (slice E)", () => {
+  const settingsRow = (organizationId: string, timeZone: string, dayCutoffMinutes = 0) => ({
+    organizationId,
+    timeZone,
+    dayCutoffMinutes,
+    approvalStaleDays: 3,
+    approvalCriticalDays: 7,
+    alertAgeHours: 4,
+    priorityMaxItems: 25,
+    version: 1,
+    updatedAt: new Date(NOW),
+    updatedBy: "u",
+  });
+
+  it("targets different dates for organizations in different zones, in the same pass", async () => {
+    // 08:00Z: Tehran is 11:30 on the 11th (the 10th is finished); Pago Pago
+    // (UTC-11) is 21:00 on the 10th, so for it only the 9th is finished.
+    h.settingsRows = [settingsRow("org-b", "Pacific/Pago_Pago")];
+    const pass = await run();
+    const byOrg = Object.fromEntries(h.generateCalls.map(c => [(c.scope as { organizationId: string }).organizationId, c]));
+    expect(byOrg["org-a"].businessDate).toBe("2026-10-10");
+    expect(byOrg["org-b"].businessDate).toBe("2026-10-09");
+    expect((byOrg["org-b"].scope as { timeZone: string }).timeZone).toBe("Pacific/Pago_Pago");
+    expect(pass.distinctBusinessDates).toEqual(["2026-10-09", "2026-10-10"]);
+    // The pass-level date stays the DEFAULT zone's night, for operators.
+    expect(pass.businessDate).toBe("2026-10-10");
+  });
+
+  it("honours an organization's own cutoff", async () => {
+    // A 12:00 cutoff in Tehran: at 11:30 on the 11th, the business day that
+    // began at noon on the 10th is still running, so the 9th is the last finished.
+    h.settingsRows = [settingsRow("org-c", "Asia/Tehran", 720)];
+    await run();
+    const call = h.generateCalls.find(c => (c.scope as { organizationId: string }).organizationId === "org-c")!;
+    expect(call.businessDate).toBe("2026-10-09");
+    expect((call.scope as { dayCutoffMinutes: number }).dayCutoffMinutes).toBe(720);
+  });
+
+  it("reads every organization's settings in ONE bounded query", async () => {
+    h.settingsRows = [];
+    await run();
+    expect(h.settingsQueries).toEqual([{ where: { organizationId: { in: ["org-a", "org-b", "org-c"] } }, take: 3 }]);
+  });
+
+  it("falls back to the default zone for every organization when the model is absent", async () => {
+    h.settingsRows = null;
+    const pass = await run();
+    for (const call of h.generateCalls) expect(call.businessDate).toBe("2026-10-10");
+    expect(pass.distinctBusinessDates).toEqual(["2026-10-10"]);
+  });
 });
 
 describe("the pass targets the last FINISHED night", () => {

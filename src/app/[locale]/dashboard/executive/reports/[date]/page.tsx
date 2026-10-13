@@ -106,7 +106,7 @@ export default async function ExecutiveReportDetailPage({
 function NotFound({ message }: { message: string }) {
   return (
     <p
-      className="max-w-xl rounded-xl border border-line bg-surface px-6 py-4 text-sm text-fg shadow-e2"
+      className="max-w-xl rounded-xl border border-line bg-surface px-6 py-4 text-sm text-text-primary shadow-e2"
       role="alert"
     >
       {message}
