@@ -121,6 +121,12 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
       { labelKey: "crm", href: "/crm", pageCapability: "admin" },
       { labelKey: "ats", href: "/dashboard/ats" },
       { labelKey: "erp", href: "/erp", pageCapability: "admin" },
+      // Slice G2 — the ORGANIZATION's own customers (tenant Party records).
+      // Distinct from Customer Success below, which is the platform's view of
+      // its own customers. No pageCapability: /dashboard needs only the
+      // platform "dashboard" capability; the page itself then requires an
+      // ACTIVE membership with view_customers.
+      { labelKey: "clients", href: "/dashboard/clients" },
       { labelKey: "customerSuccess", href: "/dashboard/customers" },
       { labelKey: "billing", href: "/dashboard/billing", pageCapability: "billing_admin" },
       { labelKey: "customerPortal", href: "/customer", pageCapability: "dashboard" },

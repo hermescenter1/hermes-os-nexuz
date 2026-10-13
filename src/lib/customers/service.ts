@@ -144,7 +144,7 @@ interface GroupDelegate {
 export interface CustomerTx {
   party: Delegate;
   partyInteraction: Delegate;
-  organizationMember: Pick<Delegate, "findFirst">;
+  organizationMember: Pick<Delegate, "findFirst" | "findMany">;
   erpProject: Pick<Delegate, "findFirst" | "findMany" | "updateMany">;
 }
 export interface CustomerDb extends CustomerTx {
@@ -644,5 +644,54 @@ export async function setProjectLink(
       );
       return { projectId: input.projectId, partyId: next };
     });
+  });
+}
+
+/* ── Choices for the forms ─────────────────────────────────────────────────── */
+
+export const OWNER_CHOICES_MAX = 100;
+
+/**
+ * The members who may be made follow-up owner: ACTIVE in this organization,
+ * in a role that may see customers. The same rule `assertEligibleOwner`
+ * enforces on write — this list only saves the user a refusal.
+ */
+export async function eligibleOwners(
+  ctx: CustomerCtx,
+  opts: { db?: CustomerDb } = {},
+): Promise<Array<{ userId: string; name: string }>> {
+  return guarded(async () => {
+    const db = opts.db ?? (await defaultDb());
+    const rows = await db.organizationMember.findMany({
+      where: { organizationId: ctx.organizationId, status: "ACTIVE", role: { in: ["OWNER", "ADMIN", "MANAGER"] } },
+      select: { userId: true, role: true },
+      orderBy: { userId: "asc" },
+      take: OWNER_CHOICES_MAX,
+    });
+    // Re-checked against the grant table, so this list cannot drift from the write rule.
+    const ids = rows.filter(r => can(String(r.role) as OrganizationRole, "view_customers")).map(r => String(r.userId));
+    const names = await namesOf(db, ids);
+    return ids.map(id => ({ userId: id, name: names.get(id) ?? id })).sort((a, b) => a.name.localeCompare(b.name));
+  });
+}
+
+export const LINKABLE_PROJECTS_MAX = 100;
+
+/** Projects of this organization that are free, or already linked to this customer. */
+export async function linkableProjects(
+  ctx: CustomerCtx,
+  partyId: string,
+  opts: { db?: CustomerDb } = {},
+): Promise<Array<{ id: string; name: string; linked: boolean }>> {
+  return guarded(async () => {
+    const db = opts.db ?? (await defaultDb());
+    await findOwn(db, ctx, partyId);
+    const rows = await db.erpProject.findMany({
+      where: { organizationId: ctx.organizationId, deletedAt: null, OR: [{ partyId: null }, { partyId }] },
+      select: { id: true, name: true, partyId: true },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      take: LINKABLE_PROJECTS_MAX,
+    });
+    return rows.map(r => ({ id: String(r.id), name: String(r.name), linked: str(r.partyId) === partyId }));
   });
 }

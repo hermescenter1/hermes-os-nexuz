@@ -22,7 +22,13 @@ import { join } from "node:path";
 import config from "../../../../tailwind.config";
 
 const ROOT = join(__dirname, "..", "..", "..", "..");
-const DIRS = ["src/components/executive", "src/app/[locale]/dashboard/executive"];
+const DIRS = [
+  "src/components/executive",
+  "src/app/[locale]/dashboard/executive",
+  // Slice G2: the tenant customer pages and their components.
+  "src/components/tenant-customers",
+  "src/app/[locale]/dashboard/clients",
+];
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap(name => {

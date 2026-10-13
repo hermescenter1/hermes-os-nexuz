@@ -6942,7 +6942,8 @@
         "observability": "Observability",
         "otEdge": "OT Edge",
         "videoHub": "Video Hub",
-        "executiveCenter": "Executive Center"
+        "executiveCenter": "Executive Center",
+        "clients": "Customers"
       }
     },
     "shell": {
@@ -11235,6 +11236,154 @@
         "NOT_AN_INTEGER": "Enter a whole number.",
         "OUT_OF_RANGE": "This value is outside the allowed range.",
         "NOT_AFTER_STALE": "Must be greater than the number of days after which an approval is late."
+      }
+    },
+    "customers": {
+      "pageTitle": "Customers",
+      "pageLede": "This organization's customers: who follows each one up, the last contact and the next action.",
+      "linkNew": "New customer",
+      "newTitle": "New customer",
+      "newLede": "Record a customer of this organization. Only the name is required.",
+      "back": "All customers",
+      "readOnly": "You can see customers, but only an owner, administrator or manager can change them.",
+      "search": {
+        "label": "Search",
+        "placeholder": "Name, legal name, email or phone",
+        "status": "Status",
+        "statusAll": "Any status",
+        "followUp": "Follow-up",
+        "followUpAll": "Any follow-up",
+        "owner": "Owner",
+        "ownerAll": "Anyone",
+        "ownerMe": "Mine",
+        "archived": "Archived",
+        "archivedExclude": "Current customers",
+        "archivedOnly": "Archived only",
+        "submit": "Apply",
+        "reset": "Clear"
+      },
+      "status": {
+        "PROSPECT": "Prospect",
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive"
+      },
+      "followUp": {
+        "overdue": "Overdue",
+        "scheduled": "Scheduled",
+        "none": "No next action"
+      },
+      "table": {
+        "caption": "Customers of this organization",
+        "name": "Customer",
+        "status": "Status",
+        "owner": "Follow-up owner",
+        "nextAction": "Next action",
+        "lastInteraction": "Last contact"
+      },
+      "empty": {
+        "none": "This organization has no customers yet.",
+        "noneCanCreate": "This organization has no customers yet. Record the first one.",
+        "noMatch": "No customer matches these filters."
+      },
+      "pager": {
+        "next": "Next page",
+        "first": "Back to the first page"
+      },
+      "detail": {
+        "details": "Details",
+        "followUpTitle": "Follow-up",
+        "archivedNote": "This customer is archived. It is kept with its history and can be restored.",
+        "edit": "Edit",
+        "legalName": "Legal name",
+        "email": "Email",
+        "phone": "Phone",
+        "city": "City",
+        "country": "Country",
+        "notes": "Notes",
+        "owner": "Follow-up owner",
+        "ownerNone": "Nobody assigned",
+        "nextActionAt": "Next action due",
+        "nextActionNote": "Next action",
+        "lastInteraction": "Last contact",
+        "never": "Never",
+        "notSet": "Not set",
+        "updated": "Last changed {when}"
+      },
+      "form": {
+        "displayName": "Name",
+        "legalName": "Legal name",
+        "status": "Status",
+        "email": "Email",
+        "phone": "Phone",
+        "city": "City",
+        "country": "Country code",
+        "countryHelp": "Two letters, for example IR or DE.",
+        "notes": "Notes",
+        "owner": "Follow-up owner",
+        "ownerNone": "Nobody",
+        "nextActionAt": "Next action due",
+        "nextActionAtHelp": "In your own local time.",
+        "nextActionNote": "Next action",
+        "create": "Create customer",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "saved": "Saved.",
+        "conflict": "Someone else changed this customer in the meantime. Reload the page to see their change before saving again.",
+        "duplicate": "Another current customer already has this name.",
+        "ownerNotEligible": "This person cannot be the follow-up owner.",
+        "archivedLocked": "This customer is archived. Restore it before changing it.",
+        "invalid": "Check the highlighted fields.",
+        "failed": "The customer could not be saved. Try again.",
+        "fieldInvalid": "This value is not valid.",
+        "fieldTooLong": "This value is too long."
+      },
+      "archive": {
+        "archive": "Archive customer",
+        "restore": "Restore customer",
+        "working": "Working…",
+        "failed": "That did not work. Reload the page and try again."
+      },
+      "interactions": {
+        "title": "Contact log",
+        "empty": "No contact has been recorded yet.",
+        "older": "Older contacts",
+        "newest": "Back to the newest",
+        "recordedBy": "Recorded by {name}",
+        "kind": {
+          "CALL": "Call",
+          "MEETING": "Meeting",
+          "EMAIL": "Email",
+          "VISIT": "Visit",
+          "NOTE": "Note"
+        },
+        "form": {
+          "title": "Record a contact",
+          "kind": "Kind",
+          "occurredAt": "When",
+          "summary": "What happened",
+          "add": "Record contact",
+          "adding": "Recording…",
+          "added": "Recorded.",
+          "future": "A contact cannot be in the future.",
+          "archived": "This customer is archived; restore it to record a contact.",
+          "failed": "The contact could not be recorded. Try again."
+        }
+      },
+      "projects": {
+        "title": "Projects",
+        "none": "No project of this organization is linked to this customer.",
+        "forbidden": "Projects are ERP data; your role cannot see them.",
+        "cost": "Recorded cost of these projects",
+        "costNone": "No cost recorded on these projects.",
+        "perCurrency": "Shown per currency; different currencies are never added together.",
+        "truncated": "Only the first {count, number} linked projects are listed.",
+        "linkTitle": "Link a project",
+        "choose": "Project",
+        "link": "Link",
+        "unlink": "Unlink",
+        "noLinkable": "Every project of this organization is already linked to another customer.",
+        "elsewhere": "That project is already linked to another customer.",
+        "failed": "The link could not be changed. Reload the page and try again."
       }
     }
   }

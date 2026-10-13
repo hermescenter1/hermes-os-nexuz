@@ -45,12 +45,14 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `PARTIAL` — data, API and audit built and unit-tested (slice G1, not yet merged); UI (G2) and the management-view section (G3) not started |
+| **Status** | `PARTIAL` — data, API and audit MERGED (G1, PR #138); the FA/EN/DE pages built and proven live (G2, not yet merged); the management-view section (G3) not started |
 | **Slice G1** | `STAGE-11-SLICE-G1-CUSTOMERS-DATA.md`: tenant-owned `Party` (the counterparty the accounting plan names for A2, so no parallel customer model) + append-only `PartyInteraction` + `ErpProject.partyId`, all linked by **composite** `(organizationId, partyId)` foreign keys so a cross-tenant link cannot be stored; `/api/tenant/customers/**` (8 handlers, `TENANT_MEMBER`); `view_customers`/`manage_customers` for OWNER/ADMIN/MANAGER; versioned edits, archive not delete, audited writes without PII |
 | **Evidence** | `CrmAccount.organizationId` and `CustomerAccount.organizationId` are both `@unique`, and `CrmOpportunity` has no tenant column at all — so no tenant can have many customers today |
 | **Dependency** | A new `TenantCustomer` domain (schema + migration + RBAC + UI) |
+| **Slice G2** | `STAGE-12-SLICE-G2-CUSTOMERS-UI.md`: `/dashboard/clients` list (server-rendered search, filters, cursor pages), `new` and `[id]` (details, follow-up, append-only contact log, linked projects with cost per currency) in Persian, English and German, with a sidebar entry. Proven live on an isolated database: created through the UI, read back, contact recorded, project linked; another organization's customer answers 404 and a VIEWER is refused with a sentence rather than an empty list. |
 | **Acceptance** | A tenant-scoped customer record with contacts and follow-ups, created through a real authenticated write path, isolated per organization, with the dashboard reading those rows rather than a fixture. |
-| **Note** | The existing `/api/customers/*` handlers are **unauthenticated** and serve a 17-row fixture; that is a separate defect, recorded in `STAGE-1-AUDIT.md`, and must not be the source for this row. |
+| **Note** | The existing `/api/customers/*` handlers are **unauthenticated** and serve a 17-row fixture; that is a separate defect, recorded in `STAGE-1-AUDIT.md`, and must not be the source for this row. The new surface reads `Party` rows only. |
+| **Open** | G3: the management view's customer section and overdue follow-ups in tomorrow's priorities still read `NO_SOURCE`. |
 
 ## 4. Plants, assets, alerts and data quality
 
@@ -138,6 +140,7 @@ Status vocabulary:
 | **Evidence** | fa/en/de catalogues at three-way parity (gate total 8399); RTL and LTR screenshots desktop and mobile; the phone-width overflow defect found by measurement, fixed, and locked by a test |
 | **Dependency** | — |
 | **Acceptance** | Above, plus an accessibility pass: keyboard reachability of the action centre and archive, focus order, contrast, and the table semantics already present verified against a checklist. |
+| **Slice G2** | The three customer pages ship in all three languages (gate 8646, measured), RTL at 375 px with Persian digits and no horizontal overflow, with distinct empty / refused / failed / loading states. |
 | **Open** | No accessibility audit has been run. Page titles are static English in every locale (dashboard-wide `noIndexMetadata` pattern). Slice E fixed two defects found by looking: Latin digits in the Persian cutoff, and dead colour classes (`bg-base`, `text-fg`) that left form fields white, plus every opacity modifier on a theme colour (Tailwind 3 emits nothing for `bg-signal/10` on a `var()` colour; dead borders fell back to bright `#E5E7EB` row lines) — now guarded by a test that reads the Tailwind config. |
 
 ## 13. Database correctness, migrations, security, tenant/site isolation, audit
@@ -155,7 +158,7 @@ Status vocabulary:
 | | |
 | --- | --- |
 | **Status** | `IN_PROGRESS` |
-| **Evidence** | CI 24/24 on `7bab3069`; merge `c8cb343b`; production deploy dispatched for `c8cb343b` |
+| **Evidence** | Production runs **`f65a1f42`** (deploy run 38366191733, 2026-10-13): backup evidence verified on the host, migrations 82 → 84 applied and verified (84/84, 0 unresolved), `hermes-web` recreated, post-deploy health gate passed (healthy after 15 s, restart_count 0, `/api/health/ready` status ready, database true). Confirmed from outside: `/api/health` ok, `/api/health/ready` ready, `/api/executive/*` 401 for an anonymous caller, `/fa` and `/en` dashboard routes redirect to sign-in. PRs #134–#138 merged in order, each at a verified head with its required checks green. |
 | **Dependency** | Every row above |
 | **Acceptance** | The deployed version is confirmed, migrations report clean, health and readiness pass, the FA/EN management view and the report archive are checked on production, tenant/site and financial permission limits are confirmed there, and anything without data reads as "no data source". |
 
@@ -170,7 +173,7 @@ Rows are taken in this order, smallest reviewable slice first:
 3. **Slice E** — row 7, per-organization zone and cutoff (one migration). *Implemented and proven on an isolated database.*
 4. **Slice F** — row 10, the production runner, with row 9's channel if the
    owner has chosen one by then. *Code and packaging done and tested; production start needs the owner.*
-5. **Slice G** — row 3, the tenant customer domain (new schema). *G1 (data/API) built and unit-tested; G2 (UI + live proof) and G3 (management view) next.*
+5. **Slice G** — row 3, the tenant customer domain (new schema). *G1 merged (PR #138); G2 (UI) built and proven live; G3 (management view) next.*
 6. **Slice H** — rows 4 and 5, assets and the people dimension.
 7. **Slice I** — row 11, the performance baseline.
 8. **Slice J** — row 12's accessibility pass.
