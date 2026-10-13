@@ -61,3 +61,14 @@ tools/figma/hermes-phase104-visual-system/** text eol=lf
 # edit, so the evidence would stop reproducing. Same hazard, same remedy as the
 # B-05 artifacts above.
 /docs/security/EDGE-ORIGIN-AND-CLIENT-IP.md text eol=lf
+
+# S1 — the risk register is verified by the sha256 of its bytes, the report's
+# generated blocks are compared byte for byte against what the checker renders,
+# and the checker is a dependency-free .mjs run by `node --test`. With
+# `core.autocrlf=true` a Windows checkout would rewrite every line ending and
+# break all three comparisons on files nobody edited. Same hazard, same remedy as
+# the S0 artifacts above.
+/docs/security/THREAT-MODEL-AND-RISK-REGISTER.md text eol=lf
+/docs/security/s1-risk-register.json text eol=lf
+/scripts/security/s1/risk-register-check.mjs text eol=lf
+/scripts/security/s1/__tests__/risk-register.selftest.mjs text eol=lf
