@@ -60,8 +60,8 @@ function RangeSelector({ current, locale, t }: { current: ExecutiveRange; locale
             aria-current={active ? "page" : undefined}
             className={
               active
-                ? "rounded-md border border-signal bg-signal/10 px-3 py-1.5 text-xs text-signal"
-                : "rounded-md border border-line px-3 py-1.5 text-xs text-muted hover:text-fg"
+                ? "rounded-md border border-signal bg-signalDim px-3 py-1.5 text-xs text-signal"
+                : "rounded-md border border-line px-3 py-1.5 text-xs text-muted hover:text-text-primary"
             }
           >
             {t(`ranges.${range}` as never)}
@@ -78,15 +78,15 @@ function CostActivityBody({ data, t, locale }: { data: CostActivity; t: T; local
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="mb-2 text-sm font-medium text-fg">{t("oversight.cost.byCurrencyTitle")}</h3>
+        <h3 className="mb-2 text-sm font-medium text-text-primary">{t("oversight.cost.byCurrencyTitle")}</h3>
         {data.byCurrency.length === 0 ? (
           <p className="text-sm text-muted">{t("oversight.cost.noneInPeriod")}</p>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {data.byCurrency.map(c => (
-              <li key={c.currency} className="rounded-lg border border-line bg-base/40 p-4">
+              <li key={c.currency} className="rounded-lg border border-line bg-surface-glass p-4">
                 <p className="text-xs text-muted">{t("oversight.cost.currencyLabel", { currency: c.currency })}</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-fg">{money(c.amount, c.currency, locale)}</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-text-primary">{money(c.amount, c.currency, locale)}</p>
                 <p className="mt-1 text-xs text-muted">
                   {t("oversight.cost.entries", { count: c.entries })}
                 </p>
@@ -103,7 +103,7 @@ function CostActivityBody({ data, t, locale }: { data: CostActivity; t: T; local
 
       {data.byCategory.length > 0 && (
         <div>
-          <h3 className="mb-2 text-sm font-medium text-fg">{t("oversight.cost.byCategoryTitle")}</h3>
+          <h3 className="mb-2 text-sm font-medium text-text-primary">{t("oversight.cost.byCategoryTitle")}</h3>
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-[30rem] text-start text-sm">
               <caption className="sr-only">{t("oversight.cost.byCategoryTitle")}</caption>
@@ -117,8 +117,8 @@ function CostActivityBody({ data, t, locale }: { data: CostActivity; t: T; local
               </thead>
               <tbody>
                 {data.byCategory.map(c => (
-                  <tr key={`${c.currency}|${c.category ?? ""}`} className="border-b border-line/50 last:border-0">
-                    <th scope="row" className="py-2 pe-3 text-start font-normal text-fg">
+                  <tr key={`${c.currency}|${c.category ?? ""}`} className="border-b border-border-subtle last:border-0">
+                    <th scope="row" className="py-2 pe-3 text-start font-normal text-text-primary">
                       {c.category ?? <span className="text-muted">{t("oversight.cost.uncategorised")}</span>}
                     </th>
                     <td className="py-2 pe-3 text-muted">{c.currency}</td>
@@ -134,7 +134,7 @@ function CostActivityBody({ data, t, locale }: { data: CostActivity; t: T; local
       )}
 
       <div>
-        <h3 className="mb-1 text-sm font-medium text-fg">{t("oversight.cost.recordersTitle")}</h3>
+        <h3 className="mb-1 text-sm font-medium text-text-primary">{t("oversight.cost.recordersTitle")}</h3>
         <p className="mb-2 text-xs text-muted">{t("oversight.cost.recordersLede")}</p>
         {data.recorders.length === 0 ? (
           <p className="text-sm text-muted">{t("oversight.cost.noRecorders")}</p>
@@ -142,7 +142,7 @@ function CostActivityBody({ data, t, locale }: { data: CostActivity; t: T; local
           <ul className="divide-y divide-line/50 rounded-lg border border-line">
             {data.recorders.map(r => (
               <li key={r.userId} className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-2">
-                <span className="text-sm text-fg">
+                <span className="text-sm text-text-primary">
                   {r.displayName ?? <span className="text-muted">{t("oversight.unresolvedUser")}</span>}
                 </span>
                 <span className="flex flex-wrap gap-x-3 text-xs text-muted">
@@ -166,7 +166,7 @@ function CostActivityBody({ data, t, locale }: { data: CostActivity; t: T; local
       </div>
 
       <div>
-        <h3 className="mb-1 text-sm font-medium text-fg">{t("oversight.cost.overBudgetTitle")}</h3>
+        <h3 className="mb-1 text-sm font-medium text-text-primary">{t("oversight.cost.overBudgetTitle")}</h3>
         <p className="mb-2 text-xs text-muted">
           {t("oversight.cost.overBudgetSummary", {
             over: data.overBudgetCount,
@@ -187,8 +187,8 @@ function CostActivityBody({ data, t, locale }: { data: CostActivity; t: T; local
               </thead>
               <tbody>
                 {data.overBudget.map(p => (
-                  <tr key={p.projectId} className="border-b border-line/50 last:border-0">
-                    <th scope="row" className="py-2 pe-3 text-start font-normal text-fg">
+                  <tr key={p.projectId} className="border-b border-border-subtle last:border-0">
+                    <th scope="row" className="py-2 pe-3 text-start font-normal text-text-primary">
                       <Link href={`/${locale}/erp/projects/${p.projectId}`} className="underline underline-offset-2">
                         {p.name}
                       </Link>
@@ -228,12 +228,12 @@ function ApprovalsBody({
     <div className="space-y-6">
       <div>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="text-sm font-medium text-fg">{t("oversight.approvals.pendingTitle")}</h3>
+          <h3 className="text-sm font-medium text-text-primary">{t("oversight.approvals.pendingTitle")}</h3>
           <Link href={`/${locale}/erp/approvals`} className="text-xs text-signal underline underline-offset-2">
             {t("actionCenter.viewRecords")}
           </Link>
         </div>
-        <p className="mt-1 text-2xl font-semibold tabular-nums text-fg">{formatNumber(data.pendingTotal, locale)}</p>
+        <p className="mt-1 text-2xl font-semibold tabular-nums text-text-primary">{formatNumber(data.pendingTotal, locale)}</p>
         {data.oldestPendingIso && (
           <p className="text-xs text-muted">
             {t("oversight.approvals.oldest", {
@@ -259,8 +259,8 @@ function ApprovalsBody({
               </thead>
               <tbody>
                 {data.pendingByRole.map(r => (
-                  <tr key={r.approverRole ?? "\u0000none"} className="border-b border-line/50 last:border-0">
-                    <th scope="row" className="py-2 pe-3 text-start font-normal text-fg">
+                  <tr key={r.approverRole ?? "\u0000none"} className="border-b border-border-subtle last:border-0">
+                    <th scope="row" className="py-2 pe-3 text-start font-normal text-text-primary">
                       {r.approverRole ?? <span className="text-warn">{t("oversight.approvals.noPendingStep")}</span>}
                     </th>
                     <td className="py-2 pe-3 text-end tabular-nums">{formatNumber(r.total, locale)}</td>
@@ -287,7 +287,7 @@ function ApprovalsBody({
       </div>
 
       <div>
-        <h3 className="mb-2 text-sm font-medium text-fg">{t("oversight.approvals.decidedTitle")}</h3>
+        <h3 className="mb-2 text-sm font-medium text-text-primary">{t("oversight.approvals.decidedTitle")}</h3>
         <dl className="grid grid-cols-3 gap-3">
           {(
             [
@@ -296,9 +296,9 @@ function ApprovalsBody({
               ["cancelled", data.decidedCancelled],
             ] as const
           ).map(([k, v]) => (
-            <div key={k} className="rounded-lg border border-line bg-base/40 p-3">
+            <div key={k} className="rounded-lg border border-line bg-surface-glass p-3">
               <dt className="text-xs text-muted">{t(`oversight.approvals.outcome.${k}` as never)}</dt>
-              <dd className="mt-1 text-xl font-semibold tabular-nums text-fg">{formatNumber(v, locale)}</dd>
+              <dd className="mt-1 text-xl font-semibold tabular-nums text-text-primary">{formatNumber(v, locale)}</dd>
             </div>
           ))}
         </dl>
@@ -307,7 +307,7 @@ function ApprovalsBody({
           <ul className="mt-3 divide-y divide-line/50 rounded-lg border border-line">
             {data.deciders.map(d => (
               <li key={d.userId} className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-2">
-                <span className="text-sm text-fg">
+                <span className="text-sm text-text-primary">
                   {d.displayName ?? <span className="text-muted">{t("oversight.unresolvedUser")}</span>}
                 </span>
                 <span className="text-xs text-muted">
