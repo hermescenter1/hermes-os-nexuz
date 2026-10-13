@@ -11183,7 +11183,7 @@
         "WORK_OVERDUE": "Any other open task or work order past its due date.",
         "WORK_DUE_SOON": "Any other open task or work order due before the end of tomorrow."
       },
-      "configNote": "These thresholds are the product defaults. Setting them per organization is not available yet.",
+      "configNote": "These thresholds are the product defaults; this organization has not set its own.",
       "listTruncated": "Showing {shown, number} of {total, number} priorities.",
       "sourcesTitle": "Sources",
       "source": {
@@ -11194,7 +11194,48 @@
       },
       "sourceRead": "Read",
       "sourceTruncated": "Only the {limit, number} most pressing records were read.",
-      "noneInTier": "Nothing in this tier."
+      "noneInTier": "Nothing in this tier.",
+      "configNoteOrganization": "These thresholds were set for this organization."
+    },
+    "settings": {
+      "pageTitle": "Executive settings",
+      "pageLede": "The reporting time zone, the hour the business day turns over, and the thresholds behind tomorrow's priorities.",
+      "linkFromSummary": "Settings",
+      "linkFromPriorities": "Review the settings.",
+      "currentTitle": "Settings in force",
+      "sourceOrganization": "Set for this organization",
+      "sourceDefault": "Product defaults",
+      "storedRejected": "This organization's saved settings could not be used, so the product defaults are in force. Save the settings again to fix this.",
+      "lastChanged": "Last changed {when}",
+      "effectNote": "Changing the zone or the cutoff changes which records today's figures and future nightly reports cover. Reports already generated keep the zone they were made with.",
+      "editTitle": "Change the settings",
+      "readOnly": "Only an owner or an administrator of this organization can change these settings.",
+      "field": {
+        "timeZone": "Reporting time zone",
+        "dayCutoff": "Business day turns over at",
+        "approvalStaleDays": "Approval is late after (days)",
+        "approvalCriticalDays": "Approval is critically late after (days)",
+        "alertAgeHours": "Open alert becomes a priority after (hours)",
+        "maxItems": "Longest priority list"
+      },
+      "help": {
+        "timeZone": "Every day boundary, figure and nightly report for this organization is cut in this zone.",
+        "dayCutoff": "Local time. 00:00 means the day turns over at midnight."
+      },
+      "save": "Save settings",
+      "saving": "Saving…",
+      "result": {
+        "saved": "Saved.",
+        "conflict": "Someone else saved these settings in the meantime. Reload the page to see their change before saving again.",
+        "failed": "The settings could not be saved. Try again."
+      },
+      "problem": {
+        "UNKNOWN_TIME_ZONE": "This time zone is not recognised.",
+        "NOT_A_STRING": "Choose a time zone.",
+        "NOT_AN_INTEGER": "Enter a whole number.",
+        "OUT_OF_RANGE": "This value is outside the allowed range.",
+        "NOT_AFTER_STALE": "Must be greater than the number of days after which an approval is late."
+      }
     }
   }
 }

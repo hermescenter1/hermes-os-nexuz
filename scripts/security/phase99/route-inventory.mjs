@@ -198,6 +198,18 @@ export const GUARD_TOKENS = [
   // scripts/__tests__/executive-guard-recognition.test.ts locks both halves: that
   // the route really delegates to it, and that it really performs these checks.
   { token: "resolveExecutiveScope", scope: "tenant" },
+  // EXECUTIVE DASHBOARD slice E - the guard for CHANGING an organization's
+  // reporting settings (`src/lib/executive/settings-auth.ts`).
+  //
+  // What this entry vouches for, in this order: a trusted Origin for the
+  // cookie-authenticated write (CSRF); a JSON content type; everything
+  // `resolveExecutiveScope` vouches for above (session, server-side active
+  // organization, ACTIVE membership re-read); and `update_org` on that
+  // organization (OWNER or ADMIN). The organization written to is always the
+  // server-resolved one - nothing in the body or URL can name another.
+  //
+  // scripts/__tests__/executive-guard-recognition.test.ts locks both halves.
+  { token: "authorizeExecutiveSettingsWrite", scope: "tenant" },
   // Platform / API-key authority
   { token: "requirePlatformAuth", scope: "platform" },
   { token: "requirePlatformSuperadmin", scope: "platform" },

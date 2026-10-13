@@ -800,6 +800,8 @@ model Organization {
   documentStorageCleanups DocumentStorageCleanup[]
   // EXECUTIVE DASHBOARD slice B: the frozen nightly management report.
   executiveDailyReports   ExecutiveDailyReport[]
+  // EXECUTIVE DASHBOARD slice E: reporting zone, day cutoff, priority thresholds.
+  executiveSettings       ExecutiveSettings?
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -8752,4 +8754,33 @@ model ExecutiveDailyReport {
   @@unique([organizationId, businessDate, version])
   @@index([organizationId, businessDate])
   @@index([notifiedAt])
+}
+
+/// EXECUTIVE DASHBOARD slice E — one organization's reporting settings.
+///
+/// One row per organization, keyed BY the organization, so there is never a
+/// second row to disagree with the first. Absent means "use the product
+/// defaults"; nothing is backfilled.
+///
+/// Every value is bounded twice: by the application's validation, and by CHECK
+/// constraints in the migration, so a row written around the application still
+/// cannot move the business-day boundary somewhere nonsensical.
+///
+/// `version` is the optimistic-concurrency token: a write names the version it
+/// read and loses with a conflict if someone saved in between, instead of
+/// silently overwriting their change.
+model ExecutiveSettings {
+  organizationId       String       @id
+  /// IANA zone, e.g. "Asia/Tehran". Validated against the runtime's tz database.
+  timeZone             String       @db.VarChar(64)
+  /// Minutes after local midnight at which the business day turns over.
+  dayCutoffMinutes     Int          @default(0)
+  approvalStaleDays    Int          @default(3)
+  approvalCriticalDays Int          @default(7)
+  alertAgeHours        Int          @default(4)
+  priorityMaxItems     Int          @default(25)
+  version              Int          @default(1)
+  updatedAt            DateTime     @updatedAt @db.Timestamptz(6)
+  updatedBy            String?
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }

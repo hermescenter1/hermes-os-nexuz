@@ -117,7 +117,7 @@ export function SectionBody<D>({
   }
   return (
     <div
-      className="rounded-lg border border-line/70 bg-base/40 px-4 py-3"
+      className="rounded-lg border border-line bg-surface-glass px-4 py-3"
       role={section.status === "UNAVAILABLE" ? "alert" : undefined}
     >
       <p className="text-sm text-muted">
@@ -183,10 +183,10 @@ function MetricCard({
   const detailHref = p.detailPath ? `/${locale}/${p.detailPath}` : null;
 
   return (
-    <article className="flex h-full flex-col justify-between rounded-lg border border-line bg-base/30 p-4">
+    <article className="flex h-full flex-col justify-between rounded-lg border border-line bg-surface-glass p-4">
       <div>
         <h3 className="text-xs font-medium text-muted">{t(`metrics.${metric.key}` as never)}</h3>
-        <p className="mt-1 text-2xl font-semibold tabular-nums text-fg">
+        <p className="mt-1 text-2xl font-semibold tabular-nums text-text-primary">
           {metric.value === null ? INVALID_DISPLAY : formatNumber(metric.value, locale)}
         </p>
         <div className="mt-1">
@@ -197,7 +197,7 @@ function MetricCard({
       {/* Provenance. Every figure carries its definition, its system of record,
           the window it covers and when it was computed — in a <details> so the
           surface stays readable while the evidence is one click away. */}
-      <details className="mt-3 border-t border-line/60 pt-2">
+      <details className="mt-3 border-t border-border-subtle pt-2">
         <summary className="cursor-pointer text-[11px] text-muted">
           {t("provenance.definition")}
         </summary>
@@ -287,7 +287,7 @@ function ActionCenter({
               {items.map(item => (
                 <li
                   key={item.key}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-base/30 px-4 py-3"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface-glass px-4 py-3"
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -295,7 +295,7 @@ function ActionCenter({
                         label={t(`priority.${item.priority}`)}
                         variant={item.priority === "HIGH" ? "offline" : "warning"}
                       />
-                      <span className="text-sm font-medium text-fg">
+                      <span className="text-sm font-medium text-text-primary">
                         {t(`metrics.${item.key}` as never)}
                       </span>
                       <span className="text-sm tabular-nums text-muted">
@@ -308,7 +308,7 @@ function ActionCenter({
                   {item.detailPath && (
                     <Link
                       href={`/${locale}/${item.detailPath}`}
-                      className="shrink-0 rounded border border-signal/30 px-3 py-1.5 text-xs text-signal hover:bg-signal/5"
+                      className="shrink-0 rounded border border-signalDim px-3 py-1.5 text-xs text-signal hover:bg-signalDim"
                     >
                       {t("actionCenter.viewRecords")}
                     </Link>
@@ -350,8 +350,8 @@ function SiteTable({
         </thead>
         <tbody>
           {sites.map(site => (
-            <tr key={site.siteId} className="border-b border-line/50 last:border-0">
-              <th scope="row" className="py-2 pe-3 text-start font-normal text-fg">{site.name}</th>
+            <tr key={site.siteId} className="border-b border-border-subtle last:border-0">
+              <th scope="row" className="py-2 pe-3 text-start font-normal text-text-primary">{site.name}</th>
               <td className="py-2 pe-3">
                 <PageStatusBadge
                   label={t(`freshness.${site.freshness}`)}
@@ -391,9 +391,9 @@ function DataQualityPanel({ notes, t }: { notes: readonly DataQualityNote[]; t: 
           <li key={note.key} className="flex items-start gap-2 text-sm">
             <span
               aria-hidden="true"
-              className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${note.severity === "WARNING" ? "bg-warn" : "bg-muted/60"}`}
+              className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${note.severity === "WARNING" ? "bg-warn" : "bg-muted"}`}
             />
-            <span className={note.severity === "WARNING" ? "text-fg" : "text-muted"}>
+            <span className={note.severity === "WARNING" ? "text-text-primary" : "text-muted"}>
               {t(keyOf(note.key) as never, (note.meta ?? {}) as never)}
             </span>
           </li>
@@ -425,8 +425,8 @@ function RangeSelector({
             aria-current={current ? "true" : undefined}
             className={`rounded border px-3 py-1.5 text-xs transition-colors ${
               current
-                ? "border-signal/40 bg-signal/10 text-signal"
-                : "border-line text-muted hover:border-signal/20 hover:text-fg"
+                ? "border-signal bg-signalDim text-signal"
+                : "border-line text-muted hover:border-signalDim hover:text-text-primary"
             }`}
           >
             {t(`ranges.${range}`)}
@@ -481,8 +481,8 @@ export async function ExecutiveSummaryView({
         /* A frozen report states WHEN it was true instead of offering a range.
            The data cutoff is shown, not the generation time, because that is
            the moment the figures actually describe. */
-        <div className="rounded-lg border border-line bg-base/40 px-4 py-3">
-          <p className="text-sm text-fg">{t("reports.frozenNotice")}</p>
+        <div className="rounded-lg border border-line bg-surface-glass px-4 py-3">
+          <p className="text-sm text-text-primary">{t("reports.frozenNotice")}</p>
           <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted">
             <div className="flex gap-1">
               <dt className="font-medium">{t("reports.dataCutoff")}:</dt>
@@ -553,6 +553,13 @@ export async function ExecutiveSummaryView({
               className="text-signal underline underline-offset-2"
             >
               {t("priorities.linkFromSummary")}
+            </Link>
+            {" · "}
+            <Link
+              href={`/${locale}/dashboard/executive/settings`}
+              className="text-signal underline underline-offset-2"
+            >
+              {t("settings.linkFromSummary")}
             </Link>
           </p>
         </div>

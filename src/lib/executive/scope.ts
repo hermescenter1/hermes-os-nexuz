@@ -39,7 +39,7 @@ import { newRequestId } from "@/lib/logger/correlation";
 import { getAllowedSiteIds } from "@/lib/site/context";
 import { getActiveOrganizationContext } from "@/lib/erp/active-organization";
 import { ErpError, listErpMemberships, type ErpFailureCode } from "@/lib/erp/tenant";
-import { resolveReportingZone } from "./config";
+import { loadExecutiveSettings } from "./settings";
 // The shapes live in the pure contract layer so the aggregation can use them
 // without importing this resolver and, through it, `next/headers`.
 import type { ExecutiveAuthority, ExecutiveScope } from "./contract";
@@ -103,7 +103,11 @@ export async function resolveExecutiveScope(): Promise<ExecutiveScopeResult> {
     ? await getAllowedSiteIds(scope.userId, scope.organizationId)
     : [];
 
-  const zone = resolveReportingZone();
+  // The ORGANIZATION's zone and cutoff when it has set them, otherwise the
+  // environment default. Read from the server-resolved organization, never
+  // from the request: a client-chosen zone would move the day boundary and so
+  // change which records every figure covers.
+  const settings = await loadExecutiveSettings(scope.organizationId);
 
   return {
     ok: true,
@@ -114,9 +118,12 @@ export async function resolveExecutiveScope(): Promise<ExecutiveScopeResult> {
       role: scope.role,
       authority,
       allowedSiteIds,
-      timeZone: zone.timeZone,
-      dayCutoffMinutes: zone.dayCutoffMinutes,
+      timeZone: settings.values.timeZone,
+      dayCutoffMinutes: settings.values.dayCutoffMinutes,
       correlationId: newRequestId(),
+      zoneSource: settings.source,
+      zoneConfiguredValid:
+        settings.source === "ORGANIZATION" || (settings.environmentValid && !settings.storedRowRejected),
     },
   };
 }

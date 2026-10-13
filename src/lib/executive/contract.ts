@@ -375,4 +375,12 @@ export interface ExecutiveScope {
   readonly timeZone: string;
   readonly dayCutoffMinutes: number;
   readonly correlationId: string;
+  /**
+   * Where `timeZone` and `dayCutoffMinutes` came from: the organization's own
+   * settings row, or the environment/product default. Optional so a scope built
+   * without settings (a test, the system report scope) keeps its old meaning.
+   */
+  readonly zoneSource?: "ORGANIZATION" | "DEFAULT";
+  /** False when a configured zone - stored or environment - was rejected. */
+  readonly zoneConfiguredValid?: boolean;
 }

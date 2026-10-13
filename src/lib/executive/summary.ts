@@ -752,7 +752,7 @@ export async function buildExecutiveSummary(args: {
       },
       actions: refusedSection("UNAVAILABLE", unavailable),
       dataQuality: qualityNotes({
-        zoneConfiguredValid: zone.configuredValid,
+        zoneConfiguredValid: scope.zoneConfiguredValid ?? zone.configuredValid,
         industrial: refusedSection("UNAVAILABLE", unavailable),
         financial: refusedSection("UNAVAILABLE", unavailable),
       }),
@@ -815,7 +815,7 @@ export async function buildExecutiveSummary(args: {
       customers: refusedSection<never>("NO_SOURCE", REASON.customersNotTenantScoped),
     },
     actions,
-    dataQuality: qualityNotes({ zoneConfiguredValid: zone.configuredValid, industrial, financial }),
+    dataQuality: qualityNotes({ zoneConfiguredValid: scope.zoneConfiguredValid ?? zone.configuredValid, industrial, financial }),
   };
 }
 

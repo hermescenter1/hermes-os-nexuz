@@ -446,6 +446,11 @@ describe("102 — migration ordering", () => {
     // column on an existing table and touches no Phase 102 table (asserted
     // below).
     "20261011090000_executive_daily_report",
+    // Executive Management Center slice E - one additive table,
+    // ExecutiveSettings, keyed by the organization (zone, day cutoff, priority
+    // thresholds). No column on an existing table, no backfill; touches no
+    // Phase 102 table (asserted below).
+    "20261012120000_executive_settings",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {
