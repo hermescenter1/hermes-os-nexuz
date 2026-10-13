@@ -14,6 +14,9 @@ scripts/security/__tests__/check-env-example.test.mjs text eol=lf
 # checkout (core.autocrlf) stores it CRLF and both suites collect zero tests while
 # CI keeps enforcing the gate. vitest.config.ts neutralises the shebang as well.
 scripts/ci/dependency-audit-gate.mjs text eol=lf
+# Executive report runner: the credential-provisioning script runs under bash on
+# the production host; a CRLF checkout would break it there and on Windows.
+scripts/executive/provision-report-worker-token.sh text eol=lf
 
 # PHASE 104 — the Figma visual-system plugin is fingerprinted by RAW BYTES.
 #
