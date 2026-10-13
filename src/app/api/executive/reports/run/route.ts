@@ -32,6 +32,9 @@ export const dynamic = "force-dynamic";
 /** A ceiling the caller cannot raise, so one request cannot become a long job. */
 const MAX_BATCH = 200;
 
+/** The shape of an organization id as the cursor carries it. */
+const ORGANIZATION_CURSOR = /^[A-Za-z0-9_-]{1,64}$/;
+
 export async function POST(req: NextRequest) {
   const auth = await authorizeExecutiveReportWorker(req);
   if (!auth.ok) return securityError({ error: auth.error }, auth.status);
@@ -48,6 +51,14 @@ export async function POST(req: NextRequest) {
     max = parsed;
   }
 
+  // The cursor the runner got back from the previous pass. An organization id
+  // is opaque here — only compared, never used to read anything on its own —
+  // but it is still shape-checked so the query cannot receive arbitrary text.
+  const after = new URL(req.url).searchParams.get("after");
+  if (after !== null && !ORGANIZATION_CURSOR.test(after)) {
+    return securityError({ error: "INVALID_REQUEST" }, 400);
+  }
+
   try {
     const pass = await runReportPass({
       nowMs: Date.now(),
@@ -55,6 +66,7 @@ export async function POST(req: NextRequest) {
       // become a way to enumerate infrastructure.
       holder: `exec-report-${randomUUID()}`,
       maxOrganizations: max,
+      afterOrganizationId: after,
     });
     return securityError(pass as unknown as Record<string, unknown>, 200);
   } catch {

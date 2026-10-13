@@ -260,3 +260,36 @@ export async function claimNotification(args: {
   });
   return claimed.count === 1;
 }
+
+/**
+ * Give back a notification claim that delivered to nobody.
+ *
+ * A claim is spent the moment it is taken; if nobody could be told (no active
+ * owner or administrator, or every send failed) and the claim stayed, the row
+ * would say "notified" while nobody was, and no later pass would ever try
+ * again. Releasing it makes the next pass retry.
+ *
+ * FENCED ON THE CLAIM'S OWN TIMESTAMP: only the exact claim this caller took is
+ * cleared, never one another replica took since.
+ */
+export async function releaseNotificationClaim(args: {
+  organizationId: string;
+  businessDate: string;
+  version: number;
+  claimedAtMs: number;
+}): Promise<boolean> {
+  const client = await getPrisma();
+  const reports = delegateOf(client);
+  if (!reports) return false;
+
+  const released = await reports.updateMany({
+    where: {
+      organizationId: args.organizationId,
+      businessDate: args.businessDate,
+      version: args.version,
+      notifiedAt: new Date(args.claimedAtMs),
+    },
+    data: { notifiedAt: null },
+  });
+  return released.count === 1;
+}

@@ -59,7 +59,13 @@ const reportDelegate = {
   async updateMany(args: unknown) {
     const a = args as { where: Row; data: Row };
     const matched = h.rows.filter(r =>
-      Object.entries(a.where).every(([k, v]) => (v === null ? r[k] === null : r[k] === v)),
+      Object.entries(a.where).every(([k, v]) =>
+        v === null
+          ? r[k] === null
+          : v instanceof Date // by value, as PostgreSQL compares a timestamp
+            ? r[k] instanceof Date && (r[k] as Date).getTime() === v.getTime()
+            : r[k] === v,
+      ),
     );
     for (const r of matched) Object.assign(r, a.data);
     return { count: matched.length };
@@ -88,7 +94,7 @@ vi.mock("@/lib/audit/audit-service", () => ({
   SITE_AUDIT: {},
 }));
 
-import { generateDailyReport, claimNotification } from "../generate";
+import { generateDailyReport, claimNotification, releaseNotificationClaim } from "../generate";
 import { CALC_VERSION } from "../contract";
 import type { ExecutiveScope } from "../../contract";
 
@@ -348,5 +354,31 @@ describe("a report is announced at most once", () => {
       nowMs: NOW,
     });
     expect(v2).toBe(true);
+  });
+});
+
+describe("a claim that reached nobody can be given back (slice F)", () => {
+  const claim = (nowMs = NOW) =>
+    claimNotification({ organizationId: ORG, businessDate: "2026-10-10", version: 1, nowMs });
+  const release = (claimedAtMs: number) =>
+    releaseNotificationClaim({ organizationId: ORG, businessDate: "2026-10-10", version: 1, claimedAtMs });
+
+  it("clears the caller's own claim, so a later pass can claim again", async () => {
+    await generateDailyReport({ scope: scope(), nowMs: NOW });
+    expect(await claim()).toBe(true);
+    expect(await release(NOW)).toBe(true);
+    expect(h.rows[0].notifiedAt).toBeNull();
+    expect(await claim(NOW + 60_000)).toBe(true);
+  });
+
+  it("never clears a claim somebody else took since", async () => {
+    await generateDailyReport({ scope: scope(), nowMs: NOW });
+    expect(await claim(NOW + 60_000)).toBe(true); // another replica, later
+    expect(await release(NOW)).toBe(false); // a stale release from the first
+    expect(h.rows[0].notifiedAt).not.toBeNull();
+  });
+
+  it("releases nothing for a night that was never reported", async () => {
+    expect(await release(NOW)).toBe(false);
   });
 });

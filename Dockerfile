@@ -144,6 +144,31 @@ USER importer
 # type the flag. There is deliberately no --force in the importer.
 CMD ["node", "scripts/journal/import-articles.mjs"]
 
+# ── Executive Management Center: nightly report runner ──────────────────────
+# Same shape as the worker stages below, for the same reasons: its own stage so
+# the runner and migrator keep copying NO scripts, and deliberately tiny — no
+# dependency tree, no ORM, no application code, no database credential.
+# (Placed before them: the R8 packaging test reads the metering stage as the
+# text up to `AS runner`, so no stage may sit between those two.)
+#
+# It copies exactly ONE file: a dependency-free .mjs whose only action is an
+# authenticated `fetch` to POST /api/executive/reports/run on hermes-web. The
+# report pass — the finished-day window, the per-organization zone, the unique
+# key, the notify-once claim — lives in the web tier, where it is tested. A
+# compromised worker container can trigger a pass and nothing else; it cannot
+# read a report or any figure in one.
+FROM node:20-alpine AS executive-report-worker
+WORKDIR /app
+
+RUN addgroup -g 1001 -S nodejs && adduser -S worker -u 1001
+
+COPY scripts/executive/daily-report-worker.mjs ./scripts/executive/daily-report-worker.mjs
+
+USER worker
+
+# Polls forever by default. `--once` runs one full sweep and exits.
+CMD ["node", "scripts/executive/daily-report-worker.mjs"]
+
 # ── F-2 FU-F2-R4-1: document storage-cleanup worker ──────────────────────────
 # Same shape as the ATS and metering worker stages below, for the same reasons:
 # its own stage so the runner and migrator keep copying NO scripts, and
