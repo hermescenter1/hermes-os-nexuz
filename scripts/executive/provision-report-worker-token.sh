@@ -9,9 +9,10 @@
 # command line, never logged, and never leaves the host — so it is not in Git,
 # not in a CI log, not in a chat transcript.
 #
-# Refuses (exit 3) when the variable already exists: replacing a live token
-# would break the running runner until hermes-web is recreated, so a ROTATION is
-# a deliberate act — remove the line yourself, then run this again.
+# IDEMPOTENT: when a well-formed token already exists it is left untouched and
+# the script exits 0. A malformed or duplicated value is refused (exit 3) — that
+# needs a human. Replacing a live token would break the running runner until
+# hermes-web is recreated, so a ROTATION is deliberate: remove the line, run again.
 # Refuses (exit 4) when the file is missing or is not a regular file.
 #
 # After it succeeds, hermes-web must be RECREATED to read the new value (an env
@@ -29,8 +30,20 @@ if [ ! -f "$ENV_FILE" ] || [ -L "$ENV_FILE" ]; then
   exit 4
 fi
 
-if grep -q "^${NAME}=" "$ENV_FILE"; then
-  echo "refusing: ${NAME} is already set in ${ENV_FILE}; remove it deliberately to rotate" >&2
+existing="$(grep -c "^${NAME}=" "$ENV_FILE" || true)"
+if [ "$existing" -gt 1 ]; then
+  echo "refusing: ${NAME} appears ${existing} times in ${ENV_FILE}; leave exactly one deliberately" >&2
+  exit 3
+fi
+if [ "$existing" = "1" ]; then
+  # IDEMPOTENT: a well-formed token is left exactly as it is — replacing a live
+  # token would break the running runner until hermes-web is recreated. Only
+  # the SHAPE is checked; the value is never printed.
+  if grep -Eq "^${NAME}=[0-9a-f]{64}$" "$ENV_FILE"; then
+    echo "${NAME} is already present in ${ENV_FILE} and well-formed; left unchanged."
+    exit 0
+  fi
+  echo "refusing: ${NAME} in ${ENV_FILE} is not a 64-hex token; fix or remove that line deliberately" >&2
   exit 3
 fi
 

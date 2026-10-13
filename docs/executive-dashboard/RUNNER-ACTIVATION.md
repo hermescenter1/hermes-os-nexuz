@@ -28,14 +28,26 @@ From the deployed checkout on the production host, as the deploy user:
 scripts/executive/provision-report-worker-token.sh .env.production
 ```
 
-It generates 32 random bytes as 64 hex characters, appends
-`EXECUTIVE_REPORT_WORKER_TOKEN=…` to `.env.production` without changing the
-file's owner or mode, and prints only that the line was added. It refuses
-(exit 3) if the variable already exists — rotating is a deliberate act: remove
-the line first. The value never appears on screen, in shell history, in Git, in
-CI or in any message.
+It generates 32 random bytes as 64 hex characters, appends the
+`EXECUTIVE_REPORT_WORKER_TOKEN` line to `.env.production` without changing the
+file's owner or mode, and prints only that the line was added. It is
+**idempotent**: run again, it finds the well-formed token, leaves it untouched
+and exits 0. A malformed or duplicated value is refused (exit 3) and needs a
+human. The value never appears on screen, in shell history, in Git, in CI or in
+any message. Rotating is deliberate: remove the line, run the script, then
+recreate both containers below.
 
 Do **not** copy `METERING_WORKER_TOKEN` or `METRICS_TOKEN` into it.
+
+**Which containers must load it.** Editing the env file changes no running
+container; each reads `.env.production` (`env_file:`) only when it is created.
+
+| Service | Why it needs the token | How it picks it up |
+| --- | --- | --- |
+| `hermes-web` | verifies the runner's bearer token on `POST /api/executive/reports/run` | recreated by the redeploy in step 2 |
+| `hermes-executive-report-worker` | sends the bearer token | created by the start in step 3 |
+
+No other service needs it.
 
 ## 2. Make hermes-web read it
 

@@ -52,16 +52,50 @@ describe.skipIf(!hasBash)("provision-report-worker-token.sh", () => {
     }
   });
 
-  it("refuses to replace an existing token, leaving the file byte-identical", () => {
-    const original = "EXECUTIVE_REPORT_WORKER_TOKEN=keep-me\nOTHER=1\n";
+  it("is idempotent: a well-formed token is left exactly as it is, and exits 0", () => {
+    const live = "a".repeat(64);
+    const original = `EXECUTIVE_REPORT_WORKER_TOKEN=${live}\nOTHER=1\n`;
     const s = scratch(original);
     try {
-      const r = run(s.file);
-      expect(r.code).toBe(3);
+      const first = run(s.file);
+      const second = run(s.file);
+      expect(first.code).toBe(0);
+      expect(second.code).toBe(0);
       expect(readFileSync(s.file, "utf8")).toBe(original);
-      expect(r.out).not.toContain("keep-me");
+      expect(first.out).toContain("left unchanged");
+      expect(first.out + second.out).not.toContain(live);
     } finally {
       s.done();
+    }
+  });
+
+  it("a second run after creating the token changes nothing", () => {
+    const s = scratch("A=1\n");
+    try {
+      expect(run(s.file).code).toBe(0);
+      const once = readFileSync(s.file, "utf8");
+      expect(run(s.file).code).toBe(0);
+      expect(readFileSync(s.file, "utf8")).toBe(once);
+    } finally {
+      s.done();
+    }
+  });
+
+  it("refuses a malformed or duplicated token, leaving the file byte-identical", () => {
+    for (const original of [
+      "EXECUTIVE_REPORT_WORKER_TOKEN=short-secret\n",
+      "EXECUTIVE_REPORT_WORKER_TOKEN=\n",
+      `EXECUTIVE_REPORT_WORKER_TOKEN=${"b".repeat(64)}\nEXECUTIVE_REPORT_WORKER_TOKEN=${"c".repeat(64)}\n`,
+    ]) {
+      const s = scratch(original);
+      try {
+        const r = run(s.file);
+        expect(r.code, original).toBe(3);
+        expect(readFileSync(s.file, "utf8")).toBe(original);
+        expect(r.out).not.toContain("short-secret");
+      } finally {
+        s.done();
+      }
     }
   });
 
