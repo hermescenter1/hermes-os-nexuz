@@ -15,13 +15,13 @@
     "UNKNOWN"
   ],
   "summary": {
-    "routeFiles": 415,
-    "handlers": 576,
+    "routeFiles": 419,
+    "handlers": 584,
     "byClassification": {
       "PUBLIC_READ": 36,
       "PUBLIC_WRITE": 14,
       "AUTHENTICATED_USER": 188,
-      "TENANT_MEMBER": 198,
+      "TENANT_MEMBER": 206,
       "TENANT_ADMIN": 0,
       "OWNER_ONLY": 0,
       "PLATFORM_ADMIN": 136,
@@ -30,19 +30,19 @@
       "UNKNOWN": 0
     },
     "unknown": 0,
-    "tenantBoundHandlers": 198,
+    "tenantBoundHandlers": 206,
     "stateChangingGetHandlers": 0,
     "unauthenticatedWebhooks": 0
   },
   "tenantCoverage": {
-    "TENANT_BOUND_HANDLERS_TOTAL": 334,
-    "TENANT_BOUND_HANDLERS_ANALYSED": 334,
-    "TENANT_IDENTITY_SERVER_DERIVED": 334,
+    "TENANT_BOUND_HANDLERS_TOTAL": 342,
+    "TENANT_BOUND_HANDLERS_ANALYSED": 342,
+    "TENANT_IDENTITY_SERVER_DERIVED": 342,
     "TENANT_IDENTITY_COVERAGE_PERCENT": 100,
-    "OBJECT_SCOPED_HANDLERS": 334,
-    "OBJECT_SCOPE_COVERAGE_PERCENT": 100,
+    "OBJECT_SCOPED_HANDLERS": 336,
+    "OBJECT_SCOPE_COVERAGE_PERCENT": 98.2,
     "CLIENT_SUPPLIED_IDENTITY_HANDLERS": 0,
-    "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 0
+    "UNSCOPED_OBJECT_REFERENCE_HANDLERS": 6
   },
   "routes": [
     {
@@ -7649,6 +7649,110 @@
       "authEvidence": [
         "resolveTenantBase",
         "selectFromResolved"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/tenant/customers",
+      "method": "GET",
+      "file": "src/app/api/tenant/customers/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/tenant/customers",
+      "method": "POST",
+      "file": "src/app/api/tenant/customers/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/tenant/customers/[id]",
+      "method": "GET",
+      "file": "src/app/api/tenant/customers/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/tenant/customers/[id]",
+      "method": "PATCH",
+      "file": "src/app/api/tenant/customers/[id]/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/tenant/customers/[id]/interactions",
+      "method": "GET",
+      "file": "src/app/api/tenant/customers/[id]/interactions/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/tenant/customers/[id]/interactions",
+      "method": "POST",
+      "file": "src/app/api/tenant/customers/[id]/interactions/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/tenant/customers/[id]/projects",
+      "method": "GET",
+      "file": "src/app/api/tenant/customers/[id]/projects/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requirePermission"
+      ],
+      "declaredSurface": false,
+      "tenantScoped": true,
+      "mutates": false,
+      "senderAuthenticated": null
+    },
+    {
+      "apiPath": "/api/tenant/customers/[id]/projects",
+      "method": "PUT",
+      "file": "src/app/api/tenant/customers/[id]/projects/route.ts",
+      "classification": "TENANT_MEMBER",
+      "authEvidence": [
+        "requirePermission"
       ],
       "declaredSurface": false,
       "tenantScoped": true,

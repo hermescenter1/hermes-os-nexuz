@@ -12,6 +12,11 @@ export type OrgPermission =
   | "view_erp"
   | "manage_erp"
   | "view_erp_compensation"
+  // Executive Management Center slice G — the organization's own customers
+  // (tenant-owned Party). Separate from ERP so a sales manager can follow up a
+  // customer without receiving project, cost or approval access.
+  | "view_customers"
+  | "manage_customers"
   | "update_org"
   | "delete_org"
   | "invite_member"
@@ -271,6 +276,11 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   view_erp:                       ["OWNER", "ADMIN"],
   manage_erp:                     ["OWNER", "ADMIN"],
   view_erp_compensation:          ["OWNER"],
+  // Slice G — customers. MANAGER is included on purpose: following up customers
+  // is a manager's job, and these grant no ERP, cost or compensation access.
+  // None of the eight roles pinned at zero grants (phase110-a10b) receives one.
+  view_customers:                 ["OWNER", "ADMIN", "MANAGER"],
+  manage_customers:               ["OWNER", "ADMIN", "MANAGER"],
 };
 
 /*
