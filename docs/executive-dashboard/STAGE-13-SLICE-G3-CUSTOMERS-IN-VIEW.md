@@ -121,3 +121,13 @@ eight refusal reasons and eight named sources; it is now **seven reasons**
 (`customersNotTenantScoped` is gone, its claim no longer being true) and **ten
 sources** (`party`, `partyInteraction` joined). Full run after the update:
 17 files, **335 passed, 0 failed**.
+
+A second pinned expectation moved, and CI caught it where my local run had not:
+`summary-route-isolation.test.ts` asserted the customer section is
+`NO_SOURCE` **on every response**. Its fake database had no customer delegate,
+so the section threw and was reported `UNAVAILABLE` — the honest answer, but
+not what the test expected. The fake now has the two delegates, and the single
+obsolete assertion is replaced by two stronger ones: **EMPTY with its reason**
+when the organization has no customers, and **UNAVAILABLE with no driver
+message, host or stack leaked** when the customer source cannot be read, while
+the rest of the dashboard still answers. 26/26 in that suite.
