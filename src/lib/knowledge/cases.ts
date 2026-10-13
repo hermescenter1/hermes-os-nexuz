@@ -13,7 +13,16 @@
 import { getPrisma }                  from "@/lib/db/prisma";
 import { logInfraFailure }            from "@/lib/logger/security-events";
 import type { GraphViewerScope }      from "@/lib/knowledge-graph/visibility";
-import { assertCaseScopeWritable, loadVisibleCaseRows } from "./case-visibility";
+import {
+  CaseScopeError,
+  assertFailureModeWritable,
+  loadVisibleCaseRows,
+  lockCaseRowForWrite,
+  lockCaseScopesForWrite,
+  parseCaseScope,
+  type CaseScopeInput,
+  type CaseWriteTx,
+} from "./case-visibility";
 import { normalizeText, tokenize }    from "./normalize";
 import { KNOWLEDGE_ENGINE_VERSION }   from "./types";
 import { recordAuditEvent, KNOWLEDGE_AUDIT } from "@/lib/audit/audit-service";
@@ -27,11 +36,6 @@ type CaseModel = {
   update:     (a: unknown) => Promise<Record<string, unknown>>;
   updateMany: (a: unknown) => Promise<{ count: number }>;
 };
-
-async function caseModel(): Promise<CaseModel | null> {
-  const db = await getPrisma();
-  return db ? ((db as Record<string, unknown>).industrialEngineeringCase as CaseModel) : null;
-}
 
 /** The visible cases, newest first. A read failure answers with an EMPTY list (fail closed) and is logged. */
 async function visibleRows(
@@ -68,6 +72,22 @@ export async function getCase(
   return rows.length > 0 ? _rowToCase(rows[0]) : null;
 }
 
+/** A case write runs in ONE interactive transaction (locks + decision + write). */
+interface CaseTxHost {
+  $transaction: <T>(fn: (tx: CaseWriteTx) => Promise<T>, opts?: { maxWait?: number; timeout?: number }) => Promise<T>;
+}
+const CASE_TX_OPTIONS = { maxWait: 5000, timeout: 15000 } as const;
+
+const txModel = (tx: CaseWriteTx): CaseModel => tx.industrialEngineeringCase as CaseModel;
+
+/**
+ * Creates a case. Independent review S2-01: the scope decision and the insert are ONE transaction —
+ * the asset (if any), the site(s) it names or derives and the failure mode are locked (`FOR SHARE`) and
+ * decided on their locked, current values, so an asset moved to a hidden site or a site deactivated
+ * while the request runs either makes this create fail with the uniform 404 (nothing is inserted,
+ * nothing is audited) or waits until this create has committed. The audit event is recorded only after
+ * the commit.
+ */
 export async function createCase(
   scope: GraphViewerScope,
   input: {
@@ -88,41 +108,49 @@ export async function createCase(
   userId?: string,
 ): Promise<CaseRecord | null> {
   const organizationId = scope.organizationId;
-  const m = await caseModel();
   const db = await getPrisma();
-  if (!m || !db) return null;
-  // Validate the COMPLETE scope before anything is written. Throws CaseScopeError (see ./case-visibility.ts).
-  const resolved = await assertCaseScopeWritable(db as unknown as Record<string, unknown>, scope, input);
+  if (!db) return null;
+  const requested = parseCaseScope(input);                  // shape refusals before any database work
+  let row: Record<string, unknown>;
   try {
-    const row = await m.create({
-      data: {
-        organizationId,
-        title:          input.title,
-        titleNorm:      normalizeText(input.title),
-        symptoms:       input.symptoms       ?? [],
-        diagnosis:      input.diagnosis      ?? null,
-        resolution:     input.resolution     ?? null,
-        lessonsLearned: input.lessonsLearned ?? null,
-        assetTypes:     input.assetTypes     ?? [],
-        assetId:        resolved.assetId,
-        siteId:         resolved.siteId,
-        failureModeId:  input.failureModeId  ?? null,
-        keywords:       input.keywords       ?? [],
-        status:         input.status         ?? "open",
-        severity:       input.severity       ?? "MEDIUM",
-        reportedById:   input.reportedById   ?? null,
-      },
-    });
-    const created = _rowToCase(row);
-    recordAuditEvent({
-      action:     KNOWLEDGE_AUDIT.ENGINEERING_CASE_CREATED,
-      entityType: "case",
-      entityId:   created.id,
-      userId,
-      metadata:   { organizationId, title: created.title, engineVersion: KNOWLEDGE_ENGINE_VERSION },
-    });
-    return created;
-  } catch { return null; }
+    row = await (db as unknown as CaseTxHost).$transaction(async (tx) => {
+      const [decided] = await lockCaseScopesForWrite(tx, scope, [requested]);
+      if (decided instanceof CaseScopeError) throw decided;
+      const failureModeId = await assertFailureModeWritable(tx, organizationId, input.failureModeId);
+      return txModel(tx).create({
+        data: {
+          organizationId,
+          title:          input.title,
+          titleNorm:      normalizeText(input.title),
+          symptoms:       input.symptoms       ?? [],
+          diagnosis:      input.diagnosis      ?? null,
+          resolution:     input.resolution     ?? null,
+          lessonsLearned: input.lessonsLearned ?? null,
+          assetTypes:     input.assetTypes     ?? [],
+          assetId:        decided.assetId,
+          siteId:         decided.siteId,
+          failureModeId,
+          keywords:       input.keywords       ?? [],
+          status:         input.status         ?? "open",
+          severity:       input.severity       ?? "MEDIUM",
+          reportedById:   input.reportedById   ?? null,
+        },
+      });
+    }, CASE_TX_OPTIONS);
+  } catch (err) {
+    if (err instanceof CaseScopeError) throw err;
+    logInfraFailure("database", "knowledge.cases.create", err);
+    return null;
+  }
+  const created = _rowToCase(row);
+  recordAuditEvent({
+    action:     KNOWLEDGE_AUDIT.ENGINEERING_CASE_CREATED,
+    entityType: "case",
+    entityId:   created.id,
+    userId,
+    metadata:   { organizationId, title: created.title, engineVersion: KNOWLEDGE_ENGINE_VERSION },
+  });
+  return created;
 }
 
 /** Fields a client may mutate through PATCH. Server-owned columns
@@ -134,6 +162,18 @@ const CASE_MUTABLE_FIELDS = [
   "reportedById", "resolvedAt",
 ] as const;
 
+/**
+ * Updates a case. Independent review S2-01: everything that decides the write is decided INSIDE one
+ * transaction, on locked rows, in a fixed order — the case row (`FOR UPDATE`), then every asset named by
+ * the current or the resulting scope, then every site they name or derive, then the failure mode
+ * (`FOR SHARE`). Under those locks:
+ *   1. the CURRENT case must be visible to the actor (its own site, its asset's CURRENT site, ACTIVE,
+ *      consistent) — otherwise `null` (404), whatever the patch contains;
+ *   2. the RESULTING scope must be writable — otherwise a {@link CaseScopeError};
+ *   3. the write is pinned to the locked scope and the result is read back on the same transaction.
+ * A concurrent asset move, site deactivation or case re-scoping therefore either commits first (and this
+ * update sees it and writes nothing) or waits for this update. No second visibility read after the write.
+ */
 export async function updateCase(
   scope:          GraphViewerScope,
   id:             string,
@@ -142,50 +182,62 @@ export async function updateCase(
 ): Promise<CaseRecord | null> {
   void userId; // accepted for signature/route compatibility; not persisted here
   const organizationId = scope.organizationId;
-  const m = await caseModel();
   const db = await getPrisma();
-  if (!m || !db) return null;
-
-  // 1. The case must be VISIBLE to the actor; otherwise it is "not found" (same answer as a missing id).
-  const existingRows = await visibleRows(scope, { id, limit: 1 }, "update");
-  if (existingRows.length === 0) return null;
-  const existing = existingRows[0];
-
-  // 2. Validate the RESULTING scope after the patch is applied (not just the patched fields), so a
-  //    partial update cannot move a case into a hidden, foreign or inactive site, create a
-  //    site/asset disagreement, or turn a site case into an organisation-level one.
+  if (!db) return null;
   const src = input as Record<string, unknown>;
   const touchesScope = src.siteId !== undefined || src.assetId !== undefined;
-  let nextScope: { siteId: string | null; assetId: string | null } | null = null;
-  if (touchesScope) {
-    nextScope = await assertCaseScopeWritable(db as unknown as Record<string, unknown>, scope, {
-      siteId:  src.siteId  !== undefined ? src.siteId  : existing.siteId,
-      assetId: src.assetId !== undefined ? src.assetId : existing.assetId,
-    });
-  }
+
   try {
-    const data: Record<string, unknown> = {};
-    for (const k of CASE_MUTABLE_FIELDS) {
-      if (k === "siteId" || k === "assetId") continue;      // written from the validated scope below
-      if (src[k] !== undefined) data[k] = src[k];
-    }
-    if (nextScope) { data.siteId = nextScope.siteId; data.assetId = nextScope.assetId; }
-    if (typeof data.title === "string" && data.title) {
-      data.titleNorm = normalizeText(data.title);
-    }
-    if (data.status === "resolved" && data.resolvedAt == null) {
-      data.resolvedAt = new Date();
-    }
-    // Tenant-scoped write: a case owned by another org cannot be mutated even
-    // if its id is known (Phase 82E.0 — closes cross-tenant IDOR write).
-    // The WHERE also pins the scope that was validated: if it changed since the read, nothing is written.
-    const res = await m.updateMany({
-      where: { id, organizationId, siteId: existing.siteId ?? null, assetId: existing.assetId ?? null },
-      data,
-    });
-    if (!res || res.count === 0) return null;
-    return getCase(scope, id);
-  } catch { return null; }
+    return await (db as unknown as CaseTxHost).$transaction(async (tx) => {
+      const locked = await lockCaseRowForWrite(tx, organizationId, id);
+      if (!locked) return null;
+      const current: CaseScopeInput = { siteId: locked.siteId, assetId: locked.assetId };
+
+      // The requested scope is parsed but NOT acted on until the current case is known to be visible:
+      // a hidden case answers like a missing one, whatever the patch contains.
+      let requested: CaseScopeInput | CaseScopeError = current;
+      if (touchesScope) {
+        try {
+          requested = parseCaseScope({
+            siteId:  src.siteId  !== undefined ? src.siteId  : current.siteId,
+            assetId: src.assetId !== undefined ? src.assetId : current.assetId,
+          });
+        } catch (err) {
+          if (!(err instanceof CaseScopeError)) throw err;
+          requested = err;
+        }
+      }
+      const toLock = requested instanceof CaseScopeError ? [current] : [current, requested];
+      const [currentDecision, nextDecision] = await lockCaseScopesForWrite(tx, scope, toLock);
+      if (currentDecision instanceof CaseScopeError) return null;            // hidden now: nothing written
+      if (requested instanceof CaseScopeError) throw requested;
+      if (nextDecision instanceof CaseScopeError) throw nextDecision;
+      const next = nextDecision ?? current;
+
+      const data: Record<string, unknown> = {};
+      for (const k of CASE_MUTABLE_FIELDS) {
+        if (k === "siteId" || k === "assetId") continue;      // written from the decided scope below
+        if (src[k] !== undefined) data[k] = src[k];
+      }
+      if (src.failureModeId !== undefined) data.failureModeId = await assertFailureModeWritable(tx, organizationId, src.failureModeId);
+      if (touchesScope) { data.siteId = next.siteId; data.assetId = next.assetId; }
+      if (typeof data.title === "string" && data.title) data.titleNorm = normalizeText(data.title);
+      if (data.status === "resolved" && data.resolvedAt == null) data.resolvedAt = new Date();
+
+      // Tenant-scoped, and pinned to the locked scope (defence in depth: the row lock already holds it).
+      const res = await txModel(tx).updateMany({
+        where: { id, organizationId, siteId: current.siteId, assetId: current.assetId },
+        data,
+      });
+      if (!res || res.count !== 1) return null;
+      const row = await txModel(tx).findFirst({ where: { id, organizationId } });
+      return row ? _rowToCase(row) : null;
+    }, CASE_TX_OPTIONS);
+  } catch (err) {
+    if (err instanceof CaseScopeError) throw err;
+    logInfraFailure("database", "knowledge.cases.update", err);
+    return null;
+  }
 }
 
 /**

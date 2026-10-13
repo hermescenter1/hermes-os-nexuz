@@ -3,8 +3,7 @@ import { requirePlatformAuth }                      from "@/lib/api/auth";
 import { requireOrgActor }                          from "@/lib/org/context";
 import { requirePermission }                        from "@/lib/org/rbac";
 import { resolveGraphViewerScope }                from "@/lib/knowledge-graph/visibility";
-import { getAllowedSiteIds }                         from "@/lib/site/context";
-import { getAsset }                                 from "@/lib/industrial/assets";
+import { resolveAuthorizedAsset }                   from "@/lib/knowledge/rootcauses";
 import { listFailureModes, createFailureMode, getFailureKnowledge } from "@/lib/knowledge/failures";
 import { recordAuditEvent, KNOWLEDGE_AUDIT }        from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }                     from "@/lib/api/meter";
@@ -30,19 +29,23 @@ export async function GET(req: NextRequest) {
 
   meterIndustrialEvent(ctx.orgId, "failure_knowledge_requests");
 
-  if (assetId) {
-    // Validate that the requested asset belongs to a site this user can access
-    const allowedSiteIds = await getAllowedSiteIds(member.ctx.userId, ctx.orgId);
-    const asset = await getAsset(assetId, ctx.orgId);
-    if (!asset || !allowedSiteIds.includes(asset.siteId)) {
+  if (assetId !== null) {
+    // Independent review S2-04: the asset is authorised with the SAME active-site policy as every other
+    // hardened surface — the viewer scope is `getAllowedSiteIds` ∩ the organisation's ACTIVE sites, and the
+    // asset must be this organisation's, stand on one of those sites, and that site must still be ACTIVE.
+    // A missing, foreign, hidden, inactive-site (even with a stale UserSite grant) or malformed id is the
+    // SAME 404, decided before any failure-history work.
+    const scope = await resolveGraphViewerScope(member.ctx.userId, ctx.orgId, member.ctx.role);
+    const asset = await resolveAuthorizedAsset(ctx.orgId, assetId, scope.allowedSiteIds);
+    if (!asset) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
     }
     const knowledge = await getFailureKnowledge(
-      ctx.orgId, assetId, assetType, symptoms.length > 0 ? symptoms : undefined,
+      ctx.orgId, asset.id, assetType, symptoms.length > 0 ? symptoms : undefined,
       // RV-01: related cases follow the shared case visibility policy
-      await resolveGraphViewerScope(member.ctx.userId, ctx.orgId, member.ctx.role),
+      scope,
     );
-    recordAuditEvent({ action: KNOWLEDGE_AUDIT.KNOWLEDGE_QUERY, entityType: "failure", userId: ctx.userId ?? undefined, metadata: { organizationId: ctx.orgId, assetId } });
+    recordAuditEvent({ action: KNOWLEDGE_AUDIT.KNOWLEDGE_QUERY, entityType: "failure", userId: ctx.userId ?? undefined, metadata: { organizationId: ctx.orgId, assetId: asset.id } });
     return NextResponse.json({ knowledge });
   }
 

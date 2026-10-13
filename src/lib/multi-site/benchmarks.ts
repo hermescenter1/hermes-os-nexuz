@@ -22,6 +22,7 @@
  */
 
 import { getPrisma }    from "@/lib/db/prisma";
+import { logInfraFailure } from "@/lib/logger/security-events";
 import { compareSites }  from "./comparison";
 import {
   KPI_PERIOD,
@@ -126,6 +127,12 @@ export async function runBenchmark(orgId: string): Promise<BenchmarkRecord> {
     throw err;
   }
   const bmId = bmCreated.id as string;
+  let committed = false;
+  // Captured when the child-row transaction commits, so a post-commit failure can still be answered
+  // with the values that were actually written.
+  let committedSiteCount = 0;
+  let committedSummary: unknown = {};
+  let committedAt = new Date();
 
   try {
     const result = await compareSites(orgId);
@@ -221,10 +228,34 @@ export async function runBenchmark(orgId: string): Promise<BenchmarkRecord> {
         }
       });
 
+    // COMMITTED: from here on the run IS a success. Independent review S3-04: a failure of the read-back
+    // below used to fall into the catch and relabel the committed SUCCESS row as FAILED, losing the
+    // snapshot every reader uses. The post-commit failure is reported separately (logged, and surfaced to
+    // the caller by rethrowing only AFTER the state is left correct) and never rewrites the run state.
     inFlight.delete(orgId);
+    committed = true;
+    committedSiteCount = result.siteIds.length;
+    committedSummary = result.summary;
+    committedAt = completedAt;
+    // The committed row, or — when it cannot be read back — the values just written. Either way the run
+    // stays SUCCESS. The single guard that protects the committed state is `if (committed)` in the catch
+    // below; this read is deliberately NOT wrapped in its own catch, so that one guard is the control and
+    // a test can exercise it.
     const r = await bmModel.findFirst({ where: { id: bmId } });
-    return bmRow(r!);
+    return bmRow(r ?? {
+      id: bmId, organizationId: orgId, status: "SUCCESS", siteCount: result.siteIds.length,
+      summary: result.summary, errorMessage: null, startedAt, completedAt, computedAt: completedAt,
+    });
   } catch (err) {
+    if (committed) {
+      // POST-COMMIT. The run IS a success and its state must not be rewritten (independent review
+      // S3-04). The failure is reported on its own channel and the caller gets the committed result.
+      logInfraFailure("database", "multi_site.benchmark_post_commit", err);
+      return bmRow({
+        id: bmId, organizationId: orgId, status: "SUCCESS", siteCount: committedSiteCount,
+        summary: committedSummary, errorMessage: null, startedAt, completedAt: committedAt, computedAt: committedAt,
+      });
+    }
     const msg = err instanceof Error ? err.message : String(err);
     await bmModel.update({
       where: { id: bmId },

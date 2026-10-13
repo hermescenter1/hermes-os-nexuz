@@ -23,11 +23,18 @@ type RelModel  = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> 
 /**
  * Load all nodes and relations for a site in 2 queries.
  * Builds in-memory adjacency lists; safe for sites with hundreds of nodes.
+ *
+ * Independent review S3-02: `allowedSiteIds` is REQUIRED and the site must be in it, so the function
+ * cannot be called unsafely even by a future caller that forgot to authorise first. Every current
+ * caller already authorised the site (route guard, Copilot scope, brain scope); this makes that a
+ * compile-time obligation instead of a convention.
  */
 export async function getAssetGraph(
   organizationId: string,
   siteId: string,
+  allowedSiteIds: readonly string[],
 ): Promise<AssetGraph | null> {
+  if (!organizationId || !siteId || !allowedSiteIds.includes(siteId)) return null;
   const prisma = await getPrisma();
   if (!prisma) return null;
 

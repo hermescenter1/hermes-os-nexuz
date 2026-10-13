@@ -90,7 +90,13 @@ function highestRiskSiteIdFrom(rows: Record<string, unknown>[]): string | null {
   for (const r of rows) {
     const score = r.avgRiskScore as number | null;
     if (score === null || score === undefined) continue;
-    if (score > bestScore) { bestScore = score; bestId = String(r.siteId); }
+    const siteId = String(r.siteId);
+    // Independent review S3: EQUAL scores used to leave the winner to the database's row order, so the
+    // summary could name a different site on two reads of the same benchmark. The lowest site id wins.
+    if (score > bestScore || (score === bestScore && bestId !== null && siteId < bestId)) {
+      bestScore = score;
+      bestId = siteId;
+    }
   }
   return bestId;
 }

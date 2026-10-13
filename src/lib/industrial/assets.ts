@@ -27,18 +27,28 @@ function row(r: Record<string, unknown>): AssetRecord {
   };
 }
 
-export async function listAssets(organizationId: string, opts?: {
+/** The site scope of an asset list. Independent review S3-08: it can no longer be omitted. */
+export type AssetListScope =
+  /** The caller's readable sites, server derived. `[]` = reaches nothing, so the answer is empty. */
+  | { allowedSiteIds: readonly string[]; organizationWide?: never }
+  /**
+   * Every site of the organisation, INCLUDING inactive ones — the pre-existing contract of an API-key
+   * (machine) caller, which has no user and therefore no `UserSite` grants. Spelled out at the call
+   * site so an organisation-wide list is always a decision, never a forgotten argument.
+   */
+  | { organizationWide: true; allowedSiteIds?: never };
+
+export async function listAssets(organizationId: string, opts: AssetListScope & {
   siteId?:       string;
   gatewayId?:    string;
-  allowedSiteIds?: string[];
   /** Slice D2: a server-controlled row ceiling applied IN the query (Copilot insights). */
   limit?:        number;
 }): Promise<AssetRecord[]> {
-  if (opts?.allowedSiteIds !== undefined && opts.allowedSiteIds.length === 0) return [];
+  if (!opts.organizationWide && opts.allowedSiteIds.length === 0) return [];
   const prisma = await getPrisma();
   if (!prisma) return [];
   const where: Record<string, unknown> = { organizationId };
-  if (opts?.gatewayId) where.gatewayId = opts.gatewayId;
+  if (opts.gatewayId) where.gatewayId = opts.gatewayId;
   // PHASE 99.5 SECURITY (P99-INT-014 HIGH) — a requested site NARROWS the
   // caller's permitted set; it must never replace it. The Phase 43 allow-list
   // used to be applied only when no siteId was supplied, so
@@ -46,14 +56,14 @@ export async function listAssets(organizationId: string, opts?: {
   // returned that site's assets to a caller holding no UserSite grant for it.
   // The item route (assets/[id]) enforced the boundary correctly, so the
   // control was defeated purely by choosing a different URL.
-  if (opts?.allowedSiteIds !== undefined) {
+  if (opts.organizationWide) {
+    if (opts.siteId) where.siteId = opts.siteId;
+  } else {
     if (opts.siteId && !opts.allowedSiteIds.includes(opts.siteId)) return [];
-    where.siteId = opts.siteId ?? { in: opts.allowedSiteIds };
-  } else if (opts?.siteId) {
-    where.siteId = opts.siteId;
+    where.siteId = opts.siteId ?? { in: [...opts.allowedSiteIds] };
   }
   // `id` breaks createdAt ties, so a bounded read always selects the same rows.
-  const take = opts?.limit;
+  const take = opts.limit;
   const rows = await (prisma.industrialAsset as unknown as AssetModel).findMany({
     where,
     orderBy: [{ createdAt: "desc" }, { id: "asc" }],

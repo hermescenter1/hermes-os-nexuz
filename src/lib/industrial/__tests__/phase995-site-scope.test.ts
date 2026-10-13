@@ -67,9 +67,29 @@ describe("P99-INT-014 — listAssets: a requested site narrows the allow-list, n
     expect(lastWhere.industrialAsset.organizationId).toBe("org-A");
   });
 
-  it("leaves an unscoped caller (no allow-list supplied) unchanged", async () => {
+  // Independent review S3-08: there is no unscoped form any more — the allow-list is a required
+  // argument (compile time) AND an empty one answers empty without a query (runtime).
+  it("an empty allow-list reads nothing at all", async () => {
     const { listAssets } = await import("@/lib/industrial/assets");
-    await listAssets("org-A", { siteId: "site-3" });
+    expect(await listAssets("org-A", { allowedSiteIds: [] })).toEqual([]);
+    expect(await listAssets("org-A", { siteId: "site-3", allowedSiteIds: [] })).toEqual([]);
+    expect(lastWhere.industrialAsset).toBeUndefined();
+  });
+
+  it("a caller with NO scope at all cannot obtain an organisation-wide list (fail closed, not silently open)", async () => {
+    const { listAssets } = await import("@/lib/industrial/assets");
+    // The union type makes this a compile error; the cast proves the RUNTIME also refuses to widen.
+    const unscoped = listAssets as unknown as (org: string, opts: Record<string, unknown>) => Promise<unknown[]>;
+    await expect(unscoped("org-A", {})).rejects.toThrow();
+    await expect(unscoped("org-A", { siteId: "site-3" })).rejects.toThrow();
+    expect(lastWhere.industrialAsset).toBeUndefined();          // no query was ever issued
+  });
+
+  it("an API-key caller's organisation-wide list must be asked for EXPLICITLY", async () => {
+    const { listAssets } = await import("@/lib/industrial/assets");
+    await listAssets("org-A", { organizationWide: true });
+    expect(lastWhere.industrialAsset).toEqual({ organizationId: "org-A" });   // no site predicate, by request
+    await listAssets("org-A", { organizationWide: true, siteId: "site-3" });
     expect(lastWhere.industrialAsset.siteId).toBe("site-3");
   });
 });

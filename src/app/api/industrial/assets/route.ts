@@ -26,9 +26,13 @@ export async function GET(req: NextRequest) {
   const siteId    = req.nextUrl.searchParams.get("siteId")    ?? undefined;
   const gatewayId = req.nextUrl.searchParams.get("gatewayId") ?? undefined;
 
-  // Phase 43: scope assets to user's accessible sites (unless a specific siteId is given)
-  const allowedSiteIds = userId ? await getAllowedSiteIds(userId, ctx.orgId) : undefined;
-  const assets = await listAssets(ctx.orgId, { siteId, gatewayId, allowedSiteIds });
+  // Phase 43: a session caller is scoped to their accessible sites. An API-key caller has no user and
+  // therefore no UserSite grants; its organisation-wide list is the pre-existing machine contract and is
+  // now stated explicitly (independent review S3-08) instead of arriving as an omitted argument.
+  const scope = userId
+    ? { allowedSiteIds: await getAllowedSiteIds(userId, ctx.orgId) }
+    : { organizationWide: true as const };
+  const assets = await listAssets(ctx.orgId, { siteId, gatewayId, ...scope });
   return NextResponse.json({ assets });
 }
 

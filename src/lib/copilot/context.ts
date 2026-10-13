@@ -211,7 +211,7 @@ export async function getDigitalTwinContextSummary(
   siteId: string,
 ): Promise<{ nodeCount: number; relationCount: number; nodes: TwinNodeRecord[]; moreNodes: number } | null> {
   if (!scope.siteIds.includes(siteId)) return null;
-  const graph = await getAssetGraph(scope.organizationId, siteId);
+  const graph = await getAssetGraph(scope.organizationId, siteId, scope.siteIds);
   if (!graph) return null;
 
   const nodes   = [...graph.nodes.values()];

@@ -8,7 +8,7 @@
  * READ-ONLY: no mutations to graph or source tables.
  */
 
-import { getAssetKnowledgeGraph, getFailureModeGraph, getProcedureImpactGraph, getRootCauseGraph, findShortestEvidencePath, type IGNodeRecord, type IGEdgeRecord, type IGStaleness } from "./query";
+import { getAssetKnowledgeGraph, getFailureModeGraph, getProcedureImpactGraph, getRootCauseGraph, findShortestEvidencePath, type IGNodeRecord, type IGEdgeRecord, type IGStaleness, type ScopedGraphContext } from "./query";
 import type { GraphViewerScope } from "./visibility";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -244,8 +244,15 @@ export async function explainProcedureRecommendation(
 export async function explainRootCauseCandidate(
   scope:       GraphViewerScope,
   rootCauseId: string,
+  /**
+   * Optional already-resolved graph for THIS scope. Independent review S2-03: the route resolves the
+   * scoped graph ONCE and hands it to the subgraph, the explanation and the evidence path, instead of
+   * resolving the visible entity sets three times per request. A context from a different scope is
+   * ignored and the graph is re-resolved for `scope`.
+   */
+  ctx?:        ScopedGraphContext,
 ): Promise<RootCauseExplanation> {
-  const { rootNode, nodes, edges, staleness } = await getRootCauseGraph(scope, rootCauseId, 4);
+  const { rootNode, nodes, edges, staleness } = await getRootCauseGraph(scope, rootCauseId, 4, ctx);
 
   if (!rootNode) {
     return { rootCauseId, rootCauseLabel: null, confidenceWeight: 0, parentFailureMode: null, affectedAssets: [], engineeringCases: [], evidencePath: [], staleness };
@@ -293,6 +300,7 @@ export async function explainRootCauseCandidate(
       nodes.find(n => n.nodeType === "ASSET" && n.entityId === sampleAssetEntityId)?.id ?? "",
       rootNode.id,
       6,
+      ctx,
     );
     if (pathResult.found) {
       for (const hop of pathResult.path) {

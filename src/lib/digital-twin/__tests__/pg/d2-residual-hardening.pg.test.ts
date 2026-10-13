@@ -471,9 +471,13 @@ describe("d2-r Multi-site risk and health — one authoritative row per compared
   it("d2-30b KPI health: the latest row per asset is selected in SQL (tie → lowest id), one row per asset", async () => {
     const { value, calls } = await recording(() => compareSiteKPIs(ORG_R, siteMap, siteAssetMap));
     expect(calls.filter((c) => c.model === "assetHealthHistory")).toEqual([]);
+    // Slice E1 (independent-review S2-02): the KPI read moved into SQL too, so this path now issues TWO
+    // bounded statements — the KPI one and the health one — instead of one. Neither reads a delegate.
+    expect(calls.filter((c) => c.model === "kPIRecord")).toEqual([]);
     const raw = calls.filter((c) => c.model === "$queryRaw");
-    expect(raw).toHaveLength(1);
-    expect(raw[0].rows).toBe(2);                                            // r1a and r2a have history; 6 rows in all
+    expect(raw).toHaveLength(2);
+    const health = raw.find((c) => String(c.args).includes("AssetHealthHistory"))!;
+    expect(health.rows).toBe(2);                                            // r1a and r2a have history; 6 rows in all
     const r1 = value.find((s) => s.siteId === R1)!, r2 = value.find((s) => s.siteId === R2)!;
     expect(r1.avgHealthScore).toBe(80);
     expect(r2.avgHealthScore).toBe(30);                                     // tie at the same createdAt → `hh-r2a-a`

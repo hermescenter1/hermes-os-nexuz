@@ -133,6 +133,42 @@ function rowToEdge(r: Record<string, unknown>): IGEdgeRecord {
  * Fails closed: any error (database, policy resolution) returns null, which every public
  * function turns into an empty result — never into the unfiltered graph.
  */
+/**
+ * One already-authorised scoped graph, reusable within ONE request (independent review S2-03). It
+ * carries the scope it was resolved for; passing it to a query that runs with a different scope is
+ * refused (fail closed), so it can never widen a later answer.
+ */
+export interface ScopedGraphContext {
+  readonly scope: GraphViewerScope;
+  readonly graph: { nodes: IGNodeRecord[]; edges: IGEdgeRecord[] } | null;
+  readonly staleness: IGStaleness;
+}
+
+/**
+ * Resolves the scoped graph and the staleness ONCE so a request that needs several views of the same
+ * graph (e.g. `/root-causes/[id]`: subgraph + explanation + evidence path) resolves the visible entity
+ * sets a single time instead of once per view.
+ */
+export async function loadScopedGraphContext(scope: GraphViewerScope): Promise<ScopedGraphContext> {
+  const [graph, staleness] = await Promise.all([loadScopedGraph(scope), getStaleness(scope.organizationId)]);
+  return { scope, graph, staleness };
+}
+
+const sameScope = (a: GraphViewerScope, b: GraphViewerScope): boolean =>
+  a === b || (a.organizationId === b.organizationId
+    && a.organizationLevelAccess === b.organizationLevelAccess
+    && a.allowedSiteIds.length === b.allowedSiteIds.length
+    && [...a.allowedSiteIds].sort().join("\u0000") === [...b.allowedSiteIds].sort().join("\u0000"));
+
+/** The context's graph if it belongs to this scope, otherwise a fresh resolution for this scope. */
+async function graphFor(
+  scope: GraphViewerScope,
+  ctx: ScopedGraphContext | undefined,
+): Promise<[{ nodes: IGNodeRecord[]; edges: IGEdgeRecord[] } | null, IGStaleness]> {
+  if (ctx && sameScope(ctx.scope, scope)) return [ctx.graph, ctx.staleness];
+  return Promise.all([loadScopedGraph(scope), getStaleness(scope.organizationId)]);
+}
+
 async function loadScopedGraph(
   scope: GraphViewerScope,
 ): Promise<{ nodes: IGNodeRecord[]; edges: IGEdgeRecord[] } | null> {
@@ -376,8 +412,10 @@ export async function getRootCauseGraph(
   scope:       GraphViewerScope,
   rootCauseId: string,
   maxDepth = DEFAULT_MAX_DEPTH,
+  /** Optional already-resolved graph for THIS scope (see {@link loadScopedGraphContext}). */
+  ctx?:        ScopedGraphContext,
 ): Promise<IGSubgraphResult> {
-  const [graph, staleness] = await Promise.all([loadScopedGraph(scope), getStaleness(scope.organizationId)]);
+  const [graph, staleness] = await graphFor(scope, ctx);
   if (!graph) return { rootNode: null, nodes: [], edges: [], staleness };
 
   const nodeMap = new Map(graph.nodes.map(n => [n.id, n]));
@@ -404,8 +442,10 @@ export async function findShortestEvidencePath(
   sourceNodeId: string,
   targetNodeId: string,
   maxDepth = DEFAULT_MAX_DEPTH,
+  /** Optional already-resolved graph for THIS scope (see {@link loadScopedGraphContext}). */
+  ctx?:         ScopedGraphContext,
 ): Promise<IGPathResult> {
-  const [graph, staleness] = await Promise.all([loadScopedGraph(scope), getStaleness(scope.organizationId)]);
+  const [graph, staleness] = await graphFor(scope, ctx);
 
   if (!graph) {
     return { found: false, path: [], totalCost: 0, evidenceSummary: [], staleness };

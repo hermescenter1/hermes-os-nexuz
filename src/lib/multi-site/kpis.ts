@@ -28,14 +28,20 @@ import {
 } from "./types";
 
 /**
- * The generated delegates this module reads. Their NAMES and argument shapes are checked against the
- * generated Prisma client at compile time: the model `KPIRecord` is exposed as `kPIRecord`. The previous
- * untyped `db.kpiRecord` was `undefined`, so every benchmark of an organisation that had assets failed
- * with a 500 (slice D1, MS-01). `getPrisma()` is untyped repository-wide; this is its one narrowing here.
+ * The client surface this module reads. Both reads are parameterised `$queryRaw` statements that select
+ * the LATEST row per key with `DISTINCT ON` (slice D2 for health, independent review S2-02 for KPIs):
+ * Prisma's own `distinct` de-duplicates in application memory unless the nativeDistinct preview feature
+ * is enabled, so it cannot bound the read. The delegate name `kPIRecord` that slice D1 pinned (MS-01) is
+ * no longer used here; the raw statements name the TABLE. `getPrisma()` is untyped repository-wide, so
+ * this narrowing keeps `$queryRaw`'s argument and row shapes checked at compile time.
  */
-type KpiClient = Pick<PrismaClient, "kPIRecord" | "$queryRaw">;
+type KpiClient = Pick<PrismaClient, "$queryRaw">;
 
 interface LatestHealthRow { assetId: string; healthScore: number; createdAt: Date }
+interface LatestKpiRow { assetId: string; kpiName: string; value: number; calculatedAt: Date }
+
+/** The KPI names the comparison uses. Fixed server side; never taken from a request. */
+const COMPARED_KPI_NAMES = ["availability", "efficiency"] as const;
 
 function staleStatus(lastTs: Date | null): SiteDataStatus {
   if (!lastTs) return "insufficientData";
@@ -62,18 +68,24 @@ export async function compareSiteKPIs(
 
   if (allAssetIds.length === 0) return [];
 
-  // KPIRecord rows of the compared assets in the period (availability + efficiency). Bounded to the
-  // analysed assets and ordered totally, so "latest per asset" is deterministic.
-  const kpiRows = await client.kPIRecord.findMany({
-    where: {
-      organizationId: orgId,
-      assetId:        { in: allAssetIds },
-      kpiName:        { in: ["availability", "efficiency"] },
-      calculatedAt:   { gte: range.from, lte: range.to },
-    },
-    orderBy: [{ calculatedAt: "desc" }, { id: "asc" }],
-    select: { assetId: true, kpiName: true, value: true, calculatedAt: true },
-  });
+  // The LATEST KPIRecord per (compared asset, KPI name) inside the period, chosen IN THE DATABASE with
+  // DISTINCT ON — newest calculatedAt first, id ASC on a tie. Independent review S2-02: this used to read
+  // every KPI row of the period and keep the first per key in memory, so a long history materialised in
+  // full. At most |compared assets| × |COMPARED_KPI_NAMES| rows are returned, however deep the history.
+  const kpiRows = await client.$queryRaw<LatestKpiRow[]>`
+    SELECT DISTINCT ON (k."assetId", k."kpiName")
+           k."assetId"      AS "assetId",
+           k."kpiName"      AS "kpiName",
+           k."value"        AS "value",
+           k."calculatedAt" AS "calculatedAt"
+    FROM "KPIRecord" k
+    WHERE k."organizationId" = ${orgId}
+      AND k."assetId" = ANY(${allAssetIds}::text[])
+      AND k."kpiName" = ANY(${[...COMPARED_KPI_NAMES]}::text[])
+      AND k."calculatedAt" >= ${range.from}
+      AND k."calculatedAt" <= ${range.to}
+    ORDER BY k."assetId" ASC, k."kpiName" ASC, k."calculatedAt" DESC, k."id" ASC
+  `;
 
   // The latest AssetHealthHistory row per compared asset (no period filter — just latest), chosen IN THE
   // DATABASE with DISTINCT ON (newest createdAt, id ASC on a tie): at most one row per compared asset.
@@ -90,14 +102,15 @@ export async function compareSiteKPIs(
     ORDER BY h."assetId" ASC, h."createdAt" DESC, h."id" ASC
   `;
 
-  // Build in-memory maps: assetId → latest value per kpiName
-  const kpiLatest = new Map<string, Map<string, number>>();    // assetId → kpiName → value
+  // assetId → kpiName → value. The query already returns exactly one row per (asset, KPI name), so this
+  // is a regrouping, not a de-duplication; the first-wins guard is kept as a harmless invariant check.
+  const kpiLatest = new Map<string, Map<string, number>>();
   for (const row of kpiRows) {
     const aid = row.assetId;
     if (!aid) continue;
     const kn  = row.kpiName;
     if (!kpiLatest.has(aid)) kpiLatest.set(aid, new Map());
-    if (!kpiLatest.get(aid)!.has(kn)) kpiLatest.get(aid)!.set(kn, row.value);
+    if (!kpiLatest.get(aid)!.has(kn)) kpiLatest.get(aid)!.set(kn, Number(row.value));
   }
 
   // Health: latest per asset

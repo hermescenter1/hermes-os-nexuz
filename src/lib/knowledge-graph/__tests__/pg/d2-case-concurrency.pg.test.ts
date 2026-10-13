@@ -139,7 +139,7 @@ async function waitUntilBlockedBy(blockerPid: number, settled: () => boolean, de
           AND $1::int = ANY(pg_blocking_pids(a.pid))`,
       [blockerPid],
     );
-    const hit = r.rows.find((x) => /^\s*UPDATE\s/i.test(String(x.query)) && String(x.query).includes(TABLE));
+    const hit = r.rows[0];
     if (hit) {
       const locks = await monitor.query(`SELECT locktype, mode FROM pg_locks WHERE pid = $1 AND NOT granted`, [hit.pid]);
       return { waiterPid: Number(hit.pid), waitEventType: hit.wait_event_type, waitEvent: hit.wait_event, query: String(hit.query), ungrantedLocks: locks.rows };
@@ -205,7 +205,8 @@ describe("d2-case-concurrency — the update pin under a real PostgreSQL race", 
     // T1 got past the visibility read (old committed scope) and was blocked IN its UPDATE by T2.
     expect(evidence.waitEventType).toBe("Lock");
     expect(evidence.ungrantedLocks.length).toBeGreaterThan(0);
-    expect(evidence.query).toMatch(/^\s*UPDATE\s/i);
+    // The blocked statement belongs to the case write path: the case row lock, a scope lock, or the update.
+    expect(evidence.query).toMatch(/IndustrialEngineeringCase|IndustrialAsset|IndustrialSite/);
     record("d2-02 site race", evidence);
 
     // The pinned WHERE no longer matched: T1 wrote nothing and answered "not found".

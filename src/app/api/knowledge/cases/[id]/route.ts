@@ -46,11 +46,16 @@ export async function PATCH(
   const perm = requirePermission(member.ctx.role, "manage_knowledge");
   if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
-  const body = await req.json().catch(() => ({}));
+  // The patch must be a JSON object. `null`, an array, a scalar or unparsable JSON is a controlled 400
+  // (it used to reach the service as `null` and fail with a 500). Shape only — no case is looked up yet.
+  const body: unknown = await req.json().catch(() => undefined);
+  if (body === null || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Request body must be a JSON object" }, { status: 400 });
+  }
   const scope = await resolveGraphViewerScope(member.ctx.userId, ctx.orgId, member.ctx.role);
   let engineeringCase;
   try {
-    engineeringCase = await updateCase(scope, id, body, ctx.userId ?? undefined);
+    engineeringCase = await updateCase(scope, id, body as Parameters<typeof updateCase>[2], ctx.userId ?? undefined);
   } catch (err) {
     if (err instanceof CaseScopeError) {
       const { status, error } = caseScopeHttp(err.code);

@@ -76,27 +76,27 @@ describe("POST /api/multi-site/benchmarks — the shared snapshot writer", () =>
   });
 });
 
-describe("compareSiteKPIs (MS-01)", () => {
-  it("reads the generated kPIRecord delegate, bounded to the compared assets, and computes the site means", async () => {
-    const kpiQueries: Record<string, unknown>[] = [];
-    const healthQueries: { sql: string; values: unknown[] }[] = [];
-    // Only the GENERATED delegate names exist on this fake, exactly as on the real client.
+describe("compareSiteKPIs (MS-01, and S2-02: both reads are bounded in the database)", () => {
+  it("selects the latest row per (asset, KPI) and per asset for health, entirely in SQL", async () => {
+    const raw: { sql: string; values: unknown[] }[] = [];
+    // The ONLY client capability the module may use is $queryRaw: a delegate read would mean the
+    // history is being materialised in the application again (independent review S2-02).
     h.prisma = {
-      kPIRecord: {
-        findMany: async (a: Record<string, unknown>) => {
-          kpiQueries.push(a);
+      $queryRaw: async (strings: TemplateStringsArray, ...values: unknown[]) => {
+        const sql = strings.join("?");
+        raw.push({ sql, values });
+        if (sql.includes(`"KPIRecord"`)) {
           return [
             { assetId: "a1", kpiName: "availability", value: 90, calculatedAt: new Date() },
             { assetId: "a1", kpiName: "efficiency", value: 70, calculatedAt: new Date() },
             { assetId: "a2", kpiName: "availability", value: 50, calculatedAt: new Date() },
           ];
-        },
-      },
-      // Slice D2: the latest health row per asset is selected in SQL (DISTINCT ON), not by Prisma's in-memory `distinct`.
-      $queryRaw: async (strings: TemplateStringsArray, ...values: unknown[]) => {
-        healthQueries.push({ sql: strings.join("?"), values });
+        }
         return [{ assetId: "a1", healthScore: 80, createdAt: new Date() }];
       },
+      // Present but forbidden: if the module ever falls back to the delegate, this throws.
+      kPIRecord: { findMany: async () => { throw new Error("KPI delegate must not be used: the read must be bounded in SQL"); } },
+      assetHealthHistory: { findMany: async () => { throw new Error("health delegate must not be used"); } },
     };
     const { compareSiteKPIs } = await import("../kpis");
     const out = await compareSiteKPIs("org-A", new Map([["s1", "Site 1"], ["s2", "Site 2"]]), new Map([["s1", ["a1"]], ["s2", ["a2"]]]));
@@ -104,11 +104,35 @@ describe("compareSiteKPIs (MS-01)", () => {
       ["s1", 90, 70, 80, 1],
       ["s2", null, null, null, 1],        // no health row: the existing data-sufficiency rule marks the site insufficient
     ]);
-    expect(kpiQueries[0]).toMatchObject({ where: { organizationId: "org-A", assetId: { in: ["a1", "a2"] } } });
-    expect(healthQueries).toHaveLength(1);
-    expect(healthQueries[0].sql).toContain(`SELECT DISTINCT ON (h."assetId")`);
-    expect(healthQueries[0].sql).toContain(`ORDER BY h."assetId" ASC, h."createdAt" DESC, h."id" ASC`);
-    expect(healthQueries[0].values).toEqual(["org-A", ["a1", "a2"]]);
+
+    expect(raw).toHaveLength(2);
+    const kpi = raw.find((r) => r.sql.includes(`"KPIRecord"`))!;
+    const health = raw.find((r) => r.sql.includes(`"AssetHealthHistory"`))!;
+    // One row per (asset, KPI name), newest first, id ASC breaking a tie — deterministic selection.
+    expect(kpi.sql).toContain(`SELECT DISTINCT ON (k."assetId", k."kpiName")`);
+    expect(kpi.sql).toContain(`ORDER BY k."assetId" ASC, k."kpiName" ASC, k."calculatedAt" DESC, k."id" ASC`);
+    // Organisation, the compared assets, the compared KPI names and the period are ALL predicates.
+    expect(kpi.sql).toContain(`k."organizationId" = ?`);
+    expect(kpi.sql).toContain(`k."assetId" = ANY(?::text[])`);
+    expect(kpi.sql).toContain(`k."kpiName" = ANY(?::text[])`);
+    expect(kpi.sql).toContain(`k."calculatedAt" >= ?`);
+    expect(kpi.values[0]).toBe("org-A");
+    expect(kpi.values[1]).toEqual(["a1", "a2"]);
+    expect(kpi.values[2]).toEqual(["availability", "efficiency"]);
+    // No value is concatenated into the statement text.
+    for (const v of ["org-A", "a1", "a2", "availability"]) expect(kpi.sql).not.toContain(v);
+
+    expect(health.sql).toContain(`SELECT DISTINCT ON (h."assetId")`);
+    expect(health.sql).toContain(`ORDER BY h."assetId" ASC, h."createdAt" DESC, h."id" ASC`);
+    expect(health.values).toEqual(["org-A", ["a1", "a2"]]);
+  });
+
+  it("reads nothing at all when no asset is compared", async () => {
+    let calls = 0;
+    h.prisma = { $queryRaw: async () => { calls++; return []; } };
+    const { compareSiteKPIs } = await import("../kpis");
+    expect(await compareSiteKPIs("org-A", new Map([["s1", "Site 1"]]), new Map([["s1", []]]))).toEqual([]);
+    expect(calls).toBe(0);
   });
 });
 
@@ -127,5 +151,47 @@ describe("runBenchmark — the in-flight flag", () => {
     expect(isBenchmarkInFlight("org-A")).toBe(false);
     await expect(runBenchmark("org-A")).rejects.toThrow("db down");        // not BENCHMARK_IN_FLIGHT
     expect(creates).toBe(2);
+  });
+
+  /**
+   * Independent review S3-04: everything after the child-row transaction commits is POST-COMMIT. A
+   * failure there used to fall into the catch and relabel the committed SUCCESS run as FAILED, which
+   * destroys the snapshot every reader uses. The run state must survive, and the failure must be
+   * reported (logged) instead of rewritten.
+   */
+  it("a post-commit read-back failure never relabels the committed SUCCESS run", async () => {
+    const updates: Record<string, unknown>[] = [];
+    h.prisma = {
+      multiSiteBenchmark: {
+        create: async () => ({ id: "bm-1" }),
+        update: async (a: { data: Record<string, unknown> }) => { updates.push(a.data); return {}; },
+        findFirst: async () => { throw new Error("read-back failed after commit"); },
+      },
+      siteRiskSnapshot:       { create: async () => ({}) },
+      siteKPIComparison:      { create: async () => ({}) },
+      crossSiteFailurePattern:{ create: async () => ({}) },
+      $transaction: async (fn: (tx: unknown) => Promise<void>) => fn({
+        multiSiteBenchmark:      { update: async (a: { data: Record<string, unknown> }) => { updates.push(a.data); return {}; } },
+        siteRiskSnapshot:        { create: async () => ({}) },
+        siteKPIComparison:       { create: async () => ({}) },
+        crossSiteFailurePattern: { create: async () => ({}) },
+      }),
+    };
+    vi.doUnmock("@/lib/multi-site/benchmarks");
+    vi.doMock("@/lib/multi-site/comparison", () => ({
+      compareSites: async () => ({
+        siteMap: new Map([["s1", "Site 1"]]), siteAssetMap: new Map([["s1", ["a1"]]]), siteIds: ["s1"],
+        kpis: [], risk: [], patterns: [], coverage: [], summary: { note: "ok" },
+      }),
+    }));
+    const { runBenchmark, isBenchmarkInFlight } = await import("../benchmarks");
+
+    const out = await runBenchmark("org-A");
+    // The committed values are reported from what was written, not as a failure.
+    expect(out).toMatchObject({ id: "bm-1", status: "SUCCESS", siteCount: 1 });
+    // No FAILED was ever written.
+    expect(updates.some((d) => d.status === "FAILED")).toBe(false);
+    expect(updates.some((d) => d.status === "SUCCESS")).toBe(true);
+    expect(isBenchmarkInFlight("org-A")).toBe(false);
   });
 });

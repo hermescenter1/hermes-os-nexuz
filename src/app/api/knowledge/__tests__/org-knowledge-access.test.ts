@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mockCaseScope } from "./case-scope-fakes";
+import { mockCaseScope, withCaseTx } from "./case-scope-fakes";
 import { NextRequest } from "next/server";
 
 /**
@@ -132,7 +132,8 @@ async function loadRoute(routePath: string, auth: AuthState, actorOrg = ORG_A) {
       return { ctx: { userId: "user-A", orgId: actorOrg, memberId: "mem-A", role: auth.role, status: "ACTIVE" } };
     },
   }));
-  vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => tables }));
+  // withCaseTx adds the interactive transaction slice E1's case writers run in (see case-scope-fakes.ts).
+  vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => withCaseTx(tables) }));
   vi.doMock("@/lib/api/meter", () => ({ meterIndustrialEvent: meterSpy }));
   // RV-01: case visibility is a database-side policy; see case-scope-fakes.ts for what is faked.
   mockCaseScope(vi, () => tables.industrialEngineeringCase.rows);

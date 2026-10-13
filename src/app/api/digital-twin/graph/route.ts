@@ -32,7 +32,8 @@ export async function GET(req: NextRequest) {
     const site = await authorizeTwinSite(req, ctx, siteId, "view", twinNotFound.site);
     if (!site.ok) return site.response;
 
-    const graph = await getAssetGraph(ctx.orgId, siteId);
+    // The guard above proved this one site; it is the whole scope of this read.
+    const graph = await getAssetGraph(ctx.orgId, siteId, [siteId]);
     if (!graph) {
       const e = twinNotFound.unavailable();
       return twinJsonError(e.status, e.code, e.message);

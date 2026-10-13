@@ -221,12 +221,29 @@ describe("createGraphViewerScope / resolveGraphViewerScope", () => {
 describe("loadVisibleEntitySets — the organisation AND site predicate are inside every query", () => {
   beforeEach(() => { mocks.visibleCaseIds = []; mocks.caseQueries = []; });
 
-  function fakeDb(rows: Partial<Record<string, Record<string, unknown>[]>> = {}) {
+  /**
+   * `rows` feeds the delegate reads; `raw` feeds the two bounded statements slice E1 introduced
+   * (latest risk row per asset, and the mitigation pairs — independent review S2-03).
+   */
+  function fakeDb(
+    rows: Partial<Record<string, Record<string, unknown>[]>> = {},
+    raw: { risk?: Record<string, unknown>[]; mitigations?: Record<string, unknown>[] } = {},
+  ) {
     const calls: { model: string; args: Record<string, unknown> }[] = [];
-    const db = new Proxy({}, {
-      get: (_t, model: string) => ({ findMany: async (args: Record<string, unknown>) => { calls.push({ model, args }); return rows[model] ?? []; } }),
+    const statements: { sql: string; values: unknown[] }[] = [];
+    const target: Record<string, unknown> = {
+      $queryRaw: async (strings: TemplateStringsArray, ...values: unknown[]) => {
+        const sql = strings.join("?");
+        statements.push({ sql, values });
+        if (sql.includes('"AssetRiskScore"')) return raw.risk ?? [];
+        if (sql.includes('"AssetKnowledgeLink"')) return raw.mitigations ?? [];
+        throw new Error("unexpected raw statement: " + sql);
+      },
+    };
+    const db = new Proxy(target, {
+      get: (t, model: string) => (model in t ? t[model] : { findMany: async (args: Record<string, unknown>) => { calls.push({ model, args }); return rows[model] ?? []; } }),
     }) as Record<string, unknown>;
-    return { db, calls };
+    return { db, calls, statements };
   }
 
   it("no site: only the shared case policy runs; no site-scoped table is read", async () => {
@@ -242,24 +259,35 @@ describe("loadVisibleEntitySets — the organisation AND site predicate are insi
 
   it("with sites: every site-scoped table is filtered by organisationId and by the site (directly or through its asset)", async () => {
     mocks.visibleCaseIds = ["c-site", "c-asset-only"];
-    const { db, calls } = fakeDb({
+    const { db, calls, statements } = fakeDb({
       industrialAsset: [{ id: "a1" }],
       assetTag: [{ id: "t1" }],
       digitalTwinNode: [{ id: "w-ok", assetId: "a1" }, { id: "w-null", assetId: null }, { id: "w-mismatch", assetId: "a-other-site" }],
-      assetRiskScore: [{ id: "r1" }],
-      assetKnowledgeLink: [
-        { assetId: "a1", failureModeId: "fm1", procedureId: null }, { assetId: "a1", failureModeId: null, procedureId: "p1" },
-        { assetId: "a-other-site", failureModeId: "fm2", procedureId: null }, { assetId: "a-other-site", failureModeId: null, procedureId: "p2" },
-      ],
+    }, {
+      // One row per visible asset (DISTINCT ON), and the already-aggregated provenance pairs.
+      risk: [{ id: "r1" }],
+      mitigations: [{ failureModeId: "fm1", procedureId: "p1" }],
     });
     const r = await loadVisibleEntitySets(db, createGraphViewerScope(ORG, ["s1"]));
     const where = (m: string) => calls.find((c) => c.model === m)!.args.where as Record<string, unknown>;
     expect(where("industrialAsset")).toEqual({ organizationId: ORG, siteId: { in: ["s1"] } });
     expect(where("digitalTwinNode")).toEqual({ organizationId: ORG, siteId: { in: ["s1"] } });
     expect(where("assetTag")).toEqual({ organizationId: ORG, asset: { is: { organizationId: ORG, siteId: { in: ["s1"] } } } });
-    expect(where("assetRiskScore")).toEqual({ organizationId: ORG, asset: { is: { organizationId: ORG, siteId: { in: ["s1"] } } } });
-    expect((where("assetKnowledgeLink") as { organizationId: string }).organizationId).toBe(ORG);
     expect(calls.map((c) => c.model)).not.toContain("industrialEngineeringCase");   // no private case logic left in the graph
+    // Slice E1 / S2-03: risk and knowledge links are no longer read through a delegate at all — they are
+    // bounded statements whose predicates (organisation + the visible sites) live in SQL.
+    expect(calls.map((c) => c.model)).not.toContain("assetRiskScore");
+    expect(calls.map((c) => c.model)).not.toContain("assetKnowledgeLink");
+    expect(statements).toHaveLength(2);
+    const riskSql = statements.find((s) => s.sql.includes('"AssetRiskScore"'))!;
+    expect(riskSql.sql).toContain('SELECT DISTINCT ON (r."assetId")');
+    expect(riskSql.sql).toContain('ORDER BY r."assetId" ASC, r."createdAt" DESC, r."id" ASC');
+    expect(riskSql.values).toEqual([ORG, ORG, ["s1"]]);
+    const linkSql = statements.find((s) => s.sql.includes('"AssetKnowledgeLink"'))!;
+    expect(linkSql.sql).toContain("SELECT DISTINCT");
+    expect(linkSql.sql).toContain('a."siteId" = ANY(?::text[])');
+    expect(linkSql.values).toEqual([ORG, ORG, ["s1"]]);
+    for (const st of statements) for (const v of [ORG, "s1"]) expect(st.sql).not.toContain(v);
 
     expect([...r.assets]).toEqual(["a1"]);
     expect([...r.twinNodes].sort()).toEqual(["w-null", "w-ok"]);                // the node pointing at another site's asset is ambiguous
@@ -269,8 +297,15 @@ describe("loadVisibleEntitySets — the organisation AND site predicate are insi
 
   it("a database error propagates (the caller fails closed); it is never swallowed into an empty-but-permissive result", async () => {
     // every model is present and every query fails, so no promise is left un-awaited
-    const db = new Proxy({}, { get: () => ({ findMany: async () => { throw new Error("boom"); } }) }) as Record<string, unknown>;
+    const db = new Proxy({ $queryRaw: async () => { throw new Error("boom"); } }, {
+      get: (t: Record<string, unknown>, k: string) => (k in t ? t[k] : { findMany: async () => { throw new Error("boom"); } }),
+    }) as Record<string, unknown>;
     await expect(loadVisibleEntitySets(db, createGraphViewerScope(ORG, ["s1"]))).rejects.toThrow("boom");
+  });
+
+  it("without a raw-query capability the sets cannot be built at all (fail closed, never permissive)", async () => {
+    const db = new Proxy({}, { get: () => ({ findMany: async () => [] }) }) as Record<string, unknown>;
+    await expect(loadVisibleEntitySets(db, createGraphViewerScope(ORG, ["s1"]))).rejects.toThrow("GRAPH_VISIBILITY_QUERY_UNAVAILABLE");
   });
 });
 

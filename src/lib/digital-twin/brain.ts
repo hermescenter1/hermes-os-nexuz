@@ -67,7 +67,7 @@ export async function getFactoryTopology(
     select: { id: true },
   });
   if (!site) return null;
-  const graph = await getAssetGraph(organizationId, siteId);
+  const graph = await getAssetGraph(organizationId, siteId, allowedSiteIds);
   if (!graph) return null;
 
   const nodesByType: Record<string, number> = {};

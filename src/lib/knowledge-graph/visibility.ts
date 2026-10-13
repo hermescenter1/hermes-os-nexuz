@@ -155,6 +155,66 @@ const EMPTY_SETS: VisibleEntitySets = {
 
 const str = (v: unknown): string | null => (typeof v === "string" && v.length > 0 ? v : null);
 
+type RawQuery = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<Record<string, unknown>[]>;
+
+function rawQuery(db: Record<string, unknown>): RawQuery {
+  const raw = (db as { $queryRaw?: RawQuery }).$queryRaw;
+  if (typeof raw !== "function") throw new Error("GRAPH_VISIBILITY_QUERY_UNAVAILABLE");
+  return raw.bind(db) as RawQuery;
+}
+
+/**
+ * Ids of the LATEST `AssetRiskScore` row of each asset on `sites` — one row per asset, selected in the
+ * database (`DISTINCT ON`, newest `createdAt`, `id` ASC on a tie), so the number of rows is bounded by
+ * the number of visible assets and never by the depth of the history. Every predicate (organisation,
+ * site, ACTIVE site) is applied in SQL. Fully parameterised.
+ */
+async function loadLatestRiskIds(
+  db: Record<string, unknown>,
+  organizationId: string,
+  sites: readonly string[],
+): Promise<string[]> {
+  if (sites.length === 0) return [];
+  const rows = await rawQuery(db)`
+    SELECT DISTINCT ON (r."assetId") r."id" AS "id"
+    FROM "AssetRiskScore" r
+    JOIN "IndustrialAsset" a
+      ON a."id" = r."assetId" AND a."organizationId" = ${organizationId}
+    WHERE r."organizationId" = ${organizationId}
+      AND a."siteId" = ANY(${[...sites]}::text[])
+    ORDER BY r."assetId" ASC, r."createdAt" DESC, r."id" ASC
+  `;
+  return rows.map((r) => String(r.id));
+}
+
+/**
+ * The `${failureModeId}|${procedureId}` pairs that at least one VISIBLE asset links together — the
+ * provenance of a `MITIGATED_BY` edge — aggregated in the database (DISTINCT over the join of the two
+ * link rows of the same asset). At most |failure modes| × |procedures| rows, independent of how many
+ * link rows exist, and no row of another site or organisation is read. Fully parameterised.
+ */
+async function loadVisibleMitigations(
+  db: Record<string, unknown>,
+  organizationId: string,
+  sites: readonly string[],
+): Promise<string[]> {
+  if (sites.length === 0) return [];
+  const rows = await rawQuery(db)`
+    SELECT DISTINCT fm."failureModeId" AS "failureModeId", pr."procedureId" AS "procedureId"
+    FROM "AssetKnowledgeLink" fm
+    JOIN "AssetKnowledgeLink" pr
+      ON pr."assetId" = fm."assetId" AND pr."organizationId" = fm."organizationId"
+    JOIN "IndustrialAsset" a
+      ON a."id" = fm."assetId" AND a."organizationId" = ${organizationId}
+    WHERE fm."organizationId" = ${organizationId}
+      AND a."siteId" = ANY(${[...sites]}::text[])
+      AND fm."failureModeId" IS NOT NULL
+      AND pr."procedureId" IS NOT NULL
+    ORDER BY fm."failureModeId" ASC, pr."procedureId" ASC
+  `;
+  return rows.map((r) => `${String(r.failureModeId)}|${String(r.procedureId)}`);
+}
+
 /**
  * Resolves, from the source tables and with the organisation AND the site predicate inside the
  * query, which entities the scope may see. Throws on a database error — the caller fails closed.
@@ -171,32 +231,28 @@ export async function loadVisibleEntitySets(db: Record<string, unknown>, scope: 
   if (sites.length === 0) return { ...EMPTY_SETS, cases };
 
   const inScopeAsset = { organizationId, siteId: { in: sites } };
-  const [assetRows, tagRows, twinRows, riskRows, linkRows] = await Promise.all([
+  const [assetRows, tagRows, twinRows, riskRows, mitigationRows] = await Promise.all([
     readModel(db, "industrialAsset").findMany({ where: inScopeAsset, select: { id: true } }),
     readModel(db, "assetTag").findMany({ where: { organizationId, asset: { is: inScopeAsset } }, select: { id: true } }),
     readModel(db, "digitalTwinNode").findMany({ where: { organizationId, siteId: { in: sites } }, select: { id: true, assetId: true } }),
-    readModel(db, "assetRiskScore").findMany({ where: { organizationId, asset: { is: inScopeAsset } }, select: { id: true } }),
-    readModel(db, "assetKnowledgeLink").findMany({ where: { organizationId }, select: { assetId: true, failureModeId: true, procedureId: true } }),
+    // Independent review S2-03: the LATEST risk row per visible asset, chosen in the database with
+    // DISTINCT ON (newest createdAt, id ASC on a tie). It used to read EVERY historical risk row of
+    // every visible asset, so a viewer's graph request grew with the organisation's whole history —
+    // and the graph cache only ever contains the latest row per asset (see builder.ts), so the older
+    // rows could not make a single node visible.
+    loadLatestRiskIds(db, organizationId, sites),
+    // The (failureMode, procedure) pairs a VISIBLE asset links together, aggregated in the database.
+    // It used to read every AssetKnowledgeLink row of the ORGANISATION (including other sites') and
+    // reduce them in memory.
+    loadVisibleMitigations(db, organizationId, sites),
   ]);
 
   const assets = new Set(assetRows.map((r) => String(r.id)));
   const tags = new Set(tagRows.map((r) => String(r.id)));
   // A twin node that names an asset must name a VISIBLE one; a node of this site pointing at another site's asset is ambiguous.
   const twinNodes = new Set(twinRows.filter((r) => { const a = str(r.assetId); return a === null || assets.has(a); }).map((r) => String(r.id)));
-  const risks = new Set(riskRows.map((r) => String(r.id)));
-
-  const fmByAsset = new Map<string, Set<string>>();
-  const procByAsset = new Map<string, Set<string>>();
-  for (const l of linkRows) {
-    const assetId = str(l.assetId);
-    if (assetId === null || !assets.has(assetId)) continue;
-    const fm = str(l.failureModeId);
-    const proc = str(l.procedureId);
-    if (fm) (fmByAsset.get(assetId) ?? fmByAsset.set(assetId, new Set()).get(assetId)!).add(fm);
-    if (proc) (procByAsset.get(assetId) ?? procByAsset.set(assetId, new Set()).get(assetId)!).add(proc);
-  }
-  const mitigations = new Set<string>();
-  for (const [assetId, fms] of fmByAsset) for (const fm of fms) for (const proc of procByAsset.get(assetId) ?? []) mitigations.add(`${fm}|${proc}`);
+  const risks = new Set(riskRows);
+  const mitigations = new Set(mitigationRows);
 
   return { assets, tags, twinNodes, risks, cases, mitigations };
 }

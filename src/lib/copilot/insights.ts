@@ -187,7 +187,7 @@ export async function generateInsights(
 
   // ── disconnected assets (Digital Twin) ────────────────────────────────────
   if (siteId) {
-    const graph = await getAssetGraph(organizationId, siteId);
+    const graph = await getAssetGraph(organizationId, siteId, sites);
     if (graph) {
       const knownAssetIds = new Set(assets.map((a) => a.id));
       const warnings      = detectDataQualityWarnings(graph, knownAssetIds);

@@ -301,3 +301,64 @@ describe("enterprise summary — scoping survives the no-benchmark path", () => 
     expect(JSON.stringify(s)).not.toContain(FORBIDDEN);
   });
 });
+
+/**
+ * Independent review S3 (deterministic selection): when two accessible sites share the SAME
+ * `avgRiskScore`, the highest-risk site used to be whichever row the database happened to return
+ * first, so two reads of the SAME benchmark could name different sites. The lowest site id wins.
+ */
+describe("enterprise summary — the highest-risk site is deterministic on a tie", () => {
+  const TIE_A = "site-tie-a";
+  const TIE_B = "site-tie-b";
+
+  beforeEach(() => {
+    getPrismaMock.mockResolvedValue({
+      industrialSite: { count: async () => 2 },
+      siteRiskSnapshot: {
+        // Deliberately returned worst-id-first, so a "first wins" implementation picks TIE_B.
+        findMany: async () => [
+          { siteId: TIE_B, avgRiskScore: 77, dataStatus: "ok" },
+          { siteId: TIE_A, avgRiskScore: 77, dataStatus: "ok" },
+        ],
+      },
+      siteKPIComparison: { findMany: async () => [] },
+      crossSiteFailurePattern: { findMany: async () => [] },
+    });
+  });
+
+  it("picks the lowest site id, whatever order the rows arrive in", async () => {
+    const first = await summarize([TIE_A, TIE_B]);
+    expect(first.riskSummary.highestRiskSiteId).toBe(TIE_A);
+
+    // Reversed row order must not change the answer.
+    getPrismaMock.mockResolvedValue({
+      industrialSite: { count: async () => 2 },
+      siteRiskSnapshot: {
+        findMany: async () => [
+          { siteId: TIE_A, avgRiskScore: 77, dataStatus: "ok" },
+          { siteId: TIE_B, avgRiskScore: 77, dataStatus: "ok" },
+        ],
+      },
+      siteKPIComparison: { findMany: async () => [] },
+      crossSiteFailurePattern: { findMany: async () => [] },
+    });
+    const second = await summarize([TIE_A, TIE_B]);
+    expect(second.riskSummary.highestRiskSiteId).toBe(TIE_A);
+    expect(second.riskSummary.highestRiskSiteId).toBe(first.riskSummary.highestRiskSiteId);
+  });
+
+  it("a strictly higher score still wins, whatever the ids", async () => {
+    getPrismaMock.mockResolvedValue({
+      industrialSite: { count: async () => 2 },
+      siteRiskSnapshot: {
+        findMany: async () => [
+          { siteId: TIE_A, avgRiskScore: 50, dataStatus: "ok" },
+          { siteId: TIE_B, avgRiskScore: 90, dataStatus: "ok" },
+        ],
+      },
+      siteKPIComparison: { findMany: async () => [] },
+      crossSiteFailurePattern: { findMany: async () => [] },
+    });
+    expect((await summarize([TIE_A, TIE_B])).riskSummary.highestRiskSiteId).toBe(TIE_B);
+  });
+});

@@ -44,7 +44,7 @@ vi.mock("@/lib/db/prisma", () => ({
   }),
 }));
 
-import { getDownstreamAssets, getUpstreamAssets, MAX_TRAVERSAL_RESULT_NODES } from "../graph";
+import { getAssetGraph, getDownstreamAssets, getUpstreamAssets, MAX_TRAVERSAL_RESULT_NODES } from "../graph";
 import { MAX_TRAVERSAL_DEPTH } from "../types";
 
 const ORG = "org-A";
@@ -140,5 +140,29 @@ describe("scoped traversal", () => {
   it("no database: nothing", async () => {
     h.noDb = true;
     expect(await getUpstreamAssets("a", ORG, ["A1"])).toEqual({ nodes: [], cycleDetected: false, truncated: false });
+  });
+});
+
+/**
+ * Independent review S3-02 / slice E1: `getAssetGraph` is intrinsically scoped — the site it is asked
+ * for must be one the caller may read. Every production caller already authorised the site; this makes
+ * that a property of the function itself, so a future caller cannot reach a site by forgetting a check.
+ */
+describe("getAssetGraph — the site must be inside the caller's scope", () => {
+  it("serves a site that IS in scope", async () => {
+    const g = await getAssetGraph(ORG, "A1", ["A1"]);
+    expect(g).not.toBeNull();
+    expect(g!.siteId).toBe("A1");
+    expect([...g!.nodes.keys()].sort()).toEqual(["a", "b", "c", "d"]);
+  });
+
+  it("refuses a site OUTSIDE the scope, an empty scope and a foreign site — and reads nothing at all", async () => {
+    h.nodeQueries = []; h.relQueries = [];
+    expect(await getAssetGraph(ORG, "A2", ["A1"])).toBeNull();        // hidden site of this organisation
+    expect(await getAssetGraph(ORG, "A1", [])).toBeNull();            // empty scope
+    expect(await getAssetGraph(ORG, "B1", ["A1"])).toBeNull();        // another organisation's site
+    expect(await getAssetGraph(ORG, "", ["A1", ""])).toBeNull();      // malformed site id
+    expect(h.nodeQueries).toEqual([]);
+    expect(h.relQueries).toEqual([]);
   });
 });
