@@ -50,3 +50,45 @@ jobs:
       - name: Record the image digest
         if: always()
         run: docker image inspect --format '{{.Id}}' hermes-executive-report-worker:ci-${{ github.sha }} || true
+
+  # The runner's credential-provisioning script runs under bash on the Linux
+  # production host. Its test EXECUTES it against throwaway env files; the
+  # file-mode and symlink cases are POSIX-only and are skipped on Windows, so
+  # this job is where they must actually run. The per-test JUnit report shows
+  # passed / skipped / failed for every case.
+  ops-scripts-linux:
+    name: Executive runner ops scripts (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+
+      - name: Install dependencies (exactly as locked)
+        run: npm ci
+
+      - name: Provisioning script test, per-test report
+        run: npx --no-install vitest run scripts/__tests__/executive-report-worker-token-provisioning.test.ts --reporter=verbose --reporter=junit --outputFile.junit=reports/executive-ops-linux.junit.xml
+
+      - name: Nothing may be skipped on Linux
+        run: |
+          if grep -q "<skipped" reports/executive-ops-linux.junit.xml; then
+            echo "A test was skipped on Linux; every case must run here." >&2
+            grep -B1 "<skipped" reports/executive-ops-linux.junit.xml >&2
+            exit 1
+          fi
+          echo "No skipped test on Linux."
+
+      - name: Keep the per-test report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: executive-ops-linux-junit
+          path: reports/executive-ops-linux.junit.xml
+          if-no-files-found: error
+          retention-days: 30
