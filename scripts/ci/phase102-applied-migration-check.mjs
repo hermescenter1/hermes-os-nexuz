@@ -139,6 +139,11 @@ export const POST_PHASE102_MIGRATIONS = [
   // row rewritten. Declared for the same reason as the lines above: an
   // undeclared row would fail the era-count equality.
   "20261012120000_executive_settings",
+  // Executive Management Center slice G - Party + PartyInteraction and one
+  // nullable ErpProject.partyId. No backfill, no row rewritten. Declared for
+  // the same reason as the lines above: an undeclared row would fail the
+  // era-count equality.
+  "20261013090000_tenant_customers",
 ];
 
 /**

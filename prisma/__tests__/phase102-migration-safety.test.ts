@@ -451,6 +451,11 @@ describe("102 — migration ordering", () => {
     // thresholds). No column on an existing table, no backfill; touches no
     // Phase 102 table (asserted below).
     "20261012120000_executive_settings",
+    // Executive Management Center slice G - the tenant's customers: two new
+    // tables (Party, PartyInteraction) and one NULLABLE column on ErpProject
+    // (partyId, composite FK into Party). No backfill, no row rewritten;
+    // touches no Phase 102 table (asserted below).
+    "20261013090000_tenant_customers",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {

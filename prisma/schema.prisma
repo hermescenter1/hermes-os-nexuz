@@ -802,6 +802,8 @@ model Organization {
   executiveDailyReports   ExecutiveDailyReport[]
   // EXECUTIVE DASHBOARD slice E: reporting zone, day cutoff, priority thresholds.
   executiveSettings       ExecutiveSettings?
+  // EXECUTIVE DASHBOARD slice G: the organization's own customers (tenant-owned Party).
+  parties                 Party[]
 }
 
 // Phase 32: extended with status, department, invitedBy, joinedAt, updatedAt
@@ -5438,6 +5440,9 @@ model ErpProject {
   actualCost       Float            @default(0)
   crmAccountId     String?
   crmOpportunityId String?
+  // Slice G: the customer this project is for. The composite key below makes a
+  // link to ANOTHER organization's customer impossible in the database itself.
+  partyId          String?
   managerId        String?
   createdBy        String?
   deletedAt        DateTime?
@@ -5451,11 +5456,13 @@ model ErpProject {
   workOrders       ErpWorkOrder[]
   approvalRequests ErpApprovalRequest[]
   kpis             ErpOperationalKpi[]
+  party            Party?           @relation(fields: [organizationId, partyId], references: [organizationId, id], onDelete: Restrict)
 
   @@index([status])
   @@index([organizationId])
   @@index([managerId])
   @@index([createdAt])
+  @@index([organizationId, partyId])
 }
 
 model ErpProjectMilestone {
@@ -8783,4 +8790,86 @@ model ExecutiveSettings {
   updatedAt            DateTime     @updatedAt @db.Timestamptz(6)
   updatedBy            String?
   organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ── EXECUTIVE DASHBOARD slice G: a tenant's customers ──────────────────────────
+//
+// `Party` is the tenant-owned counterparty that the accounting plan (A2) names
+// for customers and vendors. Slice G creates it with identity, contact and
+// follow-up fields only. Finance attributes (tax id, payment terms, control
+// account) belong on THIS table when A2 arrives — not on a second customer model.
+// Nothing here is a ledger, an invoice or a receivable.
+
+enum PartyKind {
+  CUSTOMER
+}
+
+enum PartyStatus {
+  PROSPECT
+  ACTIVE
+  INACTIVE
+}
+
+enum PartyInteractionKind {
+  CALL
+  MEETING
+  EMAIL
+  VISIT
+  NOTE
+}
+
+model Party {
+  id                String       @id @default(cuid())
+  organizationId    String
+  kind              PartyKind    @default(CUSTOMER)
+  status            PartyStatus  @default(ACTIVE)
+  displayName       String       @db.VarChar(200)
+  legalName         String?      @db.VarChar(200)
+  email             String?      @db.VarChar(254)
+  phone             String?      @db.VarChar(40)
+  city              String?      @db.VarChar(100)
+  /// ISO 3166-1 alpha-2, upper case.
+  country           String?      @db.VarChar(2)
+  notes             String?      @db.VarChar(4000)
+  /// The member responsible for follow-up. Validated by the application as an
+  /// ACTIVE member of this organization who may see customers.
+  followUpOwnerId   String?
+  nextActionAt      DateTime?    @db.Timestamptz(6)
+  nextActionNote    String?      @db.VarChar(500)
+  /// Maintained in the same transaction as each recorded interaction.
+  lastInteractionAt DateTime?    @db.Timestamptz(6)
+  version           Int          @default(1)
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime     @updatedAt @db.Timestamptz(6)
+  /// Archived instead of deleted: projects and interactions keep their link.
+  archivedAt        DateTime?    @db.Timestamptz(6)
+
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  interactions      PartyInteraction[]
+  projects          ErpProject[]
+
+  /// The target of every composite foreign key into this table, so a row in
+  /// another table can only point at a customer of its OWN organization.
+  @@unique([organizationId, id])
+  @@index([organizationId, archivedAt, displayName])
+  @@index([organizationId, nextActionAt])
+  @@index([organizationId, followUpOwnerId])
+}
+
+/// Append-only record of a contact with a customer. No update, no delete.
+model PartyInteraction {
+  id             String               @id @default(cuid())
+  organizationId String
+  partyId        String
+  kind           PartyInteractionKind
+  occurredAt     DateTime             @db.Timestamptz(6)
+  summary        String               @db.VarChar(2000)
+  recordedBy     String?
+  createdAt      DateTime             @default(now()) @db.Timestamptz(6)
+
+  party          Party                @relation(fields: [organizationId, partyId], references: [organizationId, id], onDelete: Cascade)
+
+  @@index([organizationId, partyId, occurredAt])
 }
