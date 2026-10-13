@@ -111,7 +111,9 @@ const SUMMARY = {
     operations: { status: "OPERATIONAL", data: { metrics: [] }, reasonKey: null },
     financial: { status: "OPERATIONAL", data: { metrics: [], ledgerAvailable: false }, reasonKey: null },
     industrial: { status: "FORBIDDEN", data: null, reasonKey: "executive.reasons.noSites" },
-    customers: { status: "NO_SOURCE", data: null, reasonKey: "executive.reasons.customersNotTenantScoped" },
+    // Slice G3: the tenant customer source exists now, so a frozen report
+    // carries it like any other section.
+    customers: { status: "OPERATIONAL", data: { metrics: [], financialsAvailable: false }, reasonKey: null },
   },
   actions: { status: "OPERATIONAL", data: [], reasonKey: null },
   dataQuality: [],

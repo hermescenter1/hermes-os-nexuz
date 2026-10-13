@@ -45,14 +45,15 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `PARTIAL` — data, API and audit MERGED (G1, PR #138); the FA/EN/DE pages built and proven live (G2, not yet merged); the management-view section (G3) not started |
+| **Status** | `DONE` on an isolated database — G1 and G2 MERGED (PRs #138, #141) and DEPLOYED in `cd6b1f5d`; G3 (the management view and the nightly report) built and proven, not yet merged |
 | **Slice G1** | `STAGE-11-SLICE-G1-CUSTOMERS-DATA.md`: tenant-owned `Party` (the counterparty the accounting plan names for A2, so no parallel customer model) + append-only `PartyInteraction` + `ErpProject.partyId`, all linked by **composite** `(organizationId, partyId)` foreign keys so a cross-tenant link cannot be stored; `/api/tenant/customers/**` (8 handlers, `TENANT_MEMBER`); `view_customers`/`manage_customers` for OWNER/ADMIN/MANAGER; versioned edits, archive not delete, audited writes without PII |
 | **Evidence** | `CrmAccount.organizationId` and `CustomerAccount.organizationId` are both `@unique`, and `CrmOpportunity` has no tenant column at all — so no tenant can have many customers today |
 | **Dependency** | A new `TenantCustomer` domain (schema + migration + RBAC + UI) |
 | **Slice G2** | `STAGE-12-SLICE-G2-CUSTOMERS-UI.md`: `/dashboard/clients` list (server-rendered search, filters, cursor pages), `new` and `[id]` (details, follow-up, append-only contact log, linked projects with cost per currency) in Persian, English and German, with a sidebar entry. Proven live on an isolated database: created through the UI, read back, contact recorded, project linked; another organization's customer answers 404 and a VIEWER is refused with a sentence rather than an empty list. |
 | **Acceptance** | A tenant-scoped customer record with contacts and follow-ups, created through a real authenticated write path, isolated per organization, with the dashboard reading those rows rather than a fixture. |
 | **Note** | The existing `/api/customers/*` handlers are **unauthenticated** and serve a 17-row fixture; that is a separate defect, recorded in `STAGE-1-AUDIT.md`, and must not be the source for this row. The new surface reads `Party` rows only. |
-| **Open** | G3: the management view's customer section and overdue follow-ups in tomorrow's priorities still read `NO_SOURCE`. |
+| **Slice G3** | `STAGE-13-SLICE-G3-CUSTOMERS-IN-VIEW.md`: five customer metrics in the management view, each with its definition, named source, period, data-as-of time and a link to the records; point counts taken AS OF the end of the period, so the nightly report is the finished day and not live figures (`CALC_VERSION` → `exec-report-2`). Every figure matched an independent SQL count; a real sweep produced a report whose customers section is EMPTY for 2026-10-12 while the live screen shows 1, because that customer was created later. |
+| **Open** | Overdue follow-ups are not yet a source for tomorrow's priorities (row 8). |
 
 ## 4. Plants, assets, alerts and data quality
 
@@ -81,6 +82,7 @@ Status vocabulary:
 | **Status** | `DONE` |
 | **Evidence** | `STAGE-4-SLICE-B-NIGHTLY-REPORT.md`, `STAGE-6-REVALIDATION.md` §2–§5; live: `created:3 / notified:3`, two concurrent passes refused by the lease, then `alreadyReported:3 / notified:0`; 3 notifications after 4 passes; archive shows one tenant's row out of three |
 | **Dependency** | Row 10 for the *scheduled* execution — the report mechanism is done, its production schedule is not |
+| **Slice G3** | The snapshot now carries the organization's customers for the day it reports on; `CALC_VERSION` moved to `exec-report-2` so a report without customer figures is never compared with one that has them. |
 | **Acceptance** | One frozen report per organization per finished business day, idempotent by `(organization, date, version)`, corrections as new versions, DST-correct boundaries, coverage and calculation version stored, archive re-checking permission. |
 
 ## 7. Per-organization report time and time zone
@@ -175,7 +177,7 @@ Rows are taken in this order, smallest reviewable slice first:
 3. **Slice E** — row 7, per-organization zone and cutoff (one migration). *Implemented and proven on an isolated database.*
 4. **Slice F** — row 10, the production runner, with row 9's channel if the
    owner has chosen one by then. *Code and packaging done and tested; production start needs the owner.*
-5. **Slice G** — row 3, the tenant customer domain (new schema). *G1 merged (PR #138); G2 (UI) built and proven live; G3 (management view) next.*
+5. **Slice G** — row 3, the tenant customer domain (new schema). *G1 and G2 merged and deployed; G3 (management view + nightly report) built and proven.*
 6. **Slice H** — rows 4 and 5, assets and the people dimension.
 7. **Slice I** — row 11, the performance baseline.
 8. **Slice J** — row 12's accessibility pass.

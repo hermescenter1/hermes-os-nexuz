@@ -171,6 +171,9 @@ vi.mock("@/lib/db/prisma", () => ({
 const erpStore = {
   erpTask: [] as Row[],
   erpApprovalRequest: [] as Row[],
+  // Slice G3 — the tenant's own customers and their contact log.
+  party: [] as Row[],
+  partyInteraction: [] as Row[],
 };
 
 function erpDelegate(model: keyof typeof erpStore) {
@@ -193,6 +196,8 @@ function buildPrisma() {
     industrialGateway: delegate("industrialGateway"),
     telemetryRecord: delegate("telemetryRecord"),
     assetAlert: delegate("assetAlert"),
+    party: erpDelegate("party"),
+    partyInteraction: erpDelegate("partyInteraction"),
   };
 }
 
@@ -493,11 +498,11 @@ describe("absence is never reported as health", () => {
     expect(note).toMatchObject({ severity: "WARNING", meta: { count: 1 } });
   });
 
-  it("reports the customer section as NO_SOURCE with a stated reason, never as empty", async () => {
+  it("reports the customer section as EMPTY, not zeros, when the tenant has no customers", async () => {
     const summary = await run();
-    expect(summary.sections.customers.status).toBe("NO_SOURCE");
-    expect(summary.sections.customers.reasonKey).toBe(REASON.customersNotTenantScoped);
+    expect(summary.sections.customers.status).toBe("EMPTY");
     expect(summary.sections.customers.data).toBeNull();
+    expect(summary.sections.customers.reasonKey).toBe(REASON.noRows);
   });
 
   it("declares that the financial section is not backed by a ledger", async () => {
@@ -636,5 +641,100 @@ describe("the action centre states a cause and a destination for every item", ()
     const summary = await run();
     expect(summary.actions.status).toBe("UNAVAILABLE");
     expect(summary.actions.data).toBeNull();
+  });
+});
+
+/* ── Customers (slice G3) ──────────────────────────────────────────────────── */
+
+describe("the organization's own customers", () => {
+  const party = (over: Row = {}): Row => ({
+    organizationId: ORG_A,
+    kind: "CUSTOMER",
+    status: "ACTIVE",
+    archivedAt: null,
+    nextActionAt: null,
+    followUpOwnerId: "user-1",
+    createdAt: new Date(NOW - 30 * 24 * 60 * MINUTE),
+    ...over,
+  });
+
+  beforeEach(() => {
+    erpStore.party.length = 0;
+    erpStore.partyInteraction.length = 0;
+  });
+
+  it("counts only THIS organization's customers, and excludes archived ones", async () => {
+    erpStore.party.push(
+      party(),
+      party({ status: "INACTIVE" }),
+      party({ archivedAt: new Date(NOW - MINUTE) }),
+      party({ organizationId: ORG_B }),
+    );
+    const summary = await run();
+    const section = summary.sections.customers;
+    expect(section.status).toBe("OPERATIONAL");
+    const value = (key: string) => section.data!.metrics.find(m => m.key === key)?.value;
+    expect(value("customersActive")).toBe(1);
+    // Two of this organization's live customers: the active one and the inactive one.
+    expect(section.data!.metrics).toHaveLength(5);
+  });
+
+  it("counts an overdue follow-up as of the END of the period, not the instant of computation", async () => {
+    erpStore.party.push(
+      party({ nextActionAt: new Date(NOW - 60 * MINUTE) }),
+      party({ nextActionAt: new Date(NOW + 60 * MINUTE) }),
+      party({ nextActionAt: null }),
+    );
+    const summary = await run();
+    const metrics = summary.sections.customers.data!.metrics;
+    expect(metrics.find(m => m.key === "customersOverdueFollowUp")?.value).toBe(1);
+    const asOf = queries.find(q => q.model === "party" && (q.where as Row)?.nextActionAt)?.where as Row;
+    expect(((asOf.nextActionAt as { lt: Date }).lt).getTime()).toBe(NOW);
+  });
+
+  it("never counts a customer created after the period it reports on", async () => {
+    erpStore.party.push(party({ createdAt: new Date(NOW + 60 * MINUTE) }), party());
+    const summary = await run();
+    expect(summary.sections.customers.data!.metrics.find(m => m.key === "customersActive")?.value).toBe(1);
+  });
+
+  it("gives new customers and recorded contacts a real period-over-period comparison", async () => {
+    // "today" in Tehran: the window starts at 20:30Z the previous day.
+    erpStore.party.push(party({ createdAt: new Date(NOW - 60 * MINUTE) }));
+    erpStore.partyInteraction.push(
+      { organizationId: ORG_A, occurredAt: new Date(NOW - 60 * MINUTE) },
+      { organizationId: ORG_B, occurredAt: new Date(NOW - 60 * MINUTE) },
+    );
+    const metrics = (await run()).sections.customers.data!.metrics;
+    const created = metrics.find(m => m.key === "customersNew")!;
+    const contacts = metrics.find(m => m.key === "customerInteractions")!;
+    expect(created.value).toBe(1);
+    expect(contacts.value).toBe(1);
+    // Windowed metrics carry a period; point metrics do not.
+    expect(created.provenance.period).not.toBeNull();
+    expect(metrics.find(m => m.key === "customersActive")!.provenance.period).toBeNull();
+  });
+
+  it("names a source and a definition for every customer metric, and links to the records", async () => {
+    erpStore.party.push(party());
+    const metrics = (await run()).sections.customers.data!.metrics;
+    for (const m of metrics) {
+      expect(m.provenance.sourceKey, m.key).toMatch(/^executive\.sources\.(party|partyInteraction)$/);
+      expect(m.provenance.definitionKey, m.key).toBe(`executive.definitions.${m.key}`);
+      expect(m.provenance.detailPath, m.key).toMatch(/^dashboard\/clients/);
+    }
+  });
+
+  it("states that it carries no customer financials", async () => {
+    erpStore.party.push(party());
+    expect((await run()).sections.customers.data!.financialsAvailable).toBe(false);
+  });
+
+  it("refuses the section for a reader without ERP authority, and issues no customer query", async () => {
+    erpStore.party.push(party());
+    const summary = await run(scopeFor({ authority: { operations: false, financial: false, industrial: true } }));
+    expect(summary.sections.customers.status).toBe("FORBIDDEN");
+    expect(summary.sections.customers.data).toBeNull();
+    expect(queries.filter(q => q.model === "party" || q.model === "partyInteraction")).toHaveLength(0);
   });
 });

@@ -33,7 +33,11 @@ import type { SectionStatus } from "../contract";
  * It is NOT the product version and NOT the schema version. It changes only
  * when the arithmetic does.
  */
-export const CALC_VERSION = "exec-report-1";
+// exec-report-2 (slice G3): the snapshot gained the customers section, which
+// the organization had no tenant-scoped source for before. A report carrying
+// exec-report-1 has no customer figures at all; that is a different
+// calculation, so comparing the two as a trend would be wrong.
+export const CALC_VERSION = "exec-report-2";
 
 /** The first version of any night. A correction is this + 1, never an edit. */
 export const FIRST_VERSION = 1;

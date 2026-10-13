@@ -64,6 +64,9 @@ const store: Record<string, Row[]> = {
   industrialAsset: [],
   erpTask: [],
   erpApprovalRequest: [],
+  // Slice G3 — the tenant's own customers and their contact log.
+  party: [],
+  partyInteraction: [],
 };
 
 function inRange(value: unknown, cond: Row): boolean {
@@ -136,6 +139,8 @@ const buildPrisma = () => ({
   industrialGateway: delegate("industrialGateway"),
   telemetryRecord: delegate("telemetryRecord"),
   assetAlert: delegate("assetAlert"),
+  party: delegate("party"),
+  partyInteraction: delegate("partyInteraction"),
 });
 
 const OVERVIEW = {
@@ -399,9 +404,35 @@ describe("failures are reported without internals", () => {
     expect(body.sections.industrial.status).toBe("UNAVAILABLE");
   });
 
-  it("reports the customer section as NO_SOURCE on every response", async () => {
+  // Slice G3: the organization's own customers ARE a source now, so the panel
+  // reports what it found. The property that matters here is unchanged: a
+  // section that carries no data says WHY, and a failure says so without
+  // leaking anything about the database.
+  it("reports the customer section as EMPTY, with its reason, when the organization has no customers", async () => {
     const body = await (await call()).json();
-    expect(body.sections.customers.status).toBe("NO_SOURCE");
-    expect(body.sections.customers.reasonKey).toBe("executive.reasons.customersNotTenantScoped");
+    expect(body.sections.customers.status).toBe("EMPTY");
+    expect(body.sections.customers.reasonKey).toBe("executive.reasons.noRows");
+    expect(body.sections.customers.data).toBeNull();
+  });
+
+  it("reports an unreadable customer source as UNAVAILABLE, never as an empty customer list", async () => {
+    const broken = buildPrisma();
+    broken.party = {
+      ...broken.party,
+      count: async () => {
+        throw new Error('relation "Party" does not exist at 10.0.0.9:5432');
+      },
+    } as unknown as typeof broken.party;
+    h.prisma = broken;
+
+    const body = await (await call()).json();
+    const serialized = JSON.stringify(body);
+    expect(body.sections.customers.status).toBe("UNAVAILABLE");
+    expect(body.sections.customers.data).toBeNull();
+    expect(serialized).not.toContain("10.0.0.9");
+    expect(serialized).not.toContain("does not exist");
+    // The rest of the dashboard still answers: one failed source is not a
+    // failed page.
+    expect(body.sections.operations.status).toBe("OPERATIONAL");
   });
 });

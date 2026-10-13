@@ -61,7 +61,6 @@ export const REASON = {
   noRows: "executive.reasons.noRows",
   sourceUnavailable: "executive.reasons.sourceUnavailable",
   noLedger: "executive.reasons.noLedger",
-  customersNotTenantScoped: "executive.reasons.customersNotTenantScoped",
 } as const;
 
 export const SOURCE = {
@@ -73,12 +72,25 @@ export const SOURCE = {
   gatewayHeartbeat: "executive.sources.gatewayHeartbeat",
   telemetry: "executive.sources.telemetry",
   assetAlert: "executive.sources.assetAlert",
+  // Slice G3 — the tenant's own customers (Party) and their contact log.
+  party: "executive.sources.party",
+  partyInteraction: "executive.sources.partyInteraction",
 } as const;
 
 /* ── Published shapes ──────────────────────────────────────────────────────── */
 
 export interface OperationsSummary {
   readonly metrics: readonly ExecutiveMetric[];
+}
+
+export interface CustomersSummary {
+  readonly metrics: readonly ExecutiveMetric[];
+  /**
+   * Stated gap, as on the financial section: a customer's receivable, revenue
+   * or balance needs an accounting ledger, and this product has none yet. This
+   * section counts relationships and follow-ups, never money.
+   */
+  readonly financialsAvailable: false;
 }
 
 export interface FinancialSummary {
@@ -135,7 +147,7 @@ export interface ExecutiveSummary {
     readonly operations: ExecutiveSection<OperationsSummary>;
     readonly financial: ExecutiveSection<FinancialSummary>;
     readonly industrial: ExecutiveSection<IndustrialSummary>;
-    readonly customers: ExecutiveSection<never>;
+    readonly customers: ExecutiveSection<CustomersSummary>;
   };
   readonly actions: ExecutiveSection<readonly DecisionItem[]>;
   readonly dataQuality: readonly DataQualityNote[];
@@ -161,6 +173,8 @@ interface SummaryDb {
   industrialGateway: ReadDelegate;
   telemetryRecord: ReadDelegate;
   assetAlert: CountDelegate;
+  party: CountDelegate;
+  partyInteraction: CountDelegate;
 }
 
 async function db(): Promise<SummaryDb | null> {
@@ -264,6 +278,110 @@ function windowMetric(args: {
 /* ── Sections ──────────────────────────────────────────────────────────────── */
 
 const OPEN_TASK_STATUSES_EXCLUDED = ["DONE", "CANCELLED"] as const;
+
+/**
+ * The organization's own customers (slice G3).
+ *
+ * Every count carries `organizationId` and `kind: "CUSTOMER"` in its own WHERE
+ * clause. Archived customers are excluded from the live counts — they are kept
+ * for their history, not for today's position — and "new customers" counts
+ * CREATION inside the window, which is why it is the only metric here that can
+ * carry a trend.
+ *
+ * No money: a customer's receivable or revenue needs an accounting ledger this
+ * product does not have, and inventing one from project cost would be a second,
+ * incompatible financial model.
+ */
+async function customersSection(args: {
+  scope: ExecutiveScope;
+  range: ResolvedRange;
+  nowIso: string;
+  client: SummaryDb;
+}): Promise<ExecutiveSection<CustomersSummary>> {
+  const { scope, range, nowIso, client } = args;
+  const organizationId = scope.organizationId;
+  const inWindow = (from: number, to: number) => ({ gte: new Date(from), lt: new Date(to) });
+
+  // AS OF THE END OF THE PERIOD, not the instant of computation. On the live
+  // screen the two are the same (the current window ends "now"); in the nightly
+  // report the window ends when the reported day ended, so the frozen report
+  // carries that day's position and not today's. A customer created after the
+  // reported day is therefore never counted in it.
+  const asOf = new Date(range.currentEndMs);
+  const current = {
+    organizationId,
+    kind: "CUSTOMER" as const,
+    archivedAt: null,
+    createdAt: { lt: asOf },
+  };
+
+  const [total, active, overdueFollowUps, unassigned, newNow, newBefore, interactionsNow, interactionsBefore] =
+    await Promise.all([
+      client.party.count({ where: current }),
+      client.party.count({ where: { ...current, status: "ACTIVE" } }),
+      client.party.count({ where: { ...current, nextActionAt: { lt: asOf } } }),
+      client.party.count({ where: { ...current, followUpOwnerId: null } }),
+      client.party.count({
+        where: { organizationId, kind: "CUSTOMER", createdAt: inWindow(range.currentStartMs, range.currentEndMs) },
+      }),
+      client.party.count({
+        where: { organizationId, kind: "CUSTOMER", createdAt: inWindow(range.baselineStartMs, range.baselineEndMs) },
+      }),
+      client.partyInteraction.count({
+        where: { organizationId, occurredAt: inWindow(range.currentStartMs, range.currentEndMs) },
+      }),
+      client.partyInteraction.count({
+        where: { organizationId, occurredAt: inWindow(range.baselineStartMs, range.baselineEndMs) },
+      }),
+    ]);
+
+  // No customer at all is EMPTY, not a wall of zeros that reads like activity.
+  if (total === 0) return emptySection(REASON.noRows);
+
+  const metrics: ExecutiveMetric[] = [
+    pointMetric({
+      key: "customersActive",
+      value: active,
+      sourceKey: SOURCE.party,
+      computedAtIso: nowIso,
+      detailPath: "dashboard/clients?status=ACTIVE",
+    }),
+    pointMetric({
+      key: "customersOverdueFollowUp",
+      value: overdueFollowUps,
+      sourceKey: SOURCE.party,
+      computedAtIso: nowIso,
+      detailPath: "dashboard/clients?followUp=overdue",
+    }),
+    pointMetric({
+      key: "customersUnassigned",
+      value: unassigned,
+      sourceKey: SOURCE.party,
+      computedAtIso: nowIso,
+      detailPath: "dashboard/clients?owner=none",
+    }),
+    windowMetric({
+      key: "customersNew",
+      current: newNow,
+      baseline: newBefore,
+      sourceKey: SOURCE.party,
+      range,
+      computedAtIso: nowIso,
+      detailPath: "dashboard/clients",
+    }),
+    windowMetric({
+      key: "customerInteractions",
+      current: interactionsNow,
+      baseline: interactionsBefore,
+      sourceKey: SOURCE.partyInteraction,
+      range,
+      computedAtIso: nowIso,
+      detailPath: "dashboard/clients",
+    }),
+  ];
+
+  return operationalSection({ metrics, financialsAvailable: false });
+}
 
 async function operationsSection(args: {
   scope: ExecutiveScope;
@@ -748,7 +866,7 @@ export async function buildExecutiveSummary(args: {
         operations: refusedSection("UNAVAILABLE", unavailable),
         financial: refusedSection("UNAVAILABLE", unavailable),
         industrial: refusedSection("UNAVAILABLE", unavailable),
-        customers: refusedSection("NO_SOURCE", REASON.customersNotTenantScoped),
+        customers: refusedSection("UNAVAILABLE", unavailable),
       },
       actions: refusedSection("UNAVAILABLE", unavailable),
       dataQuality: qualityNotes({
@@ -783,13 +901,18 @@ export async function buildExecutiveSummary(args: {
   const overview = overviewResult.ok ? overviewResult.value : null;
   const overviewFailed = !overviewResult.ok && (scope.authority.operations || scope.authority.financial);
 
-  const [operations, industrial] = await Promise.all([
+  const [operations, industrial, customers] = await Promise.all([
     scope.authority.operations
       ? overviewFailed
         ? Promise.resolve(refusedSection<OperationsSummary>("UNAVAILABLE", REASON.sourceUnavailable))
         : settleSection(() => operationsSection({ scope, range, nowIso, overview, client }))
       : Promise.resolve(refusedSection<OperationsSummary>("FORBIDDEN", REASON.forbiddenOperations)),
     settleSection(() => industrialSection({ scope, range, nowMs, nowIso, client })),
+    // Customers need view_erp like the rest of this organization's commercial
+    // records; a reader without it is told so, not shown an empty panel.
+    scope.authority.operations
+      ? settleSection(() => customersSection({ scope, range, nowIso, client }))
+      : Promise.resolve(refusedSection<CustomersSummary>("FORBIDDEN", REASON.forbiddenOperations)),
   ]);
 
   const financial = overviewFailed
@@ -808,11 +931,10 @@ export async function buildExecutiveSummary(args: {
       operations,
       financial,
       industrial,
-      // Stated, not omitted: CRM and CustomerAccount are platform-global models
-      // (CrmOpportunity has no organizationId at all), so there is no
-      // tenant-scoped customer source to read here. Showing an empty customer
-      // panel would read as "no customers".
-      customers: refusedSection<never>("NO_SOURCE", REASON.customersNotTenantScoped),
+      // Slice G3: the organization's OWN customers (Party). The platform-global
+      // CRM and CustomerAccount models are still not read here — they describe
+      // the platform's customers, not this tenant's.
+      customers,
     },
     actions,
     dataQuality: qualityNotes({ zoneConfiguredValid: scope.zoneConfiguredValid ?? zone.configuredValid, industrial, financial }),
