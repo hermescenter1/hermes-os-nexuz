@@ -439,7 +439,7 @@ describe("PHASE997_OPENBAO_ISOLATION", () => {
     expect(compose).not.toMatch(/^\s{2}openbao:/m);
   });
 
-  it("the OpenBao surface is untouched by this phase", () => {
+  it("the OpenBao surface is untouched by this phase", (ctx) => {
     // Compared against the phase base recorded in the migration ledger, so the
     // assertion cannot drift from the branch it is meant to describe.
     const base = JSON.parse(readFileSync(join(REPO, "docs", "release", "phase99.7-migration-ledger.json"), "utf8")).targetSha;
@@ -450,7 +450,16 @@ describe("PHASE997_OPENBAO_ISOLATION", () => {
         .map((s) => s.trim())
         .filter(Boolean);
     } catch {
-      // Shallow checkout: the static assertions above still hold this invariant.
+      // The ledger's base commit is not in this clone (a shallow checkout), so
+      // the diff cannot be computed. That is NOT a pass: it used to `return`,
+      // which reported this test as PASSED in every shallow CI job without the
+      // assertion below ever running. Where full history is guaranteed
+      // (PHASE997_REQUIRE_GIT_HISTORY=1, the fetch-depth: 0 job) it is a
+      // failure; elsewhere it is reported as SKIPPED, visibly.
+      if (process.env.PHASE997_REQUIRE_GIT_HISTORY === "1") {
+        throw new Error(`git history to ${base} is required here but is not available (shallow clone?)`);
+      }
+      ctx.skip(`no git history back to ${base}: the OpenBao diff was not computed`);
       return;
     }
     const openbaoTouched = changed.filter((f) => /openbao/i.test(f) || f === "src/lib/ot-edge/secret-backend.ts");
@@ -468,5 +477,24 @@ describe("PHASE997_PROHIBITED_HOSTS", () => {
         expect(content.includes(host), `${rp} contains a prohibited host literal`).toBe(false);
       }
     }
+  });
+});
+
+describe("PHASE997_HISTORY_IS_REALLY_CHECKED", () => {
+  // The OpenBao-surface test needs git history back to the Phase 99.7 base. In a
+  // shallow clone it can only skip; the job below has full history and must
+  // FAIL rather than skip, and must keep a per-test report.
+  const wf = readFileSync(join(REPO, ".github", "workflows", "phase997-production-completion.yml"), "utf8").replace(/\r\n/g, "\n");
+  const offline = wf.slice(wf.indexOf("phase997-offline:"), wf.indexOf("phase997-migration-rehearsal:"));
+
+  it("runs the focused suite with full history and the strict flag", () => {
+    expect(offline).toContain("fetch-depth: 0");
+    expect(offline).toMatch(/PHASE997_REQUIRE_GIT_HISTORY: "1"\n\s+run: npx --no-install vitest run scripts\/__tests__\/phase997-\*\.test\.ts/);
+  });
+
+  it("keeps a per-test JUnit report as an artifact, even when the suite fails", () => {
+    expect(offline).toContain("--outputFile.junit=reports/phase997-focused.junit.xml");
+    expect(offline).toMatch(/if: always\(\)\n\s+uses: actions\/upload-artifact@[0-9a-f]{40}/);
+    expect(offline).toContain("if-no-files-found: error");
   });
 });

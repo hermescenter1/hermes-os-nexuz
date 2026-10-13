@@ -66,8 +66,23 @@ jobs:
       - name: sharp runtime gate (host)
         run: node scripts/dr/sharp-runtime-gate.mjs
 
+      # This job has full history (fetch-depth: 0 above), so the release-safety
+      # suite's git-history assertions MUST run here: with the flag, a missing
+      # base commit FAILS instead of being skipped. The per-test JUnit report is
+      # kept as an artifact so no skipped or failed test is ever unidentified.
       - name: Focused Phase 99.7 tests
-        run: npx --no-install vitest run scripts/__tests__/phase997-*.test.ts
+        env:
+          PHASE997_REQUIRE_GIT_HISTORY: "1"
+        run: npx --no-install vitest run scripts/__tests__/phase997-*.test.ts --reporter=default --reporter=junit --outputFile.junit=reports/phase997-focused.junit.xml
+
+      - name: Keep the per-test report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: phase997-focused-junit
+          path: reports/phase997-focused.junit.xml
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Full unit test suite
         run: npm test
