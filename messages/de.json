@@ -11136,6 +11136,65 @@
         "deciderSplit": "{approved, number} freigegeben · {rejected, number} abgelehnt",
         "unattributed": "{count, plural, one {# Entscheidung hat} other {# Entscheidungen haben}} keinen erfassten Entscheider."
       }
+    },
+    "priorities": {
+      "pageTitle": "Prioritäten für morgen",
+      "pageLede": "Was bis Ende morgen Handlung erfordert, in Reihenfolge, mit der Regel, die jeden Eintrag dort eingeordnet hat.",
+      "linkFromSummary": "Prioritäten für morgen",
+      "horizon": "Horizont: vor {when}",
+      "tiersTitle": "Nach Stufe",
+      "tier": {
+        "1": "Zuerst handeln",
+        "2": "Heute handeln",
+        "3": "Für morgen planen"
+      },
+      "tierCount": "{count, plural, one {# Eintrag} other {# Einträge}}",
+      "kind": {
+        "TASK": "Aufgabe",
+        "WORK_ORDER": "Arbeitsauftrag",
+        "APPROVAL": "Freigabe",
+        "ALERT": "Alarm"
+      },
+      "duration": {
+        "days": "{count, plural, one {# Tag} other {# Tage}}",
+        "hours": "{count, plural, one {# Stunde} other {# Stunden}}"
+      },
+      "reason": {
+        "CRITICAL_WORK_OVERDUE": "Kritische Priorität und seit {duration} überfällig.",
+        "CRITICAL_ALERT_OPEN": "Kritischer Alarm, seit {duration} offen.",
+        "APPROVAL_CRITICALLY_LATE": "Wartet seit {duration} auf eine Entscheidung, über der kritischen Grenze von {threshold, number} Tagen.",
+        "HIGH_WORK_OVERDUE": "Hohe Priorität und seit {duration} überfällig.",
+        "URGENT_WORK_DUE_SOON": "Hohe oder kritische Priorität, fällig {due}.",
+        "APPROVAL_LATE": "Wartet seit {duration} auf eine Entscheidung, über der Grenze von {threshold, number} Tagen.",
+        "HIGH_ALERT_OPEN": "Alarm mit hohem Schweregrad, seit {duration} offen.",
+        "WORK_OVERDUE": "Seit {duration} überfällig.",
+        "WORK_DUE_SOON": "Fällig {due}."
+      },
+      "rulesTitle": "Wie Prioritäten festgelegt werden",
+      "rulesLede": "Die Regeln werden in dieser Reihenfolge geprüft; die erste, auf die ein Eintrag passt, bestimmt seine Stufe. Innerhalb einer Stufe steht der Eintrag zuerst, der am längsten unter Druck steht. Es gibt keine Punktzahl.",
+      "rule": {
+        "CRITICAL_WORK_OVERDUE": "Eine Aufgabe oder ein Arbeitsauftrag mit kritischer Priorität nach dem Fälligkeitsdatum.",
+        "CRITICAL_ALERT_OPEN": "Ein kritischer Alarm, der nach {hours, plural, one {# Stunde} other {# Stunden}} noch offen ist.",
+        "APPROVAL_CRITICALLY_LATE": "Eine Freigabe, die seit {days, plural, one {# Tag} other {# Tagen}} oder länger wartet.",
+        "HIGH_WORK_OVERDUE": "Eine Aufgabe oder ein Arbeitsauftrag mit hoher Priorität nach dem Fälligkeitsdatum.",
+        "URGENT_WORK_DUE_SOON": "Arbeit mit hoher oder kritischer Priorität, fällig vor Ende morgen.",
+        "APPROVAL_LATE": "Eine Freigabe, die seit {days, plural, one {# Tag} other {# Tagen}} oder länger wartet.",
+        "HIGH_ALERT_OPEN": "Ein Alarm mit hohem Schweregrad, der nach {hours, plural, one {# Stunde} other {# Stunden}} noch offen ist.",
+        "WORK_OVERDUE": "Jede andere offene Aufgabe oder jeder andere offene Arbeitsauftrag nach dem Fälligkeitsdatum.",
+        "WORK_DUE_SOON": "Jede andere offene Aufgabe oder jeder andere offene Arbeitsauftrag, fällig vor Ende morgen."
+      },
+      "configNote": "Diese Schwellenwerte sind die Produktvorgaben. Eine Einstellung je Organisation ist noch nicht verfügbar.",
+      "listTruncated": "{shown, number} von {total, number} Prioritäten werden angezeigt.",
+      "sourcesTitle": "Quellen",
+      "source": {
+        "tasks": "Aufgaben",
+        "workOrders": "Arbeitsaufträge",
+        "approvals": "Freigaben",
+        "alerts": "Alarme"
+      },
+      "sourceRead": "Gelesen",
+      "sourceTruncated": "Nur die {limit, number} dringlichsten Datensätze wurden gelesen.",
+      "noneInTier": "In dieser Stufe gibt es nichts."
     }
   }
 }
