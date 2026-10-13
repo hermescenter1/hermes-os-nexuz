@@ -107,16 +107,17 @@ Status vocabulary:
 | **Dependency** | **Owner must choose the channel and supply its credential** (email transport, or another channel) |
 | **Acceptance** | The chosen channel is configured, a real delivery is evidenced, and failure to deliver is visible rather than silent. |
 | **Blocked on** | Channel choice + credential. Independent work continues meanwhile. |
-| **Defect (slice F)** | The worker takes the notify-once claim **before** looking for a recipient; with no active owner nothing is sent, yet the report row says notified and the claim is spent (seen live in slice E). Only the first owner is notified, never admins. |
+| **Closed in slice F** | A claim that reached nobody is given back (fenced on its own timestamp) and listed as `undelivered` (`NO_RECIPIENT` / `DELIVERY_FAILED`), logged as a warning, and retried on the next pass; every active owner **and administrator** is told. |
 
 ## 10. Runner on the production schedule, failure monitoring and recovery
 
 | | |
 | --- | --- |
-| **Status** | `NOT_STARTED` |
-| **Evidence** | `scripts/executive/daily-report-worker.mjs` and two npm scripts exist and were driven by hand against an isolated database; **nothing schedules them in production** |
+| **Status** | `PARTIAL` — runner correct for any number of tenants and packaged like every other worker (slice F, not yet merged); **not scheduled in production** |
+| **Evidence** | `STAGE-10-SLICE-F-RUNNER.md`: cursor-chained sweep (120 organizations in batches of 50 each visited exactly once, org 51 included), lease renewed and released, Dockerfile stage + compose service `hermes-executive-report-worker` + one-file `.dockerignore` re-include, runner executed against a stub (three-pass chain, exit 2 without a token, exit 1 on 401, clean exit) |
 | **Dependency** | A compose service or host timer, plus `EXECUTIVE_REPORT_WORKER_TOKEN` in the production environment |
-| **Defect (slice F)** | One pass reads `organization.findMany({ orderBy: id, take: 50 })` with no cursor and no "already reported" filter, so **organizations after the 50th are never reported** — contrary to the worker's own comment. On Windows the runner also prints a libuv `UV_HANDLE_CLOSING` assertion at exit after a completed pass; the exit code must be confirmed on the Linux production image. |
+| **Closed in slice F** | The first-50-organizations limit (cursor), the lease never released or renewed, and the Windows `UV_HANDLE_CLOSING` exit (`process.exitCode`). |
+| **Needs the owner** | `EXECUTIVE_REPORT_WORKER_TOKEN` in `.env.production` (or confirm an existing `METERING_WORKER_TOKEN`/`METRICS_TOKEN` is acceptable), then one `docker compose … up -d hermes-executive-report-worker` on the host after the deploy — the deploy workflow starts `hermes-web` only, as for the other workers. Alerting on the runner's `WARN`/`ERROR` lines is an operator choice. |
 | **Acceptance** | The runner is scheduled in production, its credential is supplied the way the other worker credentials are, a failed pass is visible, and **a real production run has produced a report** — until then the nightly report is not "automatic and live in production". |
 
 ## 11. Performance baseline, optimisation and safe caching
@@ -167,7 +168,7 @@ Rows are taken in this order, smallest reviewable slice first:
 2. **Slice D** — row 8, priorities with visible reasons. *Implemented and proven on an isolated database.*
 3. **Slice E** — row 7, per-organization zone and cutoff (one migration). *Implemented and proven on an isolated database.*
 4. **Slice F** — row 10, the production runner, with row 9's channel if the
-   owner has chosen one by then.
+   owner has chosen one by then. *Code and packaging done and tested; production start needs the owner.*
 5. **Slice G** — row 3, the tenant customer domain (new schema).
 6. **Slice H** — rows 4 and 5, assets and the people dimension.
 7. **Slice I** — row 11, the performance baseline.

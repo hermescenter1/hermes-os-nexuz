@@ -32,7 +32,7 @@
  * process picks it up.
  *
  *   node scripts/executive/daily-report-worker.mjs            # poll forever
- *   node scripts/executive/daily-report-worker.mjs --once     # one pass, exit
+ *   node scripts/executive/daily-report-worker.mjs --once     # one sweep (all orgs), exit
  *   node scripts/executive/daily-report-worker.mjs --interval 900000
  *
  * Environment:
@@ -64,6 +64,15 @@ const TOKEN =
   process.env.METERING_WORKER_TOKEN ??
   process.env.METRICS_TOKEN ??
   "";
+// Refuse to start blind, like the other workers: without a credential every
+// request would be a 401, logged every interval forever.
+if (!TOKEN) {
+  console.error(
+    "[executive-report-worker] EXECUTIVE_REPORT_WORKER_TOKEN is not set (nor METERING_WORKER_TOKEN / METRICS_TOKEN); refusing to start.",
+  );
+  process.exit(2);
+}
+
 const INTERVAL = Number(value("interval", process.env.EXECUTIVE_REPORT_INTERVAL_MS ?? 900_000));
 const BATCH = Number(value("batch", process.env.EXECUTIVE_REPORT_BATCH ?? 50));
 const ONCE = flag("once");
@@ -83,8 +92,10 @@ const log = (level, msg, extra = {}) =>
     }),
   );
 
-async function onePass() {
-  const url = `${BASE}/api/executive/reports/run?max=${encodeURIComponent(String(BATCH))}`;
+async function onePass(after) {
+  const query = new URLSearchParams({ max: String(BATCH) });
+  if (after) query.set("after", after);
+  const url = `${BASE}/api/executive/reports/run?${query}`;
   const res = await fetch(url, {
     method: "POST",
     headers: TOKEN ? { authorization: `Bearer ${TOKEN}` } : {},
@@ -109,21 +120,68 @@ async function onePass() {
     skippedNotFinished: body.skippedNotFinished,
     failed: body.failed,
     notified: body.notified,
+    undelivered: (body.undelivered ?? []).length,
+    after: body.afterOrganizationId ?? null,
+    more: Boolean(body.nextAfterOrganizationId),
+    leaseLost: Boolean(body.leaseLost),
   });
   // A failure inside the pass is reported per organization, so an operator can
   // see WHICH tenant could not be reported rather than only that something was.
   for (const f of body.failures ?? []) {
     log("WARN", "organization not reported", f);
   }
+  // A report that exists but reached nobody is not silent either.
+  for (const u of body.undelivered ?? []) {
+    log("WARN", "report not announced", u);
+  }
   return body;
 }
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+/** Hard stop on chained requests, in case a server ever returned a cursor that did not advance. */
+const MAX_CHAINED_PASSES = 10_000;
+
+/**
+ * One SWEEP: chain passes with the server's cursor until every organization
+ * has been visited. Each request stays bounded; the sweep is what makes the
+ * coverage complete. A pass that did not hold the lease ends the sweep — the
+ * replica that holds it is sweeping instead.
+ */
+async function sweep() {
+  let after = null;
+  for (let i = 0; i < MAX_CHAINED_PASSES && !stopping; i++) {
+    const body = await onePass(after);
+    const next = body.nextAfterOrganizationId ?? null;
+    if (!body.leaseHeld || !next) return;
+    if (next === after) {
+      log("ERROR", "cursor did not advance; ending the sweep", { after });
+      return;
+    }
+    after = next;
+  }
+}
+
+/**
+ * An INTERRUPTIBLE sleep. A shutdown signal wakes it at once: before this, the
+ * handler set `stopping` while the loop sat in a 15-minute sleep, so
+ * `docker stop` waited out its timeout and SIGKILLed the process. A request in
+ * flight is still allowed to finish — only the idle wait is cut short.
+ */
+let wake = null;
+const sleep = ms =>
+  new Promise(resolve => {
+    const timer = setTimeout(done, ms);
+    function done() {
+      clearTimeout(timer);
+      wake = null;
+      resolve();
+    }
+    wake = done;
+  });
 
 async function loop() {
   while (!stopping) {
     try {
-      await onePass();
+      await sweep();
       backoff = 0;
     } catch (err) {
       if (err?.fatal) {
@@ -147,17 +205,23 @@ for (const sig of ["SIGTERM", "SIGINT"]) {
   process.on(sig, () => {
     log("INFO", "shutdown requested; finishing the in-flight pass");
     stopping = true;
+    wake?.();
   });
 }
 
 if (ONCE) {
-  onePass()
-    .then(() => process.exit(0))
+  // exitCode, not process.exit(): exiting while fetch's keep-alive sockets are
+  // still closing tripped a libuv `UV_HANDLE_CLOSING` assertion on Windows after
+  // a successful pass. Letting the loop drain ends the process the same way.
+  sweep()
+    .then(() => {
+      process.exitCode = 0;
+    })
     .catch(err => {
-      log("ERROR", "single pass failed", { error: String(err?.message ?? err) });
-      process.exit(1);
+      log("ERROR", "single sweep failed", { error: String(err?.message ?? err) });
+      process.exitCode = 1;
     });
 } else {
   log("INFO", "starting", { base: BASE, intervalMs: INTERVAL, batch: BATCH, tokenConfigured: Boolean(TOKEN) });
-  loop();
+  loop().then(() => log("INFO", "stopped"));
 }
