@@ -283,3 +283,57 @@ describe("4 · the runner, executed", () => {
     );
   }, 30_000);
 });
+
+describe("5 · shutdown and the CI image job", () => {
+  // POSIX signals: on Windows, child.kill() terminates without a catchable
+  // signal, so the handler cannot run there. CI (Linux) exercises it.
+  it.skipIf(process.platform === "win32")(
+    "a SIGTERM during the idle interval stops the loop at once, with exit 0",
+    async () => {
+      await withStub(
+        (_req, res) => json(res, 200, pass({})),
+        async (base, seen) => {
+          const child = spawn(process.execPath, [join(REPO, RUNNER)], {
+            env: {
+              NODE_ENV: "test",
+              PATH: process.env.PATH ?? "",
+              HERMES_WORKER_BASE_URL: base,
+              EXECUTIVE_REPORT_WORKER_TOKEN: "t",
+              EXECUTIVE_REPORT_INTERVAL_MS: "900000",
+            },
+            stdio: ["ignore", "pipe", "pipe"],
+          });
+          let stdout = "";
+          child.stdout.on("data", d => (stdout += String(d)));
+          const deadline = Date.now() + 15_000;
+          while (seen.length === 0 && Date.now() < deadline) await new Promise(r => setTimeout(r, 50));
+          expect(seen.length).toBe(1);
+          const t0 = Date.now();
+          const code = await new Promise<number | null>(resolve => {
+            child.on("exit", c => resolve(c));
+            child.kill("SIGTERM");
+          });
+          // Without the interruptible sleep this waited out the 15-minute interval.
+          expect(Date.now() - t0).toBeLessThan(5_000);
+          expect(code).toBe(0);
+          expect(stdout).toContain('"msg":"stopped"');
+        },
+      );
+    },
+    30_000,
+  );
+
+  it("the runner wakes its idle sleep on a shutdown signal", () => {
+    expect(script).toMatch(/stopping = true;\s*\n\s*wake\?\.\(\);/);
+  });
+
+  it("a CI job builds this exact stage and drives the built image", () => {
+    const wf = read(".github/workflows/executive-worker-image.yml");
+    expect(wf).toMatch(/^ {2}pull_request:/m);
+    expect(wf).toContain("docker build --target executive-report-worker");
+    expect(wf).toContain("node scripts/ci/executive-worker-image-smoke.mjs");
+    // No secret, no registry: the smoke test generates its own token.
+    expect(wf).not.toMatch(/secrets\./);
+    expect(wf).not.toMatch(/docker (push|login)/);
+  });
+});

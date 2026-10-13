@@ -1,0 +1,52 @@
+# Executive Management Center — the nightly report worker IMAGE.
+#
+# The other CI jobs build only the default `runner` target, so a worker stage
+# (`executive-report-worker`) could break — a wrong COPY path, a missing file in
+# the build context, a base image that cannot run it — and nothing would notice
+# until an operator started the service in Production. This job builds exactly
+# that stage and drives the built image with scripts/ci/executive-worker-image-smoke.mjs:
+# non-root user and a single file, exit 2 without a credential, an authenticated
+# cursor-chained sweep against a local stub endpoint, exit 1 on a refused
+# credential, and a clean exit on `docker stop`.
+#
+# No secrets, no registry push, no environment access, no database. The bearer
+# token is generated inside the smoke script for this run only and never printed.
+
+name: Executive report worker image
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: executive-worker-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-smoke:
+    name: Executive report worker image (build + smoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+
+      - name: Build the executive-report-worker stage
+        run: docker build --target executive-report-worker -t hermes-executive-report-worker:ci-${{ github.sha }} .
+
+      - name: Smoke-test the built image
+        run: node scripts/ci/executive-worker-image-smoke.mjs hermes-executive-report-worker:ci-${{ github.sha }}
+
+      - name: Record the image digest
+        if: always()
+        run: docker image inspect --format '{{.Id}}' hermes-executive-report-worker:ci-${{ github.sha }} || true

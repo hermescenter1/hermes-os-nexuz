@@ -65,9 +65,15 @@ const LOCALES = ["fa", "en", "de"];
 //
 // F-2 FU-F2-R4-1 adds `hermes-document-cleanup-worker` for the same reason: it
 // declares env_file for DOCUMENT_CLEANUP_WORKER_TOKEN.
+//
+// The executive report runner adds `hermes-executive-report-worker` for the
+// same reason: it declares env_file for EXECUTIVE_REPORT_WORKER_TOKEN. The
+// companion test caught it on the first CI run of the packaging change, as it
+// did for ATS-S1.
 export const ENV_FILE_SERVICES = Object.freeze([
   "hermes-ats-review-worker",
   "hermes-document-cleanup-worker",
+  "hermes-executive-report-worker",
   "hermes-metering-worker",
   "hermes-web",
   "postgres",

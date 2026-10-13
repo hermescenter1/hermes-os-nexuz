@@ -160,7 +160,23 @@ async function sweep() {
   }
 }
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+/**
+ * An INTERRUPTIBLE sleep. A shutdown signal wakes it at once: before this, the
+ * handler set `stopping` while the loop sat in a 15-minute sleep, so
+ * `docker stop` waited out its timeout and SIGKILLed the process. A request in
+ * flight is still allowed to finish — only the idle wait is cut short.
+ */
+let wake = null;
+const sleep = ms =>
+  new Promise(resolve => {
+    const timer = setTimeout(done, ms);
+    function done() {
+      clearTimeout(timer);
+      wake = null;
+      resolve();
+    }
+    wake = done;
+  });
 
 async function loop() {
   while (!stopping) {
@@ -189,6 +205,7 @@ for (const sig of ["SIGTERM", "SIGINT"]) {
   process.on(sig, () => {
     log("INFO", "shutdown requested; finishing the in-flight pass");
     stopping = true;
+    wake?.();
   });
 }
 
@@ -206,5 +223,5 @@ if (ONCE) {
     });
 } else {
   log("INFO", "starting", { base: BASE, intervalMs: INTERVAL, batch: BATCH, tokenConfigured: Boolean(TOKEN) });
-  loop();
+  loop().then(() => log("INFO", "stopped"));
 }
