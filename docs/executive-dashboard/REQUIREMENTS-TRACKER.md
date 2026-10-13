@@ -84,16 +84,16 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `NOT_STARTED` |
-| **Evidence** | `HERMES_EXECUTIVE_TIME_ZONE` / `HERMES_EXECUTIVE_DAY_CUTOFF_MINUTES` are environment-level today |
-| **Dependency** | A column on `Organization` (or a settings row) plus a migration |
+| **Status** | `DONE` on an isolated database — slice E, not yet merged or deployed |
+| **Evidence** | `STAGE-9-SLICE-E-ORGANIZATION-SETTINGS.md`: `ExecutiveSettings` table (one row per organization, database CHECKs proven by raw inserts), `/dashboard/executive/settings` with an owner/admin-only versioned and audited write; live: ZHARFA set to Europe/Berlin 06:00, the management view and priorities cut in Berlin, and one nightly pass produced **2026-10-11 (Berlin, 04:00Z window)** for ZHARFA and **2026-10-12 (Tehran)** for the others while the earlier reports kept Asia/Tehran; `visual-evidence/{en-desktop,fa-mobile}-settings.jpg` |
+| **Dependency** | — (the environment variables remain the fallback for organizations with no row) |
 | **Acceptance** | Each organization sets its own zone and cutoff; the worker honours it per tenant; existing reports keep the zone they were generated with, because the report already stores it. |
 
 ## 8. Tomorrow's priorities, with documented and configurable rules
 
 | | |
 | --- | --- |
-| **Status** | `PARTIAL` — rules, reasons and validated parameters shipped by slice D; per-organization storage of the parameters is slice E |
+| **Status** | `PARTIAL` — rules, reasons and validated parameters shipped by slice D; per-organization thresholds by slice E (live: a 2-day threshold brought a 2-day approval into the list); not yet part of the nightly report |
 | **Evidence** | `/dashboard/executive/priorities`: nine ordered written rules, three tiers, a reason sentence per item, the rule set printed with the thresholds in force. Proven on an isolated database with five decoys absent; VIEWER sees an empty list with a stated reason per source. `STAGE-8-SLICE-D-TOMORROWS-PRIORITIES.md`. |
 | **Dependency** | Row 2 and row 5 feed it, but it can ship on today's sources |
 | **Acceptance** | A written, inspectable rule set over criticality, due date, lateness and pending approvals; configurable per organization; **every priority shows the reason it was ranked there**; no opaque score. |
@@ -107,6 +107,7 @@ Status vocabulary:
 | **Dependency** | **Owner must choose the channel and supply its credential** (email transport, or another channel) |
 | **Acceptance** | The chosen channel is configured, a real delivery is evidenced, and failure to deliver is visible rather than silent. |
 | **Blocked on** | Channel choice + credential. Independent work continues meanwhile. |
+| **Defect (slice F)** | The worker takes the notify-once claim **before** looking for a recipient; with no active owner nothing is sent, yet the report row says notified and the claim is spent (seen live in slice E). Only the first owner is notified, never admins. |
 
 ## 10. Runner on the production schedule, failure monitoring and recovery
 
@@ -115,6 +116,7 @@ Status vocabulary:
 | **Status** | `NOT_STARTED` |
 | **Evidence** | `scripts/executive/daily-report-worker.mjs` and two npm scripts exist and were driven by hand against an isolated database; **nothing schedules them in production** |
 | **Dependency** | A compose service or host timer, plus `EXECUTIVE_REPORT_WORKER_TOKEN` in the production environment |
+| **Defect (slice F)** | One pass reads `organization.findMany({ orderBy: id, take: 50 })` with no cursor and no "already reported" filter, so **organizations after the 50th are never reported** — contrary to the worker's own comment. On Windows the runner also prints a libuv `UV_HANDLE_CLOSING` assertion at exit after a completed pass; the exit code must be confirmed on the Linux production image. |
 | **Acceptance** | The runner is scheduled in production, its credential is supplied the way the other worker credentials are, a failed pass is visible, and **a real production run has produced a report** — until then the nightly report is not "automatic and live in production". |
 
 ## 11. Performance baseline, optimisation and safe caching
@@ -134,7 +136,7 @@ Status vocabulary:
 | **Evidence** | fa/en/de catalogues at three-way parity (gate total 8399); RTL and LTR screenshots desktop and mobile; the phone-width overflow defect found by measurement, fixed, and locked by a test |
 | **Dependency** | — |
 | **Acceptance** | Above, plus an accessibility pass: keyboard reachability of the action centre and archive, focus order, contrast, and the table semantics already present verified against a checklist. |
-| **Open** | No accessibility audit has been run. |
+| **Open** | No accessibility audit has been run. Page titles are static English in every locale (dashboard-wide `noIndexMetadata` pattern). Slice E fixed two defects found by looking: Latin digits in the Persian cutoff, and dead colour classes (`bg-base`, `text-fg`) that left form fields white, plus every opacity modifier on a theme colour (Tailwind 3 emits nothing for `bg-signal/10` on a `var()` colour; dead borders fell back to bright `#E5E7EB` row lines) — now guarded by a test that reads the Tailwind config. |
 
 ## 13. Database correctness, migrations, security, tenant/site isolation, audit
 
@@ -142,7 +144,8 @@ Status vocabulary:
 | --- | --- |
 | **Status** | `PARTIAL` |
 | **Evidence** | One additive migration (82 → 83) classified `FORWARD_ONLY_REQUIRES_BACKUP` and rehearsed in CI on real PostgreSQL; tenant and site isolation proven live; `GET /api/executive/summary` is `TENANT_MEMBER`, `POST /api/executive/reports/run` is `PLATFORM_ADMIN` on its own credential; corrections write an `AuditLog` row |
-| **Dependency** | Rows 2, 3 and 7 add schema and must each extend this evidence |
+| **Slice E** | Second additive migration (`ExecutiveSettings`, declared in both Phase 102 lists); `PUT /api/executive/settings` classified `TENANT_MEMBER` through a registered guard token, origin and content type refused before the session is read, organization never taken from the body (proven live: a smuggled `organizationId` changed nothing in the other tenant), every change audited inside its own transaction with before/after. |
+| **Dependency** | Rows 2 and 3 add schema and must each extend this evidence |
 | **Acceptance** | Every new model carries organization scope at the query level, every new route is classified by the Phase 99 inventory, and every write that changes a figure is auditable. |
 
 ## 14. Final validation and post-deployment review
@@ -162,7 +165,7 @@ Rows are taken in this order, smallest reviewable slice first:
 
 1. **Slice C** — row 2's oversight half (no schema change). *Implemented and proven on an isolated database.*
 2. **Slice D** — row 8, priorities with visible reasons. *Implemented and proven on an isolated database.*
-3. **Slice E** — row 7, per-organization zone and cutoff (one migration).
+3. **Slice E** — row 7, per-organization zone and cutoff (one migration). *Implemented and proven on an isolated database.*
 4. **Slice F** — row 10, the production runner, with row 9's channel if the
    owner has chosen one by then.
 5. **Slice G** — row 3, the tenant customer domain (new schema).
