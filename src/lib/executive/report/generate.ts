@@ -27,13 +27,24 @@
 import { getPrisma } from "@/lib/db/prisma";
 import { recordAuditEvent } from "@/lib/audit/audit-service";
 import { buildExecutiveSummary, type ExecutiveSummary } from "../summary";
-import { resolveCompletedDay, lastCompletedBusinessDay } from "../period";
+import {
+  buildTomorrowsPriorities,
+  PRIORITY_RULES_VERSION,
+  type PrioritiesDb,
+} from "../priorities";
+import {
+  businessDayWindow,
+  lastCompletedBusinessDay,
+  nextBusinessDay,
+  resolveCompletedDay,
+} from "../period";
 import type { ExecutiveScope } from "../contract";
 import {
   CALC_VERSION,
   FIRST_VERSION,
   coverageOf,
   type GenerationOutcome,
+  type FrozenPriorities,
   type SectionCoverage,
   type StoredReport,
 } from "./contract";
@@ -90,7 +101,80 @@ function toStored(row: Row): StoredReport {
         ? null
         : String(row.regenerationReason),
     snapshot: row.snapshot as unknown as ExecutiveSummary,
+    priorities: (row.prioritySnapshot ?? null) as FrozenPriorities | null,
   };
+}
+
+/**
+ * Compute the priority list for the day after the reported day, and freeze it.
+ *
+ * READ CONSISTENCY. The five priority sources are five separate queries. Run
+ * loose, they can each see a different instant, and the frozen list would be a
+ * composite of states that never existed together — a task counted as open
+ * beside a follow-up that was already handled. They are therefore read inside
+ * ONE transaction at REPEATABLE READ, so every source answers from the same
+ * database snapshot. That is also what makes `observedAtIso` meaningful: one
+ * instant, not five.
+ *
+ * It never throws. A priority source that cannot be read leaves the report
+ * without a list rather than losing the report, and `null` is recorded — which
+ * a reader must read as "not recorded", never as "nothing was due".
+ */
+async function freezePriorities(args: {
+  scope: ExecutiveScope;
+  anchorDay: ReturnType<typeof businessDayWindow>;
+  targetDay: ReturnType<typeof businessDayWindow>;
+  reportBusinessDate: string;
+  /** The pass instant, injected. Never `Date.now()` read here — see below. */
+  observedAtMs: number;
+  client: unknown;
+}): Promise<FrozenPriorities | null> {
+  const { scope, anchorDay, targetDay, reportBusinessDate, observedAtMs } = args;
+  const tx = (args.client ?? null) as {
+    $transaction?: (fn: (c: unknown) => Promise<unknown>, opts?: unknown) => Promise<unknown>;
+  } | null;
+  if (!tx?.$transaction) return null;
+
+  // The pass instant, INJECTED rather than read from the wall clock here.
+  // The first cut called `Date.now()` inside this function, which made the
+  // frozen list depend on a clock the caller could not control — untestable,
+  // and in a correction it would disagree with the instant everything else in
+  // the pass is stamped with.
+  //
+  // It is recorded in its own field and never inferred from the envelope: a
+  // correction written days later observes TODAY's rows, and a reader must be
+  // able to see that from the list itself rather than deducing it.
+
+  try {
+    const built = (await tx.$transaction(
+      async inner =>
+        buildTomorrowsPriorities({
+          scope,
+          nowMs: observedAtMs,
+          anchorDay,
+          client: inner as PrioritiesDb,
+        }),
+      { isolationLevel: "RepeatableRead" },
+    )) as Awaited<ReturnType<typeof buildTomorrowsPriorities>>;
+
+    return {
+      reportBusinessDate,
+      targetBusinessDate: targetDay.dateKey,
+      timeZone: scope.timeZone,
+      targetEndIso: new Date(targetDay.endMs).toISOString(),
+      observedAtIso: new Date(observedAtMs).toISOString(),
+      rulesVersion: PRIORITY_RULES_VERSION,
+      config: built.config,
+      // A pass that runs after the target day has already ended produces a
+      // record of what was outstanding, not advice for tomorrow. The surface
+      // reads this flag rather than comparing dates itself.
+      late: observedAtMs >= targetDay.endMs,
+      list: built.priorities,
+      basis: "OBSERVED_AT_GENERATION",
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -165,6 +249,33 @@ export async function generateDailyReport(args: {
 
   const coverage = coverageOf(summary);
 
+  // ── The FROZEN priority list for the day after the reported day ───────────
+  //
+  // Computed here, in the generating pass, because it cannot be computed
+  // later: `ErpTask.status`, `.priority`, `.dueDate` and `Party.nextActionAt`
+  // are mutable columns with no history, so a list built tomorrow from a date
+  // filter would be today's rows wearing yesterday's date. Freezing what was
+  // observed is the only honest record, and `observedAtIso` says when.
+  //
+  // The anchor is the REPORTED day, not the pass's own "today". This pass runs
+  // after that day has ended, so by its clock `businessDayOf(now)` is already
+  // the next day and the horizon would land a day too far: a report about
+  // Monday would carry Wednesday's list.
+  const anchorDay = businessDayWindow({
+    dateKey: target,
+    timeZone: scope.timeZone,
+    cutoffMinutes: scope.dayCutoffMinutes,
+  });
+  const targetDay = nextBusinessDay(anchorDay);
+  const priorities = await freezePriorities({
+    scope,
+    anchorDay,
+    targetDay,
+    reportBusinessDate: target,
+    observedAtMs: nowMs,
+    client,
+  });
+
   const data = {
     organizationId: scope.organizationId,
     businessDate: target,
@@ -181,6 +292,7 @@ export async function generateDailyReport(args: {
     calcVersion: CALC_VERSION,
     snapshot: summary as unknown as Record<string, unknown>,
     sourceCoverage: coverage as unknown as Record<string, unknown>,
+    prioritySnapshot: priorities as unknown as Record<string, unknown> | null,
     supersedesVersion: existing ? Number(existing.version) : null,
     regeneratedBy: args.correction?.actorUserId ?? null,
     regenerationReason: args.correction?.reason ?? null,

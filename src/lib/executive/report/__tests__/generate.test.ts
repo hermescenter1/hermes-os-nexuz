@@ -22,6 +22,11 @@ const h = vi.hoisted(() => ({
   prismaMissing: false,
   audits: [] as Array<Record<string, unknown>>,
   seq: 0,
+  /** Live rows the priority sources read. Edited AFTER a pass, on purpose. */
+  live: { party: [] as Row[] },
+  txIsolation: null as unknown,
+  txCalls: 0,
+  txThrows: false,
 }));
 
 /** A unique-key-enforcing fake of the report table. */
@@ -75,8 +80,33 @@ const reportDelegate = {
   },
 };
 
+/** The five priority sources. Only `party` carries rows in these tests. */
+const emptyDelegate = { async findMany() { return []; } };
+const partyDelegate = {
+  async findMany() {
+    // A COPY, as a real driver returns: a test that handed back the live
+    // object could not tell a frozen snapshot from a live reference.
+    return h.live.party.map(r => ({ ...r }));
+  },
+};
+
+const prismaFake = {
+  executiveDailyReport: reportDelegate,
+  erpTask: emptyDelegate,
+  erpWorkOrder: emptyDelegate,
+  erpApprovalRequest: emptyDelegate,
+  assetAlert: emptyDelegate,
+  party: partyDelegate,
+  async $transaction(fn: (c: unknown) => Promise<unknown>, opts?: unknown) {
+    h.txCalls += 1;
+    h.txIsolation = (opts as { isolationLevel?: unknown } | undefined)?.isolationLevel ?? null;
+    if (h.txThrows) throw new Error("pool exhausted");
+    return fn(prismaFake);
+  },
+};
+
 vi.mock("@/lib/db/prisma", () => ({
-  getPrisma: async () => (h.prismaMissing ? null : { executiveDailyReport: reportDelegate }),
+  getPrisma: async () => (h.prismaMissing ? null : prismaFake),
 }));
 
 vi.mock("@/lib/executive/summary", () => ({
@@ -106,7 +136,7 @@ const SUMMARY = {
   range: "today",
   period: { current: {}, baseline: {} },
   timeZone: TZ,
-  authority: { operations: true, financial: true, industrial: true },
+  authority: { operations: true, financial: true, industrial: true, customers: true },
   sections: {
     operations: { status: "OPERATIONAL", data: { metrics: [] }, reasonKey: null },
     financial: { status: "OPERATIONAL", data: { metrics: [], ledgerAvailable: false }, reasonKey: null },
@@ -125,7 +155,7 @@ const scope = (over: Partial<ExecutiveScope> = {}): ExecutiveScope =>
     organizationId: ORG,
     memberId: "m-1",
     role: "OWNER",
-    authority: { operations: true, financial: true, industrial: true },
+    authority: { operations: true, financial: true, industrial: true, customers: true },
     allowedSiteIds: [],
     timeZone: TZ,
     dayCutoffMinutes: 0,
@@ -141,6 +171,10 @@ beforeEach(() => {
   h.prismaMissing = false;
   h.audits = [];
   h.seq = 0;
+  h.live = { party: [] };
+  h.txIsolation = null;
+  h.txCalls = 0;
+  h.txThrows = false;
 });
 
 describe("it reports the last FINISHED day, never the one in progress", () => {
@@ -382,5 +416,101 @@ describe("a claim that reached nobody can be given back (slice F)", () => {
 
   it("releases nothing for a night that was never reported", async () => {
     expect(await release(NOW)).toBe(false);
+  });
+});
+
+/* ── The frozen priority list (requirement row 8) ──────────────────────────── */
+
+describe("the nightly pass freezes a priority list it OBSERVED", () => {
+  /** One customer whose promised follow-up is already overdue. */
+  const overdueCustomer = (over: Record<string, unknown> = {}) => ({
+    id: "c1",
+    displayName: "Pars Steel",
+    nextActionAt: new Date(NOW - 3 * 86_400_000),
+    createdAt: new Date(NOW - 40 * 86_400_000),
+    ...over,
+  });
+
+  it("reads every priority source inside ONE repeatable-read transaction", async () => {
+    h.live.party = [overdueCustomer()];
+    await generateDailyReport({ scope: scope(), nowMs: NOW });
+
+    // Five queries that each saw a different instant would freeze a composite
+    // of states that never existed together.
+    expect(h.txCalls).toBe(1);
+    expect(h.txIsolation).toBe("RepeatableRead");
+  });
+
+  it("stores the list with its own observation time, the target day and the rules version", async () => {
+    h.live.party = [overdueCustomer()];
+    const out = await generateDailyReport({ scope: scope(), nowMs: NOW });
+    expect(out.kind).toBe("CREATED");
+    const p = out.kind === "CREATED" ? out.report.priorities : null;
+    expect(p).not.toBeNull();
+
+    expect(p!.basis).toBe("OBSERVED_AT_GENERATION");
+    expect(p!.rulesVersion).toBe("priority-rules-2");
+    // The day AFTER the reported day, not after the pass's own clock.
+    expect(p!.reportBusinessDate).toBe(out.kind === "CREATED" ? out.report.businessDate : "");
+    expect(p!.targetBusinessDate > p!.reportBusinessDate).toBe(true);
+    // The observation time is its own field, not a copy of the record's.
+    expect(typeof p!.observedAtIso).toBe("string");
+    expect(p!.list.status).toBe("OPERATIONAL");
+    expect(p!.list.data!.items.map(i => i.reason.ruleId)).toEqual(["FOLLOW_UP_OVERDUE"]);
+  });
+
+  it("does NOT change a stored snapshot when the live row changes afterwards", async () => {
+    h.live.party = [overdueCustomer()];
+    const first = await generateDailyReport({ scope: scope(), nowMs: NOW });
+    const frozenTitle =
+      first.kind === "CREATED" ? first.report.priorities!.list.data!.items[0].title : "";
+    expect(frozenTitle).toBe("Pars Steel");
+
+    // The follow-up is rescheduled and the customer renamed, exactly as a
+    // user would do the next morning. The stored night must not move.
+    h.live.party = [overdueCustomer({ displayName: "Renamed", nextActionAt: new Date(NOW + 99 * 86_400_000) })];
+
+    const stored = h.rows[0].prioritySnapshot as { list: { data: { items: { title: string }[] } } };
+    expect(stored.list.data.items[0].title).toBe("Pars Steel");
+    expect(stored.list.data.items).toHaveLength(1);
+  });
+
+  it("records no list, rather than an empty one, when the sources cannot be read", async () => {
+    // A report without priority sources is still a report. `null` must be
+    // read as "not recorded", never as "nothing was due".
+    h.live.party = [overdueCustomer()];
+    h.txThrows = true;
+    const out = await generateDailyReport({ scope: scope(), nowMs: NOW });
+    expect(out.kind).toBe("CREATED");
+    expect(out.kind === "CREATED" ? out.report.priorities : undefined).toBeNull();
+  });
+
+  it("gives a correction its OWN observation time and keeps the original", async () => {
+    h.live.party = [overdueCustomer()];
+    const first = await generateDailyReport({ scope: scope(), nowMs: NOW });
+    const firstObserved = first.kind === "CREATED" ? first.report.priorities!.observedAtIso : "";
+
+    // Days later the rows have moved on, and the night is restated.
+    h.live.party = [overdueCustomer({ id: "c2", displayName: "Someone Else" })];
+    const corrected = await generateDailyReport({
+      scope: scope(),
+      nowMs: NOW + 3 * 86_400_000,
+      businessDate: first.kind === "CREATED" ? first.report.businessDate : undefined,
+      correction: { actorUserId: "u-1", reason: "restated" },
+    });
+
+    expect(corrected.kind).toBe("CORRECTED");
+    const second = corrected.kind === "CORRECTED" ? corrected.report.priorities! : null;
+    expect(second).not.toBeNull();
+    // It discloses that it looked at a LATER state, rather than inheriting
+    // the original's observation time.
+    expect(second!.observedAtIso).not.toBe(firstObserved);
+    expect(second!.list.data!.items[0].title).toBe("Someone Else");
+
+    // And the original is still there, untouched, as version 1.
+    expect(h.rows).toHaveLength(2);
+    const original = h.rows.find(r => r.version === 1)!;
+    const originalList = original.prioritySnapshot as { list: { data: { items: { title: string }[] } } };
+    expect(originalList.list.data.items[0].title).toBe("Pars Steel");
   });
 });

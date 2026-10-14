@@ -148,6 +148,9 @@ export const POST_PHASE102_MIGRATIONS = [
   // summary's period counts, nothing else. Declared for the same reason as the
   // lines above: an undeclared row would fail the era-count equality.
   "20261013180000_executive_customer_count_indexes",
+  // Executive Management Center — one nullable Json column for the frozen
+  // priority list. Declared for the same reason as the lines above.
+  "20261014160000_executive_report_priorities",
 ];
 
 /**

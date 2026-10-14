@@ -20,7 +20,8 @@
  */
 
 import type { ExecutiveSummary } from "../summary";
-import type { SectionStatus } from "../contract";
+import type { ExecutiveSection, SectionStatus } from "../contract";
+import type { PriorityConfig, PriorityList } from "../priorities";
 
 /**
  * The deterministic calculation version.
@@ -33,11 +34,14 @@ import type { SectionStatus } from "../contract";
  * It is NOT the product version and NOT the schema version. It changes only
  * when the arithmetic does.
  */
+// exec-report-3: the report gained a FROZEN priority list for the day after
+// the reported day. A report carrying exec-report-2 or earlier has none at
+// all, and a reader must not infer "there was nothing to do" from its absence.
 // exec-report-2 (slice G3): the snapshot gained the customers section, which
 // the organization had no tenant-scoped source for before. A report carrying
 // exec-report-1 has no customer figures at all; that is a different
 // calculation, so comparing the two as a trend would be wrong.
-export const CALC_VERSION = "exec-report-2";
+export const CALC_VERSION = "exec-report-3";
 
 /** The first version of any night. A correction is this + 1, never an edit. */
 export const FIRST_VERSION = 1;
@@ -81,9 +85,63 @@ export interface ReportEnvelope {
   readonly regenerationReason: string | null;
 }
 
+/**
+ * The priority list a nightly pass froze, and everything a reader needs in
+ * order to know what it is a list OF.
+ *
+ * WHAT THIS IS NOT. It is not the ranking as it stood at the data cutoff. The
+ * sources have no history: `ErpTask.status`, `.priority` and `.dueDate`, and
+ * `Party.nextActionAt`, are mutable columns with no trail, so the state at an
+ * earlier instant cannot be reconstructed from them — a date filter returns
+ * TODAY's rows filtered by date, which is a different thing wearing the same
+ * shape. Freezing the list when it is computed is therefore the only honest
+ * record, and `observedAtIso` says exactly when that was.
+ */
+export interface FrozenPriorities {
+  /** The day the REPORT is about. */
+  readonly reportBusinessDate: string;
+  /** The day the list is FOR: the day after the reported day, never the day
+   *  after the pass happened to run. */
+  readonly targetBusinessDate: string;
+  readonly timeZone: string;
+  /** End of the target day, as an instant. */
+  readonly targetEndIso: string;
+  /**
+   * When the ROWS WERE READ. Deliberately separate from the envelope's
+   * `generatedAtIso`: the record's creation time is not the data's
+   * observation time, and a correction written days later would make the two
+   * differ by days.
+   */
+  readonly observedAtIso: string;
+  /** Which ranking rules produced this ordering (`PRIORITY_RULES_VERSION`). */
+  readonly rulesVersion: string;
+  /** The thresholds in force, so the reasons can be read back literally. */
+  readonly config: PriorityConfig;
+  /**
+   * True when the target day had ALREADY ENDED by `observedAtIso` — a late
+   * pass. Such a list is a record of what was outstanding, never a
+   * recommendation for tomorrow, and the surface must say so.
+   */
+  readonly late: boolean;
+  /** The list itself, with every item's tier, rule and reason. */
+  readonly list: ExecutiveSection<PriorityList>;
+  /**
+   * Stated in the data, not only in a document: this list was observed, not
+   * reconstructed. Any future mechanism that CAN reconstruct a cutoff state
+   * must use a different value here rather than silently reuse this one.
+   */
+  readonly basis: "OBSERVED_AT_GENERATION";
+}
+
 /** A stored report: its envelope plus the frozen summary it froze. */
 export interface StoredReport extends ReportEnvelope {
   readonly snapshot: ExecutiveSummary;
+  /**
+   * Null for every report written before `exec-report-3`, and for a pass that
+   * could not read the priority sources. Absence means "not recorded", never
+   * "nothing was due".
+   */
+  readonly priorities: FrozenPriorities | null;
 }
 
 /** One row of the archive listing. Carries no snapshot — the list stays cheap. */

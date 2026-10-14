@@ -8744,6 +8744,13 @@ model ExecutiveDailyReport {
   /// Which sections answered and which did not, each with its stated reason, so
   /// a gap in the report is attributable rather than invisible.
   sourceCoverage     Json
+  /// The FROZEN priority list for the day after the reported day, observed when
+  /// this report was generated. NULL for every report written before
+  /// `exec-report-3`, and for a pass that could not read the priority sources —
+  /// absence means "not recorded", never "nothing was due". A separate column
+  /// rather than a key inside `snapshot`, so the meaning of an existing column
+  /// never changes under reports already written.
+  prioritySnapshot   Json?
 
   /// Claimed exactly once, by whichever replica won the conditional update, so
   /// a retried or concurrent run cannot notify twice.
