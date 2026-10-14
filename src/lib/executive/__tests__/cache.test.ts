@@ -109,7 +109,11 @@ describe("executive summary cache — the key separates readers who may see diff
   });
 
   it("gives a different key for a different range and for a different generation", () => {
-    expect(keyOf(base, "week")).not.toBe(keyOf(base, "today"));
+    // Every range the contract actually defines, against "today". A string the
+    // union does not contain would type-check nowhere and prove nothing.
+    expect(keyOf(base, "last7Days")).not.toBe(keyOf(base, "today"));
+    expect(keyOf(base, "last30Days")).not.toBe(keyOf(base, "today"));
+    expect(keyOf(base, "last30Days")).not.toBe(keyOf(base, "last7Days"));
     expect(keyOf(base, "today", 1)).not.toBe(keyOf(base, "today", 0));
   });
 
@@ -198,9 +202,15 @@ describe("executive summary cache — serving, ageing and expiry", () => {
     const scope = scopeOf({ organizationId: nextOrg() });
     const b = builder();
     await readExecutiveSummary({ scope, range: "today", nowMs: NOW, build: b.build });
-    const week = await readExecutiveSummary({ scope, range: "week", nowMs: NOW, build: b.build });
+    const week = await readExecutiveSummary({ scope, range: "last7Days", nowMs: NOW, build: b.build });
     expect(week.cache.hit).toBe(false);
-    expect(b.calls).toBe(2);
+    const month = await readExecutiveSummary({ scope, range: "last30Days", nowMs: NOW, build: b.build });
+    expect(month.cache.hit).toBe(false);
+    expect(b.calls).toBe(3);
+    // And each is then served from its OWN entry, not from the newest one.
+    expect((await readExecutiveSummary({ scope, range: "today", nowMs: NOW, build: b.build })).cache.hit).toBe(true);
+    expect((await readExecutiveSummary({ scope, range: "last7Days", nowMs: NOW, build: b.build })).cache.hit).toBe(true);
+    expect(b.calls).toBe(3);
   });
 });
 
