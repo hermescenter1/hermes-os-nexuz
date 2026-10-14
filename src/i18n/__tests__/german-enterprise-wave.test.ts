@@ -268,7 +268,21 @@ describe("87L.6E — terminology contract (§3–§12)", () => {
   });
 
   it("Admin uses the required administration vocabulary (§7)", () => {
-    expect(t("admin.title")).toBe("Verwaltungskonsole");
+    // CONTRACT CHANGE, 2026-10-14, approved by the owner and scoped to naming
+    // and navigation. §7 pinned "Verwaltungskonsole" when /admin was the only
+    // management surface in the product. It no longer is: the Executive
+    // Management Centre (executive.title, "Zentrale der Geschäftsleitung" /
+    // «مرکز مدیریت اجرایی») was built this season, and in Persian both
+    // surfaces read as «مدیریت» — with the reader reaching the wrong one first.
+    //
+    // The evidence that the old word was wrong is inside the console itself:
+    // its own table is `Auditprotokoll` and its purpose is the audit trail and
+    // system status. It was an audit surface wearing a management name.
+    //
+    // This is a REPLACEMENT, so the namespace stays at its pinned 40 leaves and
+    // every count assertion in this file is untouched. Routes, permissions and
+    // the console's behaviour are unchanged — only the word.
+    expect(t("admin.title")).toBe("Prüfkonsole");
     expect(t("admin.table.heading")).toBe("Auditprotokoll");
     expect(t("admin.status.heading")).toBe("Systemstatus");
     expect(t("adminAccess.accessRequests")).toBe("Zugriffsanfragen");

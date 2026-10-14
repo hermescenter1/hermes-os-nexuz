@@ -3095,7 +3095,7 @@
   },
   "admin": {
     "eyebrow": "Operations",
-    "title": "Admin Console",
+    "title": "Audit Console",
     "lede": "Audit trail and system status for production accountability.",
     "metrics": {
       "storage": "Storage Mode",
@@ -10901,6 +10901,11 @@
     "eyebrow": "Management",
     "title": "Executive Management Center",
     "lede": "Today's position, the decisions waiting on you, and the records behind every figure.",
+    "adminBridge": {
+      "ariaLabel": "Executive Management Centre",
+      "lede": "This console is the audit trail. The organization's management figures, tomorrow's priorities and the nightly report archive are in the Executive Management Centre.",
+      "cta": "Open the Executive Management Centre"
+    },
     "ranges": {
       "today": "Today",
       "last7Days": "Last 7 days",
