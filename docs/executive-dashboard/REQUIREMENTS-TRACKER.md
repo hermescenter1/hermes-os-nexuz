@@ -109,7 +109,7 @@ production on the strength of one.
 
 | | |
 | --- | --- |
-| **Status** | `DEPLOYED` — rules, reasons and per-organization thresholds are in `cd6b1f5d`; overdue customer follow-ups are not yet a priority source, and the priorities are not yet part of the nightly report |
+| **Status** | `DEPLOYED` for the rules, reasons and per-organization thresholds (in `cd6b1f5d`); `VALIDATED` for overdue customer follow-ups as a fifth priority source (slice J, not merged). The priorities are still not part of the nightly report. |
 | **Evidence** | `/dashboard/executive/priorities`: nine ordered written rules, three tiers, a reason sentence per item, the rule set printed with the thresholds in force. Proven on an isolated database with five decoys absent; VIEWER sees an empty list with a stated reason per source. `STAGE-8-SLICE-D-TOMORROWS-PRIORITIES.md`. |
 | **Dependency** | Row 2 and row 5 feed it, but it can ship on today's sources |
 | **Acceptance** | A written, inspectable rule set over criticality, due date, lateness and pending approvals; configurable per organization; **every priority shows the reason it was ranked there**; no opaque score. |
@@ -192,6 +192,8 @@ Rows are taken in this order, smallest reviewable slice first:
    owner has chosen one by then. *Code and packaging done and tested; production start needs the owner.*
 5. **Slice G** — row 3, the tenant customer domain (new schema). *G1 and G2 merged and deployed; G3 (management view + nightly report) built and proven.*
 6. **Slice H** — rows 4 and 5, assets and the people dimension.
+8. **Slice J** — row 8, overdue customer follow-ups as a priority source, on a new
+   `customers` authority axis. *Implemented and validated on an isolated environment.*
 7. **Slice I** — row 11, the performance baseline. *Measured, indexed and cached on an isolated environment; no production figure.*
 8. **Slice J** — row 12's accessibility pass.
 
