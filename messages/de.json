@@ -10931,6 +10931,7 @@
     },
     "status": {
       "OPERATIONAL": "Aktiv",
+      "OPERATIONAL_RECORDED": "Erfasst",
       "EMPTY": "Noch keine Datensätze",
       "FORBIDDEN": "Für Ihre Rolle nicht verfügbar",
       "UNAVAILABLE": "Quelle nicht erreichbar",
@@ -11083,7 +11084,8 @@
       "notFound": "Für diesen Tag gibt es in dieser Organisation keinen Bericht.",
       "detailTitle": "Bericht vom {date}",
       "coverageComplete": "Alle Abschnitte haben geantwortet",
-      "coveragePartial": "{count, plural, one {# Abschnitt hat nicht geantwortet} other {# Abschnitte haben nicht geantwortet}}",
+      "coverageFailed": "{count, plural, one {# Quelle war nicht lesbar} other {# Quellen waren nicht lesbar}}",
+      "coverageNotAsked": "{count, plural, one {# Abschnitt wurde nicht abgefragt} other {# Abschnitte wurden nicht abgefragt}}",
       "frozenNotice": "Dies ist ein eingefrorener Bericht. Er zeigt die Zahlen zum unten genannten Datenstand, nicht den heutigen Stand.",
       "calcVersion": "Berechnungsfassung",
       "dataCutoff": "Datenstand",

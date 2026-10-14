@@ -27,6 +27,7 @@ import Link from "next/link";
 import { PageStatusBadge } from "@/components/ui/PageHeader";
 import { formatDateTime, formatNumber, INVALID_DISPLAY } from "@/lib/i18n/format";
 import type { ExecutiveCacheState } from "@/lib/executive/cache";
+import { statusLabelKey } from "@/lib/executive/status-label";
 import type {
   ExecutiveMetric,
   ExecutiveSection,
@@ -269,15 +270,17 @@ function ActionCenter({
   section,
   t,
   locale,
+  frozen,
 }: {
   section: ExecutiveSection<readonly DecisionItem[]>;
   t: T;
   locale: string;
+  frozen: boolean;
 }) {
   return (
     <Panel
       title={t("sections.actions")}
-      badge={<PageStatusBadge label={t(`status.${section.status}`)} variant={STATUS_VARIANT[section.status]} />}
+      badge={<PageStatusBadge label={statusLabel(section.status, frozen, t)} variant={STATUS_VARIANT[section.status]} />}
     >
       <SectionBody section={section} t={t}>
         {items =>
@@ -438,6 +441,15 @@ function RangeSelector({
   );
 }
 
+/**
+ * The status word a reader should see, which is NOT the same word on the live
+ * screen and in the archive. The rule itself lives in
+ * `@/lib/executive/status-label` so it can be tested without a DOM.
+ */
+function statusLabel(status: SectionStatus, frozen: boolean, t: T): string {
+  return t(statusLabelKey(status, frozen) as never);
+}
+
 /* ── the view ─────────────────────────────────────────────────────────────── */
 
 /**
@@ -588,7 +600,7 @@ export async function ExecutiveSummaryView({
 
       {/* LAYER B first on the screen: what needs a decision outranks what is
           merely true. */}
-      <ActionCenter section={summary.actions} t={t} locale={locale} />
+      <ActionCenter section={summary.actions} t={t} locale={locale} frozen={frozen !== undefined} />
 
       {/* LAYER A */}
       <Panel
@@ -596,7 +608,7 @@ export async function ExecutiveSummaryView({
         lede={t("sectionLede.operations")}
         badge={
           <PageStatusBadge
-            label={t(`status.${operations.status}`)}
+            label={statusLabel(operations.status, frozen !== undefined, t)}
             variant={STATUS_VARIANT[operations.status]}
           />
         }
@@ -611,7 +623,7 @@ export async function ExecutiveSummaryView({
         lede={t("sectionLede.financial")}
         badge={
           <PageStatusBadge
-            label={t(`status.${financial.status}`)}
+            label={statusLabel(financial.status, frozen !== undefined, t)}
             variant={STATUS_VARIANT[financial.status]}
           />
         }
@@ -634,7 +646,7 @@ export async function ExecutiveSummaryView({
         lede={t("sectionLede.industrial")}
         badge={
           <PageStatusBadge
-            label={t(`status.${industrial.status}`)}
+            label={statusLabel(industrial.status, frozen !== undefined, t)}
             variant={STATUS_VARIANT[industrial.status]}
           />
         }
@@ -654,7 +666,7 @@ export async function ExecutiveSummaryView({
         lede={t("sectionLede.customers")}
         badge={
           <PageStatusBadge
-            label={t(`status.${customers.status}`)}
+            label={statusLabel(customers.status, frozen !== undefined, t)}
             variant={STATUS_VARIANT[customers.status]}
           />
         }

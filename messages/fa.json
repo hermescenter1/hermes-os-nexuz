@@ -10931,6 +10931,7 @@
     },
     "status": {
       "OPERATIONAL": "زنده",
+      "OPERATIONAL_RECORDED": "ثبت‌شده",
       "EMPTY": "هنوز رکوردی ثبت نشده",
       "FORBIDDEN": "برای نقش شما در دسترس نیست",
       "UNAVAILABLE": "منبع در دسترس نیست",
@@ -11083,7 +11084,8 @@
       "notFound": "برای آن روز در این سازمان گزارشی وجود ندارد.",
       "detailTitle": "گزارش {date}",
       "coverageComplete": "همه بخش‌ها پاسخ دادند",
-      "coveragePartial": "{count, plural, one {# بخش پاسخ نداد} other {# بخش پاسخ ندادند}}",
+      "coverageFailed": "{count, plural, one {# منبع خوانده نشد} other {# منبع خوانده نشد}}",
+      "coverageNotAsked": "{count, plural, one {# بخش پرسیده نشد} other {# بخش پرسیده نشد}}",
       "frozenNotice": "این یک گزارش ثابت است. ارقام را همان‌گونه که در cutoff داده زیر بوده نشان می‌دهد، نه وضعیت کنونی.",
       "calcVersion": "نسخه محاسبات",
       "dataCutoff": "cutoff داده",
