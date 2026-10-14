@@ -9,14 +9,25 @@ its acceptance criterion has been met **and** the evidence column names where
 that was shown. "Built" is not "done": a surface with no evidence stays
 `PARTIAL`.
 
-Status vocabulary:
+Status vocabulary — FOUR SEPARATE STATES, because "it works on my machine",
+"a test proves it", "it is on the server" and "somebody checked it there" are
+four different claims and must never be collapsed:
 
-| Status | Meaning |
+| State | Meaning |
 | --- | --- |
-| `DONE` | Acceptance criterion met and evidenced. |
-| `PARTIAL` | Some of the requirement ships; the rest is named in the row. |
-| `NOT_STARTED` | No implementation exists yet. |
-| `BLOCKED` | Cannot proceed without something outside this repository. |
+| `IMPLEMENTED` | The code exists and is reviewable. Nothing is claimed about whether it works. |
+| `VALIDATED` | Proven on an isolated environment: named tests pass and the behaviour was observed against a real database. Still says nothing about production. |
+| `DEPLOYED` | The commit carrying it is the one production runs — asserted by ancestry against the deploy run's SHA, not by a redirect, a page load or a merge. |
+| `VERIFIED_IN_PRODUCTION` | Someone exercised it in production, authenticated where the surface is authenticated, and the evidence is named here. |
+
+A row carries the HIGHEST state it has reached, and the states below it are
+implied. `BLOCKED` and `NOT_STARTED` keep their plain meanings.
+
+**Deployed ≠ verified.** An anonymous request that redirects to the sign-in page
+proves only that the path is protected: on 2026-10-13 a route that does not
+exist at all (`/en/dashboard/this-route-does-not-exist`) answered with exactly
+the same 307, which is why the customer pages are not recorded as verified in
+production on the strength of one.
 
 ---
 
@@ -24,7 +35,7 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `PARTIAL` |
+| **Status** | `DEPLOYED` (the live view), `VALIDATED` for everything added since |
 | **Evidence** | `STAGE-2-SLICE-A.md`; `visual-evidence/{fa,en}-desktop-live.jpg`; live run against an isolated database showing OWNER 2 alerts / 3 plants vs a site-scoped VIEWER 1 / 1 |
 | **Dependency** | — |
 | **Acceptance** | Three layers (today's position, items awaiting a decision, drill-down to records); every figure states definition, source, period and last update; absence rendered as `EMPTY` / `NO_SOURCE` / `UNAVAILABLE` / `FORBIDDEN`, never as health; every drill-down re-checks permission. |
@@ -34,7 +45,7 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `PARTIAL` — oversight half shipped by slice C; ledger half not started |
+| **Status** | `DEPLOYED` for the oversight half (in `cd6b1f5d`); the ledger half is `NOT_STARTED` |
 | **Evidence** | Gap analysed in `STAGE-5-GAPS-AND-NEXT-SLICE.md`: no `JournalEntry` / `Ledger` / `Voucher` / `Receivable` / `Payable` among the models, `Invoice.subscriptionId` is required, and **no exchange-rate model exists anywhere** |
 | **Dependency** | Owner's decision on scope of a ledger domain; none for the oversight slice |
 | **Acceptance** | Recorded cost in the period **grouped per currency** (never summed across currencies), who recorded it, approvals awaiting a decision by role and age, approvals decided with actor and time, budget vs recorded cost per project, and a permanent statement of what is *not* covered. Real rows only. |
@@ -45,7 +56,7 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `DONE` on an isolated database — G1 and G2 MERGED (PRs #138, #141) and DEPLOYED in `cd6b1f5d`; G3 (the management view and the nightly report) built and proven, not yet merged |
+| **Status** | `DEPLOYED` for the data and API (G1, in `cd6b1f5d`); `VALIDATED` for the pages (G2) and the management-view section (G3), both merged into `b461ac97` and awaiting the deploy of that commit. **Not** `VERIFIED_IN_PRODUCTION`: nobody has signed in there and used them yet. |
 | **Slice G1** | `STAGE-11-SLICE-G1-CUSTOMERS-DATA.md`: tenant-owned `Party` (the counterparty the accounting plan names for A2, so no parallel customer model) + append-only `PartyInteraction` + `ErpProject.partyId`, all linked by **composite** `(organizationId, partyId)` foreign keys so a cross-tenant link cannot be stored; `/api/tenant/customers/**` (8 handlers, `TENANT_MEMBER`); `view_customers`/`manage_customers` for OWNER/ADMIN/MANAGER; versioned edits, archive not delete, audited writes without PII |
 | **Evidence** | `CrmAccount.organizationId` and `CustomerAccount.organizationId` are both `@unique`, and `CrmOpportunity` has no tenant column at all — so no tenant can have many customers today |
 | **Dependency** | A new `TenantCustomer` domain (schema + migration + RBAC + UI) |
@@ -59,7 +70,7 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `PARTIAL` |
+| **Status** | `DEPLOYED` for what exists; assets are `NOT_STARTED` |
 | **Evidence** | Plants-and-connectivity section with per-plant freshness (`Delayed` / `Never reported`), gateway counts, open critical alerts, and a data-quality block naming each gap |
 | **Dependency** | — |
 | **Acceptance** | Above, plus asset-level coverage (registry counts, criticality, health) reaching the management view. |
@@ -69,7 +80,7 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `PARTIAL` |
+| **Status** | `DEPLOYED` for what exists; the people dimension and an actionable queue are `NOT_STARTED` |
 | **Evidence** | Operations section: active projects, overdue tasks, open work orders, approvals awaiting a decision, approvals decided, tasks completed |
 | **Dependency** | — |
 | **Acceptance** | Above, plus the people dimension (who owns what, who is blocking) and an approvals queue a manager can act on rather than a count. |
@@ -79,7 +90,7 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `DONE` |
+| **Status** | `DEPLOYED` (the mechanism); its production SCHEDULE is row 10 |
 | **Evidence** | `STAGE-4-SLICE-B-NIGHTLY-REPORT.md`, `STAGE-6-REVALIDATION.md` §2–§5; live: `created:3 / notified:3`, two concurrent passes refused by the lease, then `alreadyReported:3 / notified:0`; 3 notifications after 4 passes; archive shows one tenant's row out of three |
 | **Dependency** | Row 10 for the *scheduled* execution — the report mechanism is done, its production schedule is not |
 | **Slice G3** | The snapshot now carries the organization's customers for the day it reports on; `CALC_VERSION` moved to `exec-report-2` so a report without customer figures is never compared with one that has them. |
@@ -89,7 +100,7 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `DONE` on an isolated database — slice E, not yet merged or deployed |
+| **Status** | `DEPLOYED` — merged (#136) and carried by `cd6b1f5d` |
 | **Evidence** | `STAGE-9-SLICE-E-ORGANIZATION-SETTINGS.md`: `ExecutiveSettings` table (one row per organization, database CHECKs proven by raw inserts), `/dashboard/executive/settings` with an owner/admin-only versioned and audited write; live: ZHARFA set to Europe/Berlin 06:00, the management view and priorities cut in Berlin, and one nightly pass produced **2026-10-11 (Berlin, 04:00Z window)** for ZHARFA and **2026-10-12 (Tehran)** for the others while the earlier reports kept Asia/Tehran; `visual-evidence/{en-desktop,fa-mobile}-settings.jpg` |
 | **Dependency** | — (the environment variables remain the fallback for organizations with no row) |
 | **Acceptance** | Each organization sets its own zone and cutoff; the worker honours it per tenant; existing reports keep the zone they were generated with, because the report already stores it. |
@@ -98,7 +109,7 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `PARTIAL` — rules, reasons and validated parameters shipped by slice D; per-organization thresholds by slice E (live: a 2-day threshold brought a 2-day approval into the list); not yet part of the nightly report |
+| **Status** | `DEPLOYED` — rules, reasons and per-organization thresholds are in `cd6b1f5d`; overdue customer follow-ups are not yet a priority source, and the priorities are not yet part of the nightly report |
 | **Evidence** | `/dashboard/executive/priorities`: nine ordered written rules, three tiers, a reason sentence per item, the rule set printed with the thresholds in force. Proven on an isolated database with five decoys absent; VIEWER sees an empty list with a stated reason per source. `STAGE-8-SLICE-D-TOMORROWS-PRIORITIES.md`. |
 | **Dependency** | Row 2 and row 5 feed it, but it can ship on today's sources |
 | **Acceptance** | A written, inspectable rule set over criticality, due date, lateness and pending approvals; configurable per organization; **every priority shows the reason it was ranked there**; no opaque score. |
@@ -107,7 +118,7 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `PARTIAL` |
+| **Status** | `DEPLOYED` for the in-app channel; the external channel is `BLOCKED` on the owner's choice |
 | **Evidence** | In-app notification via the existing `NotificationService`, claimed once per report, carrying no figures |
 | **Dependency** | **Owner must choose the channel and supply its credential** (email transport, or another channel) |
 | **Acceptance** | The chosen channel is configured, a real delivery is evidenced, and failure to deliver is visible rather than silent. |
@@ -118,7 +129,7 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `PARTIAL` — runner correct for any number of tenants and packaged like every other worker (slice F, not yet merged); **not scheduled in production** |
+| **Status** | `DEPLOYED` (the runner, its image stage and its compose service are in `cd6b1f5d`); **the service is not started and no scheduled run has happened**, so this row stays OPEN |
 | **Evidence** | `STAGE-10-SLICE-F-RUNNER.md`: cursor-chained sweep (120 organizations in batches of 50 each visited exactly once, org 51 included), lease renewed and released, Dockerfile stage + compose service `hermes-executive-report-worker` + one-file `.dockerignore` re-include, runner executed against a stub (three-pass chain, exit 2 without a token, exit 1 on 401, clean exit) |
 | **Dependency** | A compose service or host timer, plus `EXECUTIVE_REPORT_WORKER_TOKEN` in the production environment |
 | **Closed in slice F** | The first-50-organizations limit (cursor), the lease never released or renewed, and the Windows `UV_HANDLE_CLOSING` exit (`process.exitCode`). |
@@ -131,16 +142,18 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `NOT_STARTED` |
-| **Evidence** | — (no latency figure has been claimed anywhere) |
+| **Status** | `VALIDATED` on an isolated environment — baseline measured, one index added with before/after evidence, and a tenant-safe read-through cache built and tested. **Not** `DEPLOYED` and **not** measured in production. |
+| **Evidence** | `npm run perf:executive` against an isolated PostgreSQL (`STAGE-14-SLICE-I-PERFORMANCE.md`): p50 11.87 ms at 8,007 customers, 24.31 ms at 32,031, 35.71 ms at 64,063; payload flat at ~8.9 kB; doubling the rows costs ×1.37, not ×2. The statement count is proven CONSTANT deterministically in `summary.test.ts` (1 customer and 500 issue the identical number; the customer section is 8 counts, all organization-scoped). `EXPLAIN` found the "new customers in the period" count reading 64,063 rows to return 155; the new index turns it into an index-only scan, 5.704 ms → 0.083 ms, and the whole build 35.71 → 33.24 ms p50 at the same volume. The cache is covered by 19 cases in `cache.test.ts` plus two route cases. **No production latency has been measured or claimed.** |
 | **Dependency** | — |
 | **Acceptance** | A measured before/after baseline for the management view and the archive; any cache is tenant-safe and cannot serve one organization's figures to another. |
+| **Cache rules, each a test** | Read only AFTER the gate, with its output; the key separates organization, role, each authority axis, the site set, zone, cutoff, range and window start, and not the user; a committed write bumps a per-organization generation so nothing from before it is addressable; TTL 60 s is a ceiling and the entry is marked stale past half of it; every answer carries when it was computed and how old it is, and the screen prints it; an `UNAVAILABLE` answer is never stored, so recovery is immediate; the FROZEN nightly report never reads the cache, asserted at source level. |
+| **Open** | A production measurement (none exists). The cache under concurrency. The Redis path exercised against a real Redis — only the per-process fallback has been. The two remaining full-table counts if a tenant grows by another order of magnitude; the next lever there is a maintained counter, not an index. |
 
 ## 12. Full FA/EN UI, mobile and accessibility
 
 | | |
 | --- | --- |
-| **Status** | `PARTIAL` |
+| **Status** | `DEPLOYED` for the surfaces in `cd6b1f5d`, `VALIDATED` for the customer pages; the accessibility pass is `NOT_STARTED` |
 | **Evidence** | fa/en/de catalogues at three-way parity (gate total 8399); RTL and LTR screenshots desktop and mobile; the phone-width overflow defect found by measurement, fixed, and locked by a test |
 | **Dependency** | — |
 | **Acceptance** | Above, plus an accessibility pass: keyboard reachability of the action centre and archive, focus order, contrast, and the table semantics already present verified against a checklist. |
@@ -151,7 +164,7 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `PARTIAL` |
+| **Status** | `DEPLOYED` — three additive migrations applied in production (82 → 85), each rehearsed in CI on real PostgreSQL |
 | **Evidence** | One additive migration (82 → 83) classified `FORWARD_ONLY_REQUIRES_BACKUP` and rehearsed in CI on real PostgreSQL; tenant and site isolation proven live; `GET /api/executive/summary` is `TENANT_MEMBER`, `POST /api/executive/reports/run` is `PLATFORM_ADMIN` on its own credential; corrections write an `AuditLog` row |
 | **Slice E** | Second additive migration (`ExecutiveSettings`, declared in both Phase 102 lists); `PUT /api/executive/settings` classified `TENANT_MEMBER` through a registered guard token, origin and content type refused before the session is read, organization never taken from the body (proven live: a smuggled `organizationId` changed nothing in the other tenant), every change audited inside its own transaction with before/after. |
 | **Dependency** | Rows 2 and 3 add schema and must each extend this evidence |
@@ -161,7 +174,7 @@ Status vocabulary:
 
 | | |
 | --- | --- |
-| **Status** | `IN_PROGRESS` |
+| **Status** | `IN_PROGRESS` — production runs `cd6b1f5d`; the release carrying G2 and G3 (`b461ac97`) is dispatched and waiting for the environment reviewer |
 | **Evidence** | Production runs **`f65a1f42`** (deploy run 38366191733, 2026-10-13): backup evidence verified on the host, migrations 82 → 84 applied and verified (84/84, 0 unresolved), `hermes-web` recreated, post-deploy health gate passed (healthy after 15 s, restart_count 0, `/api/health/ready` status ready, database true). Confirmed from outside: `/api/health` ok, `/api/health/ready` ready, `/api/executive/*` 401 for an anonymous caller, `/fa` and `/en` dashboard routes redirect to sign-in. PRs #134–#138 merged in order, each at a verified head with its required checks green. |
 | **Dependency** | Every row above |
 | **Acceptance** | The deployed version is confirmed, migrations report clean, health and readiness pass, the FA/EN management view and the report archive are checked on production, tenant/site and financial permission limits are confirmed there, and anything without data reads as "no data source". |
@@ -179,7 +192,7 @@ Rows are taken in this order, smallest reviewable slice first:
    owner has chosen one by then. *Code and packaging done and tested; production start needs the owner.*
 5. **Slice G** — row 3, the tenant customer domain (new schema). *G1 and G2 merged and deployed; G3 (management view + nightly report) built and proven.*
 6. **Slice H** — rows 4 and 5, assets and the people dimension.
-7. **Slice I** — row 11, the performance baseline.
+7. **Slice I** — row 11, the performance baseline. *Measured, indexed and cached on an isolated environment; no production figure.*
 8. **Slice J** — row 12's accessibility pass.
 
 Rows 13 and 14 are not slices: every slice must extend them, and row 14 closes

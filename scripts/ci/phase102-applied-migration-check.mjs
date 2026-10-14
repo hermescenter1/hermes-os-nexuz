@@ -144,6 +144,10 @@ export const POST_PHASE102_MIGRATIONS = [
   // the same reason as the lines above: an undeclared row would fail the
   // era-count equality.
   "20261013090000_tenant_customers",
+  // Executive Management Center slice I - two indexes for the executive
+  // summary's period counts, nothing else. Declared for the same reason as the
+  // lines above: an undeclared row would fail the era-count equality.
+  "20261013180000_executive_customer_count_indexes",
 ];
 
 /**

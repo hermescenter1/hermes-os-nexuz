@@ -738,3 +738,50 @@ describe("the organization's own customers", () => {
     expect(queries.filter(q => q.model === "party" || q.model === "partyInteraction")).toHaveLength(0);
   });
 });
+
+/* ── Query cost (requirement row 11) ───────────────────────────────────────── */
+
+describe("the aggregation's cost does not grow with the number of rows", () => {
+  const manyParties = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      organizationId: ORG_A,
+      kind: "CUSTOMER",
+      status: "ACTIVE",
+      archivedAt: null,
+      nextActionAt: null,
+      followUpOwnerId: "user-1",
+      createdAt: new Date(NOW - 86_400_000),
+    }));
+
+  it("issues the SAME number of statements for 1 customer and for 500", async () => {
+    erpStore.party.length = 0;
+    erpStore.party.push(...manyParties(1));
+    queries.length = 0;
+    await run();
+    const one = queries.length;
+
+    erpStore.party.length = 0;
+    erpStore.party.push(...manyParties(500));
+    queries.length = 0;
+    await run();
+    const fiveHundred = queries.length;
+
+    // A per-row query would make this 500 times larger. This is the N+1 proof:
+    // deterministic, because the fake counts every statement exactly.
+    expect(one).toBeGreaterThan(5);
+    expect(fiveHundred).toBe(one);
+  });
+
+  it("reads the customer section with a bounded number of counting statements", async () => {
+    erpStore.party.length = 0;
+    erpStore.party.push(...manyParties(50));
+    queries.length = 0;
+    await run();
+    const customerQueries = queries.filter(q => q.model === "party" || q.model === "partyInteraction");
+    // Five metrics, read with eight counts (two of them windowed baselines).
+    expect(customerQueries).toHaveLength(8);
+    expect(customerQueries.every(q => q.op === "count")).toBe(true);
+    // And every one of them is scoped to the organization.
+    expect(customerQueries.every(q => (q.where as Row)?.organizationId === ORG_A)).toBe(true);
+  });
+});

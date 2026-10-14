@@ -456,6 +456,12 @@ describe("102 — migration ordering", () => {
     // (partyId, composite FK into Party). No backfill, no row rewritten;
     // touches no Phase 102 table (asserted below).
     "20261013090000_tenant_customers",
+    // Executive Management Center slice I - two INDEXES and nothing else:
+    // Party(organizationId, kind, createdAt) and
+    // PartyInteraction(organizationId, occurredAt), for the executive summary's
+    // period counts. No table, column, constraint or row is touched, so the
+    // rollback is DROP INDEX; touches no Phase 102 table (asserted below).
+    "20261013180000_executive_customer_count_indexes",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {

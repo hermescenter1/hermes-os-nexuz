@@ -10908,6 +10908,11 @@
     },
     "rangeLabel": "Berichtszeitraum",
     "lastUpdated": "Aktualisiert {time}",
+    "computation": {
+      "live": "jetzt berechnet",
+      "cached": "aus dem Zwischenspeicher, vor {age} s berechnet",
+      "cachedStale": "aus dem Zwischenspeicher und veraltend, vor {age} s berechnet"
+    },
     "loading": "Aktuelle Lage wird geladen…",
     "retry": "Erneut versuchen",
     "sections": {

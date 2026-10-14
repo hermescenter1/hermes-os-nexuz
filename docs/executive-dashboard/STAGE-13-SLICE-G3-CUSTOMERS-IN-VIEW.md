@@ -122,6 +122,41 @@ eight refusal reasons and eight named sources; it is now **seven reasons**
 sources** (`party`, `partyInteraction` joined). Full run after the update:
 17 files, **335 passed, 0 failed**.
 
+### 6.1 Why those numbers moved, and proof the control still bites
+
+Changing a pinned number to match the code is not evidence that the control
+survived — it is exactly what someone would do to silence it. So the change is
+stated first and then demonstrated.
+
+**What moved and why.** The census counts the `executive.reasons.*` and
+`executive.sources.*` keys the aggregation can actually emit, found by reading
+`summary.ts` itself.
+
+| | Before | After | Why |
+| --- | --- | --- | --- |
+| reasons | 8 | **7** | `customersNotTenantScoped` was deleted. It said "this organization's customers have no tenant-scoped source". Slice G1 created that source, so the sentence became false; leaving the key would have kept a refusal the code can no longer reach, and leaving the count at 8 would have required the dead key to stay. |
+| sources | 8 | **10** | `party` and `partyInteraction` were added, because the customers panel now names where each of its five figures comes from. |
+
+Net effect on the catalogue: −1 and +2 leaves plus the metric and definition
+copy, which is the +15/−1 measured in the German gate (8646 → 8660).
+
+**The control is unchanged.** Neither the rule nor its scope was touched: the
+census still derives the key set from `summary.ts` with the same regex, and
+`expectResolvable` still requires every key to resolve in **en, fa and de**.
+Only the two expected totals moved.
+
+**Proof by mutation** (run 2026-10-13, each mutation applied, observed, and
+reverted; the file was restored from a copy, nothing was discarded):
+
+| Mutation | What the gate did |
+| --- | --- |
+| Added an eleventh source `executive.sources.mutantSource` to `SOURCE` in `summary.ts`, with no translation anywhere | **RED, twice**: `payload keys — unresolved keys: expected [ 'en: …mutantSource', 'fa: …mutantSource', 'de: …mutantSource' ] to deeply equal []`, and `expected 11 to be 10`. So the census notices an addition *and* names the three locales that lack it. |
+| Removed `executive.sources.party` from **de.json only**, leaving the code untouched | **RED, twice**: `unresolved keys: [ 'de: executive.sources.party' ]`, and the three-way key-set comparison reported the missing German leaf. So a key that exists in two languages out of three is still a failure. |
+
+After reverting both, the suite is **15 passed, 0 failed**. A count that can be
+made red by adding a key and by deleting one translation is still measuring the
+thing it was written to measure.
+
 A second pinned expectation moved, and CI caught it where my local run had not:
 `summary-route-isolation.test.ts` asserted the customer section is
 `NO_SOURCE` **on every response**. Its fake database had no customer delegate,

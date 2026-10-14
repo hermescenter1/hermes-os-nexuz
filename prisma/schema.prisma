@@ -8856,6 +8856,10 @@ model Party {
   @@index([organizationId, archivedAt, displayName])
   @@index([organizationId, nextActionAt])
   @@index([organizationId, followUpOwnerId])
+  /// The executive summary counts customers by kind inside a period. Without
+  /// this the "new customers in the window" count scanned the whole table:
+  /// 64,063 rows read to find 155 (measured 2026-10-13, requirement row 11).
+  @@index([organizationId, kind, createdAt])
 }
 
 /// Append-only record of a contact with a customer. No update, no delete.
@@ -8872,4 +8876,8 @@ model PartyInteraction {
   party          Party                @relation(fields: [organizationId, partyId], references: [organizationId, id], onDelete: Cascade)
 
   @@index([organizationId, partyId, occurredAt])
+  /// Interactions of the WHOLE organization inside a period (the executive
+  /// summary). The index above leads with partyId, so it cannot serve a time
+  /// range that is not scoped to one customer.
+  @@index([organizationId, occurredAt])
 }

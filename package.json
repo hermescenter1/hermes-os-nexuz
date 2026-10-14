@@ -63,7 +63,8 @@
     "executive:report:worker:once": "node scripts/executive/daily-report-worker.mjs --once",
     "journal:validate": "node scripts/journal/validate-content.mjs",
     "journal:import:dry": "node scripts/journal/import-articles.mjs",
-    "journal:import": "node scripts/journal/import-articles.mjs --commit"
+    "journal:import": "node scripts/journal/import-articles.mjs --commit",
+    "perf:executive": "vitest run --config vitest.executive-perf.config.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
