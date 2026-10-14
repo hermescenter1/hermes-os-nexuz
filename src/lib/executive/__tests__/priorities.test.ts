@@ -170,7 +170,7 @@ function scope(over: Partial<ExecutiveScope> = {}): ExecutiveScope {
     organizationId: ORG,
     memberId: "m",
     role: "OWNER",
-    authority: { operations: true, financial: true, industrial: true },
+    authority: { operations: true, financial: true, industrial: true, customers: true },
     allowedSiteIds: ["site-1"],
     timeZone: "Asia/Tehran",
     dayCutoffMinutes: 0,
@@ -195,6 +195,7 @@ function fake(rows: Partial<Record<keyof PrioritiesDb, unknown[]>> = {}, failing
     erpWorkOrder: delegate("erpWorkOrder"),
     erpApprovalRequest: delegate("erpApprovalRequest"),
     assetAlert: delegate("assetAlert"),
+    party: delegate("party"),
   };
   return { client, calls };
 }
@@ -203,7 +204,15 @@ describe("assembly", () => {
   it("scopes every query to the organization, and bounds every read", async () => {
     const { client, calls } = fake();
     await buildTomorrowsPriorities({ scope: scope(), nowMs: NOW, client });
-    expect(calls).toHaveLength(4);
+    // The SET, not just the count: a source silently dropped would keep a
+    // count assertion green while the list quietly stopped covering it.
+    expect([...calls.map(c => c.delegate)].sort()).toEqual([
+      "assetAlert",
+      "erpApprovalRequest",
+      "erpTask",
+      "erpWorkOrder",
+      "party",
+    ]);
     for (const call of calls) {
       expect((call.args.where as Record<string, unknown>).organizationId, call.delegate).toBe(ORG);
       expect(call.args.take, call.delegate).toBe(CANDIDATE_LIMIT);
@@ -234,7 +243,7 @@ describe("assembly", () => {
       assetAlert: [{ id: "x", title: "Overheat", severity: "CRITICAL", createdAt: new Date(NOW - 6 * HOUR_MS) }],
     });
     const result = await buildTomorrowsPriorities({
-      scope: scope({ authority: { operations: false, financial: false, industrial: true } }),
+      scope: scope({ authority: { operations: false, financial: false, industrial: true, customers: false } }),
       nowMs: NOW,
       client,
     });
@@ -259,7 +268,7 @@ describe("assembly", () => {
   it("with neither axis, is FORBIDDEN and touches nothing", async () => {
     const { client, calls } = fake();
     const result = await buildTomorrowsPriorities({
-      scope: scope({ authority: { operations: false, financial: true, industrial: false } }),
+      scope: scope({ authority: { operations: false, financial: true, industrial: false, customers: false } }),
       nowMs: NOW,
       client,
     });
@@ -291,6 +300,89 @@ describe("assembly", () => {
     expect(data.totalPriorities).toBe(7);
     expect(data.listTruncated).toBe(true);
     expect(data.tierCounts).toEqual({ 1: 1, 2: 0, 3: 6 });
+  });
+
+  /* ── Customer follow-ups (requirement row 8) ─────────────────────────── */
+
+  it("ranks an overdue customer follow-up above overdue low-priority work", async () => {
+    const { client } = fake({
+      party: [
+        {
+          id: "c1",
+          displayName: "Pars Steel",
+          nextActionAt: new Date(NOW - 2 * DAY_MS),
+          createdAt: new Date(NOW - 40 * DAY_MS),
+        },
+      ],
+      erpTask: [
+        { id: "t1", title: "Tidy the store room", priority: "LOW", dueDate: new Date(NOW - 5 * DAY_MS), createdAt: new Date(NOW - 20 * DAY_MS) },
+      ],
+    });
+    const data = (await buildTomorrowsPriorities({ scope: scope(), nowMs: NOW, client })).priorities.data!;
+
+    // Tier decides first, and a broken promise to someone outside the
+    // organization outranks internal work that slipped — even work that has
+    // been overdue LONGER.
+    expect(data.items.map(i => [i.kind, i.tier, i.reason.ruleId])).toEqual([
+      ["CUSTOMER_FOLLOW_UP", 2, "FOLLOW_UP_OVERDUE"],
+      ["TASK", 3, "WORK_OVERDUE"],
+    ]);
+    expect(data.items[0]).toMatchObject({
+      title: "Pars Steel",
+      detailPath: "dashboard/clients/c1",
+      reason: { days: 2, hours: 0, dueAtIso: null },
+    });
+  });
+
+  it("names the date for a follow-up still ahead of the horizon, and ignores one beyond it", async () => {
+    const soon = new Date(NOW + 2 * HOUR_MS);
+    const { client, calls } = fake({
+      party: [
+        { id: "soon", displayName: "Near Co", nextActionAt: soon, createdAt: new Date(NOW - DAY_MS) },
+      ],
+    });
+    const data = (await buildTomorrowsPriorities({ scope: scope(), nowMs: NOW, client })).priorities.data!;
+    expect(data.items.map(i => i.reason.ruleId)).toEqual(["FOLLOW_UP_DUE_SOON"]);
+    expect(data.items[0].reason.dueAtIso).toBe(soon.toISOString());
+    expect(data.items[0].tier).toBe(3);
+
+    // Anything past the horizon is excluded by the QUERY, not by filtering
+    // rows after reading them.
+    const where = calls.find(c => c.delegate === "party")!.args.where as Record<string, unknown>;
+    expect(where).toMatchObject({ organizationId: ORG, kind: "CUSTOMER", archivedAt: null });
+    expect((where.nextActionAt as { lt: Date }).lt.getTime()).toBe(HORIZON);
+  });
+
+  it("without the customers axis, issues no customer query and says the source was excluded", async () => {
+    const { client, calls } = fake({
+      party: [{ id: "c1", displayName: "Must never be read", nextActionAt: new Date(NOW - DAY_MS), createdAt: new Date(NOW - DAY_MS) }],
+    });
+    const result = await buildTomorrowsPriorities({
+      scope: scope({ authority: { operations: true, financial: true, industrial: true, customers: false } }),
+      nowMs: NOW,
+      client,
+    });
+    expect(calls.some(c => c.delegate === "party")).toBe(false);
+    const note = result.priorities.data!.sources.find(s => s.source === "customerFollowUps")!;
+    expect(note.excludedReasonKey).toBe(PRIORITY_REASON.forbiddenCustomers);
+    // And the name never reaches the payload.
+    expect(JSON.stringify(result)).not.toContain("Must never be read");
+  });
+
+  it("serves follow-ups to a reader who holds ONLY the customers axis", async () => {
+    // view_customers is OWNER, ADMIN and MANAGER; view_erp is OWNER and ADMIN.
+    // A reader with customers but no operations must still get their list.
+    const { client, calls } = fake({
+      party: [{ id: "c1", displayName: "Pars Steel", nextActionAt: new Date(NOW - DAY_MS), createdAt: new Date(NOW - DAY_MS) }],
+    });
+    const result = await buildTomorrowsPriorities({
+      scope: scope({ authority: { operations: false, financial: false, industrial: false, customers: true } }),
+      nowMs: NOW,
+      client,
+    });
+    expect(result.priorities.status).toBe("OPERATIONAL");
+    expect(calls.map(c => c.delegate)).toEqual(["party"]);
+    expect(result.priorities.data!.items.map(i => i.kind)).toEqual(["CUSTOMER_FOLLOW_UP"]);
   });
 
   it("skips a row it cannot read fully instead of ranking it as LOW or due now", async () => {

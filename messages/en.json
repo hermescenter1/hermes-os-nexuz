@@ -11010,6 +11010,7 @@
       "forbiddenOperations": "Your role does not include operational data for this organization.",
       "forbiddenFinancial": "Your role does not include financial figures.",
       "forbiddenIndustrial": "Your role does not include industrial operations.",
+      "forbiddenCustomers": "You may not see this organization's customers.",
       "noSites": "No plant has been granted to your account in this organization.",
       "noRows": "This organization has no records of this kind yet.",
       "sourceUnavailable": "This source could not be read for this request. Nothing is inferred from its absence.",
@@ -11172,7 +11173,8 @@
         "TASK": "Task",
         "WORK_ORDER": "Work order",
         "APPROVAL": "Approval",
-        "ALERT": "Alert"
+        "ALERT": "Alert",
+        "CUSTOMER_FOLLOW_UP": "Customer follow-up"
       },
       "duration": {
         "days": "{count, plural, one {# day} other {# days}}",
@@ -11187,7 +11189,9 @@
         "APPROVAL_LATE": "Waiting for a decision for {duration}, past the {threshold, number}-day limit.",
         "HIGH_ALERT_OPEN": "High-severity alert open for {duration}.",
         "WORK_OVERDUE": "Overdue by {duration}.",
-        "WORK_DUE_SOON": "Due {due}."
+        "WORK_DUE_SOON": "Due {due}.",
+        "FOLLOW_UP_OVERDUE": "Promised follow-up {duration} overdue.",
+        "FOLLOW_UP_DUE_SOON": "Follow-up promised for {due}."
       },
       "rulesTitle": "How priorities are decided",
       "rulesLede": "The rules are checked in this order and the first one an item matches decides its tier. Within a tier, the item under pressure longest comes first. There is no score.",
@@ -11200,7 +11204,9 @@
         "APPROVAL_LATE": "An approval waiting {days, plural, one {# day} other {# days}} or more.",
         "HIGH_ALERT_OPEN": "A high-severity alert still open after {hours, plural, one {# hour} other {# hours}}.",
         "WORK_OVERDUE": "Any other open task or work order past its due date.",
-        "WORK_DUE_SOON": "Any other open task or work order due before the end of tomorrow."
+        "WORK_DUE_SOON": "Any other open task or work order due before the end of tomorrow.",
+        "FOLLOW_UP_OVERDUE": "A customer follow-up past the date it was promised for.",
+        "FOLLOW_UP_DUE_SOON": "A customer follow-up due before the end of tomorrow."
       },
       "configNote": "These thresholds are the product defaults; this organization has not set its own.",
       "listTruncated": "Showing {shown, number} of {total, number} priorities.",
@@ -11209,7 +11215,8 @@
         "tasks": "Tasks",
         "workOrders": "Work orders",
         "approvals": "Approvals",
-        "alerts": "Alerts"
+        "alerts": "Alerts",
+        "customerFollowUps": "Customer follow-ups"
       },
       "sourceRead": "Read",
       "sourceTruncated": "Only the {limit, number} most pressing records were read.",

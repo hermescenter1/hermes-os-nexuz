@@ -262,12 +262,16 @@ describe("the gate chain refuses in the right order and says nothing extra", () 
     expect(await res.json()).toEqual({ error: "NO_ACCESSIBLE_AXIS" });
   });
 
-  it("serves a VIEWER the industrial axis only, with the other two stated as refused", async () => {
+  it("serves a VIEWER the industrial axis only, with the other three stated as refused", async () => {
     h.org = orgOk(ORG_A, "VIEWER");
     const res = await call();
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.authority).toEqual({ operations: false, financial: false, industrial: true });
+    // VIEWER holds view_industrial and nothing else — not view_erp, not
+    // view_erp_compensation and not view_customers.
+    expect(body.authority).toEqual({ operations: false, financial: false, industrial: true, customers: false });
+    expect(body.sections.customers.status).toBe("FORBIDDEN");
+    expect(body.sections.customers.reasonKey).toBe("executive.reasons.forbiddenCustomers");
     expect(body.sections.operations.status).toBe("FORBIDDEN");
     expect(body.sections.operations.reasonKey).toBe("executive.reasons.forbiddenOperations");
     expect(body.sections.financial.status).toBe("FORBIDDEN");
@@ -361,10 +365,11 @@ describe("two readers of the same organization see only what their grants cover"
   });
 
   it("withholds every money figure from a reader without the financial axis", async () => {
-    // ADMIN holds view_erp and view_industrial but NOT view_erp_compensation.
+    // ADMIN holds view_erp, view_industrial and view_customers but NOT
+    // view_erp_compensation.
     h.org = orgOk(ORG_A, "ADMIN");
     const body = await (await call()).json();
-    expect(body.authority).toEqual({ operations: true, financial: false, industrial: true });
+    expect(body.authority).toEqual({ operations: true, financial: false, industrial: true, customers: true });
     expect(body.sections.financial.status).toBe("FORBIDDEN");
     expect(body.sections.financial.data).toBeNull();
     const serialized = JSON.stringify(body);

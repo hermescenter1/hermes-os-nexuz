@@ -19,8 +19,18 @@
  *   tier 2  URGENT_WORK_DUE_SOON      CRITICAL or HIGH work due before the end of tomorrow
  *   tier 2  APPROVAL_LATE             an approval waiting `approvalStaleDays` or more
  *   tier 2  HIGH_ALERT_OPEN           an open HIGH alert older than `alertAgeHours`
+ *   tier 2  FOLLOW_UP_OVERDUE         a customer follow-up past the date it was promised for
  *   tier 3  WORK_OVERDUE              any other open work past its due date
  *   tier 3  WORK_DUE_SOON             any other open work due before the end of tomorrow
+ *   tier 3  FOLLOW_UP_DUE_SOON        a customer follow-up due before the end of tomorrow
+ *
+ * WHY AN OVERDUE FOLLOW-UP IS TIER 2 AND OVERDUE WORK IS TIER 3. A LOW task
+ * that slips is internal; a follow-up date is a commitment to someone outside
+ * the organization who is waiting and cannot see why nothing happened. The
+ * tier is a judgement, stated here so it can be argued with — and the rule is
+ * still a rule: it fires on a date that has passed, nothing else. No
+ * per-organization threshold is introduced for it yet; if one is wanted, it
+ * belongs in `PriorityConfig` beside the others.
  *
  * Within a tier, the item under pressure longest comes first: earliest due date
  * for work, earliest raised for approvals and alerts. Ties break on id, so the
@@ -63,8 +73,10 @@ export const PRIORITY_RULES = [
   { id: "URGENT_WORK_DUE_SOON", tier: 2, params: [] },
   { id: "APPROVAL_LATE", tier: 2, params: ["approvalStaleDays"] },
   { id: "HIGH_ALERT_OPEN", tier: 2, params: ["alertAgeHours"] },
+  { id: "FOLLOW_UP_OVERDUE", tier: 2, params: [] },
   { id: "WORK_OVERDUE", tier: 3, params: [] },
   { id: "WORK_DUE_SOON", tier: 3, params: [] },
+  { id: "FOLLOW_UP_DUE_SOON", tier: 3, params: [] },
 ] as const satisfies readonly { id: string; tier: 1 | 2 | 3; params: readonly (keyof PriorityConfig)[] }[];
 
 export type PriorityRuleId = (typeof PRIORITY_RULES)[number]["id"];
@@ -132,7 +144,7 @@ export function validatePriorityConfig(config: PriorityConfig): PriorityConfigPr
 
 /* ── Candidates and classification (pure) ──────────────────────────────────── */
 
-export type PriorityKind = "TASK" | "WORK_ORDER" | "APPROVAL" | "ALERT";
+export type PriorityKind = "TASK" | "WORK_ORDER" | "APPROVAL" | "ALERT" | "CUSTOMER_FOLLOW_UP";
 export type WorkPriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 export type AlertSeverity = "CRITICAL" | "HIGH";
 
@@ -151,6 +163,18 @@ export type Candidate =
       readonly id: string;
       readonly title: string;
       readonly severity: AlertSeverity;
+      readonly createdMs: number;
+    }
+  | {
+      /**
+       * A customer whose next action is due. `title` is the customer's own
+       * display name, which is why this source needs `view_customers` and not
+       * the operations axis.
+       */
+      readonly kind: "CUSTOMER_FOLLOW_UP";
+      readonly id: string;
+      readonly title: string;
+      readonly dueMs: number;
       readonly createdMs: number;
     };
 
@@ -192,6 +216,8 @@ function detailPathOf(c: Candidate): string {
       return "erp/approvals?status=PENDING";
     case "ALERT":
       return "dashboard/operations/alerts";
+    case "CUSTOMER_FOLLOW_UP":
+      return `dashboard/clients/${c.id}`;
   }
 }
 
@@ -234,6 +260,17 @@ export function classify(
     if (elapsedMs >= config.alertAgeHours * HOUR_MS) {
       ruleId = c.severity === "CRITICAL" ? "CRITICAL_ALERT_OPEN" : "HIGH_ALERT_OPEN";
     }
+  } else if (c.kind === "CUSTOMER_FOLLOW_UP") {
+    // The promised date, exactly as work uses its due date: overdue measures
+    // from the date, "due soon" names it.
+    pressureMs = c.dueMs;
+    if (c.dueMs < nowMs) {
+      elapsedMs = nowMs - c.dueMs;
+      ruleId = "FOLLOW_UP_OVERDUE";
+    } else if (c.dueMs < horizonEndMs) {
+      dueAtIso = new Date(c.dueMs).toISOString();
+      ruleId = "FOLLOW_UP_DUE_SOON";
+    }
   }
 
   if (ruleId === null) return null;
@@ -267,13 +304,14 @@ export interface PrioritiesDb {
   erpWorkOrder: FindManyDelegate;
   erpApprovalRequest: FindManyDelegate;
   assetAlert: FindManyDelegate;
+  party: FindManyDelegate;
 }
 
 async function db(): Promise<PrioritiesDb | null> {
   const prisma = await getPrisma();
   if (!prisma) return null;
   const d = prisma as unknown as PrioritiesDb;
-  if (!d.erpTask || !d.erpWorkOrder || !d.erpApprovalRequest || !d.assetAlert) return null;
+  if (!d.erpTask || !d.erpWorkOrder || !d.erpApprovalRequest || !d.assetAlert || !d.party) return null;
   return d;
 }
 
@@ -316,12 +354,13 @@ function toWork(kind: "TASK" | "WORK_ORDER", raw: unknown): Candidate | null {
 export const PRIORITY_REASON = {
   forbiddenOperations: "executive.reasons.forbiddenOperations",
   forbiddenIndustrial: "executive.reasons.forbiddenIndustrial",
+  forbiddenCustomers: "executive.reasons.forbiddenCustomers",
   noSites: "executive.reasons.noSites",
   noRows: "executive.reasons.noRows",
   sourceUnavailable: "executive.reasons.sourceUnavailable",
 } as const;
 
-export type PrioritySource = "tasks" | "workOrders" | "approvals" | "alerts";
+export type PrioritySource = "tasks" | "workOrders" | "approvals" | "alerts" | "customerFollowUps";
 
 export interface SourceNote {
   readonly source: PrioritySource;
@@ -385,7 +424,11 @@ export async function buildTomorrowsPriorities(args: {
 
   const canWork = scope.authority.operations;
   const canAlerts = scope.authority.industrial && scope.allowedSiteIds.length > 0;
-  if (!canWork && !scope.authority.industrial) {
+  // `view_customers`, not the operations axis: a follow-up item carries the
+  // customer's NAME, so it is governed by the permission over the customer
+  // records themselves.
+  const canFollowUps = scope.authority.customers;
+  if (!canWork && !scope.authority.industrial && !canFollowUps) {
     return { ...base, priorities: refusedSection("FORBIDDEN", PRIORITY_REASON.forbiddenOperations) };
   }
 
@@ -397,7 +440,7 @@ export async function buildTomorrowsPriorities(args: {
   const select = { id: true, title: true, priority: true, dueDate: true, createdAt: true };
 
   // A refused source issues NO query.
-  const [tasks, workOrders, approvals, alerts] = await Promise.all([
+  const [tasks, workOrders, approvals, alerts, followUps] = await Promise.all([
     canWork
       ? settle(() =>
           client.erpTask.findMany({
@@ -456,11 +499,28 @@ export async function buildTomorrowsPriorities(args: {
           }),
         )
       : null,
+    canFollowUps
+      ? settle(() =>
+          client.party.findMany({
+            // Only customers with a promised date before the horizon are read,
+            // and the (organizationId, nextActionAt) index serves exactly this.
+            where: {
+              organizationId,
+              kind: "CUSTOMER",
+              archivedAt: null,
+              nextActionAt: { not: null, lt: horizon },
+            },
+            orderBy: [{ nextActionAt: "asc" }, { id: "asc" }],
+            take: CANDIDATE_LIMIT,
+            select: { id: true, displayName: true, nextActionAt: true, createdAt: true },
+          }),
+        )
+      : null,
   ]);
 
   // A source that failed is UNAVAILABLE for the whole list: ranking without it
   // would present a partial picture as the full one.
-  for (const r of [tasks, workOrders, approvals, alerts]) {
+  for (const r of [tasks, workOrders, approvals, alerts, followUps]) {
     if (r !== null && !r.ok) {
       return { ...base, priorities: refusedSection("UNAVAILABLE", PRIORITY_REASON.sourceUnavailable) };
     }
@@ -487,6 +547,19 @@ export async function buildTomorrowsPriorities(args: {
         ? ({ kind: "ALERT", id, title, severity, createdMs } as const)
         : null;
     }),
+    ...rows(followUps).map(raw => {
+      const r = rec(raw);
+      const id = str(r.id);
+      const title = str(r.displayName);
+      const dueMs = ms(r.nextActionAt);
+      const createdMs = ms(r.createdAt);
+      // A customer with no promised date is not a follow-up at all; the query
+      // already excludes them, and a row that cannot be read fully is skipped
+      // rather than given a date it does not have.
+      return id && title && dueMs !== null && createdMs !== null
+        ? ({ kind: "CUSTOMER_FOLLOW_UP", id, title, dueMs, createdMs } as const)
+        : null;
+    }),
   ].filter((c): c is Candidate => c !== null);
 
   const classified = candidates
@@ -511,6 +584,7 @@ export async function buildTomorrowsPriorities(args: {
       alerts,
       scope.authority.industrial ? PRIORITY_REASON.noSites : PRIORITY_REASON.forbiddenIndustrial,
     ),
+    note("customerFollowUps", followUps, PRIORITY_REASON.forbiddenCustomers),
   ];
 
   if (classified.length === 0) {
