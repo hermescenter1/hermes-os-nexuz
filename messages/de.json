@@ -3095,7 +3095,7 @@
   },
   "admin": {
     "eyebrow": "Betrieb",
-    "title": "Verwaltungskonsole",
+    "title": "Prüfkonsole",
     "lede": "Auditprotokoll und Systemstatus für die Nachvollziehbarkeit im Produktivbetrieb.",
     "metrics": {
       "storage": "Speichermodus",

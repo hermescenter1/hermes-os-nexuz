@@ -3095,7 +3095,7 @@
   },
   "admin": {
     "eyebrow": "Operations",
-    "title": "Admin Console",
+    "title": "Audit Console",
     "lede": "Audit trail and system status for production accountability.",
     "metrics": {
       "storage": "Storage Mode",

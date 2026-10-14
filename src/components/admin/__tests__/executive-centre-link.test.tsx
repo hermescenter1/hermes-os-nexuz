@@ -102,3 +102,50 @@ describe("the link widens nothing", () => {
     expect(src).not.toMatch(/view_(erp|industrial|customers)/);
   });
 });
+
+describe("the two surfaces do not wear the same name", () => {
+  // The defect this locks: /fa/admin was «کنسول مدیریت» while the centre is
+  // «مرکز مدیریت اجرایی». Both read as "management" in Persian, and the one a
+  // reader reaches first was the audit console. A link alone would not have
+  // fixed that — it would have pointed from one "management" to another.
+  const LOCALES = ["en", "fa", "de"] as const;
+
+  const catalogue = async (locale: string) => {
+    const { readFileSync } = await import("node:fs");
+    return JSON.parse(readFileSync(`messages/${locale}.json`, "utf8"));
+  };
+
+  it.each(LOCALES)("gives the audit console and the centre different titles in %s", async locale => {
+    const m = await catalogue(locale);
+    const audit: string = m.admin.title;
+    const centre: string = m.executive.title;
+    expect(audit).not.toBe(centre);
+    // Not merely different strings: neither may contain the other, or
+    // "Management" and "Management Centre" would pass while still colliding
+    // in a sidebar.
+    expect(audit.includes(centre)).toBe(false);
+    expect(centre.includes(audit)).toBe(false);
+  });
+
+  it("names the audit console after what it does, in every language", async () => {
+    // Its own table is already the audit log; the title now agrees with it.
+    const expected: Record<string, string> = {
+      en: "Audit Console",
+      fa: "کنسول ممیزی",
+      de: "Prüfkonsole",
+    };
+    for (const locale of LOCALES) {
+      const m = await catalogue(locale);
+      expect(m.admin.title, locale).toBe(expected[locale]);
+    }
+  });
+
+  it("leaves the audit console's routes and behaviour alone", async () => {
+    const { readFileSync } = await import("node:fs");
+    const page = readFileSync("src/app/[locale]/admin/page.tsx", "utf8");
+    // The capability guard and the console body are untouched by the naming
+    // change: this slice moved a word and added a link, nothing else.
+    expect(page).toContain('<RequireCapability capability="admin">');
+    expect(page).toContain("<AdminConsoleClient");
+  });
+});
