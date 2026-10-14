@@ -126,7 +126,7 @@ function scopeFor(): ExecutiveScope {
     organizationId,
     memberId: "perf-member",
     role: "OWNER",
-    authority: { operations: true, financial: true, industrial: true },
+    authority: { operations: true, financial: true, industrial: true, customers: true },
     allowedSiteIds: siteId ? [siteId] : [],
     timeZone: "Asia/Tehran",
     dayCutoffMinutes: 0,

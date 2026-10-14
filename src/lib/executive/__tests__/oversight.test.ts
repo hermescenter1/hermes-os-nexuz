@@ -27,7 +27,7 @@ function scope(overrides: Partial<ExecutiveScope> = {}): ExecutiveScope {
     organizationId: ORG,
     memberId: "m-reader",
     role: "OWNER",
-    authority: { operations: true, financial: true, industrial: false },
+    authority: { operations: true, financial: true, industrial: false, customers: false },
     allowedSiteIds: [],
     timeZone: "Asia/Tehran",
     dayCutoffMinutes: 0,
@@ -188,7 +188,7 @@ describe("axes are checked before the database is touched", () => {
   it("without the financial axis no cost or project query is issued and the section is FORBIDDEN", async () => {
     const { client, calls } = fake({ pendingTotal: 1, pending: [] });
     const result = await buildFinancialOversight({
-      scope: scope({ authority: { operations: true, financial: false, industrial: false } }),
+      scope: scope({ authority: { operations: true, financial: false, industrial: false, customers: false } }),
       range: "today",
       nowMs: NOW,
       client,
@@ -204,7 +204,7 @@ describe("axes are checked before the database is touched", () => {
   it("without the operations axis no approval query is issued and the section is FORBIDDEN", async () => {
     const { client, calls } = fake({ currencyCurrent: [sumRow({ currency: "USD" }, 10, 1)] });
     const result = await buildFinancialOversight({
-      scope: scope({ authority: { operations: false, financial: true, industrial: false } }),
+      scope: scope({ authority: { operations: false, financial: true, industrial: false, customers: false } }),
       range: "today",
       nowMs: NOW,
       client,
@@ -443,7 +443,7 @@ describe("absence and failure are stated, never rendered as health", () => {
 
   it("with no database client, held axes are UNAVAILABLE and refused axes stay FORBIDDEN", async () => {
     const result = await buildFinancialOversight({
-      scope: scope({ authority: { operations: false, financial: true, industrial: false } }),
+      scope: scope({ authority: { operations: false, financial: true, industrial: false, customers: false } }),
       range: "today",
       nowMs: NOW,
       client: null,

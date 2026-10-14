@@ -21,6 +21,8 @@
  *   · operations — `view_erp`                 : projects, tasks, work orders, approvals
  *   · financial  — `view_erp_compensation`    : budget, actual cost, any money figure
  *   · industrial — `view_industrial` + sites  : plant connectivity, alerts, assets
+ *   · customers  — `view_customers`           : the tenant's own customers and
+ *                                               their overdue follow-ups
  *
  * A reader who holds one and not another gets OPERATIONAL sections for what they
  * hold and FORBIDDEN sections — with a stated reason — for what they do not. A
@@ -89,11 +91,12 @@ export async function resolveExecutiveScope(): Promise<ExecutiveScopeResult> {
     operations: orgCan(scope.role, "view_erp"),
     financial: orgCan(scope.role, "view_erp_compensation"),
     industrial: orgCan(scope.role, "view_industrial"),
+    customers: orgCan(scope.role, "view_customers"),
   };
 
-  // Holding none of the three is a refusal of the page. Rendering an empty
+  // Holding none of them is a refusal of the page. Rendering an empty
   // dashboard here would tell the reader their organization has no activity.
-  if (!authority.operations && !authority.financial && !authority.industrial) {
+  if (!authority.operations && !authority.financial && !authority.industrial && !authority.customers) {
     return { ok: false, code: "NO_ACCESSIBLE_AXIS", memberships: [] };
   }
 
