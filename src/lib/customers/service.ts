@@ -25,6 +25,7 @@
 import { getPrisma } from "@/lib/db/prisma";
 import { recordAuditEventOrThrow } from "@/lib/audit/audit-service";
 import { can } from "@/lib/org/rbac";
+import { invalidateExecutiveSummary } from "@/lib/executive/cache";
 import type { OrganizationRole } from "@/lib/tenant/contract";
 import {
   LIST_DEFAULT,
@@ -382,6 +383,12 @@ export async function createCustomer(
       );
       return created;
     });
+    // The executive summary COUNTS customers, so a new one makes every cached
+    // summary of this organization wrong. Invalidated after the transaction
+    // committed, never before: an entry must not be dropped for a write that
+    // then rolls back. `setProjectLink` deliberately does not do this — a
+    // project link changes no figure the summary counts.
+    await invalidateExecutiveSummary(ctx.organizationId);
     return toView(row, await namesOf(db, [str(row.followUpOwnerId)]), nowMs);
   });
 }
@@ -453,6 +460,9 @@ export async function updateCustomer(
         tx,
       );
     });
+    // Status, owner and follow-up date are all counted by the executive
+    // summary, so a changed customer invalidates it too.
+    await invalidateExecutiveSummary(ctx.organizationId);
     return getCustomer(ctx, id, { nowMs, db });
   });
 }
@@ -512,7 +522,7 @@ export async function addInteraction(
   if (occurredAt.getTime() > nowMs + FUTURE_SKEW_MS) throw new CustomerError("OCCURRED_IN_FUTURE");
   return guarded(async () => {
     const db = opts.db ?? (await defaultDb());
-    return db.$transaction(async tx => {
+    const result = await db.$transaction(async tx => {
       const party = await findOwn(tx, ctx, partyId);
       if (party.archivedAt != null) throw new CustomerError("ARCHIVED");
       const created = await tx.partyInteraction.create({
@@ -551,6 +561,9 @@ export async function addInteraction(
       const newest = last && Date.parse(last) > occurredAt.getTime() ? last : occurredAt.toISOString();
       return { id: String(created.id), lastInteractionAt: newest };
     });
+    // The summary counts interactions inside the period.
+    await invalidateExecutiveSummary(ctx.organizationId);
+    return result;
   });
 }
 

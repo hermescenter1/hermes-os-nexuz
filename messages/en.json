@@ -10908,6 +10908,11 @@
     },
     "rangeLabel": "Reporting period",
     "lastUpdated": "Updated {time}",
+    "computation": {
+      "live": "computed now",
+      "cached": "from cache, computed {age} s ago",
+      "cachedStale": "from cache and ageing, computed {age} s ago"
+    },
     "loading": "Loading the current position…",
     "retry": "Try again",
     "sections": {

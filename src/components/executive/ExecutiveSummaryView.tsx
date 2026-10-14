@@ -26,6 +26,7 @@ import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { PageStatusBadge } from "@/components/ui/PageHeader";
 import { formatDateTime, formatNumber, INVALID_DISPLAY } from "@/lib/i18n/format";
+import type { ExecutiveCacheState } from "@/lib/executive/cache";
 import type {
   ExecutiveMetric,
   ExecutiveSection,
@@ -462,10 +463,17 @@ export async function ExecutiveSummaryView({
   summary,
   locale,
   frozen,
+  cache,
 }: {
   summary: ExecutiveSummary;
   locale: string;
   frozen?: FrozenReportHeader;
+  /**
+   * How these figures reached the reader. Absent when the caller does not use
+   * the read-through cache, and never passed for a frozen report: a report is
+   * a record of a finished day, so "cached" would be a category error.
+   */
+  cache?: ExecutiveCacheState;
 }) {
   const t = await getTranslations("executive");
   const tz = summary.timeZone;
@@ -532,6 +540,19 @@ export async function ExecutiveSummaryView({
               }),
             })}
             {" · "}
+            {/* WHERE the figures came from, next to WHEN they were computed. A
+                reader who sees a number has to be able to tell a fresh
+                computation from a minute-old copy of one. */}
+            <span className={cache?.stale ? "text-warn" : undefined}>
+              {cache === undefined
+                ? null
+                : cache.hit
+                  ? t(cache.stale ? "computation.cachedStale" : "computation.cached", {
+                      age: formatNumber(cache.ageSeconds, locale),
+                    })
+                  : t("computation.live")}
+            </span>
+            {cache === undefined ? null : " · "}
             {t("provenance.timeZone")}: {tz}
             {" · "}
             <Link

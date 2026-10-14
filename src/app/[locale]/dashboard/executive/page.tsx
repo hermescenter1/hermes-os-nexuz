@@ -34,7 +34,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { AppShell } from "@/components/app-shell";
 import { noIndexMetadata } from "@/lib/seo/metadata";
 import { resolveExecutiveScope } from "@/lib/executive/scope";
-import { buildExecutiveSummary } from "@/lib/executive/summary";
+import { readExecutiveSummary } from "@/lib/executive/cache";
 import { isExecutiveRange, type ExecutiveRange } from "@/lib/executive/period";
 import { ExecutiveSummaryView } from "@/components/executive/ExecutiveSummaryView";
 import { ExecutiveScopeNotice } from "@/components/executive/ExecutiveScopeNotice";
@@ -67,12 +67,15 @@ export default async function ExecutivePage({
     body = <ExecutiveScopeNotice code={resolved.code} memberships={resolved.memberships} />;
   } else {
     try {
-      const summary = await buildExecutiveSummary({
+      // Read-THROUGH, not read-around: the gate above has already run, and
+      // only a reader it admitted can reach this line. The cache state travels
+      // with the figures so the screen can say how old they are.
+      const { summary, cache } = await readExecutiveSummary({
         scope: resolved.scope,
         range,
         nowMs: Date.now(),
       });
-      body = <ExecutiveSummaryView summary={summary} locale={locale} />;
+      body = <ExecutiveSummaryView summary={summary} locale={locale} cache={cache} />;
     } catch {
       // `buildExecutiveSummary` already isolates every section, so reaching here
       // means the whole assembly failed. Say so; infer nothing.

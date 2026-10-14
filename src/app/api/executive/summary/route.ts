@@ -22,7 +22,7 @@
 import type { NextRequest } from "next/server";
 import { securityError } from "@/lib/security/request-guards";
 import { resolveExecutiveScope, statusForFailure } from "@/lib/executive/scope";
-import { buildExecutiveSummary } from "@/lib/executive/summary";
+import { readExecutiveSummary } from "@/lib/executive/cache";
 import { isExecutiveRange } from "@/lib/executive/period";
 import { sectionIsConsistent, type ExecutiveSection } from "@/lib/executive/contract";
 
@@ -50,7 +50,9 @@ export async function GET(req: NextRequest) {
   const range = raw ?? "today";
 
   try {
-    const summary = await buildExecutiveSummary({
+    // The gate above has already run; the cache is read with ITS output and
+    // never with anything from the request.
+    const { summary, cache } = await readExecutiveSummary({
       scope: resolved.scope,
       range,
       nowMs: Date.now(),
@@ -66,7 +68,11 @@ export async function GET(req: NextRequest) {
     );
     if (inconsistent) return securityError({ error: "SERVICE_UNAVAILABLE" }, 503);
 
-    return securityError(summary as unknown as Record<string, unknown>, 200);
+    // `cache` is ADDITIVE: every existing field keeps its meaning, and a
+    // programmatic caller that ignores it is unaffected. It exists so a caller
+    // can tell a fresh computation from a copy of one, the same way the screen
+    // does.
+    return securityError({ ...(summary as unknown as Record<string, unknown>), cache }, 200);
   } catch {
     // Never the driver message, never a stack, never an internal identifier.
     return securityError({ error: "SERVICE_UNAVAILABLE" }, 503);

@@ -14,6 +14,7 @@
  * genuinely exclude them.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { invalidateExecutiveSummary } from "@/lib/executive/cache";
 import { NextRequest } from "next/server";
 
 const ORG_A = "org-a";
@@ -200,13 +201,20 @@ const orgOk = (organizationId: string, role = "OWNER") => ({
 const call = (url = "http://localhost/api/executive/summary") =>
   GET(new NextRequest(url, { method: "GET" }));
 
-beforeEach(() => {
+beforeEach(async () => {
   seed();
   h.user = { id: "user-1", role: "admin" };
   h.org = orgOk(ORG_A);
   h.allowedSiteIds = [SITE_1, SITE_2];
   h.prisma = buildPrisma();
   h.overview = OVERVIEW;
+  // The route reads THROUGH the executive cache, whose per-process store
+  // outlives a single case. Each case here rebuilds the database behind the
+  // route's back, which no write path announced, so the cache is invalidated
+  // explicitly — exactly as `createCustomer` and friends do in production.
+  // Without this, one case would be answered with the previous case's data.
+  await invalidateExecutiveSummary(ORG_A);
+  await invalidateExecutiveSummary(ORG_B);
 });
 
 /* ── the gate chain ───────────────────────────────────────────────────────── */
@@ -372,6 +380,52 @@ describe("two readers of the same organization see only what their grants cover"
 });
 
 /* ── error posture ────────────────────────────────────────────────────────── */
+
+describe("the answer says how fresh it is", () => {
+  it("carries the cache state, and a second read inside the TTL is served from it", async () => {
+    const first = await call();
+    expect(first.status).toBe(200);
+    const a = (await first.json()) as { cache?: { hit: boolean; computedAtIso: string; ageSeconds: number } };
+    // Additive: the summary's own fields are untouched, and `cache` is extra.
+    expect(a.cache?.hit).toBe(false);
+    expect(typeof a.cache?.computedAtIso).toBe("string");
+
+    const second = await call();
+    const b = (await second.json()) as {
+      cache?: { hit: boolean; computedAtIso: string };
+      sections?: Record<string, { status: string }>;
+    };
+    expect(second.status).toBe(200);
+    expect(b.cache?.hit).toBe(true);
+    // The SAME computation, and still a consistent payload rather than a
+    // half-serialised one.
+    expect(b.cache?.computedAtIso).toBe(a.cache?.computedAtIso);
+    expect(b.sections?.customers?.status).toBeDefined();
+  });
+
+  it("does not cache an answer whose source was unreadable, so recovery is immediate", async () => {
+    h.prisma = null;
+    const down = await call();
+    const downBody = (await down.json()) as {
+      cache?: { hit: boolean; store: string };
+      sections: Record<string, { status: string }>;
+    };
+    expect(downBody.sections.operations.status).toBe("UNAVAILABLE");
+    // Not stored: a failure is not a measurement.
+    expect(downBody.cache?.store).toBe("none");
+
+    // The source is back, well inside the TTL. The reader must not be served a
+    // cached outage — nothing was stored to serve them.
+    h.prisma = buildPrisma();
+    const up = await call();
+    const body = (await up.json()) as {
+      cache?: { hit: boolean };
+      sections: Record<string, { status: string }>;
+    };
+    expect(body.cache?.hit).toBe(false);
+    expect(body.sections.operations.status).not.toBe("UNAVAILABLE");
+  });
+});
 
 describe("failures are reported without internals", () => {
   it("answers 503 with a stable code when the database is absent, and no section claims data", async () => {
