@@ -11102,7 +11102,17 @@
       "regeneratedBy": "Neu erzeugt von",
       "regenerationReason": "Grund",
       "original": "Ursprung",
-      "corrected": "Korrektur"
+      "corrected": "Korrektur",
+      "priorities": {
+        "heading": "Prioritäten für morgen",
+        "headingFor": "Prioritäten für {date}",
+        "notRecorded": "Dieser Bericht enthält keine Prioritätenliste. Er entstand, bevor der Bericht eine führte, oder seine Quellen waren in jener Nacht nicht lesbar. Das heißt nicht, dass nichts offen war.",
+        "late": "Dieser Lauf erfolgte erst nach dem Ende des {date}; die Liste ist daher eine Aufzeichnung des noch Offenen und keine Empfehlung für jenen Tag.",
+        "observedAt": "Erhoben am {time}",
+        "rulesVersion": "Regelwerk {version}",
+        "notReconstructed": "Bei der Erstellung des Berichts erhoben, nicht zum Datenschnitt rekonstruiert: die Quellen führen keine Historie des früheren Zustands einer Aufgabe oder Nachfassung.",
+        "none": "Für jenen Tag traf keine Regel zu."
+      }
     },
     "oversight": {
       "pageTitle": "Finanzaktivität und Freigaben",

@@ -14,7 +14,12 @@
 
 import { getPrisma } from "@/lib/db/prisma";
 import type { ExecutiveSummary } from "../summary";
-import type { ReportListEntry, SectionCoverage, StoredReport } from "./contract";
+import type {
+  FrozenPriorities,
+  ReportListEntry,
+  SectionCoverage,
+  StoredReport,
+} from "./contract";
 
 /** Hard ceiling on an archive page, whatever the caller asks for. */
 export const MAX_ARCHIVE_PAGE = 60;
@@ -141,6 +146,10 @@ export async function getReport(args: {
     return {
       ...toEnvelope(row),
       snapshot: row.snapshot as unknown as ExecutiveSummary,
+      // Null for every report written before `exec-report-3`, and for a pass
+      // that could not read the priority sources. The surface must render
+      // that as "not recorded", never as "nothing was due".
+      priorities: (row.prioritySnapshot ?? null) as FrozenPriorities | null,
     };
   } catch {
     return null;

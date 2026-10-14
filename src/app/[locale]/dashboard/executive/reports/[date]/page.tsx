@@ -21,6 +21,7 @@ import { noIndexMetadata } from "@/lib/seo/metadata";
 import { resolveExecutiveScope } from "@/lib/executive/scope";
 import { ExecutiveScopeNotice } from "@/components/executive/ExecutiveScopeNotice";
 import { ExecutiveSummaryView } from "@/components/executive/ExecutiveSummaryView";
+import { FrozenPrioritiesPanel } from "@/components/executive/FrozenPrioritiesPanel";
 import { getReport } from "@/lib/executive/report/read";
 
 export const metadata = noIndexMetadata("Executive nightly report");
@@ -66,18 +67,24 @@ export default async function ExecutiveReportDetailPage({
     });
 
     body = report ? (
-      <ExecutiveSummaryView
-        summary={report.snapshot}
-        locale={locale}
-        frozen={{
-          businessDate: report.businessDate,
-          version: report.version,
-          calcVersion: report.calcVersion,
-          dataCutoffIso: report.dataCutoffIso,
-          supersedesVersion: report.supersedesVersion,
-          regenerationReason: report.regenerationReason,
-        }}
-      />
+      <>
+        <ExecutiveSummaryView
+          summary={report.snapshot}
+          locale={locale}
+          frozen={{
+            businessDate: report.businessDate,
+            version: report.version,
+            calcVersion: report.calcVersion,
+            dataCutoffIso: report.dataCutoffIso,
+            supersedesVersion: report.supersedesVersion,
+            regenerationReason: report.regenerationReason,
+          }}
+        />
+        {/* Null renders "not recorded", never an empty list: every report
+            written before exec-report-3 has none, and absence is not a
+            statement that nothing was due. */}
+        <FrozenPrioritiesPanel priorities={report.priorities} locale={locale} />
+      </>
     ) : (
       <NotFound message={t("reports.notFound")} />
     );

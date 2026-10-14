@@ -462,6 +462,11 @@ describe("102 — migration ordering", () => {
     // period counts. No table, column, constraint or row is touched, so the
     // rollback is DROP INDEX; touches no Phase 102 table (asserted below).
     "20261013180000_executive_customer_count_indexes",
+    // Executive Management Center — one NULLABLE Json column on
+    // ExecutiveDailyReport for the frozen priority list. No backfill, no
+    // default, so PostgreSQL does not rewrite the table; touches no Phase 102
+    // table (asserted below).
+    "20261014160000_executive_report_priorities",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {

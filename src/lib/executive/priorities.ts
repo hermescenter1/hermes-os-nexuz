@@ -61,7 +61,7 @@ import {
   type ExecutiveScope,
   type ExecutiveSection,
 } from "./contract";
-import { businessDayOf, nextBusinessDay } from "./period";
+import { businessDayOf, nextBusinessDay, type BusinessDayWindow } from "./period";
 
 /* ── Rules ─────────────────────────────────────────────────────────────────── */
 
@@ -78,6 +78,22 @@ export const PRIORITY_RULES = [
   { id: "WORK_DUE_SOON", tier: 3, params: [] },
   { id: "FOLLOW_UP_DUE_SOON", tier: 3, params: [] },
 ] as const satisfies readonly { id: string; tier: 1 | 2 | 3; params: readonly (keyof PriorityConfig)[] }[];
+
+/**
+ * The version of the RANKING RULES, distinct from `CALC_VERSION` (which
+ * versions the report's arithmetic) and from the product version.
+ *
+ * It changes when a rule is added, removed or re-tiered — that is, whenever
+ * two lists produced by different versions are not comparable. A frozen
+ * nightly list records it, so a reader of an old report can tell whether its
+ * ordering means the same thing as today's.
+ *
+ *   priority-rules-1  the nine original rules (slices D and E)
+ *   priority-rules-2  slice J added FOLLOW_UP_OVERDUE (tier 2) and
+ *                     FOLLOW_UP_DUE_SOON (tier 3), so a list from version 1
+ *                     could not contain a customer follow-up at all
+ */
+export const PRIORITY_RULES_VERSION = "priority-rules-2";
 
 export type PriorityRuleId = (typeof PRIORITY_RULES)[number]["id"];
 export type PriorityTier = 1 | 2 | 3;
@@ -385,6 +401,10 @@ export interface TomorrowsPriorities {
   readonly timeZone: string;
   /** End of the next business day in the reporting zone — the horizon. */
   readonly horizonEndIso: string;
+  /** `YYYY-MM-DD` of the day these priorities are FOR, in `timeZone`. */
+  readonly targetBusinessDate: string;
+  /** `YYYY-MM-DD` the horizon was measured from. */
+  readonly anchorBusinessDate: string;
   readonly config: PriorityConfig;
   readonly priorities: ExecutiveSection<PriorityList>;
 }
@@ -401,6 +421,17 @@ export async function buildTomorrowsPriorities(args: {
   scope: ExecutiveScope;
   nowMs: number;
   config?: PriorityConfig;
+  /**
+   * The business day the horizon is measured FROM. Omitted on the live
+   * screen, where "today" is whatever day `nowMs` falls in.
+   *
+   * The nightly report supplies it, and must: that pass runs AFTER the day it
+   * reports on has ended, so by its own clock "today" is already the next day
+   * and `nextBusinessDay` would reach for the day after THAT. A report about
+   * Monday would carry Wednesday's priorities. The day the list is for has to
+   * come from the report, not from the moment the worker happened to wake.
+   */
+  anchorDay?: BusinessDayWindow;
   /** Test seam. Production code leaves it out. */
   client?: PrioritiesDb | null;
 }): Promise<TomorrowsPriorities> {
@@ -412,13 +443,18 @@ export async function buildTomorrowsPriorities(args: {
     throw new RangeError("invalid priority configuration");
   }
 
-  const today = businessDayOf({ nowMs, timeZone: scope.timeZone, cutoffMinutes: scope.dayCutoffMinutes });
-  const horizonEndMs = nextBusinessDay(today).endMs;
+  const today =
+    args.anchorDay ??
+    businessDayOf({ nowMs, timeZone: scope.timeZone, cutoffMinutes: scope.dayCutoffMinutes });
+  const target = nextBusinessDay(today);
+  const horizonEndMs = target.endMs;
 
   const base = {
     generatedAtIso: new Date(nowMs).toISOString(),
     timeZone: scope.timeZone,
     horizonEndIso: new Date(horizonEndMs).toISOString(),
+    targetBusinessDate: target.dateKey,
+    anchorBusinessDate: today.dateKey,
     config,
   };
 
