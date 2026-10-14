@@ -21,7 +21,7 @@ import { formatDateTime, formatNumber } from "@/lib/i18n/format";
 import { resolveExecutiveScope } from "@/lib/executive/scope";
 import { ExecutiveScopeNotice } from "@/components/executive/ExecutiveScopeNotice";
 import { countReports, listReports } from "@/lib/executive/report/read";
-import { coverageIsComplete } from "@/lib/executive/report/contract";
+import { coverageVerdict } from "@/lib/executive/report/contract";
 
 export const metadata = noIndexMetadata("Executive nightly reports");
 export const dynamic = "force-dynamic";
@@ -79,10 +79,10 @@ export default async function ExecutiveReportsPage({
             </thead>
             <tbody>
               {entries.map(entry => {
-                const complete = coverageIsComplete(entry.coverage);
-                const missing = entry.coverage.filter(
-                  c => c.status !== "OPERATIONAL" && c.status !== "EMPTY",
-                ).length;
+                // Three answers, not two: a section that FAILED is an
+                // outage, a section that was never asked is a boundary. The
+                // archive used to print both as "did not answer".
+                const v = coverageVerdict(entry.coverage);
                 return (
                   <tr key={`${entry.businessDate}-${entry.version}`} className="border-b border-border-subtle last:border-0">
                     <th scope="row" className="py-2 pe-3 text-start font-normal text-text-primary">
@@ -109,9 +109,11 @@ export default async function ExecutiveReportsPage({
                       })}
                     </td>
                     <td className="py-2 pe-3 text-muted">
-                      {complete
-                        ? t("reports.coverageComplete")
-                        : t("reports.coveragePartial", { count: missing })}
+                      {v.failed > 0
+                        ? t("reports.coverageFailed", { count: v.failed })
+                        : v.notAsked > 0
+                          ? t("reports.coverageNotAsked", { count: v.notAsked })
+                          : t("reports.coverageComplete")}
                     </td>
                     <td className="py-2">
                       <Link

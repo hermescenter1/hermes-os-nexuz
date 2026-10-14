@@ -121,12 +121,56 @@ export function coverageOf(summary: ExecutiveSummary): SectionCoverage[] {
 }
 
 /**
- * True when every section that was asked for actually answered.
+ * What a report's coverage actually says, in three parts rather than a boolean.
  *
- * A report with incomplete coverage is still a valid report — it is simply
- * honest about what it could not see, and the UI says so rather than presenting
- * a partial night as a whole one.
+ * THE DEFECT THIS REPLACES. `coverageIsComplete` was
+ * `every(OPERATIONAL || EMPTY)`, so every other status counted as "did not
+ * answer" — and the archive printed "1 section did not answer" for the
+ * 2026-10-13 report whose plants section was `FORBIDDEN` with reason
+ * `noSites`. Nothing failed to answer there: the question was never asked,
+ * because the reader (or, for the nightly pass, the organization) has no site
+ * granted. Reporting a permission or configuration boundary as a failure of
+ * the system is wrong twice over — it invents an outage, and it hides the real
+ * one when there is one.
+ *
+ * The three parts, from the five section statuses:
+ *
+ *   answered   OPERATIONAL, EMPTY      the section was asked and replied
+ *   notAsked   FORBIDDEN, NO_SOURCE    by policy, by grant, or because this
+ *                                      product has no such source at all
+ *   failed     UNAVAILABLE             a source was asked and could not be read
+ *
+ * A report is COMPLETE when nothing failed. `notAsked` sections do not make a
+ * report partial, because a report cannot be more complete than the reader's
+ * own access — but they are still counted and shown, so "nothing to report"
+ * is never confused with "nothing you may see".
+ */
+export interface CoverageVerdict {
+  readonly answered: number;
+  readonly notAsked: number;
+  readonly failed: number;
+  /** No source failed. Says nothing about how much was asked. */
+  readonly complete: boolean;
+}
+
+export function coverageVerdict(coverage: readonly SectionCoverage[]): CoverageVerdict {
+  let answered = 0;
+  let notAsked = 0;
+  let failed = 0;
+  for (const c of coverage) {
+    if (c.status === "OPERATIONAL" || c.status === "EMPTY") answered += 1;
+    else if (c.status === "UNAVAILABLE") failed += 1;
+    else notAsked += 1;
+  }
+  return { answered, notAsked, failed, complete: failed === 0 };
+}
+
+/**
+ * True when no source FAILED.
+ *
+ * Kept as the name the rest of the code already uses, with the meaning
+ * corrected: a refused section no longer makes a night "incomplete".
  */
 export function coverageIsComplete(coverage: readonly SectionCoverage[]): boolean {
-  return coverage.every(c => c.status === "OPERATIONAL" || c.status === "EMPTY");
+  return coverageVerdict(coverage).complete;
 }

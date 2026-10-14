@@ -179,6 +179,7 @@ export function executiveCacheKeyMaterial(args: {
       operations: scope.authority.operations,
       financial: scope.authority.financial,
       industrial: scope.authority.industrial,
+      customers: scope.authority.customers,
     },
     // Sorted: the SET of permitted sites is what matters, not their order.
     sites: [...scope.allowedSiteIds].sort(),

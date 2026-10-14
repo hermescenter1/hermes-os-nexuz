@@ -102,9 +102,13 @@ describe("every key the aggregation puts in the payload resolves in all three lo
   it("covers every refusal reason and every named source the aggregation can emit", () => {
     const reasons = [...payloadKeys].filter(k => k.startsWith("executive.reasons."));
     const sources = [...payloadKeys].filter(k => k.startsWith("executive.sources."));
+    // Slice J: forbiddenCustomers joined the refusals, because the customer
+    // section and the follow-up priorities are governed by `view_customers`
+    // and not by the operations axis — a reader refused for that reason must
+    // be told the true one.
     // Slice G3: customersNotTenantScoped is gone (the tenant customer source
     // exists now), and party / partyInteraction joined the named sources.
-    expect(reasons.length).toBe(7);
+    expect(reasons.length).toBe(8);
     expect(sources.length).toBe(10);
   });
 });

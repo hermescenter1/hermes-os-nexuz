@@ -357,6 +357,22 @@ export interface ExecutiveAuthority {
   readonly operations: boolean;
   readonly financial: boolean;
   readonly industrial: boolean;
+  /**
+   * The organization's OWN customers — `view_customers`.
+   *
+   * A separate axis rather than a reuse of `operations`, because the two
+   * permissions do not cover the same people: `view_erp` is OWNER and ADMIN,
+   * while `view_customers` is OWNER, ADMIN and MANAGER. Gating customers on
+   * `operations` therefore told a MANAGER "you may not see operations" about
+   * records they can already open one click away, at /dashboard/clients — a
+   * refusal that was not true.
+   *
+   * It is also the axis that decides whether a customer's NAME may appear in
+   * tomorrow's priorities. The summary's customer figures are counts; a
+   * follow-up item names the customer, so it needs the permission that governs
+   * the customer records themselves, not the one that governs work orders.
+   */
+  readonly customers: boolean;
 }
 
 /** A resolved reader. Produced only by `./scope`, never by a client payload. */

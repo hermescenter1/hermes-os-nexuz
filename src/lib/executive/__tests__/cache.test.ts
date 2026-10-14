@@ -40,7 +40,7 @@ function scopeOf(over: Partial<ExecutiveScope> = {}): ExecutiveScope {
     organizationId: "org-a",
     memberId: "member-1",
     role: "OWNER",
-    authority: { operations: true, financial: true, industrial: true },
+    authority: { operations: true, financial: true, industrial: true, customers: true },
     allowedSiteIds: ["site-1", "site-2"],
     timeZone: "Asia/Tehran",
     dayCutoffMinutes: 0,
@@ -97,9 +97,10 @@ describe("executive summary cache — the key separates readers who may see diff
   it.each([
     ["organization", scopeOf({ organizationId: "org-b" })],
     ["role", scopeOf({ role: "MEMBER" as ExecutiveScope["role"] })],
-    ["the operations axis", scopeOf({ authority: { operations: false, financial: true, industrial: true } })],
-    ["the financial axis", scopeOf({ authority: { operations: true, financial: false, industrial: true } })],
-    ["the industrial axis", scopeOf({ authority: { operations: true, financial: true, industrial: false } })],
+    ["the operations axis", scopeOf({ authority: { operations: false, financial: true, industrial: true, customers: true } })],
+    ["the financial axis", scopeOf({ authority: { operations: true, financial: false, industrial: true, customers: true } })],
+    ["the industrial axis", scopeOf({ authority: { operations: true, financial: true, industrial: false, customers: true } })],
+    ["the customers axis", scopeOf({ authority: { operations: true, financial: true, industrial: true, customers: false } })],
     ["a removed site", scopeOf({ allowedSiteIds: ["site-1"] })],
     ["an added site", scopeOf({ allowedSiteIds: ["site-1", "site-2", "site-3"] })],
     ["the reporting zone", scopeOf({ timeZone: "Europe/Berlin" })],
@@ -271,7 +272,7 @@ describe("executive summary cache — invalidation and tenant isolation", () => 
     // them the entry that was built with the axis they no longer have.
     const reduced = scopeOf({
       organizationId,
-      authority: { operations: true, financial: false, industrial: true },
+      authority: { operations: true, financial: false, industrial: true, customers: true },
     });
     const after = builder("reduced");
     const result = await readExecutiveSummary({ scope: reduced, range: "today", nowMs: NOW, build: after.build });

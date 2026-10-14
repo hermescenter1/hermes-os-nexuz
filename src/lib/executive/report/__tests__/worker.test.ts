@@ -262,7 +262,7 @@ describe("the pass targets the last FINISHED night", () => {
   it("generates at the organization's FULL breadth, not one reader's view", async () => {
     await run();
     const scope = h.generateCalls[0].scope as { authority: Record<string, boolean> };
-    expect(scope.authority).toEqual({ operations: true, financial: true, industrial: true });
+    expect(scope.authority).toEqual({ operations: true, financial: true, industrial: true, customers: true });
   });
 });
 

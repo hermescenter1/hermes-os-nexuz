@@ -228,7 +228,7 @@ function scopeFor(over: Partial<ExecutiveScope> = {}): ExecutiveScope {
     organizationId: ORG_A,
     memberId: "member-1",
     role: "OWNER",
-    authority: { operations: true, financial: true, industrial: true },
+    authority: { operations: true, financial: true, industrial: true, customers: true },
     allowedSiteIds: [SITE_1, SITE_2],
     timeZone: DEFAULT_TIME_ZONE,
     dayCutoffMinutes: 0,
@@ -373,9 +373,9 @@ describe("fail closed — no accessible site means no industrial query at all", 
 
 /* ── Independent authority axes ───────────────────────────────────────────── */
 
-describe("the three axes are checked independently", () => {
+describe("the authority axes are checked independently", () => {
   it("withholds every money figure when the financial axis is refused", async () => {
-    const scope = scopeFor({ authority: { operations: true, financial: false, industrial: true } });
+    const scope = scopeFor({ authority: { operations: true, financial: false, industrial: true, customers: true } });
     const summary = await run(scope);
 
     expect(summary.sections.financial.status).toBe("FORBIDDEN");
@@ -392,13 +392,13 @@ describe("the three axes are checked independently", () => {
 
   it("keeps operations working when the industrial axis is refused, and vice versa", async () => {
     const noIndustrial = await run(
-      scopeFor({ authority: { operations: true, financial: true, industrial: true }, allowedSiteIds: [] }),
+      scopeFor({ authority: { operations: true, financial: true, industrial: true, customers: true }, allowedSiteIds: [] }),
     );
     expect(noIndustrial.sections.operations.status).toBe("OPERATIONAL");
     expect(noIndustrial.sections.industrial.status).toBe("FORBIDDEN");
 
     const noOps = await run(
-      scopeFor({ authority: { operations: false, financial: false, industrial: true } }),
+      scopeFor({ authority: { operations: false, financial: false, industrial: true, customers: false } }),
     );
     expect(noOps.sections.operations.status).toBe("FORBIDDEN");
     expect(noOps.sections.operations.reasonKey).toBe(REASON.forbiddenOperations);
@@ -406,7 +406,7 @@ describe("the three axes are checked independently", () => {
   });
 
   it("does not call the ERP overview at all when neither operations nor financial is held", async () => {
-    await run(scopeFor({ authority: { operations: false, financial: false, industrial: true } }));
+    await run(scopeFor({ authority: { operations: false, financial: false, industrial: true, customers: false } }));
     expect(h.overviewCalls).toEqual([]);
   });
 
@@ -617,7 +617,7 @@ describe("the action centre states a cause and a destination for every item", ()
 
   it("still refuses when the reader may see nothing at all — blindness is not all-clear", async () => {
     const scope = scopeFor({
-      authority: { operations: false, financial: false, industrial: true },
+      authority: { operations: false, financial: false, industrial: true, customers: false },
       allowedSiteIds: [],
     });
     const summary = await run(scope);
@@ -730,12 +730,29 @@ describe("the organization's own customers", () => {
     expect((await run()).sections.customers.data!.financialsAvailable).toBe(false);
   });
 
-  it("refuses the section for a reader without ERP authority, and issues no customer query", async () => {
+  it("refuses the section for a reader without CUSTOMER authority, and issues no customer query", async () => {
     erpStore.party.push(party());
-    const summary = await run(scopeFor({ authority: { operations: false, financial: false, industrial: true } }));
+    const summary = await run(scopeFor({ authority: { operations: false, financial: false, industrial: true, customers: false } }));
     expect(summary.sections.customers.status).toBe("FORBIDDEN");
+    expect(summary.sections.customers.reasonKey).toBe(REASON.forbiddenCustomers);
     expect(summary.sections.customers.data).toBeNull();
     expect(queries.filter(q => q.model === "party" || q.model === "partyInteraction")).toHaveLength(0);
+  });
+
+  it("shows the figures to a reader who may see CUSTOMERS but not ERP", async () => {
+    // The defect this closes: `view_customers` is OWNER, ADMIN and MANAGER
+    // while `view_erp` is OWNER and ADMIN, so gating this section on the
+    // operations axis told a MANAGER "you may not see operations" about
+    // records they can open one click away at /dashboard/clients. The two
+    // permissions are not the same permission.
+    erpStore.party.push(party());
+    const summary = await run(
+      scopeFor({ authority: { operations: false, financial: false, industrial: true, customers: true } }),
+    );
+    expect(summary.sections.customers.status).toBe("OPERATIONAL");
+    expect(summary.sections.operations.status).toBe("FORBIDDEN");
+    // And it really read the customer source rather than reporting a cached shape.
+    expect(queries.filter(q => q.model === "party").length).toBeGreaterThan(0);
   });
 });
 

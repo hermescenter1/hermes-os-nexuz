@@ -10931,6 +10931,7 @@
     },
     "status": {
       "OPERATIONAL": "Aktiv",
+      "OPERATIONAL_RECORDED": "Erfasst",
       "EMPTY": "Noch keine Datensätze",
       "FORBIDDEN": "Für Ihre Rolle nicht verfügbar",
       "UNAVAILABLE": "Quelle nicht erreichbar",
@@ -11010,6 +11011,7 @@
       "forbiddenOperations": "Ihre Rolle umfasst die Betriebsdaten dieser Organisation nicht.",
       "forbiddenFinancial": "Ihre Rolle umfasst keine Finanzzahlen.",
       "forbiddenIndustrial": "Ihre Rolle umfasst den Industriebetrieb nicht.",
+      "forbiddenCustomers": "Sie dürfen die Kunden dieser Organisation nicht einsehen.",
       "noSites": "In dieser Organisation ist Ihrem Konto kein Werk zugewiesen.",
       "noRows": "Diese Organisation hat noch keine Datensätze dieser Art.",
       "sourceUnavailable": "Diese Quelle war für diese Anfrage nicht lesbar. Aus ihrem Fehlen wird nichts geschlossen.",
@@ -11082,7 +11084,8 @@
       "notFound": "Für diesen Tag gibt es in dieser Organisation keinen Bericht.",
       "detailTitle": "Bericht vom {date}",
       "coverageComplete": "Alle Abschnitte haben geantwortet",
-      "coveragePartial": "{count, plural, one {# Abschnitt hat nicht geantwortet} other {# Abschnitte haben nicht geantwortet}}",
+      "coverageFailed": "{count, plural, one {# Quelle war nicht lesbar} other {# Quellen waren nicht lesbar}}",
+      "coverageNotAsked": "{count, plural, one {# Abschnitt wurde nicht abgefragt} other {# Abschnitte wurden nicht abgefragt}}",
       "frozenNotice": "Dies ist ein eingefrorener Bericht. Er zeigt die Zahlen zum unten genannten Datenstand, nicht den heutigen Stand.",
       "calcVersion": "Berechnungsfassung",
       "dataCutoff": "Datenstand",
@@ -11172,7 +11175,8 @@
         "TASK": "Aufgabe",
         "WORK_ORDER": "Arbeitsauftrag",
         "APPROVAL": "Freigabe",
-        "ALERT": "Alarm"
+        "ALERT": "Alarm",
+        "CUSTOMER_FOLLOW_UP": "Kundennachfassung"
       },
       "duration": {
         "days": "{count, plural, one {# Tag} other {# Tage}}",
@@ -11187,7 +11191,9 @@
         "APPROVAL_LATE": "Wartet seit {duration} auf eine Entscheidung, über der Grenze von {threshold, number} Tagen.",
         "HIGH_ALERT_OPEN": "Alarm mit hohem Schweregrad, seit {duration} offen.",
         "WORK_OVERDUE": "Seit {duration} überfällig.",
-        "WORK_DUE_SOON": "Fällig {due}."
+        "WORK_DUE_SOON": "Fällig {due}.",
+        "FOLLOW_UP_OVERDUE": "Zugesagte Nachfassung seit {duration} überfällig.",
+        "FOLLOW_UP_DUE_SOON": "Nachfassung zugesagt für {due}."
       },
       "rulesTitle": "Wie Prioritäten festgelegt werden",
       "rulesLede": "Die Regeln werden in dieser Reihenfolge geprüft; die erste, auf die ein Eintrag passt, bestimmt seine Stufe. Innerhalb einer Stufe steht der Eintrag zuerst, der am längsten unter Druck steht. Es gibt keine Punktzahl.",
@@ -11200,7 +11206,9 @@
         "APPROVAL_LATE": "Eine Freigabe, die seit {days, plural, one {# Tag} other {# Tagen}} oder länger wartet.",
         "HIGH_ALERT_OPEN": "Ein Alarm mit hohem Schweregrad, der nach {hours, plural, one {# Stunde} other {# Stunden}} noch offen ist.",
         "WORK_OVERDUE": "Jede andere offene Aufgabe oder jeder andere offene Arbeitsauftrag nach dem Fälligkeitsdatum.",
-        "WORK_DUE_SOON": "Jede andere offene Aufgabe oder jeder andere offene Arbeitsauftrag, fällig vor Ende morgen."
+        "WORK_DUE_SOON": "Jede andere offene Aufgabe oder jeder andere offene Arbeitsauftrag, fällig vor Ende morgen.",
+        "FOLLOW_UP_OVERDUE": "Eine Kundennachfassung, deren zugesagtes Datum verstrichen ist.",
+        "FOLLOW_UP_DUE_SOON": "Eine Kundennachfassung, die bis zum Ende des morgigen Tages fällig wird."
       },
       "configNote": "Diese Schwellenwerte sind die Produktvorgaben; diese Organisation hat keine eigenen festgelegt.",
       "listTruncated": "{shown, number} von {total, number} Prioritäten werden angezeigt.",
@@ -11209,7 +11217,8 @@
         "tasks": "Aufgaben",
         "workOrders": "Arbeitsaufträge",
         "approvals": "Freigaben",
-        "alerts": "Alarme"
+        "alerts": "Alarme",
+        "customerFollowUps": "Kundennachfassungen"
       },
       "sourceRead": "Gelesen",
       "sourceTruncated": "Nur die {limit, number} dringlichsten Datensätze wurden gelesen.",

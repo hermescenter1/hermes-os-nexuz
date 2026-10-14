@@ -57,6 +57,7 @@ export const REASON = {
   forbiddenOperations: "executive.reasons.forbiddenOperations",
   forbiddenFinancial: "executive.reasons.forbiddenFinancial",
   forbiddenIndustrial: "executive.reasons.forbiddenIndustrial",
+  forbiddenCustomers: "executive.reasons.forbiddenCustomers",
   noSites: "executive.reasons.noSites",
   noRows: "executive.reasons.noRows",
   sourceUnavailable: "executive.reasons.sourceUnavailable",
@@ -910,9 +911,12 @@ export async function buildExecutiveSummary(args: {
     settleSection(() => industrialSection({ scope, range, nowMs, nowIso, client })),
     // Customers need view_erp like the rest of this organization's commercial
     // records; a reader without it is told so, not shown an empty panel.
-    scope.authority.operations
+    // `customers`, NOT `operations`: see ExecutiveAuthority. The two
+    // permissions cover different people, and a MANAGER who may open every
+    // customer record was being told the figures were none of their business.
+    scope.authority.customers
       ? settleSection(() => customersSection({ scope, range, nowIso, client }))
-      : Promise.resolve(refusedSection<CustomersSummary>("FORBIDDEN", REASON.forbiddenOperations)),
+      : Promise.resolve(refusedSection<CustomersSummary>("FORBIDDEN", REASON.forbiddenCustomers)),
   ]);
 
   const financial = overviewFailed

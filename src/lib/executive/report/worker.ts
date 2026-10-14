@@ -138,7 +138,7 @@ function systemScopeFor(args: {
     organizationId: args.organizationId,
     memberId: "system",
     role: "OWNER",
-    authority: { operations: true, financial: true, industrial: true },
+    authority: { operations: true, financial: true, industrial: true, customers: true },
     // EVERY active site of this organization. An empty list here would make the
     // industrial section fail closed in every report, which would look like a
     // permission refusal rather than what it is.
