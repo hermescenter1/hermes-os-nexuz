@@ -10901,6 +10901,11 @@
     "eyebrow": "Unternehmensführung",
     "title": "Zentrale der Geschäftsleitung",
     "lede": "Die heutige Lage, die Entscheidungen, die auf Sie warten, und die Datensätze hinter jeder Zahl.",
+    "adminBridge": {
+      "ariaLabel": "Management-Zentrum",
+      "lede": "Diese Konsole ist der Prüfpfad. Die Führungskennzahlen der Organisation, die Prioritäten für morgen und das Archiv des nächtlichen Berichts liegen im Management-Zentrum.",
+      "cta": "Zum Management-Zentrum"
+    },
     "ranges": {
       "today": "Heute",
       "last7Days": "Letzte 7 Tage",

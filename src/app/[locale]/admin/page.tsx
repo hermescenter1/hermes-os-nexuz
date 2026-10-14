@@ -5,6 +5,7 @@ import { PageShell }          from "@/components/PageShell";
 import { PageIntro }          from "@/components/PageIntro";
 import { RequireCapability }  from "@/components/auth/RequireCapability";
 import { AdminConsoleClient } from "@/components/admin/AdminConsoleClient";
+import { ExecutiveCentreLink } from "@/components/admin/ExecutiveCentreLink";
 import { getCurrentUser } from "@/lib/auth/session";
 import { isAuthConfigured } from "@/lib/auth/config";
 import { getStorageMode } from "@/lib/storage/storage-mode";
@@ -34,6 +35,9 @@ export default async function AdminPage({
     <RequireCapability capability="admin">
       <PageShell>
         <PageIntro eyebrow={t("eyebrow")} title={t("title")} lede={t("lede")} />
+        {/* Shown only to a reader the executive gate itself would admit; it
+            renders nothing otherwise. See ExecutiveCentreLink. */}
+        <ExecutiveCentreLink locale={locale} />
         <AdminConsoleClient role={user?.role ?? "viewer"} status={status} />
       </PageShell>
     </RequireCapability>
