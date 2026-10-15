@@ -11,7 +11,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -240,6 +240,42 @@ describe("DA-1 — several artifacts, none of them usable", () => {
   it("refuses an artifact whose record belongs to the sibling next to it", () => {
     const r = judge({ artifact: "hermes_postgres_20261010_112029.hbk" });
     expect(r.fields.result).toBe("META_MISMATCH");
+  });
+});
+
+describe("DA-1 — the record can arrive on stdin, which is how the deploy passes it", () => {
+  /** The same judgement, with `-` for the record and the JSON piped in. */
+  function judgeStdin(json: string, mtime = NOW - HOUR) {
+    const r = spawnSync("bash", [SCRIPT, NAME, String(mtime), SHA, "-", "30", String(NOW)], {
+      encoding: "utf8",
+      input: json,
+    });
+    const fields: Record<string, string> = {};
+    for (const line of (r.stdout ?? "").split("\n")) {
+      const m = /^FRESHNESS ([a-z_]+)=(.*)$/.exec(line.trim());
+      if (m) fields[m[1]] = m[2];
+    }
+    return { status: r.status, fields };
+  }
+
+  // The pre-migration gate may not create, copy or delete anything under the
+  // backup directory — phase997-backup-evidence-sudo asserts that statically.
+  // So the workflow pipes the record it has already read, rather than writing
+  // a temp copy and removing it afterwards.
+  it("accepts a fresh record piped in", () => {
+    const r = judgeStdin(readFileSync(record(), "utf8"));
+    expect(r.fields.result).toBe("FRESH");
+    expect(r.status).toBe(0);
+  });
+
+  it("reaches the same verdict as the file form", () => {
+    const created = NOW - 31 * HOUR;
+    const json = readFileSync(record({}, created), "utf8");
+    expect(judgeStdin(json, created).fields.result).toBe("STALE");
+  });
+
+  it("refuses an empty record rather than reading absence as consent", () => {
+    expect(judgeStdin("").fields.result).toBe("NO_META");
   });
 });
 

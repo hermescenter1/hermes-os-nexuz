@@ -432,16 +432,18 @@ jobs:
             # that script has a test that does exactly that. The privileged
             # reads stay here under the existing sudo rules; the script is
             # handed the values and needs no privilege of its own.
+            #
+            # The record goes in on STDIN rather than through a temp file:
+            # this gate is forbidden from creating, copying or deleting
+            # anything (phase997-backup-evidence-sudo), and a temporary copy
+            # plus a delete would have broken that invariant to save one pipe.
             NEWEST_MTIME="$(cut -d' ' -f1 <<<"${NEWEST_LINE}" | cut -d. -f1)"
-            META_COPY="$(mktemp)"
-            printf '%s' "${META_JSON}" > "${META_COPY}"
-            if ! bash scripts/deploy/check-backup-freshness.sh \
-                 "${NEWEST_NAME}" "${NEWEST_MTIME}" "${ACTUAL_SHA}" "${META_COPY}" \
-                 "${BACKUP_MAX_AGE_HOURS:-30}"; then
-              rm -f "${META_COPY}"
+            if ! printf '%s' "${META_JSON}" \
+                 | bash scripts/deploy/check-backup-freshness.sh \
+                   "${NEWEST_NAME}" "${NEWEST_MTIME}" "${ACTUAL_SHA}" - \
+                   "${BACKUP_MAX_AGE_HOURS:-30}"; then
               backup_refuse "the newest backup did not pass the freshness and consistency check."
             fi
-            rm -f "${META_COPY}"
 
             echo "Pre-migration evidence verified: ${NEWEST_NAME} complete, verified, hash-intact and recent."
           fi

@@ -30,7 +30,9 @@
 #
 # Usage:
 #   check-backup-freshness.sh <artifact-name> <mtime-epoch> <actual-sha256> \
-#                             <meta-file> [max-age-hours] [now-epoch]
+#                             <meta-file|-> [max-age-hours] [now-epoch]
+#
+#   `-` as the meta argument reads the record from stdin.
 #
 # Prints FRESHNESS key=value lines; exits 0 only on result=FRESH.
 set -uo pipefail
@@ -75,8 +77,20 @@ if ! is_uint "${MTIME}"; then
 fi
 
 # ── The record ───────────────────────────────────────────────────────────────
-[ -n "${META_FILE}" ] && [ -f "${META_FILE}" ] || refuse "NO_META" "no verification record at '${META_FILE}'"
-META="$(cat -- "${META_FILE}")" || refuse "NO_META" "cannot read the verification record"
+#
+# `-` reads the record from standard input. That is how the deploy workflow
+# passes it: the record is root-owned, the workflow already holds its contents
+# from its own privileged read, and the pre-migration gate is forbidden from
+# creating, copying or deleting anything under the backup directory
+# (scripts/__tests__/phase997-backup-evidence-sudo.test.ts). A temp file plus
+# an `rm` would have broken that invariant to save one pipe.
+if [ "${META_FILE}" = "-" ]; then
+  META="$(cat)" || refuse "NO_META" "the verification record could not be read from stdin"
+  [ -n "${META}" ] || refuse "NO_META" "the verification record arrived empty on stdin"
+else
+  [ -n "${META_FILE}" ] && [ -f "${META_FILE}" ] || refuse "NO_META" "no verification record at '${META_FILE}'"
+  META="$(cat -- "${META_FILE}")" || refuse "NO_META" "cannot read the verification record"
+fi
 
 field() { sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" <<<"${META}"; }
 numfield() { sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p" <<<"${META}"; }

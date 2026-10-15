@@ -119,7 +119,19 @@ function sha(buf: Buffer): string {
   return createHash("sha256").update(buf).digest("hex");
 }
 
-function metaFor(name: string, body: Buffer, over: Partial<Record<string, unknown>> = {}): string {
+/**
+ * `createdAtMs` follows the artifact's own mtime because the gate now cross-
+ * checks the two (DA-1): a record whose stated creation time is far from the
+ * file it describes is refused as TIME_INCONSISTENT. The placeholder `1` this
+ * helper used before DA-1 made every fixture look fifty-six years stale — a
+ * fixture defect, not a weakened rule, so the fixture is what changes here.
+ */
+function metaFor(
+  name: string,
+  body: Buffer,
+  over: Partial<Record<string, unknown>> = {},
+  mtimeSec: number = Math.floor(Date.now() / 1000),
+): string {
   const rec: Record<string, unknown> = {
     artifactType: "postgres",
     verified: true,
@@ -127,7 +139,7 @@ function metaFor(name: string, body: Buffer, over: Partial<Record<string, unknow
     encrypted: true,
     keyId: "test-key",
     transportSha256: sha(body),
-    createdAtMs: 1,
+    createdAtMs: mtimeSec * 1000,
     file: name,
     ...over,
   };
@@ -165,7 +177,7 @@ function addBackup(f: Fixture, name: string, opts: { meta?: string | null; body?
   const body = opts.body ?? randomBytes(4096);
   const hbk = join(f.dir, name);
   writeFileSync(hbk, body);
-  if (opts.meta !== null) writeFileSync(`${hbk}.meta.json`, opts.meta ?? metaFor(name, body));
+  if (opts.meta !== null) writeFileSync(`${hbk}.meta.json`, opts.meta ?? metaFor(name, body, {}, opts.mtime));
   if (opts.mtime !== undefined) {
     utimesSync(hbk, opts.mtime, opts.mtime);
   }
@@ -209,7 +221,14 @@ describe.skipIf(!BASH_AVAILABLE)("behaviour — the shipped gate, executed", () 
     const r = runGate(f);
     expect(r.stderr).toBe("");
     expect(r.code).toBe(0);
-    expect(r.stdout).toContain("Pre-migration evidence verified: hermes_postgres_20260924_135841.hbk complete, verified and hash-intact.");
+    expect(r.stdout).toContain("Pre-migration evidence verified: hermes_postgres_20260924_135841.hbk complete, verified, hash-intact and recent.");
+    // DA-1: the summary line gained a word, which on its own would prove
+    // nothing. What is asserted is that the freshness judgement actually RAN
+    // on this artifact and returned a verdict — a renamed sentence over a
+    // skipped check would fail here.
+    expect(r.stdout).toContain("FRESHNESS artifact=hermes_postgres_20260924_135841.hbk");
+    expect(r.stdout).toContain("FRESHNESS result=FRESH");
+    expect(r.stdout).toMatch(/FRESHNESS max_age_hours=30\b/);
     const verbs = r.sudoCalls.map((c) => c.split(" ")[0]);
     expect(verbs).toEqual(["find", "find", "find", "cat", "sha256sum", "find", "cat"]);
     expect(r.sudoCalls.some((c) => c.startsWith("cat -- ") && c.endsWith(".hbk.meta.json"))).toBe(true);
@@ -284,7 +303,7 @@ describe.skipIf(!BASH_AVAILABLE)("behaviour — the shipped gate, executed", () 
     const now = Math.floor(Date.now() / 1000);
     addBackup(f, "old.hbk", { mtime: now - 3600 }); // valid, older
     const body = randomBytes(64);
-    addBackup(f, "new.hbk", { body, meta: metaFor("new.hbk", body, { verified: false }), mtime: now }); // broken, newer
+    addBackup(f, "new.hbk", { body, meta: metaFor("new.hbk", body, { verified: false }, now), mtime: now }); // broken, newer
     addAdoption(f);
     const r = runGate(f);
     expect(r.code).toBe(1);
@@ -296,7 +315,7 @@ describe.skipIf(!BASH_AVAILABLE)("behaviour — the shipped gate, executed", () 
     const f = fixture();
     const now = Math.floor(Date.now() / 1000);
     const oldBody = randomBytes(64);
-    addBackup(f, "old.hbk", { body: oldBody, meta: metaFor("old.hbk", oldBody, { verified: false }), mtime: now - 3600 });
+    addBackup(f, "old.hbk", { body: oldBody, meta: metaFor("old.hbk", oldBody, { verified: false }, now - 3600), mtime: now - 3600 });
     addBackup(f, "new.hbk", { mtime: now });
     addAdoption(f);
     const r = runGate(f);

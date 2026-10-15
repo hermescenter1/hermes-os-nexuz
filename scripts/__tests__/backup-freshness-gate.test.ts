@@ -55,7 +55,17 @@ describe("DA-1 — the gate refuses a stale backup", () => {
 
   it("hands the script the artifact, its mtime, the computed hash and the record", () => {
     expect(gate).toContain("NEWEST_MTIME");
-    expect(gate).toMatch(/"\$\{NEWEST_NAME\}" "\$\{NEWEST_MTIME\}" "\$\{ACTUAL_SHA\}" "\$\{META_COPY\}"/);
+    expect(gate).toMatch(/"\$\{NEWEST_NAME\}" "\$\{NEWEST_MTIME\}" "\$\{ACTUAL_SHA\}" -/);
+  });
+
+  it("pipes the record in rather than writing a copy it would have to delete", () => {
+    // phase997-backup-evidence-sudo forbids this gate from creating, copying
+    // or removing anything — it is a READER. A mktemp plus a delete would have
+    // traded that invariant for one pipe, so the record the workflow already
+    // read goes in on stdin and the script takes `-`.
+    expect(gate).toMatch(/printf '%s' "\$\{META_JSON\}"\s*\\?\s*\n?\s*\| bash scripts\/deploy\/check-backup-freshness\.sh/);
+    expect(gate).not.toMatch(/\bmktemp\b/);
+    expect(gate).not.toMatch(/\brm\b/);
   });
 
   it("keeps the limit at the documented default", () => {
