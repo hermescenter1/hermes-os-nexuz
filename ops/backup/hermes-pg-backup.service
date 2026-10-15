@@ -1,0 +1,52 @@
+[Unit]
+# Hermes OS — the ENCRYPTED PostgreSQL backup the deploy gate accepts.
+#
+# This produces the `.hbk` artifact in /backups/postgres, which is the ONLY
+# thing `deploy.yml` will release against. It is NOT the same mechanism as
+# hermes-dr-backup.service: that one takes DR snapshots under
+# /var/backups/hermes and does not produce a `.hbk`. Both running is normal;
+# only this one satisfies the release contract.
+#
+# Shipped because the repository previously shipped nothing: the DR runbook
+# says "24 h, owner-activated host cron", and on 2026-10-15 the consequence
+# showed up in production — DR snapshots were current while the newest `.hbk`
+# was five days old, and a release had already been allowed to proceed
+# against it. Activation is still the owner's; what changes is that there is
+# now one documented unit to activate instead of an ad-hoc crontab line.
+#
+# INSTALL: see ops/backup/README.md. The two key variables are required and
+# the script fails closed (exit 2) without them.
+Description=Hermes OS encrypted PostgreSQL backup (.hbk)
+Documentation=file:///opt/hermes-os-nexuz/docs/release/disaster-recovery-runbook.md
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/hermes-os-nexuz
+
+# REQUIRED, and deliberately not defaulted here: the script exits 2 without
+# them, which is the correct outcome for a misconfigured host. Supply them in
+# an owner-created drop-in that is NOT in this repository:
+#   /etc/systemd/system/hermes-pg-backup.service.d/key.conf
+#     [Service]
+#     Environment=HERMES_BACKUP_KEY_FILE=/etc/hermes/backup.key
+#     Environment=HERMES_BACKUP_KEY_ID=<non-secret identifier>
+# The key FILE path and its identifier are configuration; the key itself is
+# never written here, never passed on a command line and never echoed.
+
+ExecStart=/bin/bash /opt/hermes-os-nexuz/scripts/backup-postgres.sh
+
+# The script already takes its own lock, but a second concurrent unit start
+# would still waste a pg_dump.
+TimeoutStartSec=3600
+
+# A failed backup must be loud. Without this, a unit that exits non-zero every
+# night looks identical to one that never ran, which is exactly how the gap
+# this unit closes went unnoticed.
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
