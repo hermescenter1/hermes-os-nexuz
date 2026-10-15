@@ -15,6 +15,11 @@ export interface BuildMetadataOptions {
   path: string;
   title: string;
   description: string;
+  /**
+   * @deprecated Search engines ignore `<meta name="keywords">`, so it is no
+   * longer emitted. Accepted only so existing call sites keep compiling; the
+   * relevance signal belongs in the visible copy, headings and internal links.
+   */
   keywords?: string | string[];
   /** Disallow indexing — use for auth/dashboard/admin routes */
   noIndex?: boolean;
@@ -98,7 +103,7 @@ function resolveContentLocales(
 
 /**
  * Build a complete Next.js Metadata object for any route.
- * Handles: canonical, hreflang, OG, Twitter, robots, keywords.
+ * Handles: canonical, hreflang, OG, Twitter, robots.
  */
 export function buildMetadata(opts: BuildMetadataOptions): Metadata {
   const {
@@ -106,7 +111,6 @@ export function buildMetadata(opts: BuildMetadataOptions): Metadata {
     path,
     title,
     description,
-    keywords,
     noIndex = false,
     ogImage = OG_IMAGE_URL,
     ogType = "website",
@@ -118,7 +122,6 @@ export function buildMetadata(opts: BuildMetadataOptions): Metadata {
   const { canonicalLocale, alternates } = resolveContentLocales(locale, contentLocales);
 
   const canonicalUrl  = `${BASE_URL}/${canonicalLocale}${path}`;
-  const keywordString = Array.isArray(keywords) ? keywords.join(", ") : keywords;
 
   // `null` means "this document has exactly one representation" — no languages
   // map is emitted at all, rather than a single self-referencing entry.
@@ -153,7 +156,6 @@ export function buildMetadata(opts: BuildMetadataOptions): Metadata {
   return {
     title,
     description,
-    ...(keywordString ? { keywords: keywordString } : {}),
     metadataBase: new URL(BASE_URL),
     alternates: {
       canonical: canonicalUrl,
