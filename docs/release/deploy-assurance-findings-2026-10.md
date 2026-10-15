@@ -7,7 +7,7 @@ that deploy unsafe, and none of them is closed by it.
 | # | Finding | Severity | State |
 | --- | --- | --- | --- |
 | DA-1 | The backup gate does not check AGE, and the release used a backup 3.7× older than the documented RPO | HIGH | OPEN |
-| DA-2 | The migration connection has no lock-wait or statement-time limit | MEDIUM | OPEN |
+| DA-2 | The migration connection has no lock-wait limit | MEDIUM | **IMPLEMENTED** 2026-10-14 — final acceptance OPEN |
 | DA-3 | Nothing binds the running `hermes-web` image to the release commit | MEDIUM | OPEN |
 
 ---
@@ -80,25 +80,96 @@ it — a stalled deploy with no error, which is harder to diagnose than a failur
 `pg_advisory_lock` with a **10 s** timeout before applying anything; that bounds
 the wait for the migration *slot*, not the table lock of the statement.
 
-**Closing evidence required.**
+### Implemented 2026-10-14 — final acceptance still open
 
-1. A bounded wait on the runner's **real** connection — the `migrator` stage —
-   not in the already-applied migration file, which must not be edited.
-   Candidates, in order of preference: `options=-c lock_timeout=...` on the
-   migrator's connection string, or a `PGOPTIONS` environment entry on the
-   `hermes-migrate` service only.
-2. Proven on an isolated database: with a competing transaction holding the
-   lock, the migration **fails loudly** within the limit.
-3. Proven that the limit cannot hide a half-applied migration: after a timeout,
-   `_prisma_migrations` must show the attempt unresolved and `migrate status`
-   must exit non-zero, so the existing post-migration count check still refuses
-   to replace `hermes-web`. A timeout that silently left the schema half-changed
-   would be worse than no timeout.
-4. A statement-time limit is considered separately from the lock limit: a long
-   but *progressing* index build is not the same failure as a lock that will
-   never be granted, and the two deserve different numbers.
+**The value.** `SET lock_timeout = '5s'` is the default for future production
+migrations (owner decision, 2026-10-14). A migration that needs a different
+value must say why in its own header and have the change reviewed; the static
+rule accepts any positive duration up to two minutes, so the *default* is a
+policy, not something the test can enforce alone.
 
----
+**Where the limit lives, and why not the two obvious places.**
+
+| Candidate | Rejected because |
+| --- | --- |
+| `PGOPTIONS` on `hermes-migrate` | Prisma's migration engine does not use libpq, so there is no reason to believe it would read it. "Probably works" is not a control. |
+| `options=-c lock_timeout=…` in the connection string | That string lives in `.env.production`, which this repository must never read or write. |
+| **`SET lock_timeout` as the first statement of the migration file** | **Chosen.** In the repository, visible in the diff, and measured to work. |
+
+`SET` persists for the session because Prisma does **not** wrap a migration
+file in a transaction — itself measured, not assumed.
+
+### The evidence, with this project's own CLI against PostgreSQL 16
+
+| Question | Result |
+| --- | --- |
+| A — no conflicting lock | applied, exit 0, index valid |
+| B — conflict, cap `2s` | exit 1, lock-timeout error, 5,355 ms total |
+| B — conflict, cap `6s` | exit 1, lock-timeout error, 12,770 ms total |
+| C — state after failure | `_prisma_migrations` row **unresolved**, `applied_steps_count = 0`, **no index created**, `migrate status` exit 1 |
+| D — recovery | `migrate resolve --rolled-back` exit 0, retry applied, index valid, both the rolled-back attempt and the success kept in history |
+
+**A measurement that did NOT match the prediction, reported as it came out.**
+The plan was to isolate the wait by differencing the two caps: a `2s` and a
+`6s` run should differ by about 4,000 ms. The observed difference is
+**7,415 ms**, a slope of ≈1.85 against the cap, with a constant overhead of
+≈1.3 s. The engine appears to incur the lock wait **about twice** per failed
+file.
+
+Two things are nonetheless settled: the failure really is a lock timeout, and
+the elapsed time **scales with the cap** — which is what proves the `SET`
+reached the DDL on the same connection. The exact multiple is not explained,
+and it has a practical consequence that must be stated rather than rounded
+away: **a 5 s cap can add roughly 10 s to a blocked release, not 5 s.** Still
+bounded; just not the number the cap names.
+
+### What the timeout does and does not guarantee
+
+It **does** turn a silent, unbounded hang into a visible, fail-closed stop:
+the attempt is left unresolved exactly as any other failed migration,
+`migrate status` exits non-zero, and the deploy's existing post-migration
+check refuses to replace `hermes-web`.
+
+It does **not** guarantee that no migration is left half-applied. In the
+measurement nothing was, but that file held a single statement. Prisma does
+not wrap a file in a transaction, so in a MULTI-statement file a timeout on
+the second statement leaves the first applied — visible through the
+unresolved row, and needing manual resolution.
+
+**No general `statement_timeout` was added, and that is a trade-off, not a
+safeguard.** A lock that will never be granted and an index build that is slow
+but progressing are different failures; killing the second mid-way is one of
+the few ways to actually create the half-applied migration this finding exists
+to avoid. The consequence is that a long-running statement is still unbounded,
+and the deploy path — not this rule — remains responsible for total duration,
+for a stalled or disconnected run, and for recovery.
+
+### The rule, and the hole it deliberately closes
+
+Enforced by `prisma/__tests__/migration-lock-timeout.test.ts` (26 cases).
+
+* **"New" is a pinned baseline**, `prisma/__tests__/lock-timeout-baseline.json`
+  (87 migrations as of 2026-10-14), **not a date**. A date alone would let a
+  new migration named `20200101000000_…` walk past the control.
+* The control reads the **value**, not the word `SET`: zero, `DEFAULT`, a
+  non-duration and an absurdly large value are all rejected, as are a later
+  `RESET`, a later weakening `SET`, `SET LOCAL` outside a transaction (which
+  does nothing), a transaction opened without restating the cap, and any DDL
+  before the cap is in force. A `SET` inside a comment or a string literal
+  does not count — comments and literals are stripped before the scan.
+* **Already-applied migrations are not touched**, and the test asserts none
+  of them has been: editing one changes its checksum and breaks every
+  database that has it.
+* **`CREATE INDEX CONCURRENTLY` is not exempt by its nature.** The exemption
+  list is empty, and an entry in it is only half of an exemption: the
+  migration's own header must answer `EXEMPTION REASON`, `ALTERNATIVE
+  CONTROL`, `EXPECTED WAIT`, `STATE AFTER FAILURE` (a failed concurrent build
+  leaves an INVALID index occupying space and unusable by the planner) and
+  `RECOVERY`. A test exercises that requirement rather than asserting it.
+
+**Still open on DA-2:** the ≈2× multiple is unexplained; no production release
+has exercised the rule yet; and the deploy path still has no cap on total
+migration duration or handling for a stalled connection.
 
 ## DA-3 — the running image is not bound to the release commit
 
