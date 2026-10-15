@@ -406,7 +406,13 @@ describe.skipIf(!REAL_SUDO)("real permissions — the incident, reproduced and c
     const r = runRealGate(dir);
     expect(r.stderr).toBe("");
     expect(r.status).toBe(0);
-    expect(r.stdout).toContain(`Pre-migration evidence verified: ${name} complete, verified and hash-intact.`);
+    expect(r.stdout).toContain(`Pre-migration evidence verified: ${name} complete, verified, hash-intact and recent.`);
+    // DA-1, on a REAL root-owned 0600 artifact read through real sudo -n: the
+    // freshness judgement is handed the record on stdin and must still reach
+    // a verdict here, where nothing is faked. The renamed sentence alone
+    // would prove nothing, so the verdict itself is asserted.
+    expect(r.stdout).toContain(`FRESHNESS artifact=${name}`);
+    expect(r.stdout).toContain("FRESHNESS result=FRESH");
   });
 
   it("a hash mismatch on the same root-owned layout still REFUSES", () => {
