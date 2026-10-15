@@ -1,0 +1,27 @@
+[Unit]
+# Runs the encrypted PostgreSQL backup once a day.
+#
+# The cadence is the documented one: system RPO is 24 h
+# (docs/release/phase98-architecture-and-plan.md), and the deploy gate refuses
+# an artifact older than 30 h — the RPO plus one interval, so a single missed
+# run stops the next release instead of silently widening the restore window.
+Description=Daily encrypted PostgreSQL backup for Hermes OS
+Documentation=file:///opt/hermes-os-nexuz/ops/backup/README.md
+
+[Timer]
+# 02:40 local time: before the nightly executive report pass and well clear of
+# the usual deploy window, so a release is never racing a pg_dump.
+OnCalendar=*-*-* 02:40:00
+
+# If the host was off at 02:40, run on the next boot rather than skipping the
+# day. A skipped day is exactly the state that let a five-day-old artifact
+# become the newest one.
+Persistent=true
+
+# Spread the start a little so a fleet does not dump in lockstep.
+RandomizedDelaySec=300
+
+Unit=hermes-pg-backup.service
+
+[Install]
+WantedBy=timers.target

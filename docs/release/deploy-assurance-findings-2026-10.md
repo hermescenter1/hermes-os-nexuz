@@ -6,9 +6,9 @@ that deploy unsafe, and none of them is closed by it.
 
 | # | Finding | Severity | State |
 | --- | --- | --- | --- |
-| DA-1 | The backup gate does not check AGE, and the release used a backup 3.7× older than the documented RPO | HIGH | OPEN |
+| DA-1 | The backup gate does not check AGE, and nothing schedules the artifact it accepts — the release used a backup 3.7× older than the documented RPO | HIGH | OPEN — gate and timer written, production chain not yet run |
 | DA-2 | The migration connection has no lock-wait limit | MEDIUM | **IMPLEMENTED** 2026-10-14 — final acceptance OPEN |
-| DA-3 | Nothing binds the running `hermes-web` image to the release commit | MEDIUM | OPEN |
+| DA-3 | Nothing binds the running `hermes-web` image to the release commit | MEDIUM | **IMPLEMENTED** 2026-10-15 — not yet exercised by a release |
 
 ---
 
@@ -29,37 +29,89 @@ pass exactly as this one did.
 Had the migration gone wrong, the restore point would have lost up to four days
 of production data, against a contract that promises at most one.
 
-**What is not yet known** (requires the host, and is part of closing this):
+### Corrected diagnosis — 2026-10-15
 
-* why the newest backup is four days old — whether the scheduled job is failing,
-  disabled, or was never scheduled on this host;
-* whether newer `.hbk` files exist that are not marked verified, and why.
+The first version of this finding guessed that *the backup job was failing*.
+Host evidence supplied by the owner shows it was not. The local backup path and
+`hermes-dr-backup.service` were both current and both reported PASS throughout
+the window.
 
-Read-only commands for that, which print no key material and decrypt nothing:
+What is **not** running is the only producer of the artifact the release
+contract reads. The gate looks for `*.hbk` plus a `*.meta.json` verification
+record in `/backups/postgres`, and the single mechanism in this repository that
+writes that pair is `scripts/backup-postgres.sh` (PostgreSQL dump →
+`scripts/dr/hbk.mjs`, AES-256-GCM, atomic `.hbk.partial` → `.hbk`, then the
+record). The DR runbook has always described its cadence as *owner-activated
+host cron*, and the repository shipped **nothing to activate** — no unit, no
+timer, no crontab fragment. The newest artifact is therefore 89.8 h old because
+nothing has produced a newer one since 2026-10-10.
 
-```bash
-sudo -n find /backups/postgres -maxdepth 1 -type f -name '*.hbk' -printf '%TY-%Tm-%Td %TH:%TM %10s %p\n' | sort | tail -10
-```
+Two things follow, and both are deliberate omissions rather than oversights:
 
-```bash
-systemctl list-timers --all | grep -i -E 'backup|hermes' ; sudo -n crontab -l 2>/dev/null | grep -i backup ; crontab -l 2>/dev/null | grep -i backup
-```
+* **The gate's source is unchanged.** Pointing the gate at the DR snapshots
+  would need its own equivalence evidence — coverage, encryption, integrity,
+  freshness and restore method — proven side by side. A healthy DR service is
+  not that evidence, so no such change is proposed here.
+* **Nothing is renamed or hand-written.** A plaintext dump renamed to `.hbk`, or
+  a `.meta.json` written by hand, would make this gate green while making the
+  restore point fictional. `ops/backup/README.md` states both prohibitions.
 
-```bash
-sudo -n journalctl -u hermes-backup --since '14 days ago' --no-pager | tail -40
-```
+### What this change contains
 
-**Closing evidence required.**
+1. **`scripts/deploy/check-backup-freshness.sh`** — the age and consistency
+   judgement, split out of the workflow because its branches can only be proven
+   against real files. It is handed the artifact name, the file's mtime, the
+   computed SHA-256 and a copy of the record; it needs no privilege of its own,
+   so the deploy user's `sudo -n` rules are untouched.
+2. **`scripts/__tests__/check-backup-freshness.test.ts`** — 30 cases driven
+   against the real script with an injected clock: the boundary (29 h fresh,
+   exactly 30 h refused, 31 h refused, the historical 89 h refused), a future
+   mtime, a future `createdAtMs`, a record naming another artifact, each missing
+   or false record field, a hash mismatch, no hash at all, and every bad limit
+   (zero, negative, non-numeric, 73, 720). A source-level test over the YAML can
+   show that a check exists; only this can show what it decides.
+3. **`ops/backup/hermes-pg-backup.{service,timer}` + `README.md`** — the
+   schedule the repository never shipped. `OnCalendar=*-*-* 02:40:00` with
+   `Persistent=true`, so a missed day is caught up rather than skipped — a
+   skipped day is exactly the state that produced this finding. The unit *names*
+   `HERMES_BACKUP_KEY_FILE` and `HERMES_BACKUP_KEY_ID` and refuses to default
+   them; their values belong in an owner-created drop-in and the key itself is
+   only ever read from a file.
+4. **The workflow** calls the script after its existing integrity checks and
+   refuses the release through the same `backup_refuse` path. The limit is
+   **30 h** — the documented 24 h RPO plus one backup interval, so *one* missed
+   run stops the next release instead of silently widening the restore window.
 
-1. A maximum age is defined **from the documented RPO** (24 h) plus the backup
-   job's own run window, stated in the runbook.
-2. The gate enforces it: a backup older than that maximum is refused with a
-   message that names the age and the limit, exactly as the integrity checks do
-   now. The age must be read from the same privileged listing the gate already
-   does, so no new access is introduced.
-3. The reason the 2026-10-10 backup was the newest is established and fixed.
-4. **Before the next release**, a fresh backup is taken through the standard
-   path and verified, and its timestamp is recorded in the release notes.
+### What "age" is worth here
+
+`createdAtMs` is written into the record by `scripts/backup-postgres.sh` when it
+finishes; `mtime` is filesystem metadata. **Neither is a cryptographic proof of
+creation time** — the record is plain JSON written by a script, and anyone who
+can write the file can `touch` it. They are claims by a trusted producer, not
+attestations, and neither is presented here as more than that.
+
+So both are read, and the judgement is the **stricter** of the two: an artifact
+is fresh only if the record says so *and* the file says so. Using either alone
+would make the other the way past. They are also cross-checked — a record whose
+`createdAtMs` is more than an hour from the file's mtime is refused as
+`TIME_INCONSISTENT`, because it describes a different file or a touched one.
+Tightening this further would need a signed timestamp from the producer, which
+the backup chain does not currently emit; that is recorded as a limitation, not
+closed.
+
+### DA-1 stays OPEN until all five hold
+
+1. A fresh, valid `.hbk` with its `.meta.json` exists in production.
+2. A deploy has actually run and its 30 h gate **accepted** that artifact.
+3. The timer is installed and active on the host.
+4. A real timer or manual service run has succeeded and produced a valid
+   artifact.
+5. The artifact is readable and restorable through the project's own
+   restore/rehearsal path.
+
+Shipping the gate and the unit files satisfies none of these by itself. The
+production chain is an owner-run server mutation; its exact commands and the
+evidence each must produce are in `ops/backup/README.md`.
 
 ---
 
@@ -186,18 +238,99 @@ Today the only link is procedural — the deploy workflow asserts
 in the run log — which is evidence about the process, not an attestation from
 the artefact.
 
-**Closing evidence required.**
+### Implemented 2026-10-15 — NOT closed; no production release has run it
 
-1. The build takes the commit as a build argument and the image records it, as
-   an OCI label (`org.opencontainers.image.revision`) and, so a reader needs no
-   shell, as a field on `/api/health`.
-2. A deploy step asserts the running container's recorded revision equals
-   `TARGET_SHA`, and fails the deploy otherwise — the same fail-closed shape as
-   the migration-count check.
-3. Until then, "production runs commit X" is stated as *the deploy workflow
-   recorded X*, never as *the running image reports X*.
+**What this control is, named precisely.** It matches the **revision metadata**
+of the image a container is running against the SHA a release deployed. It is
+**not** an image signature — nothing is signed and nothing is checked against
+a key — and it is **not** proof that the image CONTENTS correspond to that
+commit. A label is metadata, set at build time by whoever ran the build. It
+proves the build was *stamped* with that commit. It closes exactly one gap:
+that nothing produced by a running container said anything at all about its
+origin.
 
----
+**The chain**, which attests nothing unless every link holds:
+
+| # | Link | Where |
+| --- | --- | --- |
+| 1 | the runner stage takes `GIT_REVISION` and records `org.opencontainers.image.revision` | `Dockerfile` |
+| 2 | compose passes it to the `hermes-web` build, defaulting to `unknown` | `docker-compose.prod.yml` |
+| 3 | the deploy exports it from `TARGET_SHA` before building | `deploy.yml` |
+| 4 | after the container is replaced, the deploy runs `scripts/deploy/attest-image-revision.sh` and refuses on anything but a match | `deploy.yml` |
+
+#### Read from the image the container is bound to — not a tag, not the container
+
+The first cut read `docker inspect <container>`. That reports the image's
+labels **merged with whatever the container was created with**, and compose
+can set those — so a check about the *build* could have been satisfied by a
+label added at *run time*. The script now resolves `.Image` (a content
+address), reads the label from that image id, and treats a container whose own
+label disagrees as `CONTAINER_LABEL_OVERRIDE`, because the disagreement is
+itself the dressing-up. Tags are never consulted: a tag can be moved at any
+moment, and "the image called `hermes-web:latest`" is a different question
+from "the image this container is running".
+
+It records all three identities — `container_id`, `image_id`, `revision` — so
+the evidence names what it checked.
+
+#### Proven against real images and containers
+
+`scripts/__tests__/attest-image-revision.docker.test.ts`, 11 cases, all green:
+
+| Case | Result |
+| --- | --- |
+| image carries the target revision | `MATCH`, exit 0, all three ids recorded |
+| image carries a different revision | `MISMATCH` |
+| image built without one (`unknown`) | `UNKNOWN_REVISION` |
+| image with no label at all | `NO_REVISION` |
+| **the tag is repointed at another image** | verdict unchanged, same `image_id` |
+| **a revision label is set on the CONTAINER** | `CONTAINER_LABEL_OVERRIDE` |
+| a short SHA as the target | `BAD_EXPECTED` — no prefix matching |
+| empty target, missing container | `BAD_EXPECTED`, `NO_CONTAINER` |
+
+Three defects in the test harness itself were found and fixed on the way, each
+of which would have made the suite lie:
+
+* a `beforeAll` that exceeded its timeout made vitest report its eight cases
+  as **SKIPPED, not failed** — a suite whose whole job is to exercise real
+  Docker was sliding past as green. A guard now fails if Docker was reachable
+  and the cases did not run, and it is set at the end of `beforeAll`, not in
+  `afterAll`, which runs even after a failed setup;
+* `shell: true` on Windows concatenates arguments instead of escaping them
+  (DEP0190), so `--change "LABEL …"` arrived as several arguments. Measured:
+  no shell is needed for `spawnSync("docker", …)` on Windows either;
+* `docker build` of a three-line Dockerfile took about four minutes per image
+  here. `docker commit --change` does the same job in milliseconds.
+
+#### The failure path
+
+On a mismatch the run does **not** report success. It restores
+`hermes-web:previous-good`, waits for that container to be healthy, and exits
+non-zero regardless — a recovered failure is not a release. If
+`previous-good` is missing it refuses rather than leaving the rejected
+container serving.
+
+A rollback to an image that carries **no** revision label — one built before
+this label existed — is reported **separately**, as a warning naming the
+image: that is an absence of evidence about the rolled-back release, neither a
+second failure nor a pass.
+
+**Not yet exercised.** The rollback path has textual coverage only; unlike the
+attestation it has not been run against real containers, because it lives
+inside `deploy.yml` rather than in a script a test can drive. Extracting it
+the same way is the next step.
+
+#### Not published to the internet
+
+`/api/health` is the container healthcheck *and* a public liveness probe
+returning only `{"status":"ok"}`. A commit SHA there would hand an anonymous
+caller a precise version to match against known vulnerabilities. A test
+asserts the route stays free of version information.
+
+**DA-3 stays OPEN.** The control is implemented and proven in isolation; it
+has never run in a production release. Until a deploy records a match, the
+honest phrasing remains "the deploy workflow recorded X", not "the running
+image reports X".
 
 ## Corrections to the earlier report of this deploy
 

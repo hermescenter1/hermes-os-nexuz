@@ -252,12 +252,17 @@ export async function GET(req: NextRequest) {
 
 /* ── POST: create a DRAFT ─────────────────────────────────────────────────── */
 
+const SLUG_MAX_LENGTH = 80;
+
+/** A caller-supplied slug: lowercase ASCII words joined by single hyphens. */
+const EXPLICIT_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 /**
  * The writable surface, and nothing else.
  *
  * `.strict()` is the mass-assignment control: an unknown key is a 400, so a body
  * carrying `organizationId`, `status`, `processingState`, `publishedAt`,
- * `viewCount`, `slug` or `createdBy` is REJECTED rather than being quietly
+ * `viewCount` or `createdBy` is REJECTED rather than being quietly
  * dropped. Rejecting is deliberately louder than stripping — a client trying to
  * set its own tenant or lifecycle should learn that it failed.
  *
@@ -270,6 +275,14 @@ export async function GET(req: NextRequest) {
 const createAssetSchema = z
   .object({
     title: z.string().trim().min(1).max(200),
+    /**
+     * Optional explicit slug. Omitted, the slug is derived from the title exactly
+     * as before. Supplied, it must be ASCII kebab-case, and a collision inside the
+     * organization is a 409 — never silently suffixed, because an explicit slug is
+     * a permanent public address the caller chose. It stays immutable afterwards
+     * (the PATCH schema still rejects `slug`).
+     */
+    slug: z.string().max(SLUG_MAX_LENGTH).regex(EXPLICIT_SLUG_PATTERN).optional(),
     primaryLocale: z.enum(MEDIA_LOCALES).default("en"),
     summary: z.string().trim().max(500).optional(),
     description: z.string().trim().max(20_000).optional(),
@@ -297,15 +310,13 @@ async function withTx<T>(client: MaybeTxClient, fn: (tx: TxModels) => Promise<T>
   return fn(client);
 }
 
-const SLUG_MAX_LENGTH = 80;
-
 /**
  * Server-derived slug.
  *
  * Unicode letters and digits are KEPT (`\p{L}` / `\p{N}`), so a Persian or German
  * title produces a meaningful slug instead of collapsing to nothing; everything
- * else becomes a single hyphen. The client never supplies a slug, so this is not
- * a sanitiser standing between hostile input and a filesystem — the storage key
+ * else becomes a single hyphen. This path runs only when the client supplies no
+ * explicit slug, and it is not a sanitiser standing between hostile input and a filesystem — the storage key
  * is generated separately and never derived from anything here.
  */
 function deriveMediaSlug(title: string): string {
@@ -449,7 +460,15 @@ export async function POST(req: NextRequest) {
     return json({ error: "Media library is temporarily unavailable", code: "STORAGE_UNAVAILABLE" }, 503);
   }
 
-  const slug = await allocateSlug(assetModel, organizationId, deriveMediaSlug(input.title));
+  let slug: string | null;
+  if (input.slug !== undefined) {
+    // Explicit slug: uniqueness is per organization, and a taken slug is refused
+    // rather than altered. The unique index still backstops the race below.
+    const taken = await assetModel.findFirst({ where: { organizationId, slug: input.slug } });
+    slug = taken ? null : input.slug;
+  } else {
+    slug = await allocateSlug(assetModel, organizationId, deriveMediaSlug(input.title));
+  }
   if (!slug) return json({ error: "Could not allocate a unique slug", code: "SLUG_CONFLICT" }, 409);
 
   const now = new Date();
