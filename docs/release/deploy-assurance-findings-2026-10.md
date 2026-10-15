@@ -6,7 +6,7 @@ that deploy unsafe, and none of them is closed by it.
 
 | # | Finding | Severity | State |
 | --- | --- | --- | --- |
-| DA-1 | The backup gate does not check AGE, and the release used a backup 3.7× older than the documented RPO | HIGH | OPEN |
+| DA-1 | The backup gate does not check AGE, and nothing schedules the artifact it accepts — the release used a backup 3.7× older than the documented RPO | HIGH | OPEN — gate and timer written, production chain not yet run |
 | DA-2 | The migration connection has no lock-wait limit | MEDIUM | **IMPLEMENTED** 2026-10-14 — final acceptance OPEN |
 | DA-3 | Nothing binds the running `hermes-web` image to the release commit | MEDIUM | **IMPLEMENTED** 2026-10-15 — not yet exercised by a release |
 
@@ -29,37 +29,89 @@ pass exactly as this one did.
 Had the migration gone wrong, the restore point would have lost up to four days
 of production data, against a contract that promises at most one.
 
-**What is not yet known** (requires the host, and is part of closing this):
+### Corrected diagnosis — 2026-10-15
 
-* why the newest backup is four days old — whether the scheduled job is failing,
-  disabled, or was never scheduled on this host;
-* whether newer `.hbk` files exist that are not marked verified, and why.
+The first version of this finding guessed that *the backup job was failing*.
+Host evidence supplied by the owner shows it was not. The local backup path and
+`hermes-dr-backup.service` were both current and both reported PASS throughout
+the window.
 
-Read-only commands for that, which print no key material and decrypt nothing:
+What is **not** running is the only producer of the artifact the release
+contract reads. The gate looks for `*.hbk` plus a `*.meta.json` verification
+record in `/backups/postgres`, and the single mechanism in this repository that
+writes that pair is `scripts/backup-postgres.sh` (PostgreSQL dump →
+`scripts/dr/hbk.mjs`, AES-256-GCM, atomic `.hbk.partial` → `.hbk`, then the
+record). The DR runbook has always described its cadence as *owner-activated
+host cron*, and the repository shipped **nothing to activate** — no unit, no
+timer, no crontab fragment. The newest artifact is therefore 89.8 h old because
+nothing has produced a newer one since 2026-10-10.
 
-```bash
-sudo -n find /backups/postgres -maxdepth 1 -type f -name '*.hbk' -printf '%TY-%Tm-%Td %TH:%TM %10s %p\n' | sort | tail -10
-```
+Two things follow, and both are deliberate omissions rather than oversights:
 
-```bash
-systemctl list-timers --all | grep -i -E 'backup|hermes' ; sudo -n crontab -l 2>/dev/null | grep -i backup ; crontab -l 2>/dev/null | grep -i backup
-```
+* **The gate's source is unchanged.** Pointing the gate at the DR snapshots
+  would need its own equivalence evidence — coverage, encryption, integrity,
+  freshness and restore method — proven side by side. A healthy DR service is
+  not that evidence, so no such change is proposed here.
+* **Nothing is renamed or hand-written.** A plaintext dump renamed to `.hbk`, or
+  a `.meta.json` written by hand, would make this gate green while making the
+  restore point fictional. `ops/backup/README.md` states both prohibitions.
 
-```bash
-sudo -n journalctl -u hermes-backup --since '14 days ago' --no-pager | tail -40
-```
+### What this change contains
 
-**Closing evidence required.**
+1. **`scripts/deploy/check-backup-freshness.sh`** — the age and consistency
+   judgement, split out of the workflow because its branches can only be proven
+   against real files. It is handed the artifact name, the file's mtime, the
+   computed SHA-256 and a copy of the record; it needs no privilege of its own,
+   so the deploy user's `sudo -n` rules are untouched.
+2. **`scripts/__tests__/check-backup-freshness.test.ts`** — 30 cases driven
+   against the real script with an injected clock: the boundary (29 h fresh,
+   exactly 30 h refused, 31 h refused, the historical 89 h refused), a future
+   mtime, a future `createdAtMs`, a record naming another artifact, each missing
+   or false record field, a hash mismatch, no hash at all, and every bad limit
+   (zero, negative, non-numeric, 73, 720). A source-level test over the YAML can
+   show that a check exists; only this can show what it decides.
+3. **`ops/backup/hermes-pg-backup.{service,timer}` + `README.md`** — the
+   schedule the repository never shipped. `OnCalendar=*-*-* 02:40:00` with
+   `Persistent=true`, so a missed day is caught up rather than skipped — a
+   skipped day is exactly the state that produced this finding. The unit *names*
+   `HERMES_BACKUP_KEY_FILE` and `HERMES_BACKUP_KEY_ID` and refuses to default
+   them; their values belong in an owner-created drop-in and the key itself is
+   only ever read from a file.
+4. **The workflow** calls the script after its existing integrity checks and
+   refuses the release through the same `backup_refuse` path. The limit is
+   **30 h** — the documented 24 h RPO plus one backup interval, so *one* missed
+   run stops the next release instead of silently widening the restore window.
 
-1. A maximum age is defined **from the documented RPO** (24 h) plus the backup
-   job's own run window, stated in the runbook.
-2. The gate enforces it: a backup older than that maximum is refused with a
-   message that names the age and the limit, exactly as the integrity checks do
-   now. The age must be read from the same privileged listing the gate already
-   does, so no new access is introduced.
-3. The reason the 2026-10-10 backup was the newest is established and fixed.
-4. **Before the next release**, a fresh backup is taken through the standard
-   path and verified, and its timestamp is recorded in the release notes.
+### What "age" is worth here
+
+`createdAtMs` is written into the record by `scripts/backup-postgres.sh` when it
+finishes; `mtime` is filesystem metadata. **Neither is a cryptographic proof of
+creation time** — the record is plain JSON written by a script, and anyone who
+can write the file can `touch` it. They are claims by a trusted producer, not
+attestations, and neither is presented here as more than that.
+
+So both are read, and the judgement is the **stricter** of the two: an artifact
+is fresh only if the record says so *and* the file says so. Using either alone
+would make the other the way past. They are also cross-checked — a record whose
+`createdAtMs` is more than an hour from the file's mtime is refused as
+`TIME_INCONSISTENT`, because it describes a different file or a touched one.
+Tightening this further would need a signed timestamp from the producer, which
+the backup chain does not currently emit; that is recorded as a limitation, not
+closed.
+
+### DA-1 stays OPEN until all five hold
+
+1. A fresh, valid `.hbk` with its `.meta.json` exists in production.
+2. A deploy has actually run and its 30 h gate **accepted** that artifact.
+3. The timer is installed and active on the host.
+4. A real timer or manual service run has succeeded and produced a valid
+   artifact.
+5. The artifact is readable and restorable through the project's own
+   restore/rehearsal path.
+
+Shipping the gate and the unit files satisfies none of these by itself. The
+production chain is an owner-run server mutation; its exact commands and the
+evidence each must produce are in `ops/backup/README.md`.
 
 ---
 
