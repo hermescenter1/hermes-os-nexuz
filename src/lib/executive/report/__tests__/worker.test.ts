@@ -31,8 +31,14 @@ const h = vi.hoisted(() => ({
   claims: [] as Array<Record<string, unknown>>,
   claimGrants: true,
   releases: [] as Array<Record<string, unknown>>,
-  /** Active OWNER/ADMIN members per organization; absent = one owner. */
-  members: {} as Record<string, Array<{ userId: string }>>,
+  /**
+   * Members per organization; absent = one active owner. `role` and `status`
+   * default to OWNER/ACTIVE, and the fake delegate APPLIES the where clause
+   * rather than ignoring it — otherwise a test could only prove the worker
+   * ASKS for the right rows, never that a viewer or a suspended member is
+   * actually left out.
+   */
+  members: {} as Record<string, Array<{ userId: string; role?: string; status?: string }>>,
   memberQueries: [] as Array<Record<string, unknown>>,
   /** "ok" | "null" (service refused) | "throw". */
   notifyMode: "ok" as "ok" | "null" | "throw",
@@ -67,8 +73,15 @@ vi.mock("@/lib/db/prisma", () => ({
           organizationMember: {
             async findMany(args: unknown) {
               h.memberQueries.push(args as Record<string, unknown>);
-              const orgId = (args as { where: { organizationId: string } }).where.organizationId;
-              return h.members[orgId] ?? [{ userId: "owner-1" }];
+              const where = (args as { where: { organizationId: string; status?: string; role?: { in?: string[] } } })
+                .where;
+              const rows = h.members[where.organizationId] ?? [{ userId: "owner-1" }];
+              const roles = where.role?.in;
+              return rows.filter(
+                m =>
+                  (where.status === undefined || (m.status ?? "ACTIVE") === where.status) &&
+                  (roles === undefined || roles.includes(m.role ?? "OWNER")),
+              );
             },
           },
           ...(h.settingsRows === null
@@ -498,6 +511,53 @@ describe("nobody is told they were told when they were not (slice F)", () => {
       where: { organizationId: "org-a", status: "ACTIVE", role: { in: ["OWNER", "ADMIN"] } },
       take: MAX_NOTIFY_RECIPIENTS,
     });
+  });
+
+  it("tells nobody outside the two notified roles, however senior the title sounds", async () => {
+    // A notification is an authority signal, so the allowlist is roles, not
+    // seniority: MANAGER and BILLING_ADMIN both read as "manager" in ordinary
+    // speech and neither is on it. The filtering happens in the query, and
+    // this fake applies that query, so a widened `in` list is what it takes
+    // to change this outcome — not a renamed title.
+    h.orgIds = ["org-a"];
+    h.members = {
+      "org-a": [
+        { userId: "owner-1", role: "OWNER" },
+        { userId: "manager-2", role: "MANAGER" },
+        { userId: "billing-3", role: "BILLING_ADMIN" },
+        { userId: "engineer-4", role: "ENGINEER" },
+        { userId: "viewer-5", role: "VIEWER" },
+      ],
+    };
+    const pass = await run();
+    expect(h.notifications.map(n => n.userId)).toEqual(["owner-1"]);
+    expect(pass.notified).toBe(1);
+  });
+
+  it("tells nobody whose membership is not ACTIVE", async () => {
+    // A revoked or pending administrator keeps the role on the row. Status is
+    // the other half of the predicate and has to carry its own weight.
+    h.orgIds = ["org-a"];
+    h.members = {
+      "org-a": [
+        { userId: "admin-live", role: "ADMIN", status: "ACTIVE" },
+        { userId: "admin-suspended", role: "ADMIN", status: "SUSPENDED" },
+        { userId: "owner-invited", role: "OWNER", status: "INVITED" },
+      ],
+    };
+    await run();
+    expect(h.notifications.map(n => n.userId)).toEqual(["admin-live"]);
+  });
+
+  it("reports NO_RECIPIENT when every member is filtered out, instead of announcing into the void", async () => {
+    // The organization HAS members; none of them may be told. That must be
+    // the undelivered path with the claim handed back, not a silent success.
+    h.orgIds = ["org-a"];
+    h.members = { "org-a": [{ userId: "viewer-5", role: "VIEWER" }, { userId: "old-admin", role: "ADMIN", status: "REMOVED" }] };
+    const pass = await run();
+    expect(pass.notified).toBe(0);
+    expect(pass.undelivered).toEqual([{ organizationId: "org-a", businessDate: "2026-10-10", reason: "NO_RECIPIENT" }]);
+    expect(h.releases).toEqual([{ organizationId: "org-a", businessDate: "2026-10-10", version: 1, claimedAtMs: NOW }]);
   });
 
   it("gives the claim back and lists the report when there is nobody to tell", async () => {
