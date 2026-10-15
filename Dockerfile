@@ -256,6 +256,27 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# ── Which commit is this image? (Finding DA-3) ────────────────────────────────
+#
+# Before this, nothing produced by a running container said which commit it was
+# built from. `git rev-parse HEAD` on the server proves where the CHECKOUT is,
+# and `docker compose ps` proves that A container runs; neither proves that
+# THIS container was built from THAT checkout. An image built earlier, or from
+# a different checkout, looks identical in both.
+#
+# The build argument carries the commit and the standard OCI label records it,
+# so `docker inspect` answers the question from the artefact itself. The deploy
+# then asserts the running container's label equals the commit it deployed,
+# and fails closed otherwise.
+#
+# DELIBERATELY NOT ON /api/health: that endpoint is the public liveness probe
+# and returns only {"status":"ok"} by design. Publishing the exact deployed
+# commit there would hand anyone on the internet a precise version to match
+# against known vulnerabilities. The label is readable on the host, by someone
+# who already has it.
+ARG GIT_REVISION=unknown
+LABEL org.opencontainers.image.revision=$GIT_REVISION
+
 # Non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 
