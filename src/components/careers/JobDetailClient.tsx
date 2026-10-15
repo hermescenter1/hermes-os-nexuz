@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link }                 from "@/i18n/navigation";
 import { useLocale, useTranslations }      from "next-intl";
 import { ResourceFailureNotice } from "@/components/ui/ResourceFailureNotice";
@@ -46,14 +46,38 @@ function ListCard({ heading, items, glyph, glyphClass }: { heading: string; item
   );
 }
 
-export function JobDetailClient({ jobId }: { jobId: string }) {
+/**
+ * `initial` is the server's answer from the same projection the API route uses
+ * (`getPublicJobDetail`): a posting renders its real content in the crawlable
+ * HTML, `"not-found"` renders the enumeration-safe unavailable copy, and
+ * `undefined` (store unreachable) keeps the client fetch so an outage is never
+ * dressed up as "not found".
+ */
+export function JobDetailClient({
+  jobId,
+  initial,
+}: {
+  jobId: string;
+  initial?: PublicJobDetail | "not-found";
+}) {
   const t = useTranslations("careers");
   const locale = useLocale();
-  const [state, setState] = useState<DetailState>({ phase: "loading" });
+  const [state, setState] = useState<DetailState>(
+    initial === undefined
+      ? { phase: "loading" }
+      : initial === "not-found"
+        ? { phase: "not-found" }
+        : { phase: "ready", job: initial },
+  );
   const [attempt, setAttempt] = useState(0);
   const retry = useCallback(() => setAttempt((a) => a + 1), []);
+  const seeded = useRef(initial !== undefined);
 
   useEffect(() => {
+    if (seeded.current) {
+      seeded.current = false;
+      return;
+    }
     // B1.2 — a dependency change (locale, jobId, retry) FIRST returns to
     // loading, so no stale job — and no stale language — can survive a failed
     // follow-up request.
