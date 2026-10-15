@@ -91,27 +91,43 @@ describe("DA-3 — link 4: the deploy reads the metadata back and refuses a mism
     expect(tail).toContain("ps -q hermes-web");
   });
 
+  /**
+   * The four guarantees below used to be pinned against the inline rollback.
+   * The rollback now lives in scripts/deploy/rollback-to-previous-good.sh,
+   * where its branches can actually be EXECUTED against real images and
+   * containers (rollback-to-previous-good.docker.test.ts). Each guarantee is
+   * therefore re-pointed at its new home rather than dropped: moving code is
+   * not a reason to stop checking what it must do.
+   */
+  const rollbackScript = readFileSync("scripts/deploy/rollback-to-previous-good.sh", "utf8");
+
   it("rolls back to previous-good when the attestation fails", () => {
     const branch = tail.slice(tail.indexOf("else"), tail.indexOf("POST-DEPLOY health gate"));
     expect(branch).toContain("hermes-web:previous-good");
-    expect(branch).toContain("up -d --no-deps --no-build hermes-web");
+    expect(branch).toContain("bash scripts/deploy/rollback-to-previous-good.sh");
+    // The script is what brings the service back, and it is told the
+    // production service explicitly rather than relying on its default.
+    expect(branch).toContain("--service hermes-web");
+    expect(rollbackScript).toContain("up -d --no-deps --no-build");
   });
 
   it("refuses to continue when there is nothing to roll back to", () => {
-    expect(tail).toContain("CANNOT roll back: hermes-web:previous-good is missing");
+    expect(rollbackScript).toContain("NO_PRESERVED_IMAGE");
+    expect(rollbackScript).toContain("needs a human now");
   });
 
   it("reports an UNLABELLED rollback image separately from verifying the target", () => {
     // An image built before the label existed carries no revision. That is an
     // absence of evidence about the ROLLED-BACK release — neither a second
     // failure nor a pass, and it must not be folded into the target's verdict.
-    expect(tail).toContain("carries NO revision label");
-    expect(tail).toContain("Its commit is unattested");
+    expect(rollbackScript).toContain("carries NO revision label");
+    expect(rollbackScript).toContain("Its commit is unattested");
+    expect(rollbackScript).toContain("revision=UNKNOWN");
   });
 
   it("verifies the rolled-back container is healthy", () => {
-    expect(tail).toContain("Rollback is healthy");
-    expect(tail).toContain("Rollback container is NOT healthy");
+    expect(rollbackScript).toContain("Rollback is healthy");
+    expect(rollbackScript).toContain("UNHEALTHY");
   });
 
   it("fails the run even after a successful rollback", () => {
