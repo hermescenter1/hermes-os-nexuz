@@ -3,7 +3,7 @@ import { JobDetailClient }    from "@/components/careers/JobDetailClient";
 import { JsonLd }             from "@/components/seo/JsonLd";
 import { jobPostingSchema }   from "@/lib/seo/schemas";
 import { buildMetadata, noIndexMetadata } from "@/lib/seo/metadata";
-import { getPublicJobPosting } from "@/lib/ats/public-jobs";
+import { getPublicJobDetail, getPublicJobPosting } from "@/lib/ats/public-jobs";
 import { BASE_URL }           from "@/lib/seo/config";
 
 /**
@@ -91,6 +91,12 @@ export default async function JobDetailPage({
   // omitted, never defaulted.
   const posting = await getPublicJobPosting(jobId, locale);
 
+  // The visible page must show the same posting the JobPosting JSON-LD
+  // describes, in the server-rendered HTML. "UNAVAILABLE" (store unreachable)
+  // is left undefined so the client fetch and its outage state still apply.
+  const detail = await getPublicJobDetail(jobId, locale);
+  const initialDetail = detail === "UNAVAILABLE" ? undefined : (detail ?? "not-found");
+
   return (
     <>
       {posting && (
@@ -125,7 +131,7 @@ export default async function JobDetailPage({
           ],
         }}
       />
-      <JobDetailClient jobId={jobId} />
+      <JobDetailClient jobId={jobId} initial={initialDetail} />
     </>
   );
 }
