@@ -364,7 +364,8 @@ jobs:
             # would refuse `true` and block every deploy).
             LISTING="$(backup_priv find "${BACKUP_DIR}" -maxdepth 1 -type f -name '*.hbk' -printf '%T@ %p\n')" \
               || backup_refuse "cannot list ${BACKUP_DIR} through 'sudo -n' (missing directory, or no NOPASSWD rule for the read-only checks; no TTY is available)."
-            NEWEST_BACKUP="$(sort -n <<<"${LISTING}" | tail -n 1 | cut -d' ' -f2-)"
+            NEWEST_LINE="$(sort -n <<<"${LISTING}" | tail -n 1)"
+            NEWEST_BACKUP="$(cut -d' ' -f2- <<<"${NEWEST_LINE}")"
             if [ -z "${NEWEST_BACKUP}" ]; then
               backup_refuse "no encrypted backup (.hbk) found in ${BACKUP_DIR}."
             fi
@@ -418,7 +419,33 @@ jobs:
             grep -q '"integrityVerified": *true' <<<"${ADOPTION_JSON}" \
               || backup_refuse "documents_data adoption evidence does not prove integrity."
 
-            echo "Pre-migration evidence verified: ${NEWEST_NAME} complete, verified and hash-intact."
+            # ── DA-1: freshness, and a record that describes THIS artifact ──
+            #
+            # Every check above is about integrity. None looks at time, which
+            # is how a release went out on 2026-10-14 against an artifact 89.8
+            # hours old, against a documented 24 h RPO.
+            #
+            # The judgement lives in scripts/deploy/check-backup-freshness.sh
+            # because its cases — the boundary, a future mtime, a record
+            # naming another file, a createdAtMs that disagrees with the file,
+            # every bad limit — can only be exercised against real files, and
+            # that script has a test that does exactly that. The privileged
+            # reads stay here under the existing sudo rules; the script is
+            # handed the values and needs no privilege of its own.
+            #
+            # The record goes in on STDIN rather than through a temp file:
+            # this gate is forbidden from creating, copying or deleting
+            # anything (phase997-backup-evidence-sudo), and a temporary copy
+            # plus a delete would have broken that invariant to save one pipe.
+            NEWEST_MTIME="$(cut -d' ' -f1 <<<"${NEWEST_LINE}" | cut -d. -f1)"
+            if ! printf '%s' "${META_JSON}" \
+                 | bash scripts/deploy/check-backup-freshness.sh \
+                   "${NEWEST_NAME}" "${NEWEST_MTIME}" "${ACTUAL_SHA}" - \
+                   "${BACKUP_MAX_AGE_HOURS:-30}"; then
+              backup_refuse "the newest backup did not pass the freshness and consistency check."
+            fi
+
+            echo "Pre-migration evidence verified: ${NEWEST_NAME} complete, verified, hash-intact and recent."
           fi
           # <<< backup-evidence-gate
 

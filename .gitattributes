@@ -41,3 +41,11 @@ scripts/executive/provision-report-worker-token.sh text eol=lf
 # to a text comparison would retire the only check that can catch a tampered or
 # stale plugin bundle.
 tools/figma/hermes-phase104-visual-system/** text eol=lf
+
+# DA-1 — the backup schedule and the freshness gate run on the Linux host.
+# A CRLF checkout would make the shell script fail on its shebang and would
+# make systemd reject the unit files, so their line endings are pinned rather
+# than left to the committer's platform.
+scripts/deploy/*.sh text eol=lf
+ops/backup/hermes-pg-backup.service text eol=lf
+ops/backup/hermes-pg-backup.timer text eol=lf
