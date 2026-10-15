@@ -522,55 +522,26 @@ jobs:
           if bash scripts/deploy/attest-image-revision.sh "${TARGET_SHA}" "${RUNNING_CID}"; then
             echo "Revision metadata matches the target SHA."
           else
-            # ── The release is NOT good, and the container has already been
-            # replaced. Put the previous release back and say what came back.
+            # The release is NOT good, and the container has already been
+            # replaced. Putting the previous release back is its own
+            # script, scripts/deploy/rollback-to-previous-good.sh, because
+            # this is the one path that runs when production is ALREADY
+            # broken and it had never been executed anywhere while it lived
+            # in this file. Its cases - no preserved image, an image with no
+            # revision label, a container that comes back on the wrong image
+            # or unhealthy - are driven against real images and containers
+            # in scripts/__tests__/rollback-to-previous-good.docker.test.ts.
             echo "::error::Image revision attestation failed for ${TARGET_SHA}; rolling back." >&2
+            bash scripts/deploy/rollback-to-previous-good.sh \
+              --project hermes --file docker-compose.prod.yml \
+              --env-file .env.production --service hermes-web \
+              --preserved hermes-web:previous-good || true
 
-            if ! docker image inspect hermes-web:previous-good >/dev/null 2>&1 </dev/null; then
-              echo "Refusing to continue and CANNOT roll back: hermes-web:previous-good is missing." >&2
-              exit 1
-            fi
-
-            # Compose builds this service as <project>-<service>; pointing that
-            # name at the preserved image is what makes `up -d` bring the old
-            # release back rather than the one just rejected.
-            docker tag hermes-web:previous-good hermes-hermes-web:latest
-            docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d --no-deps --no-build hermes-web
-
-            ROLLBACK_CID="$(docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production ps -q hermes-web)"
-            ROLLBACK_IMAGE="$(docker inspect -f '{{.Image}}' "${ROLLBACK_CID}" </dev/null 2>/dev/null || true)"
-            ROLLBACK_REVISION="$(docker inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "${ROLLBACK_IMAGE}" </dev/null 2>/dev/null || true)"
-            [ "${ROLLBACK_REVISION}" = "<no value>" ] && ROLLBACK_REVISION=""
-
-            # Reported SEPARATELY from verifying the target version. An image
-            # built before this label existed carries no revision, and that is
-            # an absence of evidence about the rolled-back release — not a
-            # second failure, and not a pass.
-            if [ -z "${ROLLBACK_REVISION}" ]; then
-              echo "::warning::Rolled back to hermes-web:previous-good (${ROLLBACK_IMAGE}), which carries NO revision label. Its commit is unattested; it predates the label or was built without one." >&2
-            else
-              echo "Rolled back to hermes-web:previous-good (${ROLLBACK_IMAGE}), revision ${ROLLBACK_REVISION}." >&2
-            fi
-
-            # The rolled-back release must itself be healthy, or the rollback
-            # has replaced one broken state with another.
-            RB_OK=0
-            for _ in $(seq 1 48); do
-              RB_STATE="$(docker inspect -f '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "${ROLLBACK_CID}" </dev/null 2>/dev/null || echo "gone none")"
-              case "${RB_STATE}" in
-                "running healthy") RB_OK=1; break ;;
-                "running none")    RB_OK=1; break ;;
-              esac
-              sleep 5
-            done
-            if [ "${RB_OK}" = "1" ]; then
-              echo "Rollback is healthy." >&2
-            else
-              echo "::error::Rollback container is NOT healthy (${RB_STATE}). Production needs a human now." >&2
-            fi
-
-            # The run fails either way: a rollback is a recovered failure, not
-            # a success, and must never be reported as a completed release.
+            # The run fails whether or not the rollback worked: a rollback
+            # is a recovered failure, not a completed release, and must
+            # never be reported as one. The script's own exit code says
+            # whether production is back; this exit says the RELEASE did
+            # not happen.
             exit 1
           fi
 
