@@ -30,7 +30,7 @@
  * transaction, keyed by a payload-bound idempotency claim.
  */
 
-import { z } from "zod";
+import type { Stage1Application } from "./stage1-schema";
 import { getPrisma } from "@/lib/db/prisma";
 
 /**
@@ -46,26 +46,13 @@ export { APPLICATION_ACCEPTANCE_AUTHORIZED } from "./acceptance-flag";
 
 export const RECRUITMENT_DATA_CLASS = "RECRUITMENT_CANDIDATE";
 
-/** Stage-1 initial application — the approved short field set, nothing more. */
-export const stage1ApplicationSchema = z
-  .object({
-    jobId: z.string().trim().min(1).max(64),
-    fullName: z.string().trim().min(1).max(200),
-    email: z.string().trim().email().max(320),
-    phone: z.string().trim().min(3).max(40).optional(),
-    currentLocation: z.string().trim().min(1).max(200).optional(),
-    yearsExperience: z.number().int().min(0).max(60).optional(),
-    keySkills: z.array(z.string().trim().min(1).max(80)).max(32).optional(),
-    resumeText: z.string().trim().min(1).max(20000).optional(),
-    fitStatement: z.string().trim().min(1).max(4000).optional(),
-    linkedinUrl: z.string().trim().url().max(300).optional(),
-    privacyNoticeAcknowledged: z.literal(true),
-    accuracyConfirmed: z.literal(true),
-    futureOpeningsConsent: z.boolean().optional(),
-  })
-  .strict();
-
-export type Stage1Application = z.infer<typeof stage1ApplicationSchema>;
+/**
+ * Stage-1 initial application — the approved short field set, nothing more.
+ * Defined ONCE in the dependency-free `./stage1-schema` so the public form can
+ * validate with the exact object this route enforces; re-exported here for
+ * every server caller.
+ */
+export { stage1ApplicationSchema, type Stage1Application } from "./stage1-schema";
 
 /**
  * The fields the idempotency fingerprint binds. Volatile request attributes

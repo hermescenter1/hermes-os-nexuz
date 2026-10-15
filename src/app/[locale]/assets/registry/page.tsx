@@ -1,7 +1,7 @@
 import { getCurrentUser }        from "@/lib/auth/session";
 import { can }                    from "@/lib/auth/roles";
 import { redirect }               from "next/navigation";
-import { getAssets }              from "@/lib/assets/db";
+import { getAssetLocations, getAssetSites, getAssets } from "@/lib/assets/db";
 import { AssetsRegistryClient }   from "@/components/assets/AssetsRegistryClient";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +11,10 @@ export default async function AssetsRegistryPage() {
   if (!user) redirect("/login");
   if (!can(user.role, "admin") && !can(user.role, "authoring")) redirect("/");
 
-  const assets = await getAssets();
-  return <AssetsRegistryClient assets={assets} />;
+  const [assets, locations, sites] = await Promise.all([
+    getAssets(),
+    getAssetLocations(),
+    getAssetSites(),
+  ]);
+  return <AssetsRegistryClient assets={assets} locations={locations} sites={sites} />;
 }

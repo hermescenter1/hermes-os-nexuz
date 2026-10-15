@@ -39,6 +39,10 @@ deploy/ssl/certs/
 # docs/security/ — these two are run results, not source.
 /phase99-readiness.json
 /phase99-closure.json
+# The LIVE dependency review CI generates (PHASE99_DEPENDENCY_REVIEW_PATH). It is a
+# run result; the committed docs/security/phase99-dependency-review.json is the
+# historical record and must never be replaced by it.
+/phase99-dependency-review.live.json
 
 # Phase 100 — the canonical GA closure verdict (npm run eval:phase100:closure),
 # uploaded by CI as a build artifact. It is a RUN RESULT, deliberately not

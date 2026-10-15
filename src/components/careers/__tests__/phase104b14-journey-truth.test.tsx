@@ -13,6 +13,12 @@
  * orchestration. §1.4 exists precisely so a single flag flip cannot re-open a
  * journey the backend cannot serve.
  *
+ * ATS-STAGE1-FORM (2026-09-25): both facts now hold — B2's orchestration and
+ * the owner's authorization, shipped together with the Stage-1 form — so the
+ * detail page offers exactly one apply link for a VERIFIED posting. The board
+ * card still says "View details" only. The closed journey is proven, with the
+ * flag mocked back to false, in `ats-stage1-gate-closed.test.tsx`.
+ *
  * §3 is checked here too, on the real component: the board request must carry
  * the ACTIVE locale, built through URLSearchParams.
  */
@@ -112,22 +118,20 @@ const settle = async (n = 3) => { for (let k = 0; k < n; k++) await new Promise(
 afterEach(() => vi.unstubAllGlobals());
 
 describe("B1.4 §1.4 — the gate is BOTH facts, not the owner flag alone", () => {
-  it("APPLY_JOURNEY_OPEN is the conjunction, and it is false while the owner has not authorized acceptance", () => {
+  it("APPLY_JOURNEY_OPEN is the conjunction, and it is open only because BOTH facts now hold", () => {
     /*
-     * ATS-B2 (2026-09-23) implemented the orchestration, so
-     * APPLICATION_ORCHESTRATION_IMPLEMENTED is now TRUE — an owner-ordered
-     * change of fact, not a relaxation. This assertion was `false` when it
-     * described B1.4. What §1.4 protects is unchanged and still asserted in
-     * full: the gate is the CONJUNCTION, and the journey is closed.
-     *
-     * Stronger than before: it now pins WHICH fact keeps the journey closed.
-     * With orchestration true, the owner flag is the only thing holding the
-     * gate shut — so if both flags ever read true, this fails and says so.
+     * ATS-B2 (2026-09-23) implemented the orchestration; ATS-STAGE1-FORM
+     * (2026-09-25) shipped the Stage-1 form and, on the owner's explicit
+     * authorization, set APPLICATION_ACCEPTANCE_AUTHORIZED to true. Both are
+     * owner-ordered changes of fact, not relaxations. What §1.4 protects is
+     * unchanged and still asserted in full: the gate is the CONJUNCTION. The
+     * closed journey (either fact false) is proven behaviourally in
+     * `ats-stage1-gate-closed.test.tsx`.
      */
     expect(APPLICATION_ORCHESTRATION_IMPLEMENTED).toBe(true);
-    expect(APPLICATION_ACCEPTANCE_AUTHORIZED).toBe(false);
+    expect(APPLICATION_ACCEPTANCE_AUTHORIZED).toBe(true);
     expect(APPLY_JOURNEY_OPEN).toBe(APPLICATION_ACCEPTANCE_AUTHORIZED && APPLICATION_ORCHESTRATION_IMPLEMENTED);
-    expect(APPLY_JOURNEY_OPEN).toBe(false);
+    expect(APPLY_JOURNEY_OPEN).toBe(true);
   });
 
   it("the detail page gates on the CONJUNCTION — flipping the owner flag alone cannot re-open the journey", () => {
@@ -143,8 +147,28 @@ describe("B1.4 §1.4 — the gate is BOTH facts, not the owner flag alone", () =
 });
 
 describe.each(LOCALES)("B1.4 §1 — job detail tells the truth in %s", (locale) => {
-  it("renders ZERO links to the apply route while the journey is closed", async () => {
+  it("renders exactly ONE apply link, to THIS posting's apply route, now that the journey is open", async () => {
     stubFetch({ job: detail(), source: "db" });
+    const { container, unmount } = await mount(detailUi(locale));
+    await settle();
+    const applyLinks = [...container.querySelectorAll("a")].filter((a) => (a.getAttribute("href") ?? "").includes("/careers/apply"));
+    expect(applyLinks).toHaveLength(1);
+    expect(applyLinks[0].getAttribute("href")).toBe("/careers/apply/job-1");
+    expect(applyLinks[0].textContent?.trim()).toBe(C(locale).applyCta);
+    await unmount();
+  });
+
+  it("no longer shows the 'applications are not open' note — the page never contradicts itself", async () => {
+    stubFetch({ job: detail(), source: "db" });
+    const { container, unmount } = await mount(detailUi(locale));
+    await settle();
+    expect(container.querySelector('[role="note"]')).toBeNull();
+    expect(container.textContent ?? "").not.toContain(C(locale).applicationsNotOpen);
+    await unmount();
+  });
+
+  it("an unverified posting offers NO apply link at all", async () => {
+    stubFetch({ job: detail(), source: "mock" });
     const { container, unmount } = await mount(detailUi(locale));
     await settle();
     const hrefs = [...container.querySelectorAll("a")].map((a) => a.getAttribute("href") ?? "");
@@ -152,29 +176,7 @@ describe.each(LOCALES)("B1.4 §1 — job detail tells the truth in %s", (locale)
     await unmount();
   });
 
-  it("shows the honest non-interactive notice, and it is exposed to assistive tech", async () => {
-    stubFetch({ job: detail(), source: "db" });
-    const { container, unmount } = await mount(detailUi(locale));
-    await settle();
-    const notice = container.querySelector('[role="note"]');
-    expect(notice).not.toBeNull();
-    expect(notice?.textContent?.trim()).toBe(C(locale).applicationsNotOpen);
-    // Non-interactive: not a link, not a button, not focusable.
-    expect(notice?.tagName).toBe("P");
-    expect(notice?.getAttribute("tabindex")).toBeNull();
-    expect(notice?.querySelector("a,button")).toBeNull();
-    await unmount();
-  });
-
-  it("carries NO apply call-to-action text", async () => {
-    stubFetch({ job: detail(), source: "db" });
-    const { container, unmount } = await mount(detailUi(locale));
-    await settle();
-    expect(container.textContent ?? "").not.toContain(C(locale).applyCta);
-    await unmount();
-  });
-
-  it("still renders the posting itself — the closure removes the promise, not the content", async () => {
+  it("still renders the posting itself", async () => {
     stubFetch({ job: detail(), source: "db" });
     const { container, unmount } = await mount(detailUi(locale));
     await settle();

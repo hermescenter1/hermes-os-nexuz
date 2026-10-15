@@ -1,3 +1,4 @@
+import { CORPORATE_EMAIL } from "@/lib/corporate/contact";
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -157,7 +158,7 @@ const CATALOGS = [
 
 describe("ZHARFA is the company identity", () => {
   it("the canonical constants name the company and its short brand", () => {
-    expect(ORG_NAME).toBe("ZHARFA Vira Pouyesh Fanavari");
+    expect(ORG_NAME).toBe("Zharfa Vira Pouyesh Fanavari");
     expect(ORG_SHORT_NAME).toBe("ZHARFA");
   });
 
@@ -235,11 +236,12 @@ describe("company and product are two entities", () => {
 /* ── sameAs belongs to the entity it actually identifies ─────────────────── */
 
 describe("external profiles are attributed to the right entity", () => {
-  it("the company asserts no unproven external identity", () => {
-    expect(ORG_SAME_AS).toEqual([]);
-    // Omitted, not emitted empty: an empty array is still a published claim
-    // shape, and `sameAs` is optional on Organization.
-    expect("sameAs" in organizationSchema()).toBe(false);
+  it("the company asserts only the owner-supplied LinkedIn identity", () => {
+    // The official company LinkedIn page was supplied by the owner and lives in
+    // lib/corporate/contact; nothing else is asserted as the company's identity.
+    expect(ORG_SAME_AS).toEqual(["https://www.linkedin.com/company/zharfa-vira/"]);
+    expect((organizationSchema() as { sameAs?: string[] }).sameAs).toEqual([...ORG_SAME_AS]);
+    expect(ORG_SAME_AS).not.toContain(ORG_URL);
   });
 
   it("the ProvenExpert profile sits on the PRODUCT, never on the company", () => {
@@ -285,27 +287,27 @@ describe("the retired company identity is published nowhere", () => {
   });
 
   it("no public contact address is built out of the retired company name", () => {
-    // The specific surface the original sweep missed. Every published address
-    // is checked as a whole string AND collapsed, and each must be a real
-    // owner-controlled mailbox rather than one spelling a retired legal name.
+    // Mailboxes are published from the canonical corporate source, not from the
+    // catalogues. Every one must be a real owner-controlled mailbox rather than
+    // one spelling a retired legal name, and the catalogues must carry none.
+    const addresses = Object.entries(CORPORATE_EMAIL);
+    expect(addresses.length, "the contact page must publish at least one address").toBeGreaterThan(0);
+    for (const [key, value] of addresses) {
+      expectNoRetiredIdentity(`contact.${key}`, value);
+    }
     for (const [locale, catalog] of CATALOGS) {
       const contact = (catalog as unknown as { contact: Record<string, string> }).contact;
-      const addresses = Object.entries(contact).filter(([, v]) => typeof v === "string" && v.includes("@"));
-      expect(addresses.length, `${locale}: the contact page must publish at least one address`).toBeGreaterThan(0);
-      for (const [key, value] of addresses) {
-        expectNoRetiredIdentity(`${locale}: contact.${key}`, value);
-      }
+      const inCatalogue = Object.entries(contact).filter(([, v]) => typeof v === "string" && /@[a-z0-9.-]+.[a-z]{2,}/i.test(v));
+      expect(inCatalogue, `${locale}: addresses live in lib/corporate/contact only`).toEqual([]);
     }
   });
 
   it("the public contact page names the canonical address", () => {
-    // `CONTACT_EMAIL` is the address the entity graph publishes as the
-    // organisation contact point, so the contact page must not drift from it.
-    for (const [locale, catalog] of CATALOGS) {
-      const contact = (catalog as unknown as { contact: Record<string, string> }).contact;
-      const published = Object.values(contact).filter((v) => typeof v === "string" && v.includes("@"));
-      expect(published, `${locale}: the canonical contact address must be published`).toContain(CONTACT_EMAIL);
-    }
+    // `CONTACT_EMAIL` is the technical-support address and one of the entity
+    // graph's contact points, so it must be a published corporate mailbox.
+    expect(Object.values(CORPORATE_EMAIL)).toContain(CONTACT_EMAIL);
+    const org = JSON.stringify(siteEntityGraph());
+    for (const email of Object.values(CORPORATE_EMAIL)) expect(org).toContain(email);
   });
 
   it("the rendered entity graph carries no retired identity", () => {
@@ -494,8 +496,8 @@ describe("the organisation publishes its own verified website", () => {
     // An organisation's own principal website belongs in `url`. Repeating it in
     // `sameAs` would assert that the company and its website are two identities
     // to be merged — the same sloppy claim this phase removed elsewhere.
-    expect(ORG_SAME_AS).toEqual([]);
-    expect("sameAs" in organizationSchema()).toBe(false);
+    expect(ORG_SAME_AS).toEqual(["https://www.linkedin.com/company/zharfa-vira/"]);
+    expect(ORG_SAME_AS.some((u) => u.includes("provenexpert") || u.includes("github"))).toBe(false);
   });
 
   it("the ZHARFA domain never appears on the PRODUCT entity", () => {

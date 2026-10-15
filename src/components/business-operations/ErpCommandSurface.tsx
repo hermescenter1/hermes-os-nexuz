@@ -19,8 +19,9 @@ import {
   ProjectStatusBadge, TaskStatusBadge, WorkOrderStatusBadge,
 } from "./WorkflowStatusBadge";
 import { deriveErpAttention, budgetVariancePct, formatErpMoney } from "./logic";
+import type { ErpOverviewView } from "@/lib/erp/operations";
 import type {
-  ErpOverview, ErpProjectStatus, ErpTaskStatus, ErpWorkOrderStatus,
+  ErpProjectStatus, ErpTaskStatus, ErpWorkOrderStatus,
 } from "@/lib/erp/types";
 
 function ErpLink({ href, className, children }: { href: string; className?: string; children: React.ReactNode }) {
@@ -32,9 +33,10 @@ const TASK_ORDER: ErpTaskStatus[] = ["TODO", "IN_PROGRESS", "BLOCKED", "REVIEW",
 const WO_ORDER: ErpWorkOrderStatus[] = ["OPEN", "ASSIGNED", "IN_PROGRESS", "WAITING_APPROVAL", "COMPLETED", "CANCELLED"];
 const ACTIVITY_KEYS = new Set(["task_completed", "work_order_completed", "approval_decided"]);
 
-export async function ErpCommandSurface({ overview, locale }: { overview: ErpOverview; locale: string }) {
+export async function ErpCommandSurface({ overview, locale }: { overview: ErpOverviewView; locale: string }) {
   const t = await getTranslations("businessOps");
   const tStatus = await getTranslations("businessOps.status");
+  const tOps = await getTranslations("enterpriseOperations");
   const nf = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
   const df = new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" });
 
@@ -48,7 +50,9 @@ export async function ErpCommandSurface({ overview, locale }: { overview: ErpOve
     viewLabel: t("attention.view"),
   }));
 
-  const variance = budgetVariancePct(overview.totalBudget, overview.totalActualCost);
+  const variance = overview.totalBudget !== null && overview.totalActualCost !== null
+    ? budgetVariancePct(overview.totalBudget, overview.totalActualCost)
+    : 0;
   const recent = overview.recentActivity.filter((e) => ACTIVITY_KEYS.has(e.type)).slice(0, 6);
 
   const actions: SafeAction[] = [
@@ -86,26 +90,49 @@ export async function ErpCommandSurface({ overview, locale }: { overview: ErpOve
         </div>
       </DashboardSection>
 
-      {/* 3. Budget summary (real budget vs. recorded actual cost) */}
+      {/* 2b. Team size and utilization (utilization needs an allocation model; none exists) */}
+      <DashboardSection id="erp-capacity" title={tOps("utilization.label")}>
+        <dl className="ds-glass-card grid grid-cols-1 gap-4 rounded-lg p-5 sm:grid-cols-2">
+          <div>
+            <dt className="text-caption text-text-muted">{tOps("utilization.teamSize")}</dt>
+            <dd className="mt-0.5 text-title font-semibold text-text-primary"><span dir="ltr" className="tabular-nums">{nf.format(overview.teamSize)}</span></dd>
+          </div>
+          <div>
+            <dt className="text-caption text-text-muted">{tOps("utilization.label")}</dt>
+            <dd className="mt-0.5 text-title font-semibold text-text-primary">
+              {overview.utilizationStatus === "INSUFFICIENT_DATA" ? tOps("utilization.insufficientData") : null}
+            </dd>
+          </div>
+          <p className="text-caption text-text-muted sm:col-span-2">{tOps("utilization.note")}</p>
+        </dl>
+      </DashboardSection>
+
+      {/* 3. Budget summary (real budget vs. recorded actual cost; owners only) */}
       <DashboardSection id="erp-budget" title={t("sections.budget")}>
         <div className="ds-glass-card rounded-lg p-5">
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
-              <dt className="text-caption text-text-muted">{t("budget.total")}</dt>
-              <dd className="mt-0.5 text-title font-semibold text-text-primary"><TechnicalValue mono={false}>{formatErpMoney(overview.totalBudget)}</TechnicalValue></dd>
-            </div>
-            <div>
-              <dt className="text-caption text-text-muted">{t("budget.actual")}</dt>
-              <dd className="mt-0.5 text-title font-semibold text-text-primary"><TechnicalValue mono={false}>{formatErpMoney(overview.totalActualCost)}</TechnicalValue></dd>
-            </div>
-            <div>
-              <dt className="text-caption text-text-muted">{t("budget.variance")}</dt>
-              <dd className={cn("mt-0.5 text-title font-semibold", variance > 10 ? "text-status-danger" : variance > 0 ? "text-status-warning" : "text-status-success")}>
-                <span dir="ltr" className="tabular-nums">{variance > 0 ? "+" : ""}{nf.format(variance)}%</span>
-              </dd>
-            </div>
-          </dl>
-          <p className="mt-3 text-caption text-text-muted">{t("budget.note")}</p>
+          {overview.financialsVisible && overview.totalBudget !== null && overview.totalActualCost !== null ? (
+            <>
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                  <dt className="text-caption text-text-muted">{t("budget.total")}</dt>
+                  <dd className="mt-0.5 text-title font-semibold text-text-primary"><TechnicalValue mono={false}>{formatErpMoney(overview.totalBudget)}</TechnicalValue></dd>
+                </div>
+                <div>
+                  <dt className="text-caption text-text-muted">{t("budget.actual")}</dt>
+                  <dd className="mt-0.5 text-title font-semibold text-text-primary"><TechnicalValue mono={false}>{formatErpMoney(overview.totalActualCost)}</TechnicalValue></dd>
+                </div>
+                <div>
+                  <dt className="text-caption text-text-muted">{t("budget.variance")}</dt>
+                  <dd className={cn("mt-0.5 text-title font-semibold", variance > 10 ? "text-status-danger" : variance > 0 ? "text-status-warning" : "text-status-success")}>
+                    <span dir="ltr" className="tabular-nums">{variance > 0 ? "+" : ""}{nf.format(variance)}%</span>
+                  </dd>
+                </div>
+              </dl>
+              <p className="mt-3 text-caption text-text-muted">{t("budget.note")}</p>
+            </>
+          ) : (
+            <p className="text-body-compact text-text-secondary">{tOps("financials.restricted")}</p>
+          )}
         </div>
       </DashboardSection>
 
@@ -114,14 +141,16 @@ export async function ErpCommandSurface({ overview, locale }: { overview: ErpOve
         <DashboardSection id="erp-kpis" title={t("sections.kpis")}>
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {overview.kpiSummary.slice(0, 4).map((kpi) => {
-              const pct = kpi.target ? Math.min(100, Math.round((kpi.value / kpi.target) * 100)) : null;
+              const hidden = kpi.value === null;
+              const pct = kpi.value !== null && kpi.target ? Math.min(100, Math.round((kpi.value / kpi.target) * 100)) : null;
               return (
                 <li key={kpi.id} className="ds-glass-card rounded-lg p-4">
                   <p className="text-caption text-text-muted" dir="auto">{kpi.name}</p>
                   <p className="mt-0.5 text-kpi-md font-bold text-text-primary" dir="ltr">
-                    {nf.format(kpi.value)}{kpi.unit ? <span className="ms-0.5 text-caption font-normal text-text-muted">{kpi.unit}</span> : null}
+                    {hidden ? tOps("financials.restricted") : nf.format(kpi.value as number)}
+                    {!hidden && kpi.unit ? <span className="ms-0.5 text-caption font-normal text-text-muted">{kpi.unit}</span> : null}
                   </p>
-                  {kpi.target ? (
+                  {kpi.target && !hidden ? (
                     <div className="mt-2">
                       <div className="h-1 rounded-full bg-surface-interactive">
                         <div className="h-1 rounded-full bg-brand-primary" style={{ inlineSize: `${pct ?? 0}%` }} />
@@ -133,6 +162,7 @@ export async function ErpCommandSurface({ overview, locale }: { overview: ErpOve
               );
             })}
           </ul>
+          <p className="mt-3 text-caption text-text-muted">{tOps("kpis.recentLimited", { count: nf.format(overview.kpiSummaryLimit) })}</p>
         </DashboardSection>
       ) : null}
 
@@ -142,15 +172,18 @@ export async function ErpCommandSurface({ overview, locale }: { overview: ErpOve
           {recent.length === 0 ? (
             <p className="text-body-compact text-text-secondary">{t("activity.empty")}</p>
           ) : (
-            <ul className="flex flex-col gap-2.5">
-              {recent.map((e, i) => (
-                <li key={`${e.type}-${i}`} className="flex items-center gap-3">
-                  <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-primary" />
-                  <span className="flex-1 text-body-compact text-text-primary" dir="auto">{t(`activity.${e.type}`)}</span>
-                  <span className="shrink-0 text-caption text-text-muted" dir="ltr">{df.format(new Date(e.createdAt))}</span>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="flex flex-col gap-2.5">
+                {recent.map((e, i) => (
+                  <li key={`${e.type}-${i}`} className="flex items-center gap-3">
+                    <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-primary" />
+                    <span className="flex-1 text-body-compact text-text-primary" dir="auto">{t(`activity.${e.type}`)}</span>
+                    <span className="shrink-0 text-caption text-text-muted" dir="ltr">{df.format(new Date(e.createdAt))}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-caption text-text-muted">{tOps("dashboard.activityLimited", { count: nf.format(overview.recentActivityLimit) })}</p>
+            </>
           )}
         </div>
       </DashboardSection>

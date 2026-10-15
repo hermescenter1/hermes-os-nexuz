@@ -248,12 +248,11 @@ describe("POST /api/media/assets — RBAC then entitlement", () => {
 describe("POST /api/media/assets — mass assignment", () => {
   beforeEach(() => actAs("ENGINEER"));
 
-  it("rejects a client-supplied tenant, lifecycle, slug, counters or attribution", async () => {
+  it("rejects a client-supplied tenant, lifecycle, counters or attribution", async () => {
     for (const bad of [
       { title: "t", organizationId: "org-B" },
       { title: "t", status: "PUBLISHED" },
       { title: "t", processingState: "READY" },
-      { title: "t", slug: "chosen-by-client" },
       { title: "t", publishedAt: "2026-01-01T00:00:00.000Z" },
       { title: "t", viewCount: 9999 },
       { title: "t", createdBy: "someone-else" },
@@ -326,6 +325,83 @@ describe("POST /api/media/assets — server-derived slug", () => {
     seedAsset(state, { id: "other", organizationId: "org-B", slug: "plc-basics" });
     const { json } = await createPOST({ title: "PLC Basics" });
     expect((json.asset as unknown as Record<string, string>).slug).toBe("plc-basics");
+  });
+});
+
+describe("POST /api/media/assets — explicit slug", () => {
+  beforeEach(() => actAs("ENGINEER"));
+
+  const slugOf = (json: Record<string, never>) =>
+    (json.asset as unknown as Record<string, string>).slug;
+
+  it("stores a valid explicit slug exactly, with a Persian title and fa locale", async () => {
+    const { res, json } = await createPOST({
+      title: "ژرفا — صنعت، با هوشمندی",
+      primaryLocale: "fa",
+      slug: "industry-with-intelligence",
+    });
+    expect(res.status).toBe(201);
+    expect(slugOf(json)).toBe("industry-with-intelligence");
+    expect(state.tables.mediaAsset[0].slug).toBe("industry-with-intelligence");
+    expect(state.tables.mediaAsset[0].organizationId).toBe("org-A");
+  });
+
+  it("still derives the slug from the title when none is supplied", async () => {
+    const { json } = await createPOST({ title: "PLC Basics" });
+    expect(slugOf(json)).toBe("plc-basics");
+  });
+
+  it("400s on a slug that is not lowercase ASCII kebab-case", async () => {
+    for (const bad of [
+      "Upper-Case",
+      "under_score",
+      "has space",
+      "-leading",
+      "trailing-",
+      "double--hyphen",
+      "آموزش",
+      "../etc",
+      "",
+      "a".repeat(81),
+    ]) {
+      const { res, json } = await createPOST({ title: "t", slug: bad });
+      expect(res.status).toBe(400);
+      expect(json.code).toBe("INVALID_INPUT");
+    }
+    expect(state.tables.mediaAsset.length).toBe(0);
+  });
+
+  it("409s on a collision in the same organization and never suffixes or overwrites", async () => {
+    seedAsset(state, { id: "existing", organizationId: "org-A", slug: "taken-slug" });
+    const { res, json } = await createPOST({ title: "Another", slug: "taken-slug" });
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("SLUG_CONFLICT");
+    expect(state.tables.mediaAsset.length).toBe(1);
+  });
+
+  it("allows the same slug as another organization", async () => {
+    seedAsset(state, { id: "other", organizationId: "org-B", slug: "shared-slug" });
+    const { res, json } = await createPOST({ title: "Mine", slug: "shared-slug" });
+    expect(res.status).toBe(201);
+    expect(slugOf(json)).toBe("shared-slug");
+  });
+
+  it("does not bypass manage_media: a VIEWER with an explicit slug is refused", async () => {
+    actAs("VIEWER", "user-viewer");
+    const { res } = await createPOST({ title: "t", slug: "viewer-slug" });
+    expect(res.status).toBe(403);
+    expect(state.tables.mediaAsset.length).toBe(0);
+  });
+
+  it("keeps the slug immutable afterwards: PATCH still rejects it", async () => {
+    const created = await createPOST({ title: "t", slug: "fixed-address" });
+    const id = (created.json.asset as unknown as Record<string, string>).id;
+    const { PATCH } = await import("../[id]/route");
+    const res = await PATCH(jsonRequest("PATCH", { slug: "new-address" }, `/${id}`), {
+      params: Promise.resolve({ id }),
+    });
+    expect(res.status).toBe(400);
+    expect(state.tables.mediaAsset[0].slug).toBe("fixed-address");
   });
 });
 

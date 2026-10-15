@@ -38,6 +38,10 @@ const PRODUCTION_SURFACES = [
   "app/api/ats/applications/[id]/status/route.ts",
   "app/api/ats/jobs/[id]/criteria/route.ts",
   "app/api/ats/review/deliver/route.ts",
+  // ATS-STAGE1-FORM — the public form and the schema it shares with the route.
+  "lib/ats/stage1-schema.ts",
+  "components/careers/stage1-contract.ts",
+  "components/careers/Stage1ApplicationForm.tsx",
 ] as const;
 
 const NO_LOG_SURFACES = [
@@ -47,6 +51,8 @@ const NO_LOG_SURFACES = [
   "lib/ats/review/extractor.ts",
   "lib/ats/review/worker.ts",
   "app/api/careers/apply/route.ts",
+  "components/careers/stage1-contract.ts",
+  "components/careers/Stage1ApplicationForm.tsx",
 ] as const;
 
 function read(rel: string): string {
@@ -102,11 +108,21 @@ describe("the stage gate is where it must be", () => {
     expect(src).toContain("AI_REVIEW_PENDING: []");
   });
 
-  it("the public gate stays closed: the owner flag is still false", async () => {
+  it("the public gate is open ONLY by the owner's authorization — and it opens intake, never a later stage", async () => {
     const flags = await import("../acceptance-flag");
-    expect(flags.APPLICATION_ACCEPTANCE_AUTHORIZED).toBe(false);
+    // ATS-STAGE1-FORM (2026-09-25): the owner explicitly authorized acceptance.
+    expect(flags.APPLICATION_ACCEPTANCE_AUTHORIZED).toBe(true);
     expect(flags.APPLICATION_ORCHESTRATION_IMPLEMENTED).toBe(true);
-    expect(flags.APPLY_JOURNEY_OPEN).toBe(false);
+    expect(flags.APPLY_JOURNEY_OPEN).toBe(true);
+    // Opening the gate changes nothing about where an application can go: the
+    // public route and form name no stage at all, and intake stops at
+    // AI_REVIEW_PENDING (asserted above).
+    for (const rel of ["app/api/careers/apply/route.ts", "components/careers/Stage1ApplicationForm.tsx", "components/careers/stage1-contract.ts"]) {
+      const src = code(rel);
+      for (const s of ["SCREENING", "PENDING_HUMAN_APPROVAL", "INTERVIEW", "OFFER", "HIRED", "REJECTED", "AI_REVIEW_PENDING"]) {
+        expect(src, `${rel} must not name ${s}`).not.toContain(s);
+      }
+    }
   });
 
   it("the extractor reads no field that could carry a protected attribute", () => {

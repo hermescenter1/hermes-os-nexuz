@@ -8,6 +8,15 @@ import type { OrganizationRole } from "@/lib/tenant/contract";
 import type { OrgRole } from "./types";
 
 export type OrgPermission =
+  // HRIS-0.5 — ERP tenant data. See the PERMISSIONS table for the grants.
+  | "view_erp"
+  | "manage_erp"
+  | "view_erp_compensation"
+  // Executive Management Center slice G — the organization's own customers
+  // (tenant-owned Party). Separate from ERP so a sales manager can follow up a
+  // customer without receiving project, cost or approval access.
+  | "view_customers"
+  | "manage_customers"
   | "update_org"
   | "delete_org"
   | "invite_member"
@@ -261,6 +270,17 @@ const PERMISSIONS: Record<OrgPermission, OrgRole[]> = {
   // F-2 — documents. READ mirrors `view_media`; AUTHORING mirrors `manage_media`.
   view_documents:                 ["OWNER", "ADMIN", "MANAGER", "ENGINEER", "VIEWER", "BILLING_ADMIN"],
   manage_documents:               ["OWNER", "ADMIN", "MANAGER", "ENGINEER"],
+  // HRIS-0.5 — ERP tenant data. Deliberately conservative: no ENGINEER, VIEWER,
+  // MANAGER or HR_MANAGER receives implicit ERP access. HR permissions arrive in
+  // HRIS-1 as separate HRIS_* permissions, never by widening these.
+  view_erp:                       ["OWNER", "ADMIN"],
+  manage_erp:                     ["OWNER", "ADMIN"],
+  view_erp_compensation:          ["OWNER"],
+  // Slice G — customers. MANAGER is included on purpose: following up customers
+  // is a manager's job, and these grant no ERP, cost or compensation access.
+  // None of the eight roles pinned at zero grants (phase110-a10b) receives one.
+  view_customers:                 ["OWNER", "ADMIN", "MANAGER"],
+  manage_customers:               ["OWNER", "ADMIN", "MANAGER"],
 };
 
 /*

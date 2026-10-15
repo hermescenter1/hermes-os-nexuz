@@ -80,6 +80,23 @@ describe("requireAtsActor — registered at TENANT scope", () => {
     for (const [file, method, capability] of M1) guardsFirst(file, method, `requireAtsActor(req, "${capability}")`, WORK);
   });
 
+  it("half one — the four dashboard READ routes now gate on ATS_VIEW before any real query", () => {
+    const WORK = /getAtsOverview\(|getAtsAnalytics\(|getAtsPipeline\(|getAtsCandidates\(|searchParams/;
+    for (const file of [
+      "src/app/api/ats/overview/route.ts",
+      "src/app/api/ats/analytics/route.ts",
+      "src/app/api/ats/pipeline/route.ts",
+      "src/app/api/ats/candidates/route.ts",
+    ]) {
+      guardsFirst(file, "GET", 'requireAtsActor(req, "ATS_VIEW")', WORK);
+    }
+    // the candidate CREATE is refused, and still behind ATS_ADMIN
+    guardsFirst("src/app/api/ats/candidates/route.ts", "POST", 'requireAtsActor(req, "ATS_ADMIN")', /NOT_IMPLEMENTED|correlationOf/);
+    // the candidate detail read is ATS_VIEW; the erasure is ATS_ADMIN and runs the guard first
+    guardsFirst("src/app/api/ats/candidates/[id]/route.ts", "GET", 'requireAtsActor(req, "ATS_VIEW")', /getCandidateDetail\(|correlationOf/);
+    guardsFirst("src/app/api/ats/candidates/[id]/erase/route.ts", "POST", 'requireAtsActor(req, "ATS_ADMIN")', /eraseCandidate\(|mutationPreconditions\(|readJsonBody\(/);
+  });
+
   it("half one — every M1 WRITE checks Origin and the Idempotency-Key before reading the body", () => {
     for (const [file, method] of [
       ["src/app/api/ats/jobs/route.ts", "POST"],
@@ -177,18 +194,18 @@ describe("requireRecruitmentReader — registered at USER scope, deliberately no
     expect(registry).not.toContain('{ token: "requireRecruitmentReader", scope: "tenant" }');
   });
 
-  it("half one — the four S0 routes call it before reading the fixture", () => {
+  it("half one — go-live moved the four dashboard reads onto the tenant-scoped ATS guard; nothing calls this one now", () => {
     for (const f of [
       "src/app/api/ats/overview/route.ts",
       "src/app/api/ats/analytics/route.ts",
       "src/app/api/ats/pipeline/route.ts",
       "src/app/api/ats/candidates/route.ts",
     ]) {
-      guardsFirst(f, "GET", "requireRecruitmentReader(req)", /JOBS|CANDIDATES|searchParams/);
+      expect(code(f), `${f} must no longer use the non-tenant reader`).not.toContain("requireRecruitmentReader");
     }
   });
 
-  it("half two — authenticated identity, then the authoring capability; nothing about a tenant", () => {
+  it("half two — the (now-unused) guard still resolves identity then the authoring capability, nothing about a tenant", () => {
     expect(guard).toContain("await getAuthRole(req)");
     expect(guard).toContain('can(role, "authoring")');
     expect(guard).toContain('recruitmentRefusal("AUTHENTICATION_REQUIRED")');

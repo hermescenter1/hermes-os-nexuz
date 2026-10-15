@@ -116,6 +116,41 @@ export const POST_PHASE102_MIGRATIONS = [
   // F-2 — Document.tenantId foreign key to Organization (ON DELETE RESTRICT)
   // plus one index. Additive: no column, no row touched.
   "20260925120000_f2_document_tenant_fk",
+  // HRIS-0.5 — ERP tenant isolation: the team-membership foreign keys move to
+  // the composite (organizationId, userId) / (organizationId, teamId) keys the
+  // rest of the schema already uses. Additive/structural only, no existing row
+  // rewritten. Declared for the same reason as the lines above — an undeclared
+  // row would fail the era-count equality, and silently widening that check to
+  // `>=` would retire the gate.
+  "20261004120000_hris05_erp_tenant_isolation",
+  // Asset registry write integrity — tenant-scoped asset numbers and
+  // organization-safe foreign keys for sites, locations, and parent assets.
+  // This is a post-Phase-102 migration, so the legacy Phase 102 equality gate
+  // must subtract it while continuing to reject any undeclared migration.
+  "20261009150000_asset_registry_write_integrity",
+  // Executive Management Center - one additive table, ExecutiveDailyReport,
+  // holding one frozen report per organization per business day. It creates no
+  // column on an existing table and rewrites no row. Declared for the same
+  // reason as the lines above: an undeclared row would fail the era-count
+  // equality, and silently widening that check to `>=` would retire the gate.
+  "20261011090000_executive_daily_report",
+  // Executive Management Center slice E - one additive table, ExecutiveSettings,
+  // keyed by the organization. No column on an existing table, no backfill, no
+  // row rewritten. Declared for the same reason as the lines above: an
+  // undeclared row would fail the era-count equality.
+  "20261012120000_executive_settings",
+  // Executive Management Center slice G - Party + PartyInteraction and one
+  // nullable ErpProject.partyId. No backfill, no row rewritten. Declared for
+  // the same reason as the lines above: an undeclared row would fail the
+  // era-count equality.
+  "20261013090000_tenant_customers",
+  // Executive Management Center slice I - two indexes for the executive
+  // summary's period counts, nothing else. Declared for the same reason as the
+  // lines above: an undeclared row would fail the era-count equality.
+  "20261013180000_executive_customer_count_indexes",
+  // Executive Management Center — one nullable Json column for the frozen
+  // priority list. Declared for the same reason as the lines above.
+  "20261014160000_executive_report_priorities",
 ];
 
 /**

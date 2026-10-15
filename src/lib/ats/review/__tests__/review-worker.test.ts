@@ -71,7 +71,7 @@ function makeLeaseStore(seed: Lease[] = []) {
 function makeDb(
   outbox: Outbox[],
   apps: App[],
-  opts?: { noCriteria?: boolean; claimRace?: boolean; staleApp?: boolean; leases?: Lease[]; settings?: SettingsRow | null; throwOnSettings?: boolean },
+  opts?: { noCriteria?: boolean; claimRace?: boolean; staleApp?: boolean; leases?: Lease[]; settings?: SettingsRow | null; throwOnSettings?: boolean; erasedCandidate?: boolean; anonymisedApp?: boolean },
 ) {
   const lease = makeLeaseStore(opts?.leases);
   const rows = outbox.map((o) => ({ ...o }));
@@ -86,7 +86,8 @@ function makeDb(
         if (!r) return null;
         return {
           ...r,
-          candidate: { skills: ["TypeScript", "PostgreSQL"], location: "Tehran", linkedinUrl: null },
+          anonymizedAt: opts?.anonymisedApp ? new Date() : null,
+          candidate: { deletedAt: opts?.erasedCandidate ? new Date() : null, skills: ["TypeScript", "PostgreSQL"], location: "Tehran", linkedinUrl: null },
           job: { title: "Backend Engineer", criteria: opts?.noCriteria ? [] : criteria },
         };
       },
@@ -339,5 +340,18 @@ describe("ATS-M1 — the organization policy reaches the review, never the state
     expect(report.riskFlags.map((f) => f.code)).toContain("CONFIDENCE_BELOW_POLICY");
     const statuses = store.writes.filter((w) => w.model === "atsApplication.updateMany").map((w) => w.data.status);
     expect(statuses).toEqual(["PENDING_HUMAN_APPROVAL"]);
+  });
+});
+
+describe("ATS go-live — the erasure guard", () => {
+  it("an application whose candidate has been erased is dead-lettered, never reviewed", async () => {
+    const store = makeDb([OUT], [APP], { erasedCandidate: true });
+    h.db = store.client;
+    const report = await runAiReviewPass({ now: NOW });
+    expect(store.rows[0].status).toBe("DEAD_LETTER");
+    expect(store.rows[0].lastErrorCode).toBe("CANDIDATE_ERASED");
+    // no review was written
+    expect(store.writes.some((w) => w.model === "atsAiReview")).toBe(false);
+    expect(report.delivered).toBe(0);
   });
 });

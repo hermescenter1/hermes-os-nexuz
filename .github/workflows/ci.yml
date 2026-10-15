@@ -53,17 +53,46 @@ jobs:
       # the Phase 99 workflow only publishes a sanitized audit artifact, and it
       # does not run on every pull request. A HIGH advisory landing in a
       # transitive dependency would therefore have gone unnoticed until the next
-      # manual review. `--audit-level=high` exits non-zero on any HIGH or
-      # CRITICAL finding and zero otherwise, so MODERATE and below stay visible
-      # in the artifact without blocking.
+      # manual review.
       #
       # Invariant: DEPENDENCY_CRITICAL=0 and DEPENDENCY_HIGH=0 on every PR.
+      #
+      # 2026-10-03 — this step used to be a bare `npm audit --audit-level=high`.
+      # That decided correctly until a HIGH advisory landed in a transitive
+      # package with NO published safe version: `braces` (GHSA-vfj7-8cjw-p6xm) is
+      # at its latest release AND inside the advisory range, and it is reachable
+      # only through `tailwindcss@3` and `eslint-config-next@15`. The raw command
+      # then leaves two bad options — lower the bar for everything, or take an
+      # unreviewed design-system major — and a gate with no third option is
+      # exactly how `--audit-level=critical` gets committed.
+      #
+      # `gate:dependency-audit` is NOT equivalent to raw zero-HIGH enforcement,
+      # and the trade is deliberate rather than a loophole.
+      #
+      # STRICTER than the raw command for: production HIGH/CRITICAL (no exception
+      # mechanism exists for these at all), any CRITICAL anywhere (never
+      # exceptionable), any new or unapproved HIGH including a new advisory on an
+      # already-approved package, dependency-path drift, production reachability,
+      # expiry, a stale/orphaned exception, and malformed audit output — which
+      # BLOCKS with exit 2 rather than passing.
+      #
+      # MORE PERMISSIVE for exactly one thing: the seven enumerated dev-only HIGH
+      # findings in docs/security/dependency-audit-exceptions.json, until
+      # 2026-11-02. That list cannot grow without a reviewed change to a
+      # committed file.
+      #
+      # Nothing is concealed — the full tree is audited and every finding is
+      # printed — and those seven are labelled ACCEPTED_TEMPORARY_DEV_ONLY_RISK,
+      # which means UNRESOLVED RISK, never "fixed".
+      #
+      # Exceptions live in docs/security/dependency-audit-exceptions.json and the
+      # reasoning in docs/security/dependency-audit-governance.md.
       #
       # If this fails, remediate the advisory. Do NOT downgrade `sharp` to dodge
       # its CPU requirement — the pinned 0.35.3 is deliberate (see
       # docs/security/phase99-dependency-remediation.md).
-      - name: Dependency security gate (0 critical, 0 high)
-        run: npm audit --audit-level=high
+      - name: Dependency security gate (0 critical, 0 unapproved high)
+        run: npm run gate:dependency-audit
 
       - name: Generate Prisma client
         env:

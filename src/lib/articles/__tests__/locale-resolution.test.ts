@@ -102,10 +102,22 @@ describe("the detail route resolves by locale, with a legacy fallback", () => {
     expect(db).toContain("where: { slug: lookupSlug, language }");
   });
 
-  it("still resolves an article that has no edition in this language", () => {
-    // A single-language legacy article must keep resolving at every locale —
-    // this fallback IS the entire pre-Phase-106 behaviour.
+  it("keeps the legacy fallback only as a redirect-discovery path", () => {
+    // The DAL still finds a single-language legacy row so old URLs do not turn
+    // into blind 404s; the route redirects it instead of rendering a duplicate.
     expect(db).toContain("row ??= await articleModel.findFirst({ where: { slug: lookupSlug }, include })");
+    expect(page).toContain("article.language !== requestedLanguage");
+    expect(page).toContain("localeForArticleLanguage(article.language)");
+    expect(page).toContain("permanentRedirect");
+  });
+
+  it("redirects before loading related content or incrementing views", () => {
+    const redirectCheck = page.indexOf("article.language !== requestedLanguage");
+    const feedRead = page.indexOf("const feed = await getArticleFeed(locale)");
+    const viewIncrement = page.indexOf("incrementArticleViewCount(article.id)");
+    expect(redirectCheck).toBeGreaterThan(-1);
+    expect(feedRead).toBeGreaterThan(redirectCheck);
+    expect(viewIncrement).toBeGreaterThan(feedRead);
   });
 
   it("both the page and its metadata resolve the same edition", () => {

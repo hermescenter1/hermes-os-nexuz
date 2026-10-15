@@ -436,6 +436,37 @@ describe("102 — migration ordering", () => {
     // F-2 — Document.tenantId foreign key to Organization (ON DELETE RESTRICT)
     // and one index. Additive only; touches no Phase 102 table (asserted below).
     "20260925120000_f2_document_tenant_fk",
+    "20261004120000_hris05_erp_tenant_isolation",
+    // Asset-registry write integrity — tenant-safe composite foreign keys and
+    // an organization-scoped asset-number uniqueness constraint. Touches no
+    // Phase 102 table (asserted below).
+    "20261009150000_asset_registry_write_integrity",
+    // Executive Management Center — one additive table, ExecutiveDailyReport,
+    // holding one frozen report per organization per business day. Creates no
+    // column on an existing table and touches no Phase 102 table (asserted
+    // below).
+    "20261011090000_executive_daily_report",
+    // Executive Management Center slice E - one additive table,
+    // ExecutiveSettings, keyed by the organization (zone, day cutoff, priority
+    // thresholds). No column on an existing table, no backfill; touches no
+    // Phase 102 table (asserted below).
+    "20261012120000_executive_settings",
+    // Executive Management Center slice G - the tenant's customers: two new
+    // tables (Party, PartyInteraction) and one NULLABLE column on ErpProject
+    // (partyId, composite FK into Party). No backfill, no row rewritten;
+    // touches no Phase 102 table (asserted below).
+    "20261013090000_tenant_customers",
+    // Executive Management Center slice I - two INDEXES and nothing else:
+    // Party(organizationId, kind, createdAt) and
+    // PartyInteraction(organizationId, occurredAt), for the executive summary's
+    // period counts. No table, column, constraint or row is touched, so the
+    // rollback is DROP INDEX; touches no Phase 102 table (asserted below).
+    "20261013180000_executive_customer_count_indexes",
+    // Executive Management Center — one NULLABLE Json column on
+    // ExecutiveDailyReport for the frozen priority list. No backfill, no
+    // default, so PostgreSQL does not rewrite the table; touches no Phase 102
+    // table (asserted below).
+    "20261014160000_executive_report_priorities",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {

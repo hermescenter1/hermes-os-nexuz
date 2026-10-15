@@ -55,7 +55,6 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "about.founderName": "contact-url-or-propernoun",
   "about.locationIran": "contact-url-or-propernoun",
   "about.missionEyebrow": "german-word-identical",
-  "about.website": "contact-url-or-propernoun",
   "admin.filters.limit": "german-word-identical",
   "admin.metrics.none": "non-linguistic",
   "adminGovernance.academyAdmin.categories.compliance": "accepted-german-loanword",
@@ -182,18 +181,9 @@ export const DE_IDENTICAL_ALLOWLIST: Record<string, DeIdenticalCategory> = {
   "caseExplorer.detail.problem": "german-word-identical",
   "complianceCenter.columns.status": "german-word-identical",
   "complianceCenter.evidence.manifest": "accepted-german-loanword",
-  "contact.generalEmail": "contact-url-or-propernoun",
   "contact.githubLabel": "vendor-or-thirdparty",
-  "contact.githubUrl": "contact-url-or-propernoun",
-  "contact.linkedinLabel": "vendor-or-thirdparty",
-  "contact.linkedinUrl": "contact-url-or-propernoun",
-  "contact.locationIran": "contact-url-or-propernoun",
-  "contact.phoneIran": "contact-url-or-propernoun",
-  "contact.phoneUK": "contact-url-or-propernoun",
-  "contact.salesEmail": "contact-url-or-propernoun",
-  "contact.supportEmail": "contact-url-or-propernoun",
-  "contact.websiteLabel": "accepted-german-loanword",
-  "contact.websiteUrl": "contact-url-or-propernoun",
+  "contact.hermesWebsiteLabel": "brand-or-product",
+  "contact.zharfaWebsiteLabel": "brand-or-product",
   "copilot.eyebrow": "brand-eyebrow",
   "copilot.title": "brand-or-product",
   // PHASE 103 — the product name of the voice panel. Everything else in
@@ -492,10 +482,12 @@ export const DE_IDENTICAL_COUNTS: Record<DeIdenticalCategory, number> = {
   // R2: +4 — "Industrial Brain" (existing product name) in capability connect
   // cards.
   // 104-E: +1 — the same product name as the PROPOSED gate actor.
-  "brand-or-product": 69,
+  // CORPORATE-CONTACT: +2 — contact.hermesWebsiteLabel, contact.zharfaWebsiteLabel.
+  "brand-or-product": 71,
   // 104-I3: +2 — the sample URL and the country name Iran.
   // B1-F03 R3: +2 — ats.sourceLinkedin, ats.sourceIndeed.
-  "contact-url-or-propernoun": 19,
+  // CORPORATE-CONTACT: -10 — mailboxes, numbers and URLs moved to lib/corporate/contact.
+  "contact-url-or-propernoun": 9,
   // 104-I3: +3 — Website, Standard, Distributor.
   // 104-I3: +1 — demo.form.optional.
   // 109-C1: +3 — Simulation, Name, Global in the Automation Engineering Studio.
@@ -509,11 +501,11 @@ export const DE_IDENTICAL_COUNTS: Record<DeIdenticalCategory, number> = {
   // not German, and this catalogue already translates the same nav label
   // elsewhere (nav.groups.intelligence = "Intelligenz"), so it was translated
   // rather than allowlisted.
-  "accepted-german-loanword": 80,
+  "accepted-german-loanword": 79,
   // R2: +18 — CMMS/EDMS/ERP/CRM capability-page labels (nav + card names).
   // F2: +4  — the same acronyms in the real public header registry.
   // 104-I3: +2 — EDMS/CMMS as demo-request interest options.
   "protocol-or-standard": 90,
-  "vendor-or-thirdparty": 16,
+  "vendor-or-thirdparty": 15,
   "brand-eyebrow": 8
 } as const;

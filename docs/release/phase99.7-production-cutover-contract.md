@@ -217,6 +217,17 @@ curl -fsS https://www.hermesnovin.com/api/health/ready
 for l in fa en de; do curl -fsS -o /dev/null -w "$l %{http_code}\n" "https://www.hermesnovin.com/$l"; done
 ```
 
+`deploy.yml` also enforces the container-side half of this step itself: right
+after the cutover it waits, within a bounded time, for the `hermes-web`
+healthcheck to report `healthy`, requires the container to be running with
+`RestartCount` 0, and requires `/api/health/ready` (probed from inside the
+container) to answer `status` ready with `database` true. `unhealthy`, a restart
+loop, a timeout or any other answer fails the job and prints validated state
+fields only — never container logs or a response body. The gate changes nothing:
+no restart, no rebuild, no automatic rollback; using `hermes-web:previous-good`
+stays a human decision. It does not replace the public-URL, locale, severe-log
+and soak checks in this section.
+
 ### 12. Severe-log gate
 
 ```bash

@@ -9,17 +9,17 @@
  * application target: a candidate could complete and submit a real
  * application — name, email, résumé — against a job that does not exist.
  *
- * CURRENT (B1.3): there is no fixture path in the API at all, AND the
- * application surface collects nothing while the server refuses applications
- * (`APPLICATION_ACCEPTANCE_AUTHORIZED = false`, B2 owns the orchestration).
- * The provenance contract this file has always asserted is therefore
- * STRONGER, not weaker: no unverified posting reaches the page, and no form
- * exists for a verified one either.
+ * B1.3: there is no fixture path in the API at all. ATS-STAGE1-FORM
+ * (2026-09-25): the owner authorized acceptance and the Stage-1 form exists,
+ * so a VERIFIED posting now gets the form — and ONLY a verified posting. The
+ * provenance contract this file has always asserted is unchanged: no
+ * unverified posting ever becomes an application target.
  *
- * The vocabulary is now three distinct states, and this suite pins all three:
- *   verified + acceptance off → the honest not-accepting page (no inputs)
+ * The vocabulary is three distinct states, and this suite pins all three:
+ *   verified (source "db")    → the Stage-1 form, and nothing submitted yet
  *   ineligible / 404          → the enumeration-safe unavailable page
  *   non-db / malformed / 5xx  → an outage surface, never a claim about the job
+ * The acceptance-off state is pinned in `ats-stage1-gate-closed.test.tsx`.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@/components/ds/__tests__/_render";
@@ -97,22 +97,24 @@ const NOTHING_COLLECTED = (root: HTMLElement) => {
   expect(root.querySelector('button[type="submit"]')).toBeNull();
 };
 
-describe("104-I3/B1.3 — the application surface collects nothing", () => {
+describe("104-I3/ATS-STAGE1-FORM — only a VERIFIED posting becomes an application target", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("a database-backed posting gets the honest not-accepting page — and NO fields", async () => {
+  it("a database-backed posting gets the Stage-1 form, naming the real vacancy", async () => {
     reply({ job: JOB, source: "db" });
     const m = await render();
     const text = m.container.textContent ?? "";
-    expect(text).toContain(en.careers.apply.notAcceptingTitle);
-    // the real vacancy is named — the page is about a genuine posting …
     expect(text).toContain("Senior PLC Engineer");
-    // … and nothing about the visitor is collected
-    NOTHING_COLLECTED(m.container);
+    expect(m.container.querySelectorAll("form").length).toBe(1);
+    expect(m.container.querySelector('button[type="submit"]')).not.toBeNull();
+    expect(text).not.toContain(en.careers.apply.notAcceptingTitle);
+    // the ONLY request so far is the verification — nothing was submitted
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(String(mockFetch.mock.calls[0][0])).toContain("/api/careers/jobs/job-001");
     await m.unmount();
   });
 
-  it("makes no claim of success, receipt or later contact", async () => {
+  it("makes no claim of success, receipt or later contact before anything is submitted", async () => {
     reply({ job: JOB, source: "db" });
     const m = await render();
     const text = m.container.textContent ?? "";
@@ -120,6 +122,7 @@ describe("104-I3/B1.3 — the application surface collects nothing", () => {
       en.careers.apply.successTitle,
       en.careers.apply.successBody,
       en.careers.apply.successMyApplications,
+      en.careers.apply.form.referenceLabel,
     ]) {
       expect(text, claim).not.toContain(claim);
     }
@@ -168,14 +171,15 @@ describe("104-I3/B1.3 — the application surface collects nothing", () => {
     await m.unmount();
   });
 
-  it("localizes the withheld state in Persian, and still exposes nothing fabricated", async () => {
+  it("localizes the form in Persian, and still exposes nothing fabricated", async () => {
     reply({ job: JOB, source: "db" });
     const m = await render("fa");
     const text = m.container.textContent ?? "";
-    expect(text).toContain(fa.careers.apply.notAcceptingTitle);
+    expect(text).toContain(fa.careers.apply.form.processingNote);
+    expect(text).toContain(fa.careers.apply.fullName);
     // Persian script, not a Latin fallback
     expect(text).toMatch(/[؀-ۿ]/);
-    NOTHING_COLLECTED(m.container);
+    for (const claim of [fa.careers.apply.successTitle, fa.careers.apply.successBody]) expect(text).not.toContain(claim);
     await m.unmount();
   });
 

@@ -12,6 +12,7 @@
     "documents:cleanup:worker": "node scripts/documents/storage-cleanup-worker.mjs",
     "documents:cleanup:worker:once": "node scripts/documents/storage-cleanup-worker.mjs --once",
     "ats:review:worker:once": "node scripts/ats/ai-review-worker.mjs --once",
+    "ats:reconcile:review-stage": "tsx scripts/ats/reconcile-review-stage.ts",
     "test:phase91:postgres": "vitest run --config vitest.phase91-postgres.config.ts",
     "test:phase92:postgres": "vitest run --config vitest.phase92-postgres.config.ts",
     "audit:retention": "node scripts/audit-retention.mjs",
@@ -37,6 +38,7 @@
     "eval:phase99:readiness": "node scripts/ci/phase99-security-readiness-eval.mjs",
     "eval:phase99:closure": "node scripts/ci/phase99-closure-eval.mjs",
     "security:phase99:deps": "node scripts/ci/phase99-dependency-review.mjs",
+    "gate:dependency-audit": "node scripts/ci/dependency-audit-gate.mjs",
     "security:phase99:inventory": "node scripts/security/phase99/generate-inventory.mjs",
     "security:phase99:inventory:check": "node scripts/security/phase99/generate-inventory.mjs --check",
     "rehearse:phase99:incident": "node scripts/ci/phase99-pilot-incident-rehearsal.mjs",
@@ -57,9 +59,12 @@
     "test:phase112:postgres": "vitest run --config vitest.phase112-postgres.config.ts",
     "metering:worker": "node scripts/industrial/metering-outbox-worker.mjs",
     "metering:worker:once": "node scripts/industrial/metering-outbox-worker.mjs --once",
+    "executive:report:worker": "node scripts/executive/daily-report-worker.mjs",
+    "executive:report:worker:once": "node scripts/executive/daily-report-worker.mjs --once",
     "journal:validate": "node scripts/journal/validate-content.mjs",
     "journal:import:dry": "node scripts/journal/import-articles.mjs",
-    "journal:import": "node scripts/journal/import-articles.mjs --commit"
+    "journal:import": "node scripts/journal/import-articles.mjs --commit",
+    "perf:executive": "vitest run --config vitest.executive-perf.config.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
@@ -75,7 +80,7 @@
     "jose": "^6.2.3",
     "next": "15.5.25",
     "next-intl": "4.13.2",
-    "nodemailer": "^9.0.1",
+    "nodemailer": "^10.0.13",
     "openai": "^6.43.0",
     "pg": "^8.21.0",
     "prisma": "^7.8.0",
@@ -107,7 +112,7 @@
   },
   "overrides": {
     "postcss": "8.5.26",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "deepmerge-ts": "^8.0.0",
     "mysql2": "3.24.3"
   }

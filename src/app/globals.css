@@ -3349,6 +3349,45 @@ main [id$="-title"] {
   border-radius: 0.125rem;
 }
 
+/* corporate identity blocks (shared by Contact and About).
+   A telephone number is an isolated left-to-right run: under dir="rtl" the
+   digit groups must never be reordered. */
+.he-row-flat { grid-template-columns: minmax(0, 1fr); }
+.he-num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.he-ext {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-block-size: 2.75rem;
+  max-inline-size: 100%;
+}
+.he-ext-icon {
+  display: inline-flex;
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  color: var(--color-brand-primary);
+}
+.he-ext-icon svg { inline-size: 100%; block-size: 100%; }
+.he-ext:hover .he-ext-icon { color: var(--color-text-primary); }
+.he-legal { display: grid; gap: 0; }
+.he-legal-row {
+  display: grid;
+  gap: 0.125rem;
+  padding-block: 0.625rem;
+  border-block-end: var(--edge-width) solid var(--edge-hairline);
+}
+.he-legal-row:last-child { border-block-end: 0; }
+@media (min-width: 40rem) {
+  .he-legal-row { grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); column-gap: 1rem; align-items: baseline; }
+}
+
 /* command surface: the submit instrument, lifted off the page ground */
 .he-command {
   border: var(--edge-width) solid var(--edge-active);

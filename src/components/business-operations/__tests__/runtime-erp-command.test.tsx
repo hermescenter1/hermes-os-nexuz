@@ -9,7 +9,7 @@ import fa from "../../../../messages/fa.json";
 import de from "../../../../messages/de.json";
 import { ErpCommandSurface } from "../ErpCommandSurface";
 import { ErpSubNav } from "../ErpSubNav";
-import type { ErpOverview } from "@/lib/erp/types";
+import type { ErpOverviewView } from "@/lib/erp/operations";
 
 /**
  * PHASE 87H runtime — the ERP command surface renders real ErpOverview data
@@ -45,11 +45,12 @@ vi.mock("next-intl/server", async () => {
   };
 });
 
-function OVERVIEW(over: Partial<ErpOverview> = {}): ErpOverview {
+function OVERVIEW(over: Partial<ErpOverviewView> = {}): ErpOverviewView {
   return {
     activeProjects: 3, overdueTasks: 2, openWorkOrders: 4, inventoryWarnings: 1,
     pendingApprovals: 3, totalBudget: 2_000_000, totalActualCost: 2_400_000,
-    resourceUtilization: 70,
+    financialsVisible: true, resourceUtilization: null, utilizationStatus: "INSUFFICIENT_DATA",
+    teamSize: 4, kpiSummaryLimit: 6, recentActivityLimit: 8,
     recentActivity: [
       { type: "task_completed", description: "Task completed: X", createdAt: "2026-07-01T00:00:00.000Z" },
       { type: "approval_decided", description: "Approval approved: Y", createdAt: "2026-07-02T00:00:00.000Z" },
@@ -57,12 +58,12 @@ function OVERVIEW(over: Partial<ErpOverview> = {}): ErpOverview {
     projectsByStatus: { PLANNED: 1, ACTIVE: 2, ON_HOLD: 0, COMPLETED: 0, CANCELLED: 0 },
     tasksByStatus: { TODO: 4, IN_PROGRESS: 3, BLOCKED: 2, REVIEW: 1, DONE: 5, CANCELLED: 0 },
     workOrdersByStatus: { OPEN: 1, ASSIGNED: 1, IN_PROGRESS: 0, WAITING_APPROVAL: 1, COMPLETED: 3, CANCELLED: 0 },
-    kpiSummary: [{ id: "k1", name: "On-time delivery", value: 92, target: 95, unit: "%" } as ErpOverview["kpiSummary"][number]],
+    kpiSummary: [{ id: "k1", name: "On-time delivery", value: 92, target: 95, unit: "%" } as ErpOverviewView["kpiSummary"][number]],
     ...over,
   };
 }
 
-async function mountSurface(locale: "en" | "fa", overview: ErpOverview) {
+async function mountSurface(locale: "en" | "fa", overview: ErpOverviewView) {
   (globalThis as { __erpLocale?: "en" | "fa" }).__erpLocale = locale;
   const el = await ErpCommandSurface({ overview, locale });
   const messages = locale === "en" ? en : fa;
@@ -111,6 +112,7 @@ describe("ErpCommandSurface — EN, real overview wiring", () => {
     expect(h2s).toEqual([
       en.businessOps.attention.title,
       en.businessOps.sections.operationalStatus,
+      en.enterpriseOperations.utilization.label,
       en.businessOps.sections.budget,
       en.businessOps.sections.kpis,
       en.businessOps.sections.activity,

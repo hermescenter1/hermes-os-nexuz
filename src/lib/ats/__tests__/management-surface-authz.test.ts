@@ -1,64 +1,72 @@
+// @vitest-environment node
 /**
- * ATS management-surface authorization regression.
- *
- * THE DEFECT THIS LOCKS
- * ---------------------
- * `src/middleware.ts` excludes `/api` from its matcher, so every API route is
- * protected only by its own in-route checks. Four ATS management endpoints had
- * none and answered any anonymous caller:
+ * ATS management READ surfaces — the authorization boundary.
  *
  *     GET /api/ats/overview     GET /api/ats/analytics
  *     GET /api/ats/pipeline     GET /api/ats/candidates
  *
- * `/api/ats/pipeline` and `/api/ats/candidates` return whole candidate records
- * — name, email, phone, location, salary expectation and score breakdown. They
- * served fixtures, so nothing real leaked; the hazard was that pointing them at
- * PostgreSQL (the explicit next step) would have turned an unauthenticated
- * handler into a cross-tenant PII endpoint without anyone editing an auth line.
+ * These four answer with this organization's candidate data — names, e-mails,
+ * stages and score breakdowns. They are now REAL and tenant-scoped behind
+ * `requireAtsActor(req, "ATS_VIEW")`:
+ *   - no session            → one 401, carrying NO payload key;
+ *   - a member without the
+ *     ATS_VIEW capability    → one 403, carrying NO payload key;
+ *   - a member WITH ATS_VIEW → 200, served only from the real aggregator (here
+ *     an empty organization), never a fixture.
  *
- * WHY THE ASSERTIONS LOOK LIKE THIS
- * ---------------------------------
- * A status-code check alone would still pass if a handler computed the whole
- * response and then returned 401 — the work would have happened, and a later
- * refactor could leak it through a log or an error body. So each refusal is
- * also asserted to carry NO payload key: no `candidates`, no `columns`, no
- * `byStage`. The refusal must be empty of data, not merely labelled.
+ * The guard runs BEFORE any data is read, and every response is no-store.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { NextResponse } from "next/server";
 
-const ENV_KEYS = ["HERMES_STORAGE_MODE", "DATABASE_URL", "REDIS_URL"] as const;
-let saved: Record<string, string | undefined>;
+const h = vi.hoisted(() => ({
+  actor: null as unknown,
+}));
+
+// The guard seam: the routes gate on requireAtsActor. We drive it directly so
+// this test is about authorization, not about session/DB plumbing.
+vi.mock("@/lib/ats/rbac", () => ({
+  requireAtsActor: async () => h.actor,
+}));
+
+// The real aggregator for an organization with no applications — empty, never
+// a fixture. Used only on the authorized (200) path.
+vi.mock("@/lib/ats/dashboard", () => ({
+  getAtsOverview: async () => ({
+    openJobs: 0, totalCandidates: 0, averageScore: 0,
+    byStage: { applied: 0, screening: 0, "technical-review": 0, interview: 0, offer: 0, hired: 0, rejected: 0 },
+    recentActivity: [], topJobs: [], hiringVelocityDays: 0,
+  }),
+  getAtsAnalytics: async () => ({
+    openJobs: 0, closedJobs: 0, totalCandidates: 0, hiredCandidates: 0, rejectedCandidates: 0,
+    averageAtsScore: 0, byStage: [], topSkills: [], byDepartment: [], bySources: [],
+    rejectionReasons: [], hiringVelocityDays: 0, scoreDistribution: [],
+  }),
+  getAtsPipeline: async () => [],
+  getAtsCandidates: async () => [],
+}));
+
+function refusal(status: number, code: string): { ok: false; response: NextResponse } {
+  return {
+    ok: false,
+    response: NextResponse.json({ error: "refused", code }, { status, headers: { "Cache-Control": "no-store" } }),
+  };
+}
+function allow(): { ok: true; ctx: { userId: string; orgId: string; role: string } } {
+  return { ok: true, ctx: { userId: "u-1", orgId: "org-A", role: "RECRUITER" } };
+}
 
 beforeEach(() => {
-  saved = {};
-  for (const k of ENV_KEYS) {
-    saved[k] = process.env[k];
-    delete process.env[k];
-  }
+  h.actor = refusal(401, "AUTHENTICATION_REQUIRED");
+});
+afterEach(() => {
   vi.resetModules();
 });
 
-afterEach(() => {
-  for (const k of ENV_KEYS) {
-    if (saved[k] === undefined) delete process.env[k];
-    else process.env[k] = saved[k];
-  }
-  vi.doUnmock("@/lib/auth/rbac-server");
-});
-
-function mockAuthRole(role: string | null): void {
-  vi.doUnmock("@/lib/auth/rbac-server");
-  vi.doMock("@/lib/auth/rbac-server", () => ({ getAuthRole: async () => role }));
-}
-
 function getReq(path: string): Request {
-  return new Request(`http://localhost${path}`, {
-    method: "GET",
-    headers: { "x-real-ip": "10.0.0.1" },
-  });
+  return new Request(`http://localhost${path}`, { method: "GET", headers: { "x-real-ip": "10.0.0.1" } });
 }
 
-/** The four handlers that were reachable without a session. */
 const READ_SURFACES = [
   { name: "/api/ats/overview", path: "../../../app/api/ats/overview/route", url: "/api/ats/overview" },
   { name: "/api/ats/analytics", path: "../../../app/api/ats/analytics/route", url: "/api/ats/analytics" },
@@ -66,17 +74,8 @@ const READ_SURFACES = [
   { name: "/api/ats/candidates", path: "../../../app/api/ats/candidates/route", url: "/api/ats/candidates" },
 ] as const;
 
-/** Every key any of the four responses carries when it succeeds. */
-const PAYLOAD_KEYS = [
-  "candidates",
-  "columns",
-  "byStage",
-  "topJobs",
-  "topSkills",
-  "recentActivity",
-  "scoreDistribution",
-  "total",
-] as const;
+/** Every key a successful response may carry — a refusal must carry none. */
+const PAYLOAD_KEYS = ["candidates", "columns", "byStage", "topJobs", "topSkills", "recentActivity", "scoreDistribution"] as const;
 
 async function callGet(path: string, url: string): Promise<Response> {
   const mod = (await import(path)) as { GET: (r: Request) => Promise<Response> };
@@ -86,11 +85,9 @@ async function callGet(path: string, url: string): Promise<Response> {
 describe("ATS management reads refuse anonymous callers", () => {
   for (const surface of READ_SURFACES) {
     it(`${surface.name} answers 401 with no data when there is no session`, async () => {
-      mockAuthRole(null);
+      h.actor = refusal(401, "AUTHENTICATION_REQUIRED");
       const res = await callGet(surface.path, surface.url);
-
       expect(res.status).toBe(401);
-
       const body = (await res.json()) as Record<string, unknown>;
       for (const key of PAYLOAD_KEYS) {
         expect(body, `${surface.name} 401 body must not carry "${key}"`).not.toHaveProperty(key);
@@ -100,44 +97,37 @@ describe("ATS management reads refuse anonymous callers", () => {
 });
 
 describe("ATS management reads refuse an authenticated caller without the capability", () => {
-  // `viewer` and `candidate` are the two roles that hold no capability at all.
-  // `candidate` matters most: a signed-in job applicant must never be able to
-  // read the recruiter's pipeline, and before this change they could.
-  for (const role of ["viewer", "candidate"] as const) {
-    for (const surface of READ_SURFACES) {
-      it(`${surface.name} answers 403 with no data for role "${role}"`, async () => {
-        mockAuthRole(role);
-        const res = await callGet(surface.path, surface.url);
-
-        expect(res.status).toBe(403);
-
-        const body = (await res.json()) as Record<string, unknown>;
-        for (const key of PAYLOAD_KEYS) {
-          expect(body, `${surface.name} 403 body must not carry "${key}"`).not.toHaveProperty(key);
-        }
-      });
-    }
+  for (const surface of READ_SURFACES) {
+    it(`${surface.name} answers 403 with no data without ATS_VIEW`, async () => {
+      h.actor = refusal(403, "FORBIDDEN");
+      const res = await callGet(surface.path, surface.url);
+      expect(res.status).toBe(403);
+      const body = (await res.json()) as Record<string, unknown>;
+      for (const key of PAYLOAD_KEYS) {
+        expect(body, `${surface.name} 403 body must not carry "${key}"`).not.toHaveProperty(key);
+      }
+    });
   }
 });
 
-describe("ATS management reads still serve a caller holding the authoring capability", () => {
-  // The gate must not have broken the dashboards it protects. `engineer` is
-  // the least-privileged role that holds `authoring` today — see
-  // docs/ats/ATS_BASELINE_AUDIT.md §7 for why that is itself an open question.
+describe("ATS management reads serve a capability-holder from the real aggregator", () => {
   for (const surface of READ_SURFACES) {
-    it(`${surface.name} answers 200 for role "engineer"`, async () => {
-      mockAuthRole("engineer");
+    it(`${surface.name} answers 200, no-store, empty — never a fixture`, async () => {
+      h.actor = allow();
       const res = await callGet(surface.path, surface.url);
-
       expect(res.status).toBe(200);
       expect(res.headers.get("cache-control")).toBe("no-store");
+      const body = (await res.json()) as Record<string, unknown>;
+      // empty organization: no invented people anywhere
+      const json = JSON.stringify(body);
+      expect(json).not.toMatch(/Ahmad|Karimi|Frankfurt|Siemens|cand-\d/);
     });
   }
 });
 
 describe("the refusal is not cacheable", () => {
   it("a 401 carries no-store, so a shared cache cannot serve it as a hit", async () => {
-    mockAuthRole(null);
+    h.actor = refusal(401, "AUTHENTICATION_REQUIRED");
     const res = await callGet(READ_SURFACES[2].path, READ_SURFACES[2].url);
     expect(res.status).toBe(401);
     expect(res.headers.get("cache-control")).toBe("no-store");

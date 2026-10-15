@@ -278,7 +278,7 @@ const RAW_CANDIDATES: RawCandidate[] = [
 
 export const CANDIDATES: Candidate[] = RAW_CANDIDATES.map(c => {
   const job = JOBS.find(j => j.id === c.jobId)!;
-  return { ...c, atsScore: scoreCandidate(job, c) };
+  return { ...c, atsScore: scoreCandidate(job, { ...c, salaryExpectation: c.salaryExpectation ?? 0 }) };
 });
 
 export const INTERVIEWS: Interview[] = [
@@ -371,6 +371,8 @@ export const HIRING_VELOCITY_DAYS: number = HIRED.length > 0
 
 export const STAGE_COUNTS: Record<PipelineStage, number> = {
   applied:            0,
+  "ai-review":        0,
+  "pending-approval": 0,
   screening:          0,
   "technical-review": 0,
   interview:          0,

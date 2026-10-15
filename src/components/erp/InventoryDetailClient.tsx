@@ -2,8 +2,10 @@
 
 import Link                          from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import type { ErpInventoryItemFull, ErpInventoryMovementType } from "@/lib/erp/types";
+import type { ErpInventoryMovementType } from "@/lib/erp/types";
+import type { ErpInventoryItemFullView } from "@/lib/erp/operations";
 import { formatDate } from "@/lib/i18n/format";
+import { ErpPagedList } from "./ErpPagedList";
 
 // Compile-time exhaustive over ErpInventoryMovementType: adding a movement
 // type without a color entry (or keeping a non-canonical key) fails `tsc`.
@@ -16,7 +18,7 @@ const MOVE_COLOR = {
   RELEASED:   "text-cyan-400",
 } satisfies Record<ErpInventoryMovementType, string>;
 
-export function InventoryDetailClient({ item }: { item: ErpInventoryItemFull }) {
+export function InventoryDetailClient({ item }: { item: ErpInventoryItemFullView }) {
   const locale = useLocale();
   const t      = useTranslations("enterpriseOperations");
   const low    = item.quantity <= item.reorderLevel;
@@ -39,7 +41,10 @@ export function InventoryDetailClient({ item }: { item: ErpInventoryItemFull }) 
           { label: t("inventory.metrics.quantity"),  value: item.quantity },
           { label: t("inventory.metrics.reserved"),  value: item.reserved },
           { label: t("inventory.metrics.reorderAt"), value: item.reorderLevel },
-          { label: t("inventory.metrics.unitCost"),  value: item.unitCost ? `$${item.unitCost}` : "—" },
+          {
+            label: t("inventory.metrics.unitCost"),
+            value: !item.financialsVisible ? t("financials.restricted") : item.unitCost ? `$${item.unitCost}` : "—",
+          },
         ].map(m => (
           <div key={m.label} className="rounded-xl border bg-card p-4">
             <div className="text-xs text-muted-foreground mb-1">{m.label}</div>
@@ -55,18 +60,20 @@ export function InventoryDetailClient({ item }: { item: ErpInventoryItemFull }) 
         </div>
       )}
 
-      {item.movements && item.movements.length > 0 && (
+      {item.movements.items.length > 0 && (
         <div className="rounded-xl border bg-card p-5">
           <h3 className="font-semibold mb-4">{t("inventory.recentMovements")}</h3>
-          <div className="space-y-2 text-sm">
-            {item.movements.map(m => (
-              <div key={m.id} className="flex items-center justify-between py-1 border-b last:border-0">
+          <ErpPagedList
+            page={item.movements}
+            endpoint={`/api/erp/inventory/${item.id}/movements`}
+            renderItem={m => (
+              <div className="flex items-center justify-between py-1 border-b last:border-0 text-sm">
                 <span className={`font-medium ${MOVE_COLOR[m.type]}`}>{m.type}</span>
                 <span className="font-medium">{m.quantity > 0 ? "+" : ""}{m.quantity}</span>
                 <span className="text-muted-foreground text-xs">{formatDate(m.createdAt, locale)}</span>
               </div>
-            ))}
-          </div>
+            )}
+          />
         </div>
       )}
 

@@ -116,7 +116,7 @@ Drei Gründe, die die zusätzliche Komponente rechtfertigen:
 - **Lebenszyklus-Unabhängigkeit.** Analysewerkzeuge ändern sich weit häufiger als Prozessleitsysteme und können das ohne Änderungsdiskussion am Leitnetz tun.
 - **Zonenintegrität.** Die OT-Zone hat keinen eingehenden Geschäftsverkehr — der praktische Ausdruck des Zone-and-Conduit-Denkens der IEC 62443.
 
-Für die Schnittstelle selbst sind OPC UA und OPC Historical Access die verbreiteten normbasierten Wege, mit derselben Einschränkung wie überall: eine bewusste, dokumentierte Teilmenge veröffentlichen statt der internen Tag-Struktur, sonst wird die interne Benennung zum externen Vertrag.
+Für die Schnittstelle selbst sind [OPC UA](/de/articles/opc-ua-industrial-data-integration) und OPC Historical Access die verbreiteten normbasierten Wege, mit derselben Einschränkung wie überall: eine bewusste, dokumentierte Teilmenge veröffentlichen statt der internen Tag-Struktur, sonst wird die interne Benennung zum externen Vertrag.
 
 Die ISA-95-Schichtung ist das nützliche Denkmodell dafür, was wohin gehört — der Historian sitzt an der Grenze, an der Daten der Feldebene zu etwas werden, das das Unternehmen verbraucht, und diese Grenze verdient eine ausdrückliche Schnittstelle statt geteilter Zugangsdaten.
 

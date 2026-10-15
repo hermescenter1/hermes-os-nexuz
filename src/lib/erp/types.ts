@@ -25,6 +25,7 @@ export interface ErpProject {
   deletedAt:        string | null;
   createdAt:        string;
   updatedAt:        string;
+  version:          number;
 }
 
 export interface ErpProjectMilestone {
@@ -55,6 +56,7 @@ export interface ErpTask {
   deletedAt:      string | null;
   createdAt:      string;
   updatedAt:      string;
+  version:          number;
 }
 
 export interface ErpTaskComment {
@@ -72,6 +74,7 @@ export interface ErpTeam {
   description:    string | null;
   leadId:         string | null;
   capacity:       number;
+  version:        number;
   createdAt:      string;
   updatedAt:      string;
 }
@@ -83,6 +86,9 @@ export interface ErpTeamMember {
   role:         string;
   availability: number;
   joinedAt:     string;
+  /** The member's name and email, read from the organization member's user. Null when not read with the member. */
+  name:         string | null;
+  email:        string | null;
 }
 
 export interface ErpResource {
@@ -96,6 +102,7 @@ export interface ErpResource {
   isAvailable:    boolean;
   projectId:      string | null;
   workOrderId:    string | null;
+  version:        number;
   createdAt:      string;
   updatedAt:      string;
 }
@@ -116,6 +123,7 @@ export interface ErpInventoryItem {
   deletedAt:      string | null;
   createdAt:      string;
   updatedAt:      string;
+  version:          number;
 }
 
 export interface ErpInventoryMovement {
@@ -147,6 +155,7 @@ export interface ErpWorkOrder {
   deletedAt:        string | null;
   createdAt:        string;
   updatedAt:        string;
+  version:          number;
 }
 
 export interface ErpWorkOrderActivity {
@@ -198,6 +207,7 @@ export interface ErpApprovalRequest {
   decision:       string | null;
   createdAt:      string;
   updatedAt:      string;
+  version:          number;
 }
 
 export interface ErpApprovalStep {

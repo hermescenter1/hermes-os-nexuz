@@ -45,18 +45,39 @@ export async function withDisposablePg(tag, fn) {
 
   const ctx = /** @type {DisposablePgCtx} */ ({});
   try {
-    // Wait for readiness.
-    let ready = false;
-    for (let i = 0; i < 60; i += 1) {
+    // Wait for readiness — over TCP, and twice.
+    //
+    // WHY NOT THE UNIX SOCKET. During initialisation the official entrypoint
+    // starts a SOCKET-ONLY server to run its setup, with
+    //
+    //   set -- "$@" -c listen_addresses='' -p "${PGPORT:-5432}"
+    //
+    // (docker-entrypoint.sh, docker_temp_server_start), then stops it and
+    // starts the real one. `pg_isready` over the socket answers "ready" for
+    // that temporary server, so the caller proceeds and the next statement
+    // meets `FATAL: the database system is shutting down` or a closed socket.
+    //
+    // Measured against this exact image on 2026-10-15: the socket answered
+    // ready at 10.8 s while TCP was still refused, and only became reachable
+    // over TCP at 22.3 s — an 11.5-second window in which this helper would
+    // have handed a doomed server to its caller. Three CI rehearsals failed
+    // that way in one afternoon.
+    //
+    // The temporary server does not listen on TCP at all, so `-h 127.0.0.1`
+    // cannot see it. Two consecutive successes then cover the narrower case
+    // of probing in the instant between the real server binding and finishing
+    // its own startup.
+    let streak = 0;
+    for (let i = 0; i < 120 && streak < 2; i += 1) {
       try {
-        docker(["exec", name, "pg_isready", "-U", user, "-d", db], { stdio: "pipe" });
-        ready = true;
-        break;
+        docker(["exec", name, "pg_isready", "-U", user, "-d", db, "-h", "127.0.0.1"], { stdio: "pipe" });
+        streak += 1;
       } catch {
-        await sleep(1000);
+        streak = 0;
       }
+      if (streak < 2) await sleep(1000);
     }
-    if (!ready) throw new Error("disposable postgres did not become ready");
+    if (streak < 2) throw new Error("disposable postgres did not become ready");
 
     // Resolve the published host port.
     const portLine = docker(["port", name, "5432/tcp"]).trim().split("\n")[0];

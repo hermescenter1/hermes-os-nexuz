@@ -65,7 +65,7 @@ describe("entity IDs are stable and absolute", () => {
 describe("canonical identity", () => {
   it("the organisation publishes its full legal name, not the short brand", () => {
     const org = organizationSchema();
-    expect(org.name).toBe("ZHARFA Vira Pouyesh Fanavari");
+    expect(org.name).toBe("Zharfa Vira Pouyesh Fanavari");
     expect(org.legalName).toBe(ORG_NAME);
   });
 
@@ -173,10 +173,11 @@ describe("no fabricated authority signals", () => {
     //     SoftwareApplication entity, asserted below);
     //   - the GitHub account HOSTS this repository, which is not evidence
     //     that it is operated as the company's official presence.
-    // `sameAs` is an identity claim, so an empty list is safer than a false
-    // entity merge. The property is omitted rather than emitted empty.
-    expect(ORG_SAME_AS).toEqual([]);
-    expect("sameAs" in organizationSchema()).toBe(false);
+    // `sameAs` is an identity claim. The ONLY entry is the owner-supplied
+    // company LinkedIn page (lib/corporate/contact); ProvenExpert and GitHub
+    // stay out.
+    expect(ORG_SAME_AS).toEqual(["https://www.linkedin.com/company/zharfa-vira/"]);
+    expect((organizationSchema() as { sameAs?: string[] }).sameAs).toEqual([...ORG_SAME_AS]);
   });
 
   it("the ProvenExpert profile is attached to the PRODUCT, not the company", () => {

@@ -1,40 +1,53 @@
-import { NextResponse } from "next/server";
-import { z }            from "zod";
+import type { NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
-import { can }           from "@/lib/auth/roles";
-import { getTeams, createTeam } from "@/lib/erp/db";
+import { can } from "@/lib/auth/roles";
+import { getActiveOrganizationContext } from "@/lib/erp/active-organization";
+import { createTeam, listTeams } from "@/lib/erp/db";
+import { ListQuerySchema, TeamCreateSchema } from "@/lib/erp/schemas";
+import { ErpError, erpFailure } from "@/lib/erp/tenant";
+import { requirePermission } from "@/lib/org/rbac";
+import { ctxFor, idempotencyKeyOf, originRefusal, outcomeResponse, ok, parseWith, readJsonBody } from "@/lib/erp/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CreateSchema = z.object({
-  name:        z.string().min(1).max(120),
-  description: z.string().max(500).optional().nullable(),
-  leadId:      z.string().optional().nullable(),
-  capacity:    z.number().int().min(0).optional(),
-});
-
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin"))
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-
-  const teams = await getTeams();
-  return NextResponse.json(teams);
+  if (!user) return erpFailure(new ErpError(401, "AUTHENTICATION_REQUIRED"));
+  if (!can(user.role, "admin")) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const active = await getActiveOrganizationContext();
+  if (!active.ok) return erpFailure(active.error);
+  const allowed = requirePermission(active.scope.role, "view_erp");
+  if (!allowed.ok) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const scope = active.scope;
+  const query = parseWith(ListQuerySchema, Object.fromEntries(new URL(req.url).searchParams));
+  if (!query.ok) return query.response;
+  try {
+    return ok(await listTeams(ctxFor(scope, req), query.data));
+  } catch (err) {
+    return erpFailure(err);
+  }
 }
 
-export async function POST(req: Request): Promise<NextResponse> {
+export async function POST(req: NextRequest) {
+  const refused = originRefusal(req);
+  if (refused) return refused;
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!can(user.role, "admin"))
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-
-  const body   = await req.json().catch(() => ({}));
-  const parsed = CreateSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-
-  const team = await createTeam(parsed.data);
-  if (!team) return NextResponse.json({ error: "Could not persist — mock mode" }, { status: 202 });
-  return NextResponse.json(team, { status: 201 });
+  if (!user) return erpFailure(new ErpError(401, "AUTHENTICATION_REQUIRED"));
+  if (!can(user.role, "admin")) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const active = await getActiveOrganizationContext();
+  if (!active.ok) return erpFailure(active.error);
+  const allowed = requirePermission(active.scope.role, "manage_erp");
+  if (!allowed.ok) return erpFailure(new ErpError(403, "FORBIDDEN"));
+  const scope = active.scope;
+  const body = await readJsonBody(req);
+  if (!body.ok) return body.response;
+  const input = parseWith(TeamCreateSchema, body.value);
+  if (!input.ok) return input.response;
+  try {
+    const outcome = await createTeam(ctxFor(scope, req, idempotencyKeyOf(req)), input.data);
+    return outcomeResponse(outcome, team => team);
+  } catch (err) {
+    return erpFailure(err);
+  }
 }

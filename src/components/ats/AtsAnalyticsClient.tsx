@@ -45,6 +45,15 @@ export function AtsAnalyticsClient() {
     );
   }
 
+  if (data.totalCandidates === 0) {
+    return (
+      <div className="rounded-xl border border-line bg-surface px-5 py-12 text-center">
+        <p className="kpi-label text-metadata">{t("realEmpty.insufficient")}</p>
+        <p className="kpi-label text-metadata mt-2">{t("realEmpty.body")}</p>
+      </div>
+    );
+  }
+
   const maxStageCount = Math.max(...data.byStage.map(s => s.count), 1);
   const maxSkillCount = Math.max(...data.topSkills.map(s => s.count), 1);
   const maxDeptCands  = Math.max(...data.byDepartment.map(d => d.candidates), 1);

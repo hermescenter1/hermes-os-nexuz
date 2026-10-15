@@ -47,9 +47,17 @@
 import type {
   RegistryAssetRecord, AssetLocation, AssetCriticalityAssessment,
   AssetHealthSnapshot, AssetLifecycleEvent, AssetMaintenanceLink,
-  AssetDocumentLink, AssetTelemetryLink, AssetTag, AssetDashboard,
+  AssetDocumentLink, AssetTelemetryLink, AssetTag, AssetDashboard, AssetRegistrySite,
 } from "./types";
-import { requireDatabase, requireTenantScope, runScoped } from "@/lib/data-access/tenant-scope";
+import { isPrismaCode, requireDatabase, requireTenantScope, runScoped } from "@/lib/data-access/tenant-scope";
+import type { AssetRegistryWriteScope } from "@/lib/data-access/write-guard";
+import {
+  ASSET_REGISTRY_RELATIONS,
+  InvalidRelationError,
+  assertRelationsOwned,
+  rejectUnsupportedFields,
+} from "@/lib/data-access/relation-ownership";
+import type { AssetCreateInput, AssetUpdateInput } from "./validation";
 import { logInfraFailure } from "@/lib/logger/security-events";
 
 function ts(rows: unknown[]): unknown[] {
@@ -68,8 +76,18 @@ function ts(rows: unknown[]): unknown[] {
 interface Model {
   findMany: (args: unknown) => Promise<unknown[]>;
   findFirst: (args: unknown) => Promise<unknown | null>;
+  create: (args: unknown) => Promise<unknown>;
+  update: (args: unknown) => Promise<unknown>;
 }
 const model = (db: Record<string, unknown>, name: string): Model => db[name] as unknown as Model;
+
+type TxFn = (
+  fn: (client: Record<string, unknown>) => Promise<unknown>,
+  opts?: { isolationLevel?: string },
+) => Promise<unknown>;
+
+const withTx = (db: Record<string, unknown>): TxFn =>
+  (db.$transaction as TxFn).bind(db) as TxFn;
 
 /**
  * Drop an INCLUDED location that does not belong to this organization.
@@ -280,6 +298,174 @@ export async function getAssetById(id: string): Promise<(RegistryAssetRecord & {
   return { ...rest, assetTags: registryTags ?? [] } as never;
 }
 
+const ASSET_NUMBER_CONFLICT = Symbol("asset-number-conflict");
+const ASSET_NOT_FOUND = Symbol("asset-not-found");
+const ASSET_CONFLICT_ERROR = Symbol.for("hermes.assetRegistryConflict");
+
+export class AssetNumberConflictError extends Error {
+  readonly [ASSET_CONFLICT_ERROR] = true as const;
+  readonly code = "ASSET_NUMBER_CONFLICT" as const;
+
+  constructor() {
+    super("An asset with this number already exists in the organization.");
+    this.name = "AssetNumberConflictError";
+  }
+}
+
+export const isAssetNumberConflictError = (value: unknown): value is AssetNumberConflictError => {
+  if (value === null || (typeof value !== "object" && typeof value !== "function")) return false;
+  try {
+    return (value as Record<string | symbol, unknown>)[ASSET_CONFLICT_ERROR] === true;
+  } catch {
+    return false;
+  }
+};
+
+function writePayload(input: AssetCreateInput | AssetUpdateInput): Record<string, unknown> {
+  const payload = rejectUnsupportedFields(input as Record<string, unknown>);
+  for (const key of ["installationDate", "commissionDate", "warrantyExpiry"] as const) {
+    const value = payload[key];
+    if (typeof value === "string") payload[key] = new Date(`${value}T00:00:00.000Z`);
+  }
+  if (Array.isArray(payload.tags)) {
+    payload.tags = [...new Set(payload.tags.map(value => String(value).trim()).filter(Boolean))];
+  }
+  return payload;
+}
+
+async function assertNoHierarchyCycle(
+  tx: Record<string, unknown>,
+  organizationId: string,
+  assetId: string,
+  parentAssetId: string,
+): Promise<void> {
+  let cursor: string | null = parentAssetId;
+
+  for (let depth = 0; cursor && depth < 100; depth += 1) {
+    if (cursor === assetId) throw new InvalidRelationError("parentAssetId");
+    const parent = await model(tx, "registryAsset").findFirst({
+      where: { id: cursor, organizationId },
+      select: { parentAssetId: true },
+    }) as { parentAssetId?: string | null } | null;
+    if (!parent) throw new InvalidRelationError("parentAssetId");
+    cursor = parent.parentAssetId ?? null;
+  }
+
+  // A chain this deep is either corrupt or deliberately adversarial. Refuse it
+  // instead of accepting a hierarchy the UI and recursive readers cannot bound.
+  if (cursor) throw new InvalidRelationError("parentAssetId");
+}
+
+/**
+ * Persist a registry asset and its initial lifecycle event in one transaction.
+ * The organization comes exclusively from the verified write scope.
+ */
+export async function createRegistryAsset(
+  verified: AssetRegistryWriteScope,
+  input: AssetCreateInput,
+): Promise<RegistryAssetRecord> {
+  const { organizationId, userId } = verified;
+  const db = await requireDatabase("assets.create");
+  const payload = writePayload(input);
+
+  const row = await runScoped("assets.create", () =>
+    withTx(db)(async tx => {
+      await assertRelationsOwned(tx, organizationId, payload, ASSET_REGISTRY_RELATIONS);
+      try {
+        const created = await model(tx, "registryAsset").create({
+          data: {
+            ...payload,
+            organizationId,
+            createdBy: userId,
+            updatedBy: userId,
+          },
+          include: { location: true, ...assetCounts(organizationId) },
+        }) as Record<string, unknown>;
+
+        await model(tx, "assetLifecycleEvent").create({
+          data: {
+            assetId: created.id,
+            eventType: "REGISTERED",
+            toState: created.lifecycleState,
+            performedBy: userId,
+            metadata: { source: "asset-registry" },
+          },
+        });
+        return created;
+      } catch (error) {
+        if (isPrismaCode(error, "P2002")) return ASSET_NUMBER_CONFLICT;
+        throw error;
+      }
+    }, { isolationLevel: "Serializable" }),
+  );
+
+  if (row === ASSET_NUMBER_CONFLICT) throw new AssetNumberConflictError();
+  return ts(dropForeignLocations([row], organizationId, "assets.create"))[0] as RegistryAssetRecord;
+}
+
+/**
+ * Update a registry asset without permitting tenant reassignment. A lifecycle
+ * transition produces a durable event in the same transaction.
+ */
+export async function updateRegistryAsset(
+  verified: AssetRegistryWriteScope,
+  id: string,
+  input: AssetUpdateInput,
+): Promise<RegistryAssetRecord | null> {
+  const { organizationId, userId } = verified;
+  const db = await requireDatabase("assets.update");
+  const payload = writePayload(input);
+
+  const row = await runScoped("assets.update", () =>
+    withTx(db)(async tx => {
+      await assertRelationsOwned(tx, organizationId, payload, ASSET_REGISTRY_RELATIONS);
+
+      const existing = await model(tx, "registryAsset").findFirst({
+        where: { id, organizationId },
+        select: { id: true, lifecycleState: true },
+      }) as { id: string; lifecycleState: string } | null;
+      if (!existing) return ASSET_NOT_FOUND;
+
+      if (typeof payload.parentAssetId === "string") {
+        await assertNoHierarchyCycle(tx, organizationId, id, payload.parentAssetId);
+      }
+
+      try {
+        const updated = await model(tx, "registryAsset").update({
+          where: { id, organizationId },
+          data: { ...payload, updatedBy: userId },
+          include: { location: true, ...assetCounts(organizationId) },
+        }) as Record<string, unknown>;
+
+        if (
+          typeof payload.lifecycleState === "string" &&
+          payload.lifecycleState !== existing.lifecycleState
+        ) {
+          await model(tx, "assetLifecycleEvent").create({
+            data: {
+              assetId: id,
+              eventType: "STATE_CHANGED",
+              fromState: existing.lifecycleState,
+              toState: payload.lifecycleState,
+              performedBy: userId,
+              metadata: { source: "asset-registry" },
+            },
+          });
+        }
+        return updated;
+      } catch (error) {
+        if (isPrismaCode(error, "P2002")) return ASSET_NUMBER_CONFLICT;
+        if (isPrismaCode(error, "P2025")) return ASSET_NOT_FOUND;
+        throw error;
+      }
+    }, { isolationLevel: "Serializable" }),
+  );
+
+  if (row === ASSET_NUMBER_CONFLICT) throw new AssetNumberConflictError();
+  if (row === ASSET_NOT_FOUND) return null;
+  return ts(dropForeignLocations([row], organizationId, "assets.update"))[0] as RegistryAssetRecord;
+}
+
 export async function getAssetLocations(): Promise<AssetLocation[]> {
   const { organizationId } = await requireTenantScope();
   const db = await requireDatabase("assets.getAssetLocations");
@@ -291,6 +477,20 @@ export async function getAssetLocations(): Promise<AssetLocation[]> {
     }),
   );
   return ts(rows) as AssetLocation[];
+}
+
+export async function getAssetSites(): Promise<AssetRegistrySite[]> {
+  const { organizationId } = await requireTenantScope();
+  const db = await requireDatabase("assets.getSites");
+
+  const rows = await runScoped("assets.getSites", () =>
+    model(db, "industrialSite").findMany({
+      where: { organizationId },
+      select: { id: true, organizationId: true, name: true, slug: true, location: true, status: true },
+      orderBy: { name: "asc" },
+    }),
+  );
+  return ts(rows) as AssetRegistrySite[];
 }
 
 /**

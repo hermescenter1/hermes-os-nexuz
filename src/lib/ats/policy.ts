@@ -12,7 +12,7 @@
  */
 
 /** The privacy-notice / attestation text version an applicant acknowledges. */
-export const RECRUITMENT_CONSENT_VERSION = "2026-09-ats-b2";
+export const RECRUITMENT_CONSENT_VERSION = "2026-10-ats-v1";
 
 /** Version labels stamped on every AI review row. */
 export const ATS_EXTRACTOR_VERSION = "deterministic-1.0";

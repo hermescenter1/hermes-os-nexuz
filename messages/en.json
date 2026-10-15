@@ -1450,7 +1450,7 @@
   "footer": {
     "tagline": "Enterprise Industrial Intelligence Platform",
     "description": "Hermes is an industrial intelligence platform for automation, maintenance, asset management, engineering documents, and expert knowledge.",
-    "copyright": "© 2026 ZHARFA Vira Pouyesh Fanavari. All Rights Reserved.",
+    "copyright": "© 2026 Zharfa Vira Pouyesh Fanavari. All Rights Reserved.",
     "navAbout": "About",
     "navPlatform": "Platform",
     "navDocs": "Documentation",
@@ -2636,7 +2636,9 @@
       "safetyTitle": "Safety notes",
       "commissioningTitle": "Commissioning notes",
       "conceptsTitle": "Related concepts",
-      "brainUseTitle": "When Hermes Brain uses this article"
+      "brainUseTitle": "When Hermes Brain uses this article",
+      "deepDiveLabel": "Technical deep dive",
+      "deepDiveCta": "Read the in-depth {name} engineering guide"
     },
     "stats": {
       "recentTitle": "Recently used by Hermes Brain",
@@ -3093,7 +3095,7 @@
   },
   "admin": {
     "eyebrow": "Operations",
-    "title": "Admin Console",
+    "title": "Audit Console",
     "lede": "Audit trail and system status for production accountability.",
     "metrics": {
       "storage": "Storage Mode",
@@ -4225,15 +4227,14 @@
     }
   },
   "about": {
-    "eyebrow": "About ZHARFA Vira Pouyesh Fanavari",
+    "eyebrow": "About Zharfa Vira Pouyesh Fanavari",
     "title": "Engineering the Future of Industrial Intelligence",
     "lede": "Born on the plant floor. Built for the engineers who run it.",
     "companyEyebrow": "The Company",
-    "companyTitle": "ZHARFA Vira Pouyesh Fanavari",
+    "companyTitle": "Zharfa Vira Pouyesh Fanavari",
     "companyDesc": "We build enterprise-grade industrial intelligence software for automation engineers, plant operators, and engineering leadership teams. Our platform combines AI-powered reasoning, engineering memory, and knowledge graphs to give industrial teams unprecedented clarity and decision support.",
-    "website": "hermesnovin.com",
     "locationIran": "Isfahan, Iran",
-    "locationUK": "London, United Kingdom",
+    "siteKey": "Location",
     "founderEyebrow": "Founder & CEO",
     "founderName": "Hamid Reza Forozandeh",
     "founderRole": "Founder, CEO & Chief Industrial Systems Architect",
@@ -4263,23 +4264,31 @@
     "lede": "Ready to bring AI-powered engineering intelligence to your team? We respond to all enquiries within one business day.",
     "salesTitle": "Sales Enquiries",
     "salesDesc": "Enterprise plans, custom integrations, and deployment options for your organisation.",
-    "salesEmail": "info@hermesnovin.com",
     "supportTitle": "Technical Support",
     "supportDesc": "Technical questions, platform support, and engineering guidance.",
-    "supportEmail": "hamidreza.forozandeh1@gmail.com",
-    "generalTitle": "General",
-    "generalDesc": "General enquiries, partnership discussions, and collaboration opportunities.",
-    "generalEmail": "info@hermesnovin.com",
+    "generalTitle": "General, Legal & Corporate Affairs",
+    "generalDesc": "General enquiries, legal and corporate matters, partnership discussions, and collaboration opportunities.",
     "phoneTitle": "Phone",
-    "phoneIran": "+98 913 411 6492",
-    "phoneUK": "+44 796 054 5833",
-    "locationTitle": "Locations",
-    "locationIran": "Isfahan, Iran",
-    "locationUK": "London, United Kingdom",
+    "phoneAria": "Call {number}",
+    "channelEmailAria": "Email {channel}: {email}",
+    "locationTitle": "Registered Address",
+    "postalCodeLabel": "Postal Code",
     "socialTitle": "Connect",
-    "linkedinLabel": "LinkedIn",
+    "websitesTitle": "Websites",
+    "hermesWebsiteLabel": "Hermes OS",
+    "zharfaWebsiteLabel": "Zharfa Vira",
+    "websiteAria": "{name} website (opens in a new tab)",
+    "founderLinkedInLabel": "Hamid Reza Forozandeh on LinkedIn",
+    "zharfaLinkedInLabel": "Zharfa Vira on LinkedIn",
+    "externalAria": "{label} (opens in a new tab)",
     "githubLabel": "GitHub",
-    "websiteLabel": "Website",
+    "legalTitle": "Legal Information",
+    "legalNameLabel": "Company name",
+    "legalNameEnLabel": "Legal name (Latin)",
+    "nationalIdLabel": "National ID",
+    "registrationNumberLabel": "Registration number",
+    "registryPlaceLabel": "Place of registration",
+    "brandRelation": "Hermes OS is the flagship industrial intelligence platform of Zharfa Vira Pouyesh Fanavari.",
     "formTitle": "Send a Message",
     "formName": "Full Name",
     "formCompany": "Company / Organisation",
@@ -4293,10 +4302,7 @@
     "formMessage": "Message",
     "formSubmit": "Send Message",
     "formNote": "We'll respond within one business day.",
-    "formSuccess": "Message sent. We'll be in touch shortly.",
-    "linkedinUrl": "https://www.linkedin.com/in/hamid-reza-forozandeh",
-    "githubUrl": "https://github.com/hermescenter1",
-    "websiteUrl": "https://hermesnovin.com"
+    "formSuccess": "Message sent. We'll be in touch shortly."
   },
   "automation": {
     "dashboard": "Dashboard",
@@ -5849,6 +5855,46 @@
       "colLocation": "Location",
       "details": "Details"
     },
+    "form": {
+      "eyebrow": "CONTROLLED ASSET RECORD",
+      "createAction": "Register asset",
+      "editAction": "Edit",
+      "createTitle": "Register industrial asset",
+      "editTitle": "Edit industrial asset",
+      "subtitle": "Create a governed equipment identity with operational, lifecycle, and technical context.",
+      "close": "Close asset form",
+      "identitySection": "Identity",
+      "assetNumber": "Asset number",
+      "name": "Display name",
+      "nameFa": "Persian name",
+      "nameEn": "English name",
+      "assetType": "Asset type",
+      "description": "Description",
+      "classificationSection": "Operational classification and placement",
+      "status": "Operating status",
+      "criticality": "Criticality",
+      "lifecycle": "Lifecycle state",
+      "healthScore": "Health score",
+      "riskState": "Risk state",
+      "site": "Industrial site",
+      "location": "Plant location",
+      "parentAsset": "Parent asset",
+      "unassigned": "Unassigned",
+      "noParent": "No parent asset",
+      "technicalSection": "Technical profile",
+      "tags": "Tags",
+      "tagsHint": "Comma-separated, for example: line-2, critical-drive",
+      "technicalSpecs": "Technical specifications (JSON)",
+      "invalidTechnicalSpecs": "Technical specifications must be a valid JSON object.",
+      "duplicateNumber": "This asset number is already registered in the organization.",
+      "saveFailed": "The asset could not be saved. Check the fields and your access, then try again.",
+      "networkError": "The asset service could not be reached. Try again when the connection is restored.",
+      "created": "Asset registered successfully.",
+      "updated": "Asset updated successfully.",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "save": "Save asset"
+    },
     "dashboard": {
       "eyebrow": "ENTERPRISE ASSET REGISTRY",
       "title": "Asset Intelligence Dashboard",
@@ -6613,6 +6659,35 @@
     }
   },
   "enterpriseOperations": {
+    "financials": {
+      "restricted": "Restricted access"
+    },
+    "utilization": {
+      "label": "Utilization",
+      "teamSize": "Team Size",
+      "insufficientData": "Insufficient data",
+      "note": "Utilization needs real capacity and allocation records. No allocation model exists yet, so no percentage is shown."
+    },
+    "lists": {
+      "loadMore": "Load more",
+      "loadFailed": "Could not load more items. Try again."
+    },
+    "tenantScope": {
+      "organizationRequired": "You belong to several organizations. Choose one to continue.",
+      "chooseOrganization": "Choose organization",
+      "forbidden": "Your role does not have access to ERP data for this organization.",
+      "notFound": "This organization is not available to your account.",
+      "unavailable": "The service is temporarily unavailable.",
+      "signIn": "Sign in to view this page."
+    },
+    "moduleAccess": {
+      "title": "Capability status",
+      "description": "Real status of each module, based on organization isolation and database connectivity.",
+      "scoped": "Organization scoped",
+      "database": "Database",
+      "databaseAvailable": "Connected",
+      "databaseUnavailable": "Unavailable"
+    },
     "nav": {
       "eyebrow": "ERP Operations",
       "items": {
@@ -6629,6 +6704,7 @@
       }
     },
     "dashboard": {
+      "activityLimited": "Showing the latest {count} events. The list is limited.",
       "pageTitle": "Operations Dashboard",
       "kpiActiveProjects": "Active Projects",
       "kpiOverdueTasks": "Overdue Tasks",
@@ -6651,6 +6727,14 @@
       "target": "Target:"
     },
     "kpis": {
+      "recentLimited": "Showing the latest {count} KPI rows. The list is limited.",
+      "completionTitle": "Completion time",
+      "completionTasks": "Tasks",
+      "completionWorkOrders": "Work orders",
+      "completionAverage": "Average {hours} h",
+      "completionMeasured": "{count} measured",
+      "completionSkipped": "{count} skipped (no completion time)",
+      "completionNone": "No measured completions",
       "pageTitle": "Operational KPIs",
       "heading": "Operational KPIs",
       "projectCompletion": "Project Completion",
@@ -6675,7 +6759,6 @@
     },
     "projects": {
       "pageTitle": "Projects",
-      "count": "{count, plural, one {# project} other {# projects}}",
       "newProject": "New Project",
       "due": "Due {date}",
       "noProjectsFound": "No projects found.",
@@ -6721,7 +6804,20 @@
       "members": "Members",
       "memberRoleFallback": "member",
       "noTeamsFound": "No teams found.",
-      "backToTeams": "Back to Teams"
+      "backToTeams": "Back to Teams",
+      "noMembers": "No members yet.",
+      "addMember": "Add a member",
+      "searchPlaceholder": "Search by name or email",
+      "searchAction": "Search",
+      "noCandidates": "No active organization member matches this search, or every match is already in the team.",
+      "addAction": "Add",
+      "removeAction": "Remove",
+      "removeConfirm": "Remove {name} from this team?",
+      "confirmRemove": "Confirm removal",
+      "cancel": "Cancel",
+      "addFailed": "The member could not be added. Try again.",
+      "removeFailed": "The member could not be removed. Try again.",
+      "searchFailed": "The search could not be completed. Try again."
     },
     "resources": {
       "pageTitle": "Resources",
@@ -6783,6 +6879,8 @@
       "empty": "No inventory items found."
     },
     "approvals": {
+      "reasonLabel": "Reason (required)",
+      "decisionFailed": "The decision was not saved. The request may already be decided; reload the page and try again.",
       "pageTitle": "Approval Requests",
       "status": {
         "PENDING": "pending",
@@ -6843,7 +6941,9 @@
         "admin": "Admin Console",
         "observability": "Observability",
         "otEdge": "OT Edge",
-        "videoHub": "Video Hub"
+        "videoHub": "Video Hub",
+        "executiveCenter": "Executive Center",
+        "clients": "Customers"
       }
     },
     "shell": {
@@ -7203,7 +7303,7 @@
         },
         "careers": {
           "name": "Careers",
-          "desc": "Roles and applications at ZHARFA Vira Pouyesh Fanavari.",
+          "desc": "Roles and applications at Zharfa Vira Pouyesh Fanavari.",
           "cta": "See open roles"
         }
       }
@@ -7285,7 +7385,7 @@
     },
     "footer": {
       "tagline": "Industrial Intelligence. Engineered for Action.",
-      "copyright": "© 2026 ZHARFA Vira Pouyesh Fanavari. All Rights Reserved.",
+      "copyright": "© 2026 Zharfa Vira Pouyesh Fanavari. All Rights Reserved.",
       "domain": "hermesnovin.com",
       "companyWebsiteAria": "{company} corporate website (opens in a new tab)",
       "columns": {
@@ -9259,7 +9359,137 @@
       "successBodyFor": "Your application for {title} has been recorded. We will contact you at the email address you provided.",
       "successBody": "Your application has been recorded. We will contact you at the email address you provided.",
       "successAllJobs": "See open positions",
-      "successMyApplications": "My applications"
+      "successMyApplications": "My applications",
+      "form": {
+        "optional": "optional",
+        "processingNote": "Your application is screened with deterministic, evidence-based assistance and then reviewed by a person. Nothing is decided automatically: every decision about your application is made by a member of our team.",
+        "profileHint": "Share what is relevant to this position. Every field in this section is optional.",
+        "yearsHint": "Whole years of relevant professional experience (0–60).",
+        "keySkillsPlaceholder": "For example: financial reporting, IFRS, tax compliance",
+        "coverLetterHint": "What draws you to this role and how your experience fits it.",
+        "linkedin": "LinkedIn profile",
+        "consentSection": "Confirmations",
+        "privacyNotice": "I have read the <link>privacy notice</link> and understand how my application data is processed and retained.",
+        "accuracy": "I confirm that the information in this application is accurate and complete to the best of my knowledge.",
+        "futureOpenings": "You may keep my application to contact me about future openings. (Optional — you can withdraw this at any time.)",
+        "errorSummaryTitle": "Please correct {count, plural, one {# field} other {# fields}} before submitting.",
+        "fieldNames": {
+          "fullName": "Full name",
+          "email": "Email address",
+          "phone": "Phone",
+          "currentLocation": "Current location",
+          "yearsExperience": "Years of experience",
+          "keySkills": "Key skills",
+          "resumeText": "Résumé",
+          "fitStatement": "Cover letter",
+          "linkedinUrl": "LinkedIn profile",
+          "privacyNoticeAcknowledged": "Privacy notice",
+          "accuracyConfirmed": "Accuracy confirmation"
+        },
+        "errors": {
+          "required": "This field is required.",
+          "invalid": "This value is not valid.",
+          "tooShort": "This value is too short.",
+          "tooLong": "This value is too long.",
+          "notConfirmed": "Please confirm this to submit your application.",
+          "email": "Enter a valid email address, for example name@example.com.",
+          "linkedin": "Enter a full web address beginning with https://.",
+          "years": "Enter a whole number of years between 0 and 60.",
+          "phone": "Enter at least 3 characters, or leave the phone number empty."
+        },
+        "notAcceptingNow": "This position is not accepting applications right now. Please try again later.",
+        "invalidBody": "Some details could not be accepted as sent. Please review the form and try again.",
+        "rateLimited": "Too many attempts from this network. Please try again in about {minutes, plural, one {# minute} other {# minutes}}.",
+        "rateLimitedUnknown": "Too many attempts from this network. Please try again later.",
+        "unconfirmed": "We could not confirm that your application arrived. Submitting again is safe — the same application will not be recorded twice.",
+        "successBody": "Your application for {title} has been received. It will be reviewed by our team.",
+        "referenceLabel": "Your application reference",
+        "referenceHint": "Keep this reference if you need to contact us about your application."
+      }
+    },
+    "privacy": {
+      "metaTitle": "Candidate Privacy Notice",
+      "metaDescription": "How applications submitted through the careers pages are processed: preliminary AI-assisted screening, human decisions, retention and your rights.",
+      "eyebrow": "Careers · Privacy",
+      "title": "Candidate Privacy Notice",
+      "versionLine": "Version {version} · effective {date}",
+      "intro": "This notice explains how your personal data is processed when you apply for a position through the careers pages of this website. It supplements the <general>general Privacy Policy</general>, which continues to apply.",
+      "s1": {
+        "title": "1. Applicant data",
+        "lead": "We process only the data needed to consider your application:",
+        "provided": "What you enter in the application form: your full name and e-mail address, and — only if you provide them — your phone number, current location, years of experience, key skills, résumé text, cover letter and LinkedIn profile address.",
+        "confirmations": "Your confirmations: that you have read this notice and that your information is accurate, and — only if you give it — your consent to be contacted about future openings. Each is recorded with the time, the notice version and the language.",
+        "process": "Records of the selection process: the status of your application, the preliminary assessment described in section 2, the decisions made by the hiring team with their reasons, and interview records if you are invited.",
+        "technical": "Technical data: your network address is used briefly to limit repeated submissions and protect the service, and a one-time submission key prevents the same application from being recorded twice. Neither is stored as part of your application.",
+        "notRequested": "We do not ask for a photo, date of birth, gender, nationality, religion, marital status, health information or any other sensitive characteristic. Please do not include such information in your résumé or cover letter."
+      },
+      "s2": {
+        "title": "2. Preliminary screening with artificial intelligence",
+        "p1": "After you submit your application, an automated assistant compares its professional content — résumé text, cover letter, skills, years of experience, location and LinkedIn address — with the criteria published for the position. It produces a preliminary assessment that cites the evidence it relied on.",
+        "p2": "The assistant does not use your name, e-mail address or phone number, and it is designed never to use protected characteristics such as age, gender, religion or origin.",
+        "p3": "By default the assessment runs deterministically within our own systems. An external artificial-intelligence model is used only if the hiring organisation has explicitly enabled it. In that case a sanitised copy of the professional content of your application is sent to the model provider, and the model may only add explanatory text: it never changes a score or a recommendation.",
+        "p4": "The assistant cannot accept, reject, shortlist or hire anyone. Its assessment is advice for the people who review your application."
+      },
+      "s3": {
+        "title": "3. Human review and the final decision",
+        "p1": "Every decision about your application is made by an authorised member of the hiring team. That person reviews the preliminary assessment together with the evidence behind it and records the decision and its reason.",
+        "p2": "No decision that has legal or similarly significant effects for you is made solely by automated means. You may ask for an explanation of the outcome of your application and express your point of view to the hiring team."
+      },
+      "s4": {
+        "title": "4. Purpose and legal basis of processing",
+        "purpose": "Purpose: to assess your application for the position you applied for, to communicate with you about it, and to carry out and document the selection process.",
+        "basisLead": "We rely on the following bases:",
+        "steps": "Steps taken at your request before a possible employment contract — assessing and answering your application.",
+        "interest": "Our legitimate interest in a fair, efficient and documented selection process, including the preliminary assessment described in section 2.",
+        "legal": "Legal obligations, for example record keeping and responding to requests from authorities.",
+        "consent": "Your consent — only for keeping your application to contact you about future openings. You can withdraw it at any time.",
+        "noSecondaryUse": "Your application is not used for marketing and is not used to train artificial-intelligence models."
+      },
+      "s5": {
+        "title": "5. Retention period and policy",
+        "p1": "The organisation's current approved retention policy keeps candidate data for up to 365 days, counted from the time an application is received. After that period, the data concerned becomes eligible for anonymisation through the organisation's controlled retention-and-deletion process; it is not anonymised automatically.",
+        "p2": "Anonymisation removes the personal content of your application — résumé text, cover letter and internal notes. Data subject to a legal hold or a legal retention requirement is kept until that hold or requirement ends.",
+        "p3": "Your contact record (name, e-mail address and phone number) is removed when you ask us to erase it, unless it is still needed for another open application or to meet a legal obligation.",
+        "p4": "Records of your confirmations and consents, and the audit records of the selection process, are kept — without identifying content where possible — for as long as needed to demonstrate lawful processing. If this policy changes materially, the consent version recorded with new applications also changes."
+      },
+      "s6": {
+        "title": "6. Your rights",
+        "lead": "Subject to applicable law, you have the right to:",
+        "access": "Access — obtain a copy of the personal data we hold about your application.",
+        "correction": "Correction — have inaccurate or incomplete data corrected.",
+        "deletion": "Deletion — have your data erased where there is no overriding reason to keep it.",
+        "objection": "Objection — object to processing based on our legitimate interests, including the preliminary assessment.",
+        "withdraw": "Withdrawal of consent — withdraw your consent to be contacted about future openings at any time; this does not affect processing carried out before the withdrawal.",
+        "other": "Where applicable, you may also request restriction of processing or a portable copy of your data.",
+        "how": "To exercise a right, use the <link>Data Request Center</link> and choose the matching request type. Please include your application reference so that we can find your application. We may need to verify your identity before acting on a request.",
+        "complaint": "If you believe your data has been processed unlawfully, you may also lodge a complaint with the competent data protection supervisory authority."
+      },
+      "s7": {
+        "title": "7. Sharing and security",
+        "p1": "Your application can be seen only by authorised members of the hiring organisation's recruitment team, according to their role and permissions. Relevant actions on your application are recorded in an audit log.",
+        "p2": "We do not sell your data. We share it only with service providers that are needed to operate the service — such as hosting and, only if the hiring organisation has enabled it, an external artificial-intelligence model provider — and only to the extent they need it. A list of these providers is available on request.",
+        "p3": "Your data is protected by technical and organisational measures, including encrypted transmission, role-based access control, separation of each organisation's data and audit logging. No system is completely secure, and we will act on any incident in line with applicable law."
+      },
+      "s8": {
+        "title": "8. Controller, contact and governing law",
+        "controller": "The controller responsible for processing applications submitted through these careers pages is Zharfa Vira Pouyesh Fanavari.",
+        "contact": "For recruitment privacy questions, contact the Company Legal Unit at <mail>{email}</mail>. Please put “Candidate privacy” in the subject and include your application reference.",
+        "otherOrgs": "If a position was published by another organisation that uses this platform, that organisation is the controller for your application; we will forward your request to it.",
+        "address": "Iran, Isfahan, Janbazan Street, Valiasr Alley, Ostad Mehryar Street, Marefat Street, Postal Code 8179679495.",
+        "noDpo": "We have not appointed a formal Data Protection Officer; recruitment privacy requests are handled by the Company Legal Unit.",
+        "governingLaw": "Processing is principally governed by the laws of the Islamic Republic of Iran. Where mandatory data-protection rules in the applicant's place of residence apply, the organisation will also respect the rights required by those rules. This notice does not claim universal legal compliance.",
+        "complaintForum": "Complaints may be brought before the competent authorities and courts of Iran and, where the law so requires, the competent authority of the applicant's place of residence."
+      },
+      "s9": {
+        "title": "9. Limitations and how to make a request",
+        "limits": "This notice is for information. It does not limit any right you have under applicable law, and it does not exclude or limit any liability that cannot be excluded or limited by law. Where this notice and mandatory law differ, the law prevails.",
+        "stepsLead": "How a request is handled:",
+        "one": "Submit your request through the <link>Data Request Center</link>, or by e-mail to the contact in section 8.",
+        "two": "We confirm receipt and may ask you to verify your identity.",
+        "three": "We answer without undue delay and within the period required by applicable law, and explain the outcome.",
+        "four": "If you are not satisfied with the answer, you may contact the competent supervisory authority."
+      },
+      "backToCareers": "Back to careers"
     }
   },
   "vendors": {
@@ -9647,6 +9877,56 @@
     "yearsExpShort": "{years}y exp",
     "yearsExperience": "{years}y experience",
     "navSettings": "Settings",
+    "reviewPanel": {
+      "title": "AI review result",
+      "empty": "No AI review has completed for this application yet.",
+      "advisory": "This report is advisory. No stage changes without a recorded human decision.",
+      "applicationStatus": "Application status",
+      "awaitingDecision": "Awaiting a human decision",
+      "noDecisionNeeded": "No human decision is pending",
+      "overallScore": "Overall score",
+      "notScored": "Not scored",
+      "confidence": "Confidence",
+      "recommendation": "Recommendation",
+      "completedAt": "Completed",
+      "provider": "Provider",
+      "cycle": "Cycle",
+      "dimensionsTitle": "Dimension scores",
+      "hardGatesTitle": "Hard gates",
+      "hardGatesSummary": "{passed} passed · {failed} failed · {unknown} unknown",
+      "evidenceTitle": "Evidence",
+      "missingTitle": "Missing evidence",
+      "riskFlagsTitle": "Risk flags",
+      "versionsTitle": "Versions",
+      "explanationTitle": "Explanation",
+      "matchedLabel": "{matched} of {total}",
+      "weightLabel": "weight {weight}",
+      "recommendations": {
+        "ADVANCE": "Advance",
+        "REVIEW_REQUIRED": "Review required",
+        "HOLD": "Hold",
+        "REJECT_RECOMMENDED": "Rejection recommended"
+      },
+      "dimensions": {
+        "skill": "Skills",
+        "experience": "Experience",
+        "education": "Education",
+        "certification": "Certifications",
+        "project": "Projects",
+        "roleRelevance": "Role relevance"
+      }
+    },
+    "stageNames": {
+      "applied": "Applied",
+      "aiReview": "AI review",
+      "pendingApproval": "Pending approval",
+      "screening": "Screening",
+      "technicalReview": "Technical review",
+      "interview": "Interview",
+      "offer": "Offer",
+      "hired": "Hired",
+      "rejected": "Rejected"
+    },
     "mgmt": {
       "status": {
         "DRAFT": "Draft",
@@ -10126,6 +10406,42 @@
           "restricted": "The security status is visible to ATS administrators only."
         }
       }
+    },
+    "realEmpty": {
+      "body": "No real candidates have been received yet. This section will update automatically after the first application.",
+      "insufficient": "Not enough data yet to show this."
+    },
+    "erase": {
+      "detailTitle": "Candidate",
+      "back": "Back to candidates",
+      "sectionProfile": "Profile",
+      "sectionActivity": "Linked activity",
+      "sectionAudit": "Audit trail",
+      "noAudit": "No audited actions yet.",
+      "appliedLabel": "Applied",
+      "stageLabel": "Stage",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "locationLabel": "Location",
+      "countApplications": "Applications",
+      "countInterviews": "Interviews",
+      "countReviews": "AI reviews",
+      "erasedBadge": "This candidate has been erased and anonymised.",
+      "action": "Erase & anonymise candidate",
+      "modalTitle": "Erase & anonymise this candidate",
+      "modalWarning": "This permanently removes the candidate's personal information — name, email, phone, location, links, résumé text, cover letter and notes — from this organization. It cannot be undone. Audit records, the pipeline history and recorded decisions are kept without personal content.",
+      "modalImpact": "This will anonymise {applications} application(s), and is linked to {interviews} interview(s) and {reviews} AI review(s).",
+      "reasonLabel": "Reason (recorded in the audit log)",
+      "reasonPlaceholder": "e.g. candidate's erasure request, reference …",
+      "confirmLabel": "Type ERASE CANDIDATE to confirm",
+      "cancel": "Cancel",
+      "confirm": "Erase candidate",
+      "erasing": "Erasing…",
+      "success": "The candidate has been erased and anonymised.",
+      "errorGeneric": "The candidate could not be erased. Please try again.",
+      "errorLegalHold": "This candidate's data is under a legal hold and cannot be erased.",
+      "errorCrossOrg": "This candidate cannot be erased from here.",
+      "errorForbidden": "You do not have permission to erase a candidate."
     }
   },
   "customerSuccess": {
@@ -10580,5 +10896,538 @@
       "simulated": "Simulated data"
     },
     "metaTitle": "Automation Engineering Studio"
+  },
+  "executive": {
+    "eyebrow": "Management",
+    "title": "Executive Management Center",
+    "lede": "Today's position, the decisions waiting on you, and the records behind every figure.",
+    "adminBridge": {
+      "ariaLabel": "Executive Management Centre",
+      "lede": "This console is the audit trail. The organization's management figures, tomorrow's priorities and the nightly report archive are in the Executive Management Centre.",
+      "cta": "Open the Executive Management Centre"
+    },
+    "ranges": {
+      "today": "Today",
+      "last7Days": "Last 7 days",
+      "last30Days": "Last 30 days"
+    },
+    "rangeLabel": "Reporting period",
+    "lastUpdated": "Updated {time}",
+    "computation": {
+      "live": "computed now",
+      "cached": "from cache, computed {age} s ago",
+      "cachedStale": "from cache and ageing, computed {age} s ago"
+    },
+    "loading": "Loading the current position…",
+    "retry": "Try again",
+    "sections": {
+      "operations": "Operations",
+      "financial": "Project finance",
+      "industrial": "Plants and connectivity",
+      "customers": "Customers",
+      "actions": "Needs your decision",
+      "dataQuality": "Data quality"
+    },
+    "sectionLede": {
+      "operations": "Projects, tasks, work orders and approvals in this organization.",
+      "financial": "Budget and recorded cost on this organization's projects.",
+      "industrial": "Connectivity and open alerts for the plants you have access to.",
+      "customers": "The organization's own customers: who is active, which follow-ups are late and what was recorded this period."
+    },
+    "status": {
+      "OPERATIONAL": "Live",
+      "OPERATIONAL_RECORDED": "Recorded",
+      "EMPTY": "No records yet",
+      "FORBIDDEN": "Not available to your role",
+      "UNAVAILABLE": "Source unavailable",
+      "NO_SOURCE": "No data source"
+    },
+    "freshness": {
+      "FRESH": "Up to date",
+      "STALE": "Delayed",
+      "DISCONNECTED": "No signal",
+      "NEVER": "Never reported",
+      "INVALID": "Invalid timestamp"
+    },
+    "delta": {
+      "noChange": "Unchanged",
+      "fromZero": "{absolute} more than none",
+      "lowBaselineNote": "Small baseline — read the absolute change.",
+      "incomparable": {
+        "PARTIAL_PERIOD": "Not comparable: the previous period has not finished.",
+        "NO_BASELINE": "Not comparable: no earlier value is recorded.",
+        "NO_CURRENT": "Not comparable: no current value."
+      }
+    },
+    "metrics": {
+      "activeProjects": "Active projects",
+      "overdueTasks": "Overdue tasks",
+      "openWorkOrders": "Open work orders",
+      "pendingApprovals": "Approvals awaiting a decision",
+      "inventoryWarnings": "Items below reorder point",
+      "tasksCompleted": "Tasks completed",
+      "approvalsDecided": "Approvals decided",
+      "projectBudget": "Approved project budget",
+      "projectActualCost": "Recorded project cost",
+      "costVariance": "Budget remaining",
+      "openCriticalAlerts": "Open critical alerts",
+      "connectedSites": "Plants reporting data",
+      "alertsRaised": "Alerts raised",
+      "sitesWithoutData": "Plants without recent data",
+      "customersActive": "Active customers",
+      "customersOverdueFollowUp": "Overdue follow-ups",
+      "customersUnassigned": "Customers with no owner",
+      "customersNew": "New customers",
+      "customerInteractions": "Recorded contacts"
+    },
+    "definitions": {
+      "activeProjects": "Projects in this organization whose status is ACTIVE, counted at this moment.",
+      "overdueTasks": "Tasks whose due date has passed and which are neither done nor cancelled.",
+      "openWorkOrders": "Work orders that are neither completed nor cancelled.",
+      "approvalsDecided": "Approval requests decided within the selected period.",
+      "pendingApprovals": "Approval requests with status PENDING, counted at this moment.",
+      "inventoryWarnings": "Inventory items whose quantity is at or below their reorder point.",
+      "tasksCompleted": "Tasks whose completion was recorded within the selected period.",
+      "projectBudget": "Sum of the approved budget of this organization's live projects.",
+      "projectActualCost": "Sum of the cost recorded against those projects. This is project cost control, not accounting.",
+      "costVariance": "Approved budget minus recorded cost. Shown only when both figures exist.",
+      "openCriticalAlerts": "Critical and high asset alerts that are neither dismissed nor resolved, on the plants you may see.",
+      "connectedSites": "Plants whose newest gateway heartbeat is recent enough to be trusted.",
+      "alertsRaised": "Asset alerts first recorded within the selected period.",
+      "customersActive": "Customers of this organization whose status is active, excluding archived ones. A point-in-time count.",
+      "customersOverdueFollowUp": "Customers whose next action was due before now and has not been rescheduled. A point-in-time count.",
+      "customersUnassigned": "Customers with nobody named as follow-up owner. A point-in-time count.",
+      "customersNew": "Customers created inside the period, compared with the previous period of the same length.",
+      "customerInteractions": "Contacts recorded as having happened inside the period, by the time they happened, not the time they were typed."
+    },
+    "sources": {
+      "erpProject": "ERP — projects",
+      "erpTask": "ERP — tasks",
+      "erpWorkOrder": "ERP — work orders",
+      "erpApproval": "ERP — approval requests",
+      "erpInventory": "ERP — inventory",
+      "gatewayHeartbeat": "Industrial gateway heartbeat",
+      "telemetry": "Industrial telemetry, on arrival",
+      "assetAlert": "Asset alerts",
+      "party": "Customer records (this organization)",
+      "partyInteraction": "Customer contact log (this organization)"
+    },
+    "reasons": {
+      "forbiddenOperations": "Your role does not include operational data for this organization.",
+      "forbiddenFinancial": "Your role does not include financial figures.",
+      "forbiddenIndustrial": "Your role does not include industrial operations.",
+      "forbiddenCustomers": "You may not see this organization's customers.",
+      "noSites": "No plant has been granted to your account in this organization.",
+      "noRows": "This organization has no records of this kind yet.",
+      "sourceUnavailable": "This source could not be read for this request. Nothing is inferred from its absence.",
+      "noLedger": "There is no general ledger in this product, so these figures are project cost control and not accounting.",
+      "noCustomerFinancials": "These are relationship figures. A customer's receivable, revenue or balance needs an accounting ledger, which this product does not have yet."
+    },
+    "causes": {
+      "approvalBlocksWork": "Work is waiting on an approval decision.",
+      "dueDatePassed": "The agreed due date has passed.",
+      "belowReorderPoint": "Stock has reached the reorder point.",
+      "unresolvedCriticalAlert": "A critical alert is neither dismissed nor resolved.",
+      "noRecentSignal": "A plant has sent no recent data."
+    },
+    "quality": {
+      "title": "Data quality",
+      "invalidTimeZoneConfig": "The configured reporting time zone was rejected; the product default is in use. Day boundaries may not match your expectation.",
+      "sitesNeverReported": "{count, plural, one {# plant has never reported data.} other {# plants have never reported data.}}",
+      "futureDatedSignal": "{count, plural, one {# plant reports a timestamp in the future, which is a clock or ingest fault.} other {# plants report timestamps in the future, which is a clock or ingest fault.}}",
+      "noGeneralLedger": "Financial figures come from project records. This product holds no general ledger."
+    },
+    "priority": {
+      "HIGH": "Breaching",
+      "MEDIUM": "At risk"
+    },
+    "provenance": {
+      "definition": "Definition",
+      "source": "Source",
+      "period": "Period",
+      "pointInTime": "Counted at this moment",
+      "computedAt": "Computed at",
+      "dataAsOf": "Data as of",
+      "detail": "Open the records",
+      "timeZone": "Time zone"
+    },
+    "sites": {
+      "title": "Plants",
+      "columnName": "Plant",
+      "columnGateways": "Gateways online",
+      "columnFreshness": "Data",
+      "columnLastSignal": "Last signal",
+      "noGateway": "No gateway registered"
+    },
+    "actionCenter": {
+      "empty": "Nothing is waiting on a decision in this period.",
+      "viewRecords": "Open the records",
+      "affected": "{count, plural, one {# record} other {# records}}"
+    },
+    "errors": {
+      "AUTHENTICATION_REQUIRED": "Please sign in again.",
+      "FORBIDDEN": "This surface is not available to your account.",
+      "NOT_FOUND": "This organization is not available to your account.",
+      "ACTIVE_ORGANIZATION_REQUIRED": "Choose which organization to report on.",
+      "NO_ACCESSIBLE_AXIS": "Your role includes none of the operational, financial or industrial views.",
+      "INVALID_REQUEST": "That reporting period is not recognised.",
+      "SERVICE_UNAVAILABLE": "The management center could not be assembled. Nothing below is inferred.",
+      "chooseOrganization": "Select an organization"
+    },
+    "reports": {
+      "navLink": "Nightly reports",
+      "title": "Nightly reports",
+      "lede": "One frozen report per business day. The figures are those of the night it ran, and are never recomputed.",
+      "archiveEmpty": "No report has been produced yet. The first one appears after the next completed business day.",
+      "archiveUnavailable": "The archive could not be read for this request. Nothing is inferred from its absence.",
+      "columnDate": "Business day",
+      "columnVersion": "Version",
+      "columnGenerated": "Generated",
+      "columnCoverage": "Coverage",
+      "open": "Open the report",
+      "backToArchive": "Back to the reports",
+      "notFound": "There is no report for that day in this organization.",
+      "detailTitle": "Report for {date}",
+      "coverageComplete": "All sections answered",
+      "coverageFailed": "{count, plural, one {# source could not be read} other {# sources could not be read}}",
+      "coverageNotAsked": "{count, plural, one {# section was not asked} other {# sections were not asked}}",
+      "frozenNotice": "This is a frozen report. It shows the figures as they stood at the data cutoff below, not as they stand now.",
+      "calcVersion": "Calculation version",
+      "dataCutoff": "Data cutoff",
+      "period": "Covered period",
+      "generatedAt": "Generated at",
+      "versionLabel": "Version {version}",
+      "supersedes": "Supersedes version {version}",
+      "isSuperseded": "A later version of this day exists.",
+      "regeneratedBy": "Regenerated by",
+      "regenerationReason": "Reason",
+      "original": "Original",
+      "corrected": "Correction",
+      "priorities": {
+        "heading": "Tomorrow's priorities",
+        "headingFor": "Priorities for {date}",
+        "notRecorded": "This report records no priority list. It was produced before the report carried one, or its sources could not be read that night. That is not a statement that nothing was due.",
+        "late": "This pass ran after {date} had already ended, so the list is a record of what was still outstanding — not a recommendation for that day.",
+        "observedAt": "Observed {time}",
+        "rulesVersion": "Ranking rules {version}",
+        "notReconstructed": "Observed when the report was generated, not reconstructed as of the data cutoff: the sources keep no history of a task's or a follow-up's earlier state.",
+        "none": "Nothing met a rule for that day."
+      }
+    },
+    "oversight": {
+      "pageTitle": "Financial activity and approvals",
+      "pageLede": "Cost recorded against projects, who recorded it, and the approvals waiting on a decision.",
+      "linkFromSummary": "Financial activity and approvals",
+      "truncated": "Only the first entries are shown; more exist.",
+      "unresolvedUser": "Unknown user",
+      "cost": {
+        "title": "Recorded project cost",
+        "lede": "Cost entries recorded against this organization's projects, in each entry's own currency.",
+        "byCurrencyTitle": "By currency",
+        "currencyLabel": "Cost in {currency}",
+        "entries": "{count, plural, one {# entry} other {# entries}}",
+        "noneInPeriod": "No cost was recorded in this period.",
+        "noExchangeRate": "Each currency is shown separately. The product holds no exchange rates, so amounts in different currencies are never added together.",
+        "byCategoryTitle": "By category",
+        "columnCategory": "Category",
+        "columnCurrency": "Currency",
+        "columnAmount": "Amount",
+        "columnEntries": "Entries",
+        "uncategorised": "No category",
+        "recordersTitle": "Who recorded it",
+        "recordersLede": "Counted by when each entry was entered, from the person recorded on the entry itself.",
+        "noRecorders": "No attributed entries in this period.",
+        "unattributed": "{count, plural, one {# entry has} other {# entries have}} no recorded author.",
+        "overBudgetTitle": "Projects over budget",
+        "overBudgetSummary": "{over, plural, one {# project} other {# projects}} over budget, out of {total, plural, one {# project} other {# projects}} with a budget.",
+        "columnProject": "Project",
+        "columnBudget": "Budget",
+        "columnActual": "Recorded cost",
+        "columnOverrun": "Overrun",
+        "budgetHasNoCurrency": "Project budget and recorded cost carry no currency in this product, so these two columns are compared as stored.",
+        "notAccounting": "This is oversight of recorded project cost, not accounting: there is no ledger, no receivables, no payables and no reconciliation in this product."
+      },
+      "approvals": {
+        "title": "Approvals",
+        "lede": "What is waiting on a decision, whose decision it is, and what was decided in this period.",
+        "pendingTitle": "Awaiting a decision",
+        "oldest": "Oldest waiting since {when}",
+        "byRoleTitle": "Awaiting a decision, by approver role and age",
+        "columnRole": "Blocking role",
+        "columnTotal": "Total",
+        "age": {
+          "underOneDay": "Under 1 day",
+          "oneToThreeDays": "1–3 days",
+          "threeToSevenDays": "3–7 days",
+          "overSevenDays": "Over 7 days"
+        },
+        "noPendingStep": "No pending step defined",
+        "sampled": "The role and age breakdown covers the {sampled, number} oldest of {total, number} pending requests.",
+        "waitingDefinition": "The blocking role is the approver role of the earliest step still pending. Waiting time is counted from when the request was raised.",
+        "decidedTitle": "Decided in this period",
+        "outcome": {
+          "approved": "Approved",
+          "rejected": "Rejected",
+          "cancelled": "Cancelled"
+        },
+        "deciderSplit": "{approved, number} approved · {rejected, number} rejected",
+        "unattributed": "{count, plural, one {# decision has} other {# decisions have}} no recorded decider."
+      }
+    },
+    "priorities": {
+      "pageTitle": "Tomorrow's priorities",
+      "pageLede": "What needs action before the end of tomorrow, in order, with the rule that put each item there.",
+      "linkFromSummary": "Tomorrow's priorities",
+      "horizon": "Horizon: before {when}",
+      "tiersTitle": "By tier",
+      "tier": {
+        "1": "Act first",
+        "2": "Act today",
+        "3": "Plan for tomorrow"
+      },
+      "tierCount": "{count, plural, one {# item} other {# items}}",
+      "kind": {
+        "TASK": "Task",
+        "WORK_ORDER": "Work order",
+        "APPROVAL": "Approval",
+        "ALERT": "Alert",
+        "CUSTOMER_FOLLOW_UP": "Customer follow-up"
+      },
+      "duration": {
+        "days": "{count, plural, one {# day} other {# days}}",
+        "hours": "{count, plural, one {# hour} other {# hours}}"
+      },
+      "reason": {
+        "CRITICAL_WORK_OVERDUE": "Critical priority and overdue by {duration}.",
+        "CRITICAL_ALERT_OPEN": "Critical alert open for {duration}.",
+        "APPROVAL_CRITICALLY_LATE": "Waiting for a decision for {duration}, past the {threshold, number}-day critical limit.",
+        "HIGH_WORK_OVERDUE": "High priority and overdue by {duration}.",
+        "URGENT_WORK_DUE_SOON": "High or critical priority, due {due}.",
+        "APPROVAL_LATE": "Waiting for a decision for {duration}, past the {threshold, number}-day limit.",
+        "HIGH_ALERT_OPEN": "High-severity alert open for {duration}.",
+        "WORK_OVERDUE": "Overdue by {duration}.",
+        "WORK_DUE_SOON": "Due {due}.",
+        "FOLLOW_UP_OVERDUE": "Promised follow-up {duration} overdue.",
+        "FOLLOW_UP_DUE_SOON": "Follow-up promised for {due}."
+      },
+      "rulesTitle": "How priorities are decided",
+      "rulesLede": "The rules are checked in this order and the first one an item matches decides its tier. Within a tier, the item under pressure longest comes first. There is no score.",
+      "rule": {
+        "CRITICAL_WORK_OVERDUE": "A critical-priority task or work order past its due date.",
+        "CRITICAL_ALERT_OPEN": "A critical alert still open after {hours, plural, one {# hour} other {# hours}}.",
+        "APPROVAL_CRITICALLY_LATE": "An approval waiting {days, plural, one {# day} other {# days}} or more.",
+        "HIGH_WORK_OVERDUE": "A high-priority task or work order past its due date.",
+        "URGENT_WORK_DUE_SOON": "High- or critical-priority work due before the end of tomorrow.",
+        "APPROVAL_LATE": "An approval waiting {days, plural, one {# day} other {# days}} or more.",
+        "HIGH_ALERT_OPEN": "A high-severity alert still open after {hours, plural, one {# hour} other {# hours}}.",
+        "WORK_OVERDUE": "Any other open task or work order past its due date.",
+        "WORK_DUE_SOON": "Any other open task or work order due before the end of tomorrow.",
+        "FOLLOW_UP_OVERDUE": "A customer follow-up past the date it was promised for.",
+        "FOLLOW_UP_DUE_SOON": "A customer follow-up due before the end of tomorrow."
+      },
+      "configNote": "These thresholds are the product defaults; this organization has not set its own.",
+      "listTruncated": "Showing {shown, number} of {total, number} priorities.",
+      "sourcesTitle": "Sources",
+      "source": {
+        "tasks": "Tasks",
+        "workOrders": "Work orders",
+        "approvals": "Approvals",
+        "alerts": "Alerts",
+        "customerFollowUps": "Customer follow-ups"
+      },
+      "sourceRead": "Read",
+      "sourceTruncated": "Only the {limit, number} most pressing records were read.",
+      "noneInTier": "Nothing in this tier.",
+      "configNoteOrganization": "These thresholds were set for this organization."
+    },
+    "settings": {
+      "pageTitle": "Executive settings",
+      "pageLede": "The reporting time zone, the hour the business day turns over, and the thresholds behind tomorrow's priorities.",
+      "linkFromSummary": "Settings",
+      "linkFromPriorities": "Review the settings.",
+      "currentTitle": "Settings in force",
+      "sourceOrganization": "Set for this organization",
+      "sourceDefault": "Product defaults",
+      "storedRejected": "This organization's saved settings could not be used, so the product defaults are in force. Save the settings again to fix this.",
+      "lastChanged": "Last changed {when}",
+      "effectNote": "Changing the zone or the cutoff changes which records today's figures and future nightly reports cover. Reports already generated keep the zone they were made with.",
+      "editTitle": "Change the settings",
+      "readOnly": "Only an owner or an administrator of this organization can change these settings.",
+      "field": {
+        "timeZone": "Reporting time zone",
+        "dayCutoff": "Business day turns over at",
+        "approvalStaleDays": "Approval is late after (days)",
+        "approvalCriticalDays": "Approval is critically late after (days)",
+        "alertAgeHours": "Open alert becomes a priority after (hours)",
+        "maxItems": "Longest priority list"
+      },
+      "help": {
+        "timeZone": "Every day boundary, figure and nightly report for this organization is cut in this zone.",
+        "dayCutoff": "Local time. 00:00 means the day turns over at midnight."
+      },
+      "save": "Save settings",
+      "saving": "Saving…",
+      "result": {
+        "saved": "Saved.",
+        "conflict": "Someone else saved these settings in the meantime. Reload the page to see their change before saving again.",
+        "failed": "The settings could not be saved. Try again."
+      },
+      "problem": {
+        "UNKNOWN_TIME_ZONE": "This time zone is not recognised.",
+        "NOT_A_STRING": "Choose a time zone.",
+        "NOT_AN_INTEGER": "Enter a whole number.",
+        "OUT_OF_RANGE": "This value is outside the allowed range.",
+        "NOT_AFTER_STALE": "Must be greater than the number of days after which an approval is late."
+      }
+    },
+    "customers": {
+      "pageTitle": "Customers",
+      "pageLede": "This organization's customers: who follows each one up, the last contact and the next action.",
+      "linkNew": "New customer",
+      "newTitle": "New customer",
+      "newLede": "Record a customer of this organization. Only the name is required.",
+      "back": "All customers",
+      "readOnly": "You can see customers, but only an owner, administrator or manager can change them.",
+      "search": {
+        "label": "Search",
+        "placeholder": "Name, legal name, email or phone",
+        "status": "Status",
+        "statusAll": "Any status",
+        "followUp": "Follow-up",
+        "followUpAll": "Any follow-up",
+        "owner": "Owner",
+        "ownerAll": "Anyone",
+        "ownerMe": "Mine",
+        "archived": "Archived",
+        "archivedExclude": "Current customers",
+        "archivedOnly": "Archived only",
+        "submit": "Apply",
+        "reset": "Clear"
+      },
+      "status": {
+        "PROSPECT": "Prospect",
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive"
+      },
+      "followUp": {
+        "overdue": "Overdue",
+        "scheduled": "Scheduled",
+        "none": "No next action"
+      },
+      "table": {
+        "caption": "Customers of this organization",
+        "name": "Customer",
+        "status": "Status",
+        "owner": "Follow-up owner",
+        "nextAction": "Next action",
+        "lastInteraction": "Last contact"
+      },
+      "empty": {
+        "none": "This organization has no customers yet.",
+        "noneCanCreate": "This organization has no customers yet. Record the first one.",
+        "noMatch": "No customer matches these filters."
+      },
+      "pager": {
+        "next": "Next page",
+        "first": "Back to the first page"
+      },
+      "detail": {
+        "details": "Details",
+        "followUpTitle": "Follow-up",
+        "archivedNote": "This customer is archived. It is kept with its history and can be restored.",
+        "edit": "Edit",
+        "legalName": "Legal name",
+        "email": "Email",
+        "phone": "Phone",
+        "city": "City",
+        "country": "Country",
+        "notes": "Notes",
+        "owner": "Follow-up owner",
+        "ownerNone": "Nobody assigned",
+        "nextActionAt": "Next action due",
+        "nextActionNote": "Next action",
+        "lastInteraction": "Last contact",
+        "never": "Never",
+        "notSet": "Not set",
+        "updated": "Last changed {when}"
+      },
+      "form": {
+        "displayName": "Name",
+        "legalName": "Legal name",
+        "status": "Status",
+        "email": "Email",
+        "phone": "Phone",
+        "city": "City",
+        "country": "Country code",
+        "countryHelp": "Two letters, for example IR or DE.",
+        "notes": "Notes",
+        "owner": "Follow-up owner",
+        "ownerNone": "Nobody",
+        "nextActionAt": "Next action due",
+        "nextActionAtHelp": "In your own local time.",
+        "nextActionNote": "Next action",
+        "create": "Create customer",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "saved": "Saved.",
+        "conflict": "Someone else changed this customer in the meantime. Reload the page to see their change before saving again.",
+        "duplicate": "Another current customer already has this name.",
+        "ownerNotEligible": "This person cannot be the follow-up owner.",
+        "archivedLocked": "This customer is archived. Restore it before changing it.",
+        "invalid": "Check the highlighted fields.",
+        "failed": "The customer could not be saved. Try again.",
+        "fieldInvalid": "This value is not valid.",
+        "fieldTooLong": "This value is too long."
+      },
+      "archive": {
+        "archive": "Archive customer",
+        "restore": "Restore customer",
+        "working": "Working…",
+        "failed": "That did not work. Reload the page and try again."
+      },
+      "interactions": {
+        "title": "Contact log",
+        "empty": "No contact has been recorded yet.",
+        "older": "Older contacts",
+        "newest": "Back to the newest",
+        "recordedBy": "Recorded by {name}",
+        "kind": {
+          "CALL": "Call",
+          "MEETING": "Meeting",
+          "EMAIL": "Email",
+          "VISIT": "Visit",
+          "NOTE": "Note"
+        },
+        "form": {
+          "title": "Record a contact",
+          "kind": "Kind",
+          "occurredAt": "When",
+          "summary": "What happened",
+          "add": "Record contact",
+          "adding": "Recording…",
+          "added": "Recorded.",
+          "future": "A contact cannot be in the future.",
+          "archived": "This customer is archived; restore it to record a contact.",
+          "failed": "The contact could not be recorded. Try again."
+        }
+      },
+      "projects": {
+        "title": "Projects",
+        "none": "No project of this organization is linked to this customer.",
+        "forbidden": "Projects are ERP data; your role cannot see them.",
+        "cost": "Recorded cost of these projects",
+        "costNone": "No cost recorded on these projects.",
+        "perCurrency": "Shown per currency; different currencies are never added together.",
+        "truncated": "Only the first {count, number} linked projects are listed.",
+        "linkTitle": "Link a project",
+        "choose": "Project",
+        "link": "Link",
+        "unlink": "Unlink",
+        "noLinkable": "Every project of this organization is already linked to another customer.",
+        "elsewhere": "That project is already linked to another customer.",
+        "failed": "The link could not be changed. Reload the page and try again."
+      },
+      "linkFromSummary": "Open the customers"
+    }
   }
 }

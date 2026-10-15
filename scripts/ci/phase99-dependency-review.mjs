@@ -24,9 +24,19 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { normalizeNpmAudit, summarizeDependencyRows } from "../security/phase99/normalization.mjs";
+import { resolveDependencyReviewPath } from "../security/phase99/dependency-review-path.mjs";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const OUT = join(REPO, "docs", "security", "phase99-dependency-review.json");
+
+// Resolved BEFORE any audit runs, so a misconfigured path fails without network
+// access. Unset keeps the historical default; CI points it at a separate live
+// file so the committed historical record is never overwritten.
+const target = resolveDependencyReviewPath();
+if (!target.ok) {
+  console.error(`[phase99-dependency-review] ${target.error}`);
+  process.exit(2);
+}
+const OUT = join(REPO, ...target.path.split("/"));
 
 function audit(extraArgs) {
   const res = spawnSync("npm", ["audit", "--json", ...extraArgs], {
@@ -77,7 +87,7 @@ const artifact = {
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, JSON.stringify(artifact, null, 2) + "\n");
 
-console.log("[phase99-dependency-review] wrote docs/security/phase99-dependency-review.json");
+console.log(`[phase99-dependency-review] wrote ${target.path}${target.live ? " (live review; the committed historical record is untouched)" : ""}`);
 console.log(`RESULT phase99_dependency_critical=${summary.CRITICAL}`);
 console.log(`RESULT phase99_dependency_high=${summary.HIGH}`);
 console.log(`RESULT phase99_dependency_high_production=${prodSummary.HIGH}`);

@@ -1,0 +1,75 @@
+# HRIS-0.5 — ERP tenant-boundary PostgreSQL rehearsal.
+#
+# Starts an EMPTY, DISPOSABLE PostgreSQL 16 (pgvector, as in every other database
+# rehearsal in this repository), applies every repository migration in order, checks
+# that the schema reports up to date, and runs the real-database tenant tests in
+# src/lib/erp/__tests__/pg. The only credentials are CI-only localhost placeholders
+# for a service container that exists for this job alone. No secrets, no deploy, no
+# environment access, and nothing here can reach Production.
+
+name: HRIS-0.5 ERP tenant rehearsal
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hris05-rehearsal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hris05-postgres:
+    name: HRIS-0.5 PostgreSQL 16 rehearsal (empty database)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # CI-only localhost placeholders. Not a Production value.
+      DATABASE_URL: postgresql://hris05_ci:hris05-ci-only-password@localhost:5432/hris05_rehearsal
+      HERMES_STORAGE_MODE: database
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: hris05_ci
+          POSTGRES_PASSWORD: hris05-ci-only-password
+          POSTGRES_DB: hris05_rehearsal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hris05_ci -d hris05_rehearsal"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies (exactly as locked)
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+
+      - name: Apply every repository migration, in order, to the empty database
+        run: npx --no-install prisma migrate deploy
+
+      - name: Migration status must report the schema up to date
+        # The exit code is the gate: a pending or drifted migration fails this step.
+        # The output is not grepped (see scripts/__tests__/phase102-applied-migration-check.test.ts).
+        run: npx --no-install prisma migrate status
+
+      - name: Real-PostgreSQL tenant boundary, constraints and idempotency
+        run: npx --no-install vitest run --config vitest.hris05-postgres.config.ts

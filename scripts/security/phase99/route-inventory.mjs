@@ -174,6 +174,42 @@ export const GUARD_TOKENS = [
   // routes really delegate to it, and it really performs the checks this entry
   // vouches for.
   { token: "resolveReasoningRunActor", scope: "tenant" },
+  // EXECUTIVE DASHBOARD - the executive scope resolver (`src/lib/executive/scope.ts`).
+  //
+  // Registered for the same reason as `requireVoiceCopilotActor`, `requireAtsActor`
+  // and `resolveReasoningRunActor` above: it COMPOSES tenant-scope checks already
+  // vouched for here into one ordered, fail-closed chain, and a classifier that
+  // cannot see through the delegation would call the route UNKNOWN while it is in
+  // fact strictly gated.
+  //
+  // What this entry vouches for, in this order:
+  //   1. `getCurrentUser()` - signed session cookie, revocation enforced;
+  //   2. `can(user.role, "admin")` - the platform capability that already fronts
+  //      every ERP tenant surface;
+  //   3. `getActiveOrganizationContext()` - the acting organization resolved
+  //      SERVER-side from a session-keyed selection, with the ACTIVE
+  //      OrganizationMember row re-read on every call. No organizationId is ever
+  //      read from the request;
+  //   4. three INDEPENDENT org permissions (`view_erp`, `view_erp_compensation`,
+  //      `view_industrial`), with a refusal when the reader holds none;
+  //   5. `getAllowedSiteIds()` - the canonical site allow-list, consulted only when
+  //      the industrial axis is held.
+  //
+  // scripts/__tests__/executive-guard-recognition.test.ts locks both halves: that
+  // the route really delegates to it, and that it really performs these checks.
+  { token: "resolveExecutiveScope", scope: "tenant" },
+  // EXECUTIVE DASHBOARD slice E - the guard for CHANGING an organization's
+  // reporting settings (`src/lib/executive/settings-auth.ts`).
+  //
+  // What this entry vouches for, in this order: a trusted Origin for the
+  // cookie-authenticated write (CSRF); a JSON content type; everything
+  // `resolveExecutiveScope` vouches for above (session, server-side active
+  // organization, ACTIVE membership re-read); and `update_org` on that
+  // organization (OWNER or ADMIN). The organization written to is always the
+  // server-resolved one - nothing in the body or URL can name another.
+  //
+  // scripts/__tests__/executive-guard-recognition.test.ts locks both halves.
+  { token: "authorizeExecutiveSettingsWrite", scope: "tenant" },
   // Platform / API-key authority
   { token: "requirePlatformAuth", scope: "platform" },
   { token: "requirePlatformSuperadmin", scope: "platform" },
@@ -195,6 +231,22 @@ export const GUARD_TOKENS = [
   // halves — that the routes really delegate to it, and that it really performs
   // the checks claimed here.
   { token: "authorizeWorkerRequest", scope: "platform" },
+  // EXECUTIVE DASHBOARD slice B - the nightly-report worker guard
+  // (`src/lib/executive/report/auth.ts`).
+  //
+  // The same two-key shape as `authorizeWorkerRequest` above, on its own
+  // variable. It is a SEPARATE token rather than a reuse because sharing one
+  // credential would mean the right to produce management reports is also the
+  // right to drive billing metering - different blast radii, different keys.
+  //
+  // What this entry vouches for: a constant-time comparison against a token
+  // that exists ONLY in the environment (EXECUTIVE_REPORT_WORKER_TOKEN, falling
+  // back to METERING_WORKER_TOKEN then METRICS_TOKEN), or `getCurrentUser()`
+  // plus `can(role, "admin")`. Neither is ever derived from the request, and
+  // with neither configured nor present it answers 401.
+  //
+  // scripts/__tests__/executive-guard-recognition.test.ts locks both halves.
+  { token: "authorizeExecutiveReportWorker", scope: "platform" },
   // ATS-S1 — the AI-review worker guard (`src/lib/ats/review/worker-auth.ts`).
   // The same two-key shape as `authorizeWorkerRequest` above and vouched for on
   // the same terms: a constant-time comparison against ATS_REVIEW_WORKER_TOKEN,

@@ -2,8 +2,10 @@
 
 import Link                          from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import type { ErpProject } from "@/lib/erp/types";
+import type { ErpProjectView } from "@/lib/erp/operations";
+import type { ChildPage } from "@/lib/erp/pagination";
 import { formatDate } from "@/lib/i18n/format";
+import { ErpPagedList } from "./ErpPagedList";
 
 const STATUS_COLOR: Record<string, string> = {
   ACTIVE:    "bg-green-500/15 text-green-400",
@@ -13,24 +15,32 @@ const STATUS_COLOR: Record<string, string> = {
   CANCELLED: "bg-red-500/15 text-red-400",
 };
 
-export function ProjectListClient({ projects }: { projects: ErpProject[] }) {
+/**
+ * Project list. `page` is the first cursor page from the server; `endpoint` is the
+ * GET route (with the current status filter) that serves the following pages.
+ */
+export function ProjectListClient({ page, endpoint }: { page: ChildPage<ErpProjectView>; endpoint: string }) {
   const locale = useLocale();
   const t      = useTranslations("enterpriseOperations");
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{t("projects.count", { count: projects.length })}</p>
+      <div className="flex items-center justify-end">
         <Link href={`/${locale}/erp/projects/new`} className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:bg-primary/90">
           {t("projects.newProject")}
         </Link>
       </div>
-      <div className="space-y-2">
-        {projects.map(p => {
+      <ErpPagedList
+        page={page}
+        endpoint={endpoint}
+        renderItem={p => {
           const dueStr = p.endDate ? formatDate(p.endDate, locale) : null;
-          const budgetK = p.budget ? `$${(p.budget / 1000).toFixed(0)}K` : null;
+          // Owners see the budget (or nothing when unset); other callers see restricted text, never 0.
+          const budgetK = !p.financialsVisible
+            ? t("financials.restricted")
+            : p.budget ? `$${(p.budget / 1000).toFixed(0)}K` : null;
           return (
-            <Link key={p.id} href={`/${locale}/erp/projects/${p.id}`} className="flex items-center gap-4 rounded-xl border bg-card px-4 py-3 hover:bg-accent/30 transition-colors">
+            <Link href={`/${locale}/erp/projects/${p.id}`} className="flex items-center gap-4 rounded-xl border bg-card px-4 py-3 hover:bg-accent/30 transition-colors">
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">{p.name}</div>
                 {p.description && <div className="text-xs text-muted-foreground truncate mt-0.5">{p.description}</div>}
@@ -44,11 +54,11 @@ export function ProjectListClient({ projects }: { projects: ErpProject[] }) {
               </div>
             </Link>
           );
-        })}
-        {projects.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground text-sm">{t("projects.noProjectsFound")}</div>
-        )}
-      </div>
+        }}
+      />
+      {page.items.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground text-sm">{t("projects.noProjectsFound")}</div>
+      )}
     </div>
   );
 }

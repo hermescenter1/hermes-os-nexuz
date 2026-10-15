@@ -47,6 +47,8 @@ export const RECRUITMENT_AUDIT_ACTIONS = [
   "recruitment.position.soft_deleted",
   "recruitment.settings.updated",
   "recruitment.retention_policy.updated",
+  // ATS go-live — audited candidate erasure (HUMAN action, ATS_ADMIN).
+  "recruitment.candidate.erased",
 ] as const;
 
 export type RecruitmentAuditAction = (typeof RECRUITMENT_AUDIT_ACTIONS)[number];
@@ -83,7 +85,7 @@ export type RecruitmentAuditMetadata = z.infer<typeof recruitmentAuditMetadataSc
 
 export interface RecruitmentAuditEntry {
   action: RecruitmentAuditAction;
-  entityType: "AtsJob" | "AtsApplication" | "AtsAiReview" | "AtsReviewDecision" | "AtsOrganizationSettings" | "RetentionPolicy";
+  entityType: "AtsJob" | "AtsApplication" | "AtsAiReview" | "AtsReviewDecision" | "AtsOrganizationSettings" | "RetentionPolicy" | "AtsCandidate";
   entityId: string;
   /** null ONLY for a SYSTEM action, and then `metadata.actor` is required. */
   userId: string | null;

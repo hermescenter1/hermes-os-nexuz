@@ -9,13 +9,15 @@
  *     empty state, never the fixture;
  *   - the detail answers ONE indistinguishable 404 for unknown/draft/private/
  *     closed/expired ids and locales without a complete translation;
- *   - /api/careers/apply: a fully VALID payload for an ELIGIBLE job is still
- *     refused generically in Stage B1 (acceptance not authorized, retention
- *     not proven) with WRITE_COUNT=0; a store fault is never converted into
- *     an authentication failure; workAuthorization is rejected outright;
+ *   - /api/careers/apply: the owner gate is now OPEN (ATS-STAGE1-FORM), and
+ *     a fully VALID payload for an ELIGIBLE job is STILL refused generically
+ *     with WRITE_COUNT=0 by every gate behind it — no approved retention
+ *     policy, no recruitment idempotency secret, no organization intake
+ *     settings (fail-closed); a store fault is never converted into an
+ *     authentication failure; workAuthorization is rejected outright;
  *   - every response is Cache-Control: no-store.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -167,6 +169,8 @@ function makeDb(rows: FakeJobRow[], opts?: { retentionApproved?: boolean; throwO
     retentionPolicy: {
       findFirst: async () => (opts?.retentionApproved ? { id: "rp-1" } : null),
     },
+    // No organization settings row: the fail-closed default (intake CLOSED).
+    atsOrganizationSettings: { findUnique: async () => null },
     atsCandidate: { create: async () => { writes.push("candidate"); return { id: "c-1" }; }, findUnique: async () => null },
     atsApplication: { create: async () => { writes.push("application"); return { id: "a-1" }; } },
     consentRecord: { create: async () => { writes.push("consent"); return {}; } },
@@ -273,22 +277,41 @@ describe("GET /api/careers/jobs/[jobId] — one indistinguishable refusal", () =
 
 /* ── apply — fail-closed infrastructure ────────────────────────────────────── */
 
-describe("POST /api/careers/apply — Stage B1 never accepts", () => {
-  it("the acceptance authorization flag is OFF in Stage B1", () => {
-    expect(APPLICATION_ACCEPTANCE_AUTHORIZED).toBe(false);
+describe("POST /api/careers/apply — the owner gate is open, and every gate behind it still refuses", () => {
+  const SECRET_ENV = "RECRUITMENT_IDEMPOTENCY_SECRET";
+  const savedSecret = process.env[SECRET_ENV];
+  afterEach(() => {
+    if (savedSecret === undefined) delete process.env[SECRET_ENV];
+    else process.env[SECRET_ENV] = savedSecret;
   });
 
-  it("a COMPLETELY VALID payload for an ELIGIBLE job is refused generically with WRITE_COUNT=0", async () => {
+  it("the acceptance authorization flag is ON — the owner's explicit ATS-STAGE1-FORM authorization", () => {
+    expect(APPLICATION_ACCEPTANCE_AUTHORIZED).toBe(true);
+  });
+
+  it("a COMPLETELY VALID payload for an ELIGIBLE job with an approved policy is refused WRITE_COUNT=0 without the recruitment secret", async () => {
+    delete process.env[SECRET_ENV];
     const store = makeDb([eligibleJob], { retentionApproved: true });
     h.db = store.client;
     const res = await apply(applyReq(validBody()));
     expect(res.status).toBe(503);
     expect(store.writes).toHaveLength(0);
     const body = await res.json();
-    expect(JSON.stringify(body)).not.toMatch(/mock|applicationId/i);
+    expect(JSON.stringify(body)).not.toMatch(/mock|applicationId|secret|intake|retention/i);
   });
 
-  it("even with acceptance hypothetically on, a missing retention policy refuses with WRITE_COUNT=0", async () => {
+  it("…and with the secret present, an organization with NO settings row is intake-CLOSED: refused WRITE_COUNT=0", async () => {
+    process.env[SECRET_ENV] = "test-only-recruitment-secret-0123456789";
+    const store = makeDb([eligibleJob], { retentionApproved: true });
+    h.db = store.client;
+    const res = await apply(applyReq(validBody()));
+    expect(res.status).toBe(503);
+    expect(store.writes).toHaveLength(0);
+    const body = await res.json();
+    expect(JSON.stringify(body)).not.toMatch(/mock|applicationId|secret|intake|retention/i);
+  });
+
+  it("a missing retention policy refuses with WRITE_COUNT=0 even with the owner gate open", async () => {
     const store = makeDb([eligibleJob], { retentionApproved: false });
     h.db = store.client;
     const res = await apply(applyReq(validBody()));

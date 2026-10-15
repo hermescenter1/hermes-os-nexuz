@@ -73,6 +73,11 @@ scripts/
 # `document-cleanup-worker` Dockerfile stage COPYies it.
 !scripts/documents/storage-cleanup-worker.mjs
 
+# Executive Management Center — the nightly report runner. ONE FILE, same
+# ordering constraints as the lines above; only the dedicated
+# `executive-report-worker` Dockerfile stage COPYies it.
+!scripts/executive/daily-report-worker.mjs
+
 # Test files
 **/__tests__/
 **/*.test.ts

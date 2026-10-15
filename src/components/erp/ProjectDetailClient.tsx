@@ -2,16 +2,19 @@
 
 import Link                          from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import type { ErpProjectFull } from "@/lib/erp/types";
-import { formatDate } from "@/lib/i18n/format";
+import type { ErpProjectFullView } from "@/lib/erp/operations";
+import { MilestoneList } from "./MilestoneList";
 
-export function ProjectDetailClient({ project }: { project: ErpProjectFull }) {
+export function ProjectDetailClient({ project }: { project: ErpProjectFullView }) {
   const locale = useLocale();
   const t      = useTranslations("enterpriseOperations");
 
-  const totalCost = project.costs?.reduce((s, c) => s + c.amount, 0) ?? 0;
-  const doneCount = project.tasks?.filter(task => task.status === "DONE").length ?? 0;
-  const taskCount = project.tasks?.length ?? 0;
+  // Money is null (never 0) for callers without financial access. Totals and counts are
+  // database aggregates over the whole project, not sums over a page of rows.
+  const totalCost = project.costTotal;
+  const restricted = t("financials.restricted");
+  const doneCount = project.taskSummary.done;
+  const taskCount = project.taskSummary.total;
   const progress  = taskCount > 0 ? Math.round((doneCount / taskCount) * 100) : 0;
 
   return (
@@ -30,8 +33,8 @@ export function ProjectDetailClient({ project }: { project: ErpProjectFull }) {
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: t("projects.status"),     value: project.status.toLowerCase().replace("_"," ") },
-          { label: t("projects.budget"),     value: project.budget ? `$${(project.budget / 1000).toFixed(0)}K` : "—" },
-          { label: t("projects.actualCost"), value: `$${(totalCost / 1000).toFixed(1)}K` },
+          { label: t("projects.budget"),     value: project.budget === null ? restricted : project.budget ? `$${(project.budget / 1000).toFixed(0)}K` : "—" },
+          { label: t("projects.actualCost"), value: totalCost === null ? restricted : `$${(totalCost / 1000).toFixed(1)}K` },
           { label: t("projects.progress"),   value: `${progress}%` },
         ].map(m => (
           <div key={m.label} className="rounded-xl border bg-card p-4">
@@ -51,35 +54,28 @@ export function ProjectDetailClient({ project }: { project: ErpProjectFull }) {
         </div>
       </div>
 
-      {/* Milestones */}
-      {project.milestones && project.milestones.length > 0 && (
+      {/* Milestones: first page here, the rest through the milestones route. */}
+      {project.milestones.items.length > 0 && (
         <div className="rounded-xl border bg-card p-5">
           <h3 className="font-semibold mb-4">{t("projects.milestones")}</h3>
-          <div className="space-y-2">
-            {project.milestones.map(m => (
-              <div key={m.id} className="flex items-center justify-between text-sm py-1 border-b last:border-0">
-                <span className={m.completedAt ? "line-through text-muted-foreground" : ""}>{m.name}</span>
-                <span className="text-muted-foreground">{m.dueDate ? formatDate(m.dueDate, locale) : "—"}</span>
-              </div>
-            ))}
-          </div>
+          <MilestoneList projectId={project.id} page={project.milestones} />
         </div>
       )}
 
-      {/* Tasks */}
-      {project.tasks && project.tasks.length > 0 && (
+      {/* Tasks: a short preview. The full list is the tasks page filtered to this project. */}
+      {taskCount > 0 && (
         <div className="rounded-xl border bg-card p-5">
-          <h3 className="font-semibold mb-4">{t("projects.tasksCount", { count: project.tasks.length })}</h3>
+          <h3 className="font-semibold mb-4">{t("projects.tasksCount", { count: taskCount })}</h3>
           <div className="space-y-1">
-            {project.tasks.slice(0, 10).map(task => (
+            {project.tasks.items.slice(0, 10).map(task => (
               <Link key={task.id} href={`/${locale}/erp/tasks/${task.id}`} className="flex items-center justify-between text-sm py-1 border-b last:border-0 hover:text-primary">
                 <span>{task.title}</span>
                 <span className="text-muted-foreground capitalize text-xs">{task.status.toLowerCase().replace("_"," ")}</span>
               </Link>
             ))}
-            {project.tasks.length > 10 && (
+            {taskCount > 10 && (
               <Link href={`/${locale}/erp/tasks?projectId=${project.id}`} className="text-xs text-primary hover:underline pt-1 block">
-                {t("projects.viewAllTasks", { count: project.tasks.length })}
+                {t("projects.viewAllTasks", { count: taskCount })}
               </Link>
             )}
           </div>

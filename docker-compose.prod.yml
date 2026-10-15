@@ -50,6 +50,10 @@ services:
         # SEO canonical host — build-time only. Defaults to the production canonical
         # host; set NEXT_PUBLIC_BASE_URL in .env.production only to override.
         NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-https://hermesnovin.com}
+        # DA-3: the commit this image is built from, recorded as an OCI label
+        # so the running container can be matched against the deployed SHA.
+        # `unknown` when built by hand; the deploy always sets it.
+        GIT_REVISION: ${GIT_REVISION:-unknown}
     restart: unless-stopped
     env_file: .env.production
     volumes:
@@ -76,6 +80,65 @@ services:
       timeout: 10s
       retries: 3
       start_period: 45s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ── Executive Management Center — the nightly report runner ─────────────────
+  #
+  # Each organization's management report covers its LAST FINISHED business
+  # day, in its own time zone and cutoff, and is frozen once. This service is
+  # what makes that happen every night: without it the archive only grows when
+  # someone triggers a pass by hand.
+  #
+  # SAME PATTERN AS THE WORKERS BELOW. A THIN TRIGGER: it polls
+  # POST /api/executive/reports/run on hermes-web, where the pass, the lease and
+  # the idempotency live and are tested. Each request handles one bounded batch;
+  # the runner chains requests with the cursor the server returns, so every
+  # organization is reached. Its own image stage (`executive-report-worker`)
+  # holds ONE .mjs file — no node_modules, no Prisma, no database credential, no
+  # volume, no ports.
+  #
+  # WHAT IT CAN CAUSE. A report row for a night that has finished and is not yet
+  # reported, and one in-app notification per report to the organization's
+  # owners and administrators, carrying no figures. Logs are pass COUNTS and
+  # organization ids only.
+  #
+  # SCALING. Safe with `--scale hermes-executive-report-worker=N`: the pass
+  # takes the platform's WorkerLease under its own job name
+  # ("executive.daily.report"), and the unique (organization, date, version) key
+  # plus the conditional notify claim mean no report or notification is
+  # produced twice even if the lease is lost.
+  #
+  # REQUIRED CONFIGURATION. `EXECUTIVE_REPORT_WORKER_TOKEN` in .env.production —
+  # the same value hermes-web reads to authorise the endpoint (it also accepts
+  # METERING_WORKER_TOKEN or METRICS_TOKEN, see src/lib/executive/report/auth.ts;
+  # a dedicated token keeps this job's blast radius separate). Without any of
+  # them this container exits 2 at startup with a message that says why. No
+  # health check, exactly as for the other workers.
+  #
+  # NOT STARTED BY THE DEPLOY WORKFLOW (it recreates hermes-web only, like the
+  # other workers): after the token is set, an operator starts it once with
+  #   docker compose -p hermes -f docker-compose.prod.yml --env-file .env.production up -d hermes-executive-report-worker
+  hermes-executive-report-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: executive-report-worker
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      HERMES_WORKER_BASE_URL: http://hermes-web:3000
+    # Stated explicitly rather than relying on the stage CMD, so the thing this
+    # service runs is visible in the compose file an operator reads.
+    command: ["node", "scripts/executive/daily-report-worker.mjs"]
+    depends_on:
+      hermes-web:
+        condition: service_healthy
+    networks:
+      - hermes_internal
     logging:
       driver: "json-file"
       options:
