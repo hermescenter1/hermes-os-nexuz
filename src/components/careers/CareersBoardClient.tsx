@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ResourceFailureNotice } from "@/components/ui/ResourceFailureNotice";
@@ -21,16 +21,33 @@ type BoardState =
   | { phase: "ready"; jobs: PublicJobCard[] }
   | { phase: "failed"; code: ResourceFailureCode };
 
-export function CareersBoardClient() {
+/**
+ * `initialJobs` is the server-rendered projection of the SAME database read the
+ * `/api/careers/jobs` route performs (`listPublicJobCards`). When present the
+ * first paint — and therefore the crawlable HTML — already contains the real
+ * job cards, instead of a "loading" placeholder that only a JavaScript-running
+ * crawler would ever replace. `null`/absent means the server read was
+ * unavailable, so the component falls back to the client fetch exactly as
+ * before (an outage is never rendered as an empty board).
+ */
+export function CareersBoardClient({ initialJobs }: { initialJobs?: PublicJobCard[] | null } = {}) {
   const t = useTranslations("careers");
   const locale = useLocale();
-  const [state, setState] = useState<BoardState>({ phase: "loading" });
+  const [state, setState] = useState<BoardState>(
+    initialJobs ? { phase: "ready", jobs: initialJobs } : { phase: "loading" },
+  );
   const [search, setSearch] = useState("");
   const [dept, setDept] = useState("");
   const [attempt, setAttempt] = useState(0);
   const retry = useCallback(() => setAttempt((a) => a + 1), []);
+  // The server-supplied list is valid only for the unfiltered first render.
+  const seeded = useRef(Boolean(initialJobs));
 
   useEffect(() => {
+    if (seeded.current) {
+      seeded.current = false;
+      return;
+    }
     // Any dependency change first RETURNS TO LOADING, so stale results — or a
     // stale language — can never survive a failed follow-up request.
     setState({ phase: "loading" });
