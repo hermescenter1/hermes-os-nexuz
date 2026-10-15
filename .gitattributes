@@ -1,5 +1,8 @@
 # OpenBao operational assets are executed on Linux and must remain LF-normalized.
 .gitattributes text eol=lf
+# DA-3: the deploy runs this on the production host with `bash`. A CRLF
+# checkout would break the shebang line and the script with it.
+scripts/deploy/*.sh text eol=lf
 ops/openbao/policy/*.hcl text eol=lf
 ops/openbao/staging/*.sh text eol=lf
 ops/openbao/staging/*.py text eol=lf
