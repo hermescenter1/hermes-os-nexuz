@@ -18,6 +18,7 @@
 
 import { BASE_URL } from "@/lib/seo/config";
 import { isActiveLocale } from "@/i18n/locales";
+import { isRetiredIdentityHandle } from "@/lib/seo/retired-identity";
 
 const INDEXNOW_ENDPOINT = "https://api.indexnow.org/IndexNow";
 const MAX_BATCH = 100;
@@ -110,6 +111,10 @@ export function notifyArticleLifecycle(slug: string, language: string): void {
  */
 export function authorProfilePaths(handle: string): string[] {
   if (!handle || /[?#\s/]/.test(handle)) return [];
+  // Never ask a search engine to (re)index a retired public identity. The page
+  // itself is noindex, so submitting it would only spend quota advertising a URL
+  // we are asking to be dropped. See `lib/seo/retired-identity.ts`.
+  if (isRetiredIdentityHandle(handle)) return [];
   return ["fa", "en", "de"]
     .filter((l) => isActiveLocale(l))
     .map((l) => `/${l}/articles/author/${encodeURIComponent(handle)}`);

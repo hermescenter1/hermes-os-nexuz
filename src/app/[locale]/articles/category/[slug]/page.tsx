@@ -2,8 +2,8 @@ import { notFound }              from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { getArticlesByCategory_, getCategoryBySlug, getAllCategories, getArticleFeed } from "@/lib/articles/db";
 import { ArticlesFeedClient }     from "@/components/articles/ArticlesFeedClient";
-import { buildMetadata }          from "@/lib/seo/metadata";
 import { categoryNameForLocale }  from "@/lib/articles/locale";
+import { taxonomyMetadata }       from "@/lib/seo/taxonomy-indexability";
 
 export async function generateMetadata({
   params,
@@ -12,17 +12,25 @@ export async function generateMetadata({
 }) {
   const { locale, slug } = await params;
   const cat = await getCategoryBySlug(slug);
-  if (!cat) return { title: "Category Not Found", robots: { index: false, follow: false } };
   const t = await getTranslations({ locale, namespace: "journal" });
   // Phase 106: German is an active locale, so a /de category title used to fall
   // through to the English name. `categoryNameForLocale` owns the fallback.
-  const name = categoryNameForLocale(cat, locale);
-  return buildMetadata({
-    locale,
-    path:        `/articles/category/${slug}`,
-    title:       t("meta.categoryTitle", { name }),
-    description: cat.description ?? t("meta.categoryDescription", { name }),
-  });
+  const name = cat ? categoryNameForLocale(cat, locale) : "";
+  // One call owns BOTH outcomes. A category archive is always noindex/follow in
+  // this phase: `description` is a single non-localized column and the article
+  // read falls back to other languages, so neither locale-specific editorial
+  // copy nor a locale-specific article can be proven. An inactive category is
+  // already absent here — `getAllCategories` filters `isActive: true` — so it
+  // keeps the previous 404 and this module cannot widen availability. No article
+  // count is read for metadata any more, which also removes a duplicate query.
+  return taxonomyMetadata(
+    { exists: Boolean(cat) },
+    {
+      notFoundTitle: "Category Not Found",
+      title:         t("meta.categoryTitle", { name }),
+      description:   cat?.description ?? t("meta.categoryDescription", { name }),
+    },
+  );
 }
 
 export const dynamic = "force-dynamic";
