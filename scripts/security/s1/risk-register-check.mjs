@@ -46,7 +46,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { readFileSync, writeFileSync, existsSync, statSync, realpathSync, mkdtempSync, rmSync, cpSync, mkdirSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
-import { join, dirname, sep, resolve } from "node:path";
+import { join, dirname, sep, resolve, relative, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -219,6 +219,9 @@ const RISK_KEY_ORDER = Object.freeze([
   "residualRisk",
   "dependencies",
   "relatedRiskIds",
+  "originScope",
+  "revision",
+  "policy",
 ]);
 
 const FINDING_KEY_ORDER = Object.freeze([
@@ -231,6 +234,9 @@ const FINDING_KEY_ORDER = Object.freeze([
   "duplicateOf",
   "reason",
   "relatedRiskIds",
+  "originScope",
+  "deltaDisposition",
+  "revision",
 ]);
 
 const EVIDENCE_KEY_ORDER = Object.freeze(["path", "locator", "note"]);
@@ -240,6 +246,7 @@ const TOP_KEY_ORDER = Object.freeze([
   "phase",
   "methodVersion",
   "sourceSha",
+  "reconciliation",
   "note",
   "scoringMethod",
   "enums",
@@ -462,6 +469,7 @@ export function enumViolations(reg) {
   const push = (where, field, value) => out.push({ where, field, value });
 
   for (const r of reg.risks) {
+    if (r.originScope !== undefined && !ORIGIN_SCOPES.includes(r.originScope)) push(r.riskId, "originScope", r.originScope);
     if (!PRODUCTION_STATES.includes(r.productionState)) push(r.riskId, "productionState", r.productionState);
     if (!CONFIDENCES.includes(r.confidence)) push(r.riskId, "confidence", r.confidence);
     if (!SEVERITIES.includes(r.severity)) push(r.riskId, "severity", r.severity);
@@ -496,6 +504,7 @@ export function enumViolations(reg) {
   }
 
   for (const f of reg.findings) {
+    if (f.originScope !== undefined && !ORIGIN_SCOPES.includes(f.originScope)) push(f.findingId, "originScope", f.originScope);
     if (!FINDING_STATUSES.includes(f.status)) push(f.findingId, "status", f.status);
     if (f.ownerRiskId != null && !riskIds.has(f.ownerRiskId)) push(f.findingId, "ownerRiskId", f.ownerRiskId);
     if (f.duplicateOf != null && !findingIds.has(f.duplicateOf)) push(f.findingId, "duplicateOf", f.duplicateOf);
@@ -651,6 +660,315 @@ export function missingRequiredFields(reg) {
   return out;
 }
 
+// ─────────────────────────────── closed schema (FR-04) ───────────────────────────────
+
+/**
+ * Every structure the register carries is CLOSED: a key that is not listed is a
+ * failure, and a required key that is absent is a failure. An extension is not
+ * silently accepted. The only extension point is `policy`, a named, validated object
+ * (see `policyViolations`); anything else a future author wants to record must be added
+ * here, in a reviewed change, before it can appear in the register.
+ */
+export const SCHEMA_KEYS_VERSION = "s1-keys-1";
+
+export const RISK_REQUIRED_KEYS = Object.freeze([
+  "riskId", "title", "productionState", "stride", "threatActors", "preconditions", "affectedAssets",
+  "sourceFindingIds", "evidence", "existingControls", "controlGaps", "likelihoodFactors", "impactFactors",
+  "likelihood", "impact", "score", "severityFromScore", "severityClamp", "severity", "dominantImpact",
+  "confidence", "remediationPriority", "remediationPhase", "remediationOwnership", "acceptanceCriteria",
+  "verificationMethod", "residualRisk", "dependencies", "relatedRiskIds",
+]);
+export const RISK_OPTIONAL_KEYS = Object.freeze(["guardEvidence", "runtimeEvidence", "evidenceReconciliation", "originScope", "revision", "policy"]);
+export const FINDING_REQUIRED_KEYS = Object.freeze(["findingId", "family", "source", "summary", "status"]);
+export const FINDING_OPTIONAL_KEYS = Object.freeze(["ownerRiskId", "duplicateOf", "reason", "relatedRiskIds", "originScope", "deltaDisposition", "revision"]);
+export const RUNTIME_EVIDENCE_KEYS = Object.freeze(["statement", "variables", "source", "activeInCurrentContainer", "proves", "doesNotProve"]);
+export const SEVERITY_CLAMP_KEYS = Object.freeze(["applied", "from", "to", "rule", "reason"]);
+export const REVISION_KEYS = Object.freeze(["scope", "supersedes", "reason"]);
+export const SCORING_METHOD_KEYS = Object.freeze(["likelihood", "impact", "score", "rounding", "factorOrientation", "bands", "clamp", "manualOverrides"]);
+export const ENUM_KEYS = Object.freeze(["productionStates", "severities", "confidences", "findingStatuses", "threatActors", "assets", "stride", "remediationPhases", "verificationMethods"]);
+export const POLICY_KEYS = Object.freeze(["status", "question", "ownerRole", "ownerDecisionEvidence", "branches"]);
+export const POLICY_BRANCH_KEYS = Object.freeze(["branchId", "condition", "requiredControl", "verificationMethod", "requiredTests", "acceptanceCriteria"]);
+export const POLICY_EVIDENCE_KEYS = Object.freeze(["source", "anchor", "decidedBranchId", "decidedByRole"]);
+export const POLICY_STATUSES = Object.freeze(["OPEN", "DECIDED"]);
+export const POLICY_OWNER_ROLES = Object.freeze(["PRODUCT_OWNER", "DATA_PROTECTION_OWNER", "SECURITY_OWNER"]);
+/** Risks whose observed behaviour is certain and whose desirability only the owner can decide: each MUST carry a policy. */
+export const POLICY_REQUIRED_RISKS = Object.freeze(["R-66", "R-72", "R-73"]);
+/** Every acceptance entry of a policy branch names the decision it depends on. */
+export const POLICY_BRANCH_PREFIX = "If the owner decides ";
+/** Phrases that are a wish, not an acceptance criterion. */
+export const POLICY_GENERIC_ACCEPTANCE = /nothing further|document the policy|owner should decide|no further action|to be decided|\btbd\b|as appropriate|not applicable/i;
+/** An acceptance criterion of a branch must name something that can be seen to pass or fail. */
+export const POLICY_OPERATIONAL = /\b(?:a test asserts|tests assert|a gate (?:fails|rejects)|the gate (?:fails|rejects))\b/i;
+export const POLICY_TEST_VERB = /\b(?:asserts?|refuses?|rejects?|returns?|fails?|renders?|writes?|pass(?:es)?)\b/i;
+/**
+ * Evidence that lives in the security deliverables or in this tool chain is not an owner's decision:
+ * the register, the delta provenance, the inventory, the mutation record, the reports and every
+ * checker are all produced here. The pattern is tested on a CANONICAL, case-folded path (see
+ * `canonicalEvidencePath`), never on the spelling the register carries.
+ */
+export const POLICY_SELF_REFERENCE_ROOTS = Object.freeze(["docs/security", "scripts/security"]);
+export const POLICY_SELF_REFERENCE = /^(?:docs\/security|scripts\/security)(?:\/|$)/;
+
+/**
+ * The repository-relative form of an evidence path, independent of the platform. Backslashes, drive
+ * letters, `:`, wildcard and control characters, and segments Windows would rewrite (a trailing dot or
+ * space) are REFUSED rather than guessed at. `.`, `..` and repeated separators are resolved; a `..`
+ * that leaves the repository root is refused. The Unicode form is NFKC and the comparison form is
+ * lower case, so a full-width or upper-case spelling of a deliverable is the deliverable.
+ */
+export function canonicalEvidencePath(source) {
+  if (typeof source !== "string" || source.trim() === "") return { problem: "POLICY_EVIDENCE_EMPTY" };
+  if (source.startsWith("/") || /^[A-Za-z]:/.test(source)) return { problem: "POLICY_EVIDENCE_PATH_ABSOLUTE" };
+  if (/[\\\u0000-\u001f:*?"<>|]/.test(source)) return { problem: "POLICY_EVIDENCE_PATH_AMBIGUOUS" };
+  const kept = [];
+  for (const seg of source.normalize("NFKC").split("/")) {
+    if (seg === "" || seg === ".") continue;
+    if (seg === "..") {
+      if (kept.length === 0) return { problem: "POLICY_EVIDENCE_PATH_ESCAPES_ROOT" };
+      kept.pop();
+      continue;
+    }
+    if (/[. ]$/.test(seg)) return { problem: "POLICY_EVIDENCE_PATH_AMBIGUOUS" };
+    kept.push(seg);
+  }
+  if (kept.length === 0) return { problem: "POLICY_EVIDENCE_PATH_ESCAPES_ROOT" };
+  const rel = kept.join("/");
+  return { rel, folded: rel.toLowerCase() };
+}
+
+/** The file an evidence path names, resolved through the file system: a link cannot smuggle a deliverable in. */
+export function resolveEvidenceFile(root, rel) {
+  const abs = join(root, ...rel.split("/"));
+  let real;
+  let realRoot;
+  try {
+    real = realpathSync.native(abs);
+    realRoot = realpathSync.native(root);
+  } catch {
+    return { problem: "POLICY_EVIDENCE_PATH_ABSENT" };
+  }
+  const within = relative(realRoot, real).split(sep).join("/");
+  if (within === "" || within.startsWith("..") || isAbsolute(within)) return { problem: "POLICY_EVIDENCE_PATH_ESCAPES_ROOT" };
+  if (POLICY_SELF_REFERENCE.test(within.normalize("NFKC").toLowerCase())) return { problem: "POLICY_EVIDENCE_SELF_REFERENCE" };
+  if (!statSync(real).isFile()) return { problem: "POLICY_EVIDENCE_NOT_A_FILE" };
+  return { abs: real };
+}
+
+const isPlainObject = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
+
+function closedKeys(node, where, required, optional, out) {
+  if (!isPlainObject(node)) {
+    out.push({ where, why: "NOT_AN_OBJECT" });
+    return false;
+  }
+  for (const k of Object.keys(node)) if (!required.includes(k) && !optional.includes(k)) out.push({ where, why: "UNKNOWN_KEY", key: k });
+  for (const k of required) if (!(k in node)) out.push({ where, why: "MISSING_KEY", key: k });
+  return true;
+}
+
+const stringList = (node, where, out, min = 0) => {
+  if (!Array.isArray(node)) return out.push({ where, why: "NOT_AN_ARRAY" });
+  if (node.length < min) out.push({ where, why: "TOO_FEW_ITEMS", min });
+  node.forEach((s, i) => {
+    if (typeof s !== "string" || !s.trim()) out.push({ where: `${where}[${i}]`, why: "NOT_A_NON_EMPTY_STRING" });
+  });
+  return undefined;
+};
+
+export function schemaKeyViolations(reg) {
+  const out = [];
+  if (!closedKeys(reg, "register", TOP_KEY_ORDER, [], out)) return out;
+  closedKeys(reg.scoringMethod, "scoringMethod", SCORING_METHOD_KEYS, [], out);
+  closedKeys(reg.enums, "enums", ENUM_KEYS, [], out);
+  if (!Array.isArray(reg.risks)) out.push({ where: "risks", why: "NOT_AN_ARRAY" });
+  if (!Array.isArray(reg.findings)) out.push({ where: "findings", why: "NOT_AN_ARRAY" });
+  for (const r of Array.isArray(reg.risks) ? reg.risks : []) {
+    const w = `risk ${r?.riskId ?? "?"}`;
+    if (!closedKeys(r, w, RISK_REQUIRED_KEYS, RISK_OPTIONAL_KEYS, out)) continue;
+    (Array.isArray(r.evidence) ? r.evidence : []).forEach((e, i) => {
+      if (closedKeys(e, `${w} evidence[${i}]`, EVIDENCE_KEY_ORDER, [], out)) {
+        for (const k of EVIDENCE_KEY_ORDER) if (typeof e[k] !== "string" || !e[k].trim()) out.push({ where: `${w} evidence[${i}]`, why: "NOT_A_NON_EMPTY_STRING", key: k });
+      }
+    });
+    closedKeys(r.likelihoodFactors, `${w} likelihoodFactors`, LIKELIHOOD_FACTOR_KEYS, [], out);
+    closedKeys(r.impactFactors, `${w} impactFactors`, IMPACT_FACTOR_KEYS, [], out);
+    if (r.severityClamp !== null) closedKeys(r.severityClamp, `${w} severityClamp`, SEVERITY_CLAMP_KEYS, [], out);
+    if ("runtimeEvidence" in r) {
+      const list = Array.isArray(r.runtimeEvidence) ? r.runtimeEvidence : [r.runtimeEvidence];
+      list.forEach((e, i) => closedKeys(e, `${w} runtimeEvidence[${i}]`, RUNTIME_EVIDENCE_KEYS, [], out));
+    }
+    if ("guardEvidence" in r) stringList(r.guardEvidence, `${w} guardEvidence`, out, 1);
+    if ("revision" in r) closedKeys(r.revision, `${w} revision`, REVISION_KEYS, [], out);
+    if ("evidenceReconciliation" in r && (typeof r.evidenceReconciliation !== "string" || !r.evidenceReconciliation.trim())) {
+      out.push({ where: `${w} evidenceReconciliation`, why: "NOT_A_NON_EMPTY_STRING" });
+    }
+    stringList(r.acceptanceCriteria, `${w} acceptanceCriteria`, out, 1);
+    stringList(r.sourceFindingIds, `${w} sourceFindingIds`, out, 1);
+    if (typeof r.verificationMethod !== "string" || !r.verificationMethod.trim()) out.push({ where: `${w} verificationMethod`, why: "NOT_A_NON_EMPTY_STRING" });
+    if ("policy" in r && closedKeys(r.policy, `${w} policy`, POLICY_KEYS, [], out)) {
+      (Array.isArray(r.policy.branches) ? r.policy.branches : []).forEach((b, i) => {
+        if (!closedKeys(b, `${w} policy.branches[${i}]`, POLICY_BRANCH_KEYS, [], out)) return;
+        stringList(b.requiredTests, `${w} policy.branches[${i}].requiredTests`, out, 1);
+        stringList(b.acceptanceCriteria, `${w} policy.branches[${i}].acceptanceCriteria`, out, 1);
+      });
+      if (r.policy.ownerDecisionEvidence !== null) closedKeys(r.policy.ownerDecisionEvidence, `${w} policy.ownerDecisionEvidence`, POLICY_EVIDENCE_KEYS, [], out);
+    }
+  }
+  for (const f of Array.isArray(reg.findings) ? reg.findings : []) {
+    const w = `finding ${f?.findingId ?? "?"}`;
+    if (!closedKeys(f, w, FINDING_REQUIRED_KEYS, FINDING_OPTIONAL_KEYS, out)) continue;
+    if ("revision" in f) closedKeys(f.revision, `${w} revision`, REVISION_KEYS, [], out);
+  }
+  return out;
+}
+
+/**
+ * The revision that records an owner's decision. It is the ONLY revision scope a policy risk may carry
+ * besides DELTA_RELOCK, it does not rewrite any historical value, and it names this risk, the chosen branch
+ * and the status it supersedes. A reconciliation gate and the policy gate judge it with this one function.
+ */
+export function ownerDecisionRevisionProblems(r) {
+  const rev = r.revision;
+  if (!isPlainObject(rev) || rev.scope !== "OWNER_POLICY_DECISION") return ["POLICY_DECISION_REVISION_MISSING"];
+  const out = [];
+  const sup = rev.supersedes;
+  if (!isPlainObject(sup) || Object.keys(sup).length !== 1 || sup.policyStatus !== "OPEN") out.push("POLICY_DECISION_REVISION_SUPERSEDES");
+  const ev = r.policy?.ownerDecisionEvidence;
+  const chosen = isPlainObject(ev) ? String(ev.decidedBranchId) : null;
+  const reason = String(rev.reason ?? "");
+  const branchIds = (r.policy?.branches ?? []).map((b) => String(b?.branchId));
+  if (reason.length < 20 || !reason.includes(r.riskId) || chosen === null || !reason.includes(chosen)) out.push("POLICY_DECISION_REVISION_REASON");
+  else if (branchIds.some((id) => id !== chosen && reason.includes(id)) || (reason.match(/\bR-\d+\b/g) ?? []).some((id) => id !== r.riskId)) out.push("POLICY_DECISION_REVISION_AMBIGUOUS");
+  return out;
+}
+
+/**
+ * Everything a DECIDED policy must prove. The evidence names a file outside the security deliverables
+ * (canonical path, resolved through the file system), that file contains the quoted anchor, the anchor
+ * names THIS risk and the chosen branch and no other risk or branch, the chosen branch is one of the
+ * policy's own, the decider holds the policy's owner role, and a revision records the decision.
+ */
+export function ownerDecisionProblems(r, branchIds, root = REPO_ROOT) {
+  const p = r.policy;
+  const ev = p.ownerDecisionEvidence;
+  if (!isPlainObject(ev)) return ["POLICY_DECIDED_WITHOUT_EVIDENCE"];
+  const keys = Object.keys(ev);
+  if (POLICY_EVIDENCE_KEYS.some((k) => !keys.includes(k)) || keys.some((k) => !POLICY_EVIDENCE_KEYS.includes(k))) return ["POLICY_EVIDENCE_SHAPE"];
+  const out = [];
+  if (!branchIds.has(ev.decidedBranchId)) out.push("POLICY_DECISION_NAMES_AN_UNKNOWN_BRANCH");
+  if (ev.decidedByRole !== p.ownerRole) out.push("POLICY_DECISION_NOT_BY_THE_OWNER");
+  if (typeof ev.source !== "string" || !ev.source.trim() || typeof ev.anchor !== "string" || ev.anchor.trim().length < 12) out.push("POLICY_EVIDENCE_EMPTY");
+  else {
+    const c = canonicalEvidencePath(ev.source);
+    if (c.problem) out.push(c.problem);
+    else if (POLICY_SELF_REFERENCE.test(c.folded)) out.push("POLICY_EVIDENCE_SELF_REFERENCE");
+    else {
+      const f = resolveEvidenceFile(root, c.rel);
+      if (f.problem) out.push(f.problem);
+      else if (!readFileSync(f.abs, "utf8").replace(/\r\n?/g, "\n").includes(ev.anchor)) out.push("POLICY_EVIDENCE_ANCHOR_ABSENT");
+      else {
+        const otherRisks = (ev.anchor.match(/\bR-\d+\b/g) ?? []).filter((id) => id !== r.riskId);
+        if (!ev.anchor.includes(r.riskId) || otherRisks.length > 0) out.push("POLICY_EVIDENCE_NOT_FOR_THIS_RISK");
+        const otherBranches = [...branchIds].filter((id) => id !== ev.decidedBranchId && ev.anchor.includes(id));
+        if (!ev.anchor.includes(String(ev.decidedBranchId)) || otherBranches.length > 0) out.push("POLICY_EVIDENCE_NOT_FOR_THIS_BRANCH");
+      }
+    }
+  }
+  out.push(...ownerDecisionRevisionProblems(r));
+  return out;
+}
+
+/**
+ * A risk whose observed behaviour is certain but whose DESIRABILITY depends on a decision
+ * only the owner can make carries a `policy` object next to its production state.
+ * `productionState` keeps saying what the code does; `policy` says what is undecided.
+ *
+ * OPEN  — `ownerDecisionEvidence` is null and there are at least two branches. Each branch
+ *         names its condition, the control it requires, a verification method, at least one
+ *         operational test and at least one acceptance criterion; no two branches share a
+ *         condition, a control, a test set or an acceptance set; every acceptance criterion is
+ *         conditional ("If the owner decides …"), testable ("a test asserts …"), not a generic
+ *         wish, and listed verbatim in the risk's own `acceptanceCriteria`.
+ * DECIDED — only with evidence that is not this register: a repository path outside the
+ *         deliverables and the tool chain that exists and contains the quoted anchor, names one
+ *         of the branches, and a revision record of the decision.
+ *
+ * R-66, R-72 and R-73 MUST carry a policy. Nothing here chooses a branch.
+ */
+export function policyViolations(reg, root = REPO_ROOT) {
+  const out = [];
+  const risks = new Map(reg.risks.map((r) => [r.riskId, r]));
+  for (const id of POLICY_REQUIRED_RISKS) {
+    const r = risks.get(id);
+    if (!r) out.push({ riskId: id, why: "POLICY_REQUIRED_RISK_ABSENT" });
+    else if (!("policy" in r)) out.push({ riskId: id, why: "POLICY_MISSING" });
+  }
+  for (const r of reg.risks) {
+    if (!("policy" in r)) continue;
+    const p = r.policy;
+    const w = r.riskId;
+    if (!isPlainObject(p)) {
+      out.push({ riskId: w, why: "POLICY_NOT_AN_OBJECT" });
+      continue;
+    }
+    if (!POLICY_STATUSES.includes(p.status)) out.push({ riskId: w, why: "POLICY_STATUS_UNKNOWN", found: p.status ?? null });
+    if (typeof p.question !== "string" || p.question.trim().length < 20) out.push({ riskId: w, why: "POLICY_QUESTION_MISSING" });
+    if (!POLICY_OWNER_ROLES.includes(p.ownerRole)) out.push({ riskId: w, why: "POLICY_OWNER_ROLE_UNKNOWN", found: p.ownerRole ?? null });
+    if (r.productionState === "POSITIVE_CONTROL") out.push({ riskId: w, why: "POLICY_ON_A_POSITIVE_CONTROL" });
+    if (!Array.isArray(p.branches) || p.branches.length < 2) {
+      out.push({ riskId: w, why: "POLICY_NEEDS_TWO_BRANCHES" });
+      continue;
+    }
+    const generic = (s) => POLICY_GENERIC_ACCEPTANCE.test(String(s));
+    const ids = new Set();
+    p.branches.forEach((b, i) => {
+      const at = { riskId: w, branch: i };
+      if (typeof b?.branchId !== "string" || !/^[A-Z][A-Z0-9_]{2,40}$/.test(b.branchId)) out.push({ ...at, why: "POLICY_BRANCH_ID_INVALID" });
+      else if (ids.has(b.branchId)) out.push({ ...at, why: "POLICY_BRANCH_ID_REPEATED" });
+      else ids.add(b.branchId);
+      for (const k of ["condition", "requiredControl"]) {
+        if (typeof b?.[k] !== "string" || b[k].trim().length < 30) out.push({ ...at, why: `POLICY_BRANCH_${k.toUpperCase()}_MISSING` });
+        else if (generic(b[k])) out.push({ ...at, why: `POLICY_BRANCH_${k.toUpperCase()}_GENERIC` });
+      }
+      if (!VERIFICATION_METHODS.includes(b?.verificationMethod) || b.verificationMethod === "NOT_YET_VERIFIABLE") out.push({ ...at, why: "POLICY_BRANCH_VERIFICATION_METHOD_INVALID" });
+      const tests = Array.isArray(b?.requiredTests) ? b.requiredTests : [];
+      if (tests.length === 0) out.push({ ...at, why: "POLICY_BRANCH_WITHOUT_REQUIRED_TESTS" });
+      for (const t of tests) {
+        if (typeof t !== "string" || t.trim().length < 40 || !POLICY_TEST_VERB.test(t)) out.push({ ...at, why: "POLICY_BRANCH_REQUIRED_TEST_NOT_OPERATIONAL" });
+        else if (generic(t)) out.push({ ...at, why: "POLICY_BRANCH_REQUIRED_TEST_GENERIC" });
+      }
+      const accept = Array.isArray(b?.acceptanceCriteria) ? b.acceptanceCriteria : [];
+      if (accept.length === 0) out.push({ ...at, why: "POLICY_BRANCH_WITHOUT_ACCEPTANCE" });
+      for (const a of accept) {
+        if (typeof a !== "string" || !a.startsWith(POLICY_BRANCH_PREFIX)) out.push({ ...at, why: "POLICY_BRANCH_ACCEPTANCE_NOT_CONDITIONAL" });
+        else if (generic(a)) out.push({ ...at, why: "POLICY_BRANCH_ACCEPTANCE_GENERIC" });
+        else if (a.length < 100 || !POLICY_OPERATIONAL.test(a)) out.push({ ...at, why: "POLICY_BRANCH_ACCEPTANCE_NOT_TESTABLE" });
+        else if (!r.acceptanceCriteria.includes(a)) out.push({ ...at, why: "POLICY_BRANCH_ACCEPTANCE_NOT_IN_CRITERIA" });
+      }
+    });
+    // no two branches may be the same branch under another name
+    const sig = (b, k) => JSON.stringify(b?.[k] ?? null);
+    for (let i = 0; i < p.branches.length; i += 1) {
+      for (let j = i + 1; j < p.branches.length; j += 1) {
+        for (const k of ["condition", "requiredControl", "requiredTests", "acceptanceCriteria"]) {
+          if (sig(p.branches[i], k) === sig(p.branches[j], k)) out.push({ riskId: w, why: "POLICY_BRANCHES_NOT_DISTINCT", field: k, branches: [i, j] });
+        }
+      }
+    }
+    // OPEN carries no decision; DECIDED carries a real one
+    const ev = p.ownerDecisionEvidence;
+    if (p.status === "OPEN") {
+      if (ev !== null) out.push({ riskId: w, why: "POLICY_OPEN_WITH_DECISION_EVIDENCE" });
+    } else if (p.status === "DECIDED") {
+      for (const why of ownerDecisionProblems(r, ids, root)) out.push({ riskId: w, why });
+    }
+    if (r.acceptanceCriteria.some((c) => !c.startsWith(POLICY_BRANCH_PREFIX) && /\bowner (?:records|decides|states)\b/i.test(c) && c.length < 120)) {
+      out.push({ riskId: w, why: "POLICY_CRITERION_IS_A_BARE_DECISION_REQUEST" });
+    }
+  }
+  return out;
+}
+
 /** CRITICAL and HIGH must carry acceptance criteria and a verification method that is not "not yet verifiable". */
 export function acceptanceCriteriaViolations(reg) {
   const out = [];
@@ -685,6 +1003,9 @@ export function priorityViolations(reg) {
       out.push({ riskId: r.riskId, why: "DUPLICATE_PRIORITY", priority: r.remediationPriority, other: seen.get(r.remediationPriority) });
     } else seen.set(r.remediationPriority, r.riskId);
   }
+  // a complete permutation: exactly 1..N, so a gap or an out-of-range value is a defect and not an order
+  const sorted = reg.risks.map((r) => r.remediationPriority).sort((a, b) => a - b);
+  if (sorted.some((p, i) => p !== i + 1)) out.push({ why: "PRIORITY_NOT_A_PERMUTATION", count: sorted.length });
   const rank = Object.fromEntries(SEVERITIES.map((s, i) => [s, i]));
   const ordered = [...reg.risks].sort((a, b) => a.remediationPriority - b.remediationPriority);
   for (let i = 1; i < ordered.length; i += 1) {
@@ -1172,7 +1493,7 @@ export const POLICY_ID_PATTERN = /\*\*(A-[1-4])\*\*/g;
 
 /** Families this tool extracts from source; everything else must be LOCK-*. */
 export const SOURCE_FAMILIES = Object.freeze([
-  "A", "DB", "EDGE", "H", "IP", "L", "P99-DEP", "P99-INT", "PRIV", "RL", "TOOL", "U",
+  "A", "DB", "DELTA", "EDGE", "H", "IP", "L", "P99-DEP", "P99-INT", "PRIV", "RL", "TOOL", "U",
 ]);
 
 /**
@@ -1212,6 +1533,10 @@ export function extractSourceUniverse(root = REPO_ROOT) {
   for (const f of p99.findings ?? []) {
     add(f.findingId, PHASE99_REGISTER);
   }
+  // the delta provenance document declares the delta findings, as Phase 99 does for its own
+  const deltaDoc = deltaDocumentIds(root);
+  if (deltaDoc.error) return { error: deltaDoc.error, ids };
+  for (const id of deltaDoc.ids) add(id, DELTA_SOURCE_DOCUMENT);
   return { error: null, ids };
 }
 
@@ -1264,6 +1589,314 @@ export function findingUniverseViolations(reg, root = REPO_ROOT) {
   const lockHash = sha256Hex(lockUniverseString(reg));
   if (lockHash !== LOCK_UNIVERSE_SHA256) {
     out.push({ why: "LOCK_HASH_CHANGED", expected: LOCK_UNIVERSE_SHA256, actual: lockHash });
+  }
+  // the delta set and the reconciled universe are pinned the same way (version s1-universe-2)
+  const deltaIds = reg.findings.filter((f) => f.family === DELTA_FAMILY).map((f) => f.findingId);
+  if (deltaIds.length !== DELTA_UNIVERSE_COUNT) {
+    out.push({ why: "DELTA_COUNT_CHANGED", expected: DELTA_UNIVERSE_COUNT, actual: deltaIds.length });
+  }
+  const deltaHash = sha256Hex(universeString(deltaIds));
+  if (deltaHash !== DELTA_UNIVERSE_SHA256) {
+    out.push({ why: "DELTA_HASH_CHANGED", expected: DELTA_UNIVERSE_SHA256, actual: deltaHash });
+  }
+  if (extracted.size !== RECONCILED_UNIVERSE_COUNT) {
+    out.push({ why: "RECONCILED_COUNT_CHANGED", expected: RECONCILED_UNIVERSE_COUNT, actual: extracted.size });
+  }
+  const reconciledHash = sha256Hex(universeString(extracted));
+  if (reconciledHash !== RECONCILED_UNIVERSE_SHA256) {
+    out.push({ why: "RECONCILED_HASH_CHANGED", expected: RECONCILED_UNIVERSE_SHA256, actual: reconciledHash });
+  }
+  return out;
+}
+
+// ───────────────── S1 delta relock: the reconciled register ──────────────────
+//
+// The register is the ONE canonical source of risk and finding state. The frozen
+// S1 analysis was performed on the source state named in `sourceSha`; the relock
+// reviewed the delta between that state and the relock target and folded its
+// findings into this register. Three scopes are kept apart and never summed by
+// hand:
+//
+//   1. the HISTORICAL S1 baseline snapshot — pinned below, recomputed from the
+//      entries that carry no `originScope` (or `HISTORICAL_S1_BASELINE`), with the
+//      value each revised entry had before the relock taken from its `revision`;
+//   2. the DELTA review — entries with `originScope: DELTA_RELOCK`, and the delta
+//      findings (family DELTA) they own;
+//   3. the RECONCILED register — everything, as it stands.
+//
+// The delta provenance document (`docs/security/s1-relock-delta.json`) holds
+// commit-range facts, call-site linkage and review evidence. It carries no
+// severity and no production state of its own; the register is the only place a
+// severity or a state is written.
+
+export const RECONCILIATION_VERSION = "s1-reconcile-1";
+export const ORIGIN_SCOPES = Object.freeze(["HISTORICAL_S1_BASELINE", "DELTA_RELOCK"]);
+export const DELTA_FAMILY = "DELTA";
+export const DELTA_SOURCE_DOCUMENT = "docs/security/s1-relock-delta.json";
+export const DELTA_FINDING_PREFIX = "DELTA-";
+
+/** The closed dispositions a delta finding can receive, and the register status each one maps to. */
+export const DELTA_DISPOSITIONS = Object.freeze([
+  "OWNED_BY_NEW_RISK",
+  "OWNED_BY_EXISTING_RISK",
+  "DUPLICATE",
+  "POLICY_AMBIGUITY",
+  "ASSURANCE_GAP",
+  "NOT_A_RISK",
+  "UNPROVEN",
+]);
+export const DISPOSITION_STATUS = Object.freeze({
+  OWNED_BY_NEW_RISK: "MAPPED_TO_RISK",
+  OWNED_BY_EXISTING_RISK: "MAPPED_TO_RISK",
+  DUPLICATE: "DUPLICATE_OF",
+  POLICY_AMBIGUITY: "POLICY_QUESTION",
+  ASSURANCE_GAP: "ASSURANCE_GAP",
+  NOT_A_RISK: "NOT_A_SECURITY_RISK_WITH_REASON",
+  UNPROVEN: "ASSURANCE_GAP",
+});
+
+/**
+ * The historical snapshot, pinned. These are the figures the frozen register had at
+ * the security head; they are recomputed from the register on every run and must
+ * equal this pin, so neither a hand edit of a historical entry nor a quiet change
+ * of the pin passes.
+ */
+export const HISTORICAL_SNAPSHOT_PIN = Object.freeze({
+  sourceSha: "bcf3be9aa51f8d9f8f75e5568a2e4efea5f8fbd2",
+  registerFileSha256: "8ef30aeeaa0d64a5a7b1e17d083c15d17dda3730f6c658d004304f6a9026774c",
+  risks: 64,
+  findings: 161,
+  severity: Object.freeze({ CRITICAL: 0, HIGH: 35, MEDIUM: 17, LOW: 1, INFORMATIONAL: 11 }),
+  productionState: Object.freeze({
+    ACTIVE_CONFIRMED: 24,
+    LATENT_CONFIG_GUARDED: 4,
+    CODE_CONFIRMED_RUNTIME_UNPROVEN: 12,
+    ASSURANCE_GAP: 10,
+    POLICY_AMBIGUITY: 3,
+    POSITIVE_CONTROL: 11,
+  }),
+  findingStatus: Object.freeze({
+    MAPPED_TO_RISK: 83,
+    DUPLICATE_OF: 2,
+    POLICY_QUESTION: 7,
+    ASSURANCE_GAP: 49,
+    POSITIVE_CONTROL: 12,
+    NOT_A_SECURITY_RISK_WITH_REASON: 8,
+  }),
+  severityClamps: 2,
+  lockUniverseCount: 51,
+  sourceUniverseCount: 110,
+  topPriorityRiskId: "R-01",
+});
+
+/** The delta and reconciled universes, pinned by count and by the hash of their sorted members. */
+export const UNIVERSE_VERSION = "s1-universe-2";
+export const DELTA_UNIVERSE_COUNT = 18;
+export const DELTA_UNIVERSE_SHA256 = "9f7cc023d6b1b5fa71530f51176a819907cad9db8ef996fc13eb76f19b939d76";
+export const RECONCILED_UNIVERSE_COUNT = 128;
+export const RECONCILED_UNIVERSE_SHA256 = "06e796b75c8f5f05d1ce464c4eae9db73e52b3ce1e38b3869f528b5971f0d046";
+
+export const RECONCILIATION_KEYS = Object.freeze(["version", "historicalSnapshot", "deltaReview", "reconciledTree"]);
+export const HISTORICAL_SNAPSHOT_KEYS = Object.freeze(Object.keys(HISTORICAL_SNAPSHOT_PIN));
+export const DELTA_REVIEW_KEYS = Object.freeze([
+  "range",
+  "frozenSourceSha",
+  "securityHeadSha",
+  "targetMainSha",
+  "integrationMergeSha",
+  "provenance",
+  "deltaUniverseCount",
+  "deltaUniverseSha256",
+  "existingRisksTouched",
+]);
+export const RECONCILED_TREE_KEYS = Object.freeze(["base", "assuranceChanges", "universeVersion", "sourceUniverseCount", "sourceUniverseSha256"]);
+
+export const scopeOf = (entry) => entry.originScope ?? "HISTORICAL_S1_BASELINE";
+const isDelta = (entry) => scopeOf(entry) === "DELTA_RELOCK";
+
+/** The value an entry had before the relock revised it; the entry's own value when it was not revised. */
+function historicalView(entry) {
+  return entry.revision && entry.revision.scope === "DELTA_RELOCK" ? { ...entry, ...entry.revision.supersedes } : entry;
+}
+
+const tally = (items, keys) => {
+  const out = Object.fromEntries(keys.map((k) => [k, 0]));
+  for (const k of items) out[k] = (out[k] ?? 0) + 1;
+  return out;
+};
+
+/** Recompute the historical snapshot from the register. */
+export function historicalSnapshot(reg) {
+  const risks = reg.risks.filter((r) => !isDelta(r)).map(historicalView);
+  const findings = reg.findings.filter((f) => !isDelta(f)).map(historicalView);
+  const top = [...reg.risks.filter((r) => !isDelta(r))].sort((a, b) => a.remediationPriority - b.remediationPriority)[0];
+  return {
+    risks: risks.length,
+    findings: findings.length,
+    severity: tally(risks.map((r) => r.severity), SEVERITIES),
+    productionState: tally(risks.map((r) => r.productionState), PRODUCTION_STATES),
+    findingStatus: tally(findings.map((f) => f.status), FINDING_STATUSES),
+    severityClamps: risks.filter((r) => r.severityClamp != null).length,
+    lockUniverseCount: findings.filter((f) => f.family === "LOCK").length,
+    topPriorityRiskId: top ? top.riskId : null,
+  };
+}
+
+/** Sorted, newline-joined identifiers: the string a universe pin hashes. */
+export const universeString = (ids) => [...ids].sort().join("\n");
+
+/** The delta finding identifiers the provenance document declares, prefixed as the register carries them. */
+export function deltaDocumentIds(root = REPO_ROOT) {
+  const abs = join(root, ...DELTA_SOURCE_DOCUMENT.split("/"));
+  if (!existsSync(abs)) return { error: `MISSING_SOURCE_DOCUMENT:${DELTA_SOURCE_DOCUMENT}`, ids: [] };
+  let doc;
+  try {
+    doc = JSON.parse(readFileSync(abs, "utf8"));
+  } catch {
+    return { error: `UNPARSEABLE_SOURCE_DOCUMENT:${DELTA_SOURCE_DOCUMENT}`, ids: [] };
+  }
+  return { error: null, ids: (doc.findings ?? []).map((f) => `${DELTA_FINDING_PREFIX}${f.findingId}`) };
+}
+
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * The reconciliation gates: scope, snapshot, delta ownership and the revision
+ * record. Every row names the rule it breaks.
+ */
+export function reconciliationViolations(reg, root = REPO_ROOT) {
+  const out = [];
+  const push = (why, extra = {}) => out.push({ why, ...extra });
+  const rec = reg.reconciliation;
+  if (!rec || typeof rec !== "object" || Array.isArray(rec)) {
+    push("RECONCILIATION_ABSENT");
+    return out;
+  }
+  const keyCheck = (obj, allowed, where) => {
+    for (const k of Object.keys(obj)) if (!allowed.includes(k)) push("UNKNOWN_KEY", { where, key: k });
+    for (const k of allowed) if (!(k in obj)) push("MISSING_KEY", { where, key: k });
+  };
+  keyCheck(rec, RECONCILIATION_KEYS, "reconciliation");
+  if (rec.version !== RECONCILIATION_VERSION) push("RECONCILIATION_VERSION", { found: rec.version ?? null });
+
+  // 1 — the historical snapshot: stored = pin, and recomputed = pin
+  const hs = rec.historicalSnapshot;
+  if (!hs || typeof hs !== "object") push("HISTORICAL_SNAPSHOT_ABSENT");
+  else {
+    keyCheck(hs, HISTORICAL_SNAPSHOT_KEYS, "historicalSnapshot");
+    if (!same(hs, HISTORICAL_SNAPSHOT_PIN)) push("HISTORICAL_SNAPSHOT_DIFFERS_FROM_PIN");
+  }
+  if (reg.sourceSha !== HISTORICAL_SNAPSHOT_PIN.sourceSha) push("SOURCE_SHA_CHANGED", { found: reg.sourceSha });
+  const recomputed = historicalSnapshot(reg);
+  for (const k of ["risks", "findings", "severity", "productionState", "findingStatus", "severityClamps", "lockUniverseCount", "topPriorityRiskId"]) {
+    if (!same(recomputed[k], HISTORICAL_SNAPSHOT_PIN[k])) {
+      push("HISTORICAL_SNAPSHOT_NOT_REPRODUCED", { field: k, recomputed: recomputed[k], pinned: HISTORICAL_SNAPSHOT_PIN[k] });
+    }
+  }
+
+  // 2 — scope on every entry
+  for (const r of reg.risks) {
+    if (r.originScope !== undefined && !ORIGIN_SCOPES.includes(r.originScope)) push("UNKNOWN_ORIGIN_SCOPE", { id: r.riskId, scope: r.originScope });
+  }
+  for (const f of reg.findings) {
+    if (f.originScope !== undefined && !ORIGIN_SCOPES.includes(f.originScope)) push("UNKNOWN_ORIGIN_SCOPE", { id: f.findingId, scope: f.originScope });
+  }
+
+  // 3 — delta findings: family, id, source, scope, disposition, owner
+  const riskById = new Map(reg.risks.map((r) => [r.riskId, r]));
+  const deltaFindings = reg.findings.filter((f) => f.family === DELTA_FAMILY);
+  const touched = new Set();
+  for (const f of reg.findings) {
+    const inDeltaFamily = f.family === DELTA_FAMILY;
+    if (inDeltaFamily !== isDelta(f)) push("DELTA_FAMILY_SCOPE_MISMATCH", { id: f.findingId });
+    if (inDeltaFamily !== f.findingId.startsWith(DELTA_FINDING_PREFIX)) push("DELTA_ID_PREFIX", { id: f.findingId });
+  }
+  for (const f of deltaFindings) {
+    if (f.source !== DELTA_SOURCE_DOCUMENT) push("DELTA_SOURCE", { id: f.findingId, source: f.source });
+    if (!DELTA_DISPOSITIONS.includes(f.deltaDisposition)) push("DELTA_DISPOSITION_UNKNOWN", { id: f.findingId, found: f.deltaDisposition ?? null });
+    else if (DISPOSITION_STATUS[f.deltaDisposition] !== f.status) {
+      push("DELTA_DISPOSITION_STATUS", { id: f.findingId, disposition: f.deltaDisposition, status: f.status });
+    }
+    const owner = riskById.get(f.ownerRiskId);
+    if (!owner) push("DELTA_FINDING_WITHOUT_OWNER", { id: f.findingId });
+    else if (f.deltaDisposition === "OWNED_BY_NEW_RISK" && !isDelta(owner)) {
+      push("NEW_RISK_DISPOSITION_ON_HISTORICAL_OWNER", { id: f.findingId, owner: owner.riskId });
+    } else if (f.deltaDisposition === "OWNED_BY_EXISTING_RISK" && isDelta(owner)) {
+      push("EXISTING_RISK_DISPOSITION_ON_DELTA_OWNER", { id: f.findingId, owner: owner.riskId });
+    }
+    if (owner && !isDelta(owner)) touched.add(owner.riskId);
+  }
+  // a delta risk may own delta findings only; a historical finding keeps its historical owner
+  for (const r of reg.risks.filter(isDelta)) {
+    for (const id of r.sourceFindingIds) {
+      const f = reg.findings.find((x) => x.findingId === id);
+      if (f && f.family !== DELTA_FAMILY) push("DELTA_RISK_OWNS_HISTORICAL_FINDING", { riskId: r.riskId, findingId: id });
+    }
+    if (!r.sourceFindingIds.some((id) => id.startsWith(DELTA_FINDING_PREFIX))) push("DELTA_RISK_WITHOUT_DELTA_FINDING", { riskId: r.riskId });
+  }
+
+  // 4 — the revision record
+  const REVISION_KEYS = ["scope", "supersedes", "reason"];
+  for (const e of [...reg.risks.map((r) => ({ id: r.riskId, e: r, kind: "risk" })), ...reg.findings.map((f) => ({ id: f.findingId, e: f, kind: "finding" }))]) {
+    if (!e.e.revision) continue;
+    const rv = e.e.revision;
+    for (const k of Object.keys(rv)) if (!REVISION_KEYS.includes(k)) push("UNKNOWN_KEY", { where: `revision of ${e.id}`, key: k });
+    for (const k of REVISION_KEYS) if (!(k in rv)) push("MISSING_KEY", { where: `revision of ${e.id}`, key: k });
+    if (rv.scope === "OWNER_POLICY_DECISION" && e.kind === "risk") {
+      // an owner decision is recorded on the policy risk itself, delta or historical; it rewrites no historical value
+      const decided = isPlainObject(e.e.policy) && e.e.policy.status === "DECIDED";
+      if (!decided || ownerDecisionRevisionProblems(e.e).length > 0) push("REVISION_OWNER_DECISION_INVALID", { id: e.id });
+    } else {
+      if (rv.scope !== "DELTA_RELOCK") push("REVISION_SCOPE", { id: e.id });
+      if (isDelta(e.e)) push("REVISION_ON_DELTA_ENTRY", { id: e.id });
+    }
+    if (typeof rv.reason !== "string" || rv.reason.length < 20) push("REVISION_WITHOUT_REASON", { id: e.id });
+    if (!rv.supersedes || typeof rv.supersedes !== "object" || Object.keys(rv.supersedes).length === 0) push("REVISION_WITHOUT_SUPERSEDED_VALUES", { id: e.id });
+  }
+  const revisedRisks = reg.risks.filter((r) => r.revision?.scope === "DELTA_RELOCK").map((r) => r.riskId);
+
+  // 5 — the delta review block
+  const dr = rec.deltaReview;
+  if (!dr || typeof dr !== "object") push("DELTA_REVIEW_ABSENT");
+  else {
+    keyCheck(dr, DELTA_REVIEW_KEYS, "deltaReview");
+    for (const k of ["frozenSourceSha", "securityHeadSha", "targetMainSha", "integrationMergeSha"]) {
+      if (!/^[0-9a-f]{40}$/.test(dr[k] ?? "")) push("DELTA_REVIEW_SHA", { key: k });
+    }
+    if (dr.frozenSourceSha !== HISTORICAL_SNAPSHOT_PIN.sourceSha) push("DELTA_REVIEW_FROZEN_SOURCE_DRIFT");
+    if (dr.range !== `${dr.frozenSourceSha}..${dr.targetMainSha}`) push("DELTA_REVIEW_RANGE", { found: dr.range ?? null });
+    if (dr.provenance !== DELTA_SOURCE_DOCUMENT) push("DELTA_REVIEW_PROVENANCE", { found: dr.provenance ?? null });
+    const expectTouched = [...touched, ...revisedRisks.filter((id) => !touched.has(id))].sort();
+    if (!same([...(dr.existingRisksTouched ?? [])].sort(), expectTouched)) {
+      push("EXISTING_RISKS_TOUCHED_DIFFERS", { stored: dr.existingRisksTouched ?? null, derived: expectTouched });
+    }
+    const deltaIds = deltaFindings.map((f) => f.findingId);
+    if (dr.deltaUniverseCount !== deltaIds.length) push("DELTA_UNIVERSE_COUNT_STORED", { stored: dr.deltaUniverseCount, derived: deltaIds.length });
+    if (dr.deltaUniverseSha256 !== sha256Hex(universeString(deltaIds))) push("DELTA_UNIVERSE_HASH_STORED");
+  }
+
+  // 6 — the reconciled tree block
+  const rt = rec.reconciledTree;
+  if (!rt || typeof rt !== "object") push("RECONCILED_TREE_ABSENT");
+  else {
+    keyCheck(rt, RECONCILED_TREE_KEYS, "reconciledTree");
+    if (rt.universeVersion !== UNIVERSE_VERSION) push("UNIVERSE_VERSION", { found: rt.universeVersion ?? null });
+    if (dr && rt.base !== dr.integrationMergeSha) push("RECONCILED_TREE_BASE_IS_NOT_THE_MERGE", { found: rt.base ?? null });
+    const u = extractSourceUniverse(root);
+    if (!u.error) {
+      const ids = [...u.ids.keys()];
+      if (rt.sourceUniverseCount !== ids.length) push("RECONCILED_UNIVERSE_COUNT_STORED", { stored: rt.sourceUniverseCount, derived: ids.length });
+      if (rt.sourceUniverseSha256 !== sha256Hex(universeString(ids))) push("RECONCILED_UNIVERSE_HASH_STORED");
+    }
+  }
+
+  // 7 — the delta provenance document agrees with the register (ids and owners)
+  const doc = deltaDocumentIds(root);
+  if (!doc.error) {
+    const registered = new Set(deltaFindings.map((f) => f.findingId));
+    for (const id of doc.ids) if (!registered.has(id)) push("DELTA_FINDING_NOT_IN_REGISTER", { id });
+    const declared = new Set(doc.ids);
+    for (const id of registered) if (!declared.has(id)) push("REGISTER_DELTA_FINDING_NOT_IN_DOCUMENT", { id });
   }
   return out;
 }
@@ -1807,6 +2440,107 @@ export function deliverableForbiddenViolations(registerText, reportText) {
   ];
 }
 
+// ─────────────────── stale process text (POSTREV-F5-C) ───────────────────
+
+/**
+ * A deliverable that still says "must be reconciled with the reviewer's text", points at an
+ * open item that was settled, or carries a TODO for a reviewer is describing a process that has
+ * ended. The patterns are checked on EVERY line of the register and of the report, not only on
+ * the findings a pin names. The one exemption is an explicit, superseded historical quotation:
+ * a line that carries the canonical marker.
+ */
+export const STALE_PROCESS_MARKER = "[SUPERSEDED-QUOTE]";
+export const STALE_OPEN_ITEM_PATTERN = /\bOPEN-3\b/;
+export const STALE_PROCESS_PATTERNS = Object.freeze([
+  /must be reconciled/i,
+  /\breviewer(?:'s?|s'?)\s+text\b/i,
+  STALE_OPEN_ITEM_PATTERN,
+  /\bTODO\b[^.;|"]{0,60}\breviewer/i,
+  /pending reviewer evidence/i,
+  /temporary adjudication/i,
+  /\bto be reconciled\b/i,
+]);
+
+/**
+ * The text a pattern is judged on is CANONICAL: Unicode compatibility form (NFKC), zero-width and soft-hyphen
+ * characters removed, every apostrophe look-alike (right and left single quotation marks, the modifier
+ * apostrophes, the prime) folded to an ASCII apostrophe, and every run of whitespace (space, tab, no-break
+ * space, line ends) reduced to one space. Consecutive non-blank lines are joined into one run, so a phrase
+ * that the editor wrapped across a line is still the phrase. A blank line ends a run.
+ */
+export const STALE_ZERO_WIDTH = /[\u00ad\u200b\u200c\u200d\u2060\ufeff]/g;
+export const STALE_APOSTROPHES = /[\u2018\u2019\u201b\u02bc\u02b9\u2032]/g;
+export function canonicalStaleLine(line) {
+  return String(line).normalize("NFKC").replace(STALE_ZERO_WIDTH, "").replace(STALE_APOSTROPHES, "'").replace(/\s+/g, " ").trim();
+}
+
+export function staleProcessTextHits(text, label, options = {}) {
+  const exempt = options.exemptLine ?? (() => false);
+  // a line that DEFINES an open item (its id) may name it; a line that points at one may not
+  const definesOpenItem = options.openIdLine ?? (() => false);
+  const raw = String(text).split(/\r\n|\r|\n/);
+  const hits = [];
+  const seen = new Set();
+  let run = [];
+  const flush = () => {
+    if (run.length === 0) return;
+    const starts = [];
+    let flat = "";
+    for (const entry of run) {
+      flat += (flat === "" ? "" : " ") + entry.c;
+      starts.push(flat.length - entry.c.length);
+    }
+    const lineAt = (offset) => {
+      let k = 0;
+      for (let j = 0; j < starts.length; j += 1) if (starts[j] <= offset) k = j;
+      return k;
+    };
+    for (const rx of STALE_PROCESS_PATTERNS) {
+      const global = new RegExp(rx.source, rx.flags.includes("g") ? rx.flags : rx.flags + "g");
+      for (const m of flat.matchAll(global)) {
+        const first = lineAt(m.index);
+        const last = lineAt(m.index + Math.max(0, m[0].length - 1));
+        const span = run.slice(first, last + 1);
+        if (span.some((e) => e.line.includes(STALE_PROCESS_MARKER) || exempt(e.line))) continue;
+        if (rx === STALE_OPEN_ITEM_PATTERN && definesOpenItem(run[first].line)) {
+          // only the id the line DEFINES is exempt: a second item named in the same line is a pointer
+          const own = /\bOPEN-\d+\b/.exec(run[first].c);
+          if (own && m.index - starts[first] === own.index) continue;
+        }
+        const key = `${run[first].i}:${rx.source}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        hits.push({ label, line: run[first].i + 1, pattern: rx.source, text: run[first].line.trim().slice(0, 90) });
+      }
+    }
+    run = [];
+  };
+  raw.forEach((line, i) => {
+    const c = canonicalStaleLine(line);
+    if (c === "") flush();
+    else run.push({ i, line, c });
+  });
+  flush();
+  return hits.sort((x, y) => x.line - y.line || (x.pattern < y.pattern ? -1 : 1));
+}
+
+export function staleProcessTextViolations(registerText, reportText) {
+  return [
+    ...staleProcessTextHits(registerText, "docs/security/s1-risk-register.json"),
+    ...staleProcessTextHits(reportText, "docs/security/THREAT-MODEL-AND-RISK-REGISTER.md"),
+  ];
+}
+
+/**
+ * The exit-code contract of the closed schema (POSTREV-F5-D). A required key is judged by the FIRST
+ * gate that reads it, and the historical gates keep their own codes: an absent acceptance
+ * criterion on a CRITICAL or HIGH risk is exit 8, an absent required risk field is exit 9. Every
+ * other absent required key, and every unknown key, is exit 29. "A missing key is always 29" is
+ * therefore not a promise this tool makes.
+ */
+export const SCHEMA_KEY_EXIT_CONTRACT =
+  "A required key is judged by the first gate that reads it (8 for acceptance criteria of a CRITICAL or HIGH risk, 9 for a required risk field); every other absent required key and every unknown key is exit 29.";
+
 /**
  * S1-RV-007 / S1-R2-004 / S1-R3-006 — EVERY SCORED RISK MUST LINK A CRITERION TO
  * ITS DECLARED METHOD, AND "LINK" MEANS AN OPERATIONAL PHRASE.
@@ -2070,6 +2804,12 @@ export function counters(reg) {
     VERIFICATION_LINKAGE_VIOLATIONS: verificationLinkageViolations(reg).length,
     DOMINANT_IMPACT_VIOLATIONS: dominantImpactViolations(reg).length,
     FORBIDDEN_CONTENT_IN_DELIVERABLES: 0,
+    HISTORICAL_S1_RISKS_TOTAL: historicalSnapshot(reg).risks,
+    HISTORICAL_S1_FINDINGS_TOTAL: historicalSnapshot(reg).findings,
+    DELTA_RISKS_TOTAL: reg.risks.filter(isDelta).length,
+    DELTA_FINDINGS_TOTAL: reg.findings.filter(isDelta).length,
+    REVISED_HISTORICAL_RISKS: reg.risks.filter((r) => r.revision?.scope === "DELTA_RELOCK").length,
+    RECONCILIATION_VIOLATIONS: reconciliationViolations(reg).length,
   };
 }
 
@@ -2103,6 +2843,12 @@ export const MARKDOWN_MIRRORED_KEYS = Object.freeze([
   "LOCK_UNIVERSE_COUNT",
   "VERIFICATION_LINKAGE_VIOLATIONS",
   "DOMINANT_IMPACT_VIOLATIONS",
+  "HISTORICAL_S1_RISKS_TOTAL",
+  "HISTORICAL_S1_FINDINGS_TOTAL",
+  "DELTA_RISKS_TOTAL",
+  "DELTA_FINDINGS_TOTAL",
+  "REVISED_HISTORICAL_RISKS",
+  "RECONCILIATION_VIOLATIONS",
 ]);
 
 // ─────────── S1-RV remediation: generated Markdown blocks and their gate ─────
@@ -2135,6 +2881,9 @@ export function renderManagementMatrix(reg) {
     lines.push(`| **Control gaps** | ${r.controlGaps.map((c) => mdCell(c)).join("<br>• ")} |`);
     lines.push(`| **Acceptance criteria** | ${r.acceptanceCriteria.map((c) => mdCell(c)).join("<br>• ")} |`);
     lines.push(`| **Verification method** | \`${r.verificationMethod}\` |`);
+    if (r.policy) {
+      lines.push(`| **Open policy** | ${r.policy.status} (${r.policy.ownerRole}): ${mdCell(r.policy.question)}<br>• ${r.policy.branches.map((b) => mdCell(`${b.branchId}: ${b.condition}`)).join("<br>• ")} |`);
+    }
     lines.push(`| **Residual risk** | ${mdCell(r.residualRisk)} |`);
     lines.push("");
   }
@@ -2215,6 +2964,11 @@ export const REVIEW_CLOSURE = Object.freeze([
   ["S1-RV-009", "INFORMATIONAL", "FIXED_BY_DISCLOSURE_AND_DERIVED_PRESENTATION", "report appendix B, generated", "markdownBlockDrift over the calibration block"],
   ["S1-RV-010", "INFORMATIONAL", "FIXED_BY_DISCLOSURE_AND_DERIVED_PRESENTATION", "register dominantImpact + report appendix C", "dominantImpactViolations; tie ordering is the fixed factor order"],
   ["S1-RV-011", "INFORMATIONAL", "FIXED", "privilegeAccessibility across all four artifacts", "zero occurrences of the old key; monotonic direction asserted"],
+  ["S1-RLK-OB-1", "PRECISION", "FIXED", "S0 adjudications and the relock delta document: decision counts, positions, consumers", "relock selftests: derived decision counts, call-site position and consumer gates"],
+  ["S1-RLK-OB-2", "BLOCKING", "FIXED", "register: delta family, revision records and the reconciliation block", "reconciliation selftests and exit 28 from the command line"],
+  ["S1-RLK-SURVIVORS", "SURVIVOR", "FIXED", "relock checker and its end-to-end tests", "relock mutation campaign, verified by the campaign tool"],
+  ["S1-RLK-TEXT", "PRECISION", "FIXED", "register risks R-65 to R-73, R-53 and the relock report", "register arithmetic, ownership and universe gates"],
+  ["S1-RLK-SCOPE", "PRECISION", "FIXED", "product-path definitions and the historical-file statement", "relock checker: strict and broad path counts, historical-file gate"],
 ]);
 
 /** S1-R5 I-02 — the statuses that close a review finding. Anything else is OPEN. */
@@ -2242,6 +2996,91 @@ export function renderReviewClosure(reg, closure = REVIEW_CLOSURE) {
       "recomputing them. **The review identifiers are deliberately NOT security findings** — they are not among " +
       `the register's ${reg.findings.length} and they own no risk.`,
   );
+  return L.join("\n");
+}
+
+/**
+ * The reconciliation block: the three scopes side by side, every number derived.
+ * Nothing here is typed; the historical column comes from the pinned snapshot that
+ * `reconciliationViolations` has already proven reproducible, and the reconciled
+ * column from the register as it stands.
+ */
+export function renderReconciliation(reg) {
+  const c = counters(reg);
+  const rec = reg.reconciliation ?? {};
+  const hs = historicalSnapshot(reg);
+  const dr = rec.deltaReview ?? {};
+  const rt = rec.reconciledTree ?? {};
+  const short = (sha) => String(sha ?? "").slice(0, 8);
+  const L = [];
+  L.push("| Scope | Reference | Risks | Findings |");
+  L.push("|---|---|---|---|");
+  L.push(`| Historical S1 baseline (snapshot) | source state \`${short(HISTORICAL_SNAPSHOT_PIN.sourceSha)}\` | ${hs.risks} | ${hs.findings} |`);
+  L.push(`| Delta review | \`${short(dr.frozenSourceSha)}..${short(dr.targetMainSha)}\` | ${c.DELTA_RISKS_TOTAL} new, ${c.REVISED_HISTORICAL_RISKS} revised | ${c.DELTA_FINDINGS_TOTAL} |`);
+  L.push(`| Reconciled register | integrated tree \`${short(dr.integrationMergeSha)}\` plus ${mdCell(rt.assuranceChanges ?? "")} | ${c.S1_RISKS_TOTAL} | ${c.S1_FINDINGS_TOTAL} |`);
+  L.push("");
+  L.push("| Severity | Historical snapshot | Reconciled | Change |");
+  L.push("|---|---|---|---|");
+  const sev = { CRITICAL: c.SEVERITY_CRITICAL, HIGH: c.SEVERITY_HIGH, MEDIUM: c.SEVERITY_MEDIUM, LOW: c.SEVERITY_LOW, INFORMATIONAL: c.SEVERITY_INFORMATIONAL };
+  const signed = (n) => (n > 0 ? `+${n}` : String(n));
+  for (const s of SEVERITIES) L.push(`| ${s} | ${hs.severity[s]} | ${sev[s]} | ${signed(sev[s] - hs.severity[s])} |`);
+  L.push("");
+  L.push("| Production state | Historical snapshot | Reconciled | Change |");
+  L.push("|---|---|---|---|");
+  const cur = tally(reg.risks.map((r) => r.productionState), PRODUCTION_STATES);
+  for (const s of PRODUCTION_STATES) L.push(`| ${s} | ${hs.productionState[s]} | ${cur[s]} | ${signed(cur[s] - hs.productionState[s])} |`);
+  L.push("");
+  L.push("| Finding status | Historical snapshot | Reconciled | Change |");
+  L.push("|---|---|---|---|");
+  const curStatus = tally(reg.findings.map((f) => f.status), FINDING_STATUSES);
+  for (const s of FINDING_STATUSES) L.push(`| ${s} | ${hs.findingStatus[s]} | ${curStatus[s]} | ${signed(curStatus[s] - hs.findingStatus[s])} |`);
+  L.push("");
+  const topNow = [...reg.risks].sort((a, b) => a.remediationPriority - b.remediationPriority)[0];
+  L.push(
+    `Severity clamps: ${hs.severityClamps} historical, ${c.SEVERITY_CLAMPS_APPLIED} reconciled. ` +
+      `Top remediation priority: \`${hs.topPriorityRiskId}\` historical, \`${topNow.riskId}\` reconciled` +
+      ` (${hs.topPriorityRiskId === topNow.riskId ? "unchanged" : "CHANGED"}).`,
+  );
+  L.push("");
+  L.push("| Reconciled priority | Risk | Severity | Score | Scope |");
+  L.push("|---|---|---|---|---|");
+  for (const r of [...reg.risks].sort((a, b) => a.remediationPriority - b.remediationPriority).slice(0, 10)) {
+    L.push(`| ${r.remediationPriority} | \`${r.riskId}\` | **${r.severity}** | ${r.score} | ${scopeOf(r)} |`);
+  }
+  L.push("");
+  const lockCount = reg.findings.filter((f) => f.family === "LOCK").length;
+  L.push(
+    `Source universe (\`${rt.universeVersion ?? ""}\`): historical ${HISTORICAL_SNAPSHOT_PIN.sourceUniverseCount} identifiers + ${HISTORICAL_SNAPSHOT_PIN.lockUniverseCount} bookkeeping = ${hs.findings}; ` +
+      `delta ${dr.deltaUniverseCount ?? 0}; reconciled ${rt.sourceUniverseCount ?? 0} identifiers + ${lockCount} bookkeeping = ${reg.findings.length}. ` +
+      `Reconciled universe hash \`${rt.sourceUniverseSha256 ?? ""}\`.`,
+  );
+  L.push("");
+  L.push("| Delta finding | Disposition | Canonical risk | Severity | Production state | Score |");
+  L.push("|---|---|---|---|---|---|");
+  for (const f of reg.findings.filter((x) => x.family === DELTA_FAMILY).sort((a, b) => a.findingId.localeCompare(b.findingId))) {
+    const o = reg.risks.find((r) => r.riskId === f.ownerRiskId);
+    L.push(
+      `| \`${f.findingId}\` | ${f.deltaDisposition} | \`${f.ownerRiskId}\` | **${o ? o.severity : "?"}** | ${o ? o.productionState : "?"} | ${o ? o.score : "?"} |`,
+    );
+  }
+  L.push("");
+  L.push("| Revised or touched historical entry | Before the relock | Now | Why |");
+  L.push("|---|---|---|---|");
+  for (const r of reg.risks.filter((x) => !isDelta(x) && (x.revision?.scope === "DELTA_RELOCK" || x.sourceFindingIds.some((id) => id.startsWith(DELTA_FINDING_PREFIX)))).sort((a, b) => a.riskId.localeCompare(b.riskId))) {
+    if (r.revision?.scope === "DELTA_RELOCK") {
+      const was = r.revision.supersedes;
+      L.push(
+        `| \`${r.riskId}\` | ${was.productionState} / ${was.severity} (score ${was.score}) | ${r.productionState} / ${r.severity} (score ${r.score}) | ${mdCell(r.revision.reason)} |`,
+      );
+    } else {
+      L.push(
+        `| \`${r.riskId}\` | unchanged ${r.productionState} / ${r.severity} (score ${r.score}) | owns ${r.sourceFindingIds.filter((id) => id.startsWith(DELTA_FINDING_PREFIX)).map((id) => `\`${id}\``).join(" ")} | A delta finding falls under this existing risk; its score is not moved. |`,
+      );
+    }
+  }
+  for (const f of reg.findings.filter((x) => !isDelta(x) && x.revision).sort((a, b) => a.findingId.localeCompare(b.findingId))) {
+    L.push(`| \`${f.findingId}\` | status ${f.revision.supersedes.status} | status ${f.status} | ${mdCell(f.revision.reason)} |`);
+  }
   return L.join("\n");
 }
 
@@ -2371,6 +3210,7 @@ export function markdownBlocks(reg) {
     truthfulness: renderTruthfulnessLead(reg),
     headline: renderHeadlinePanel(reg),
     summary: ["```", ...MARKDOWN_MIRRORED_KEYS.map((k) => `${k} = ${counters(reg)[k]}`), "```"].join("\n"),
+    reconciliation: renderReconciliation(reg),
     findings: renderFindingTables(reg),
     verdict: renderVerdictPanel(reg),
     matrix: renderManagementMatrix(reg),
@@ -2523,6 +3363,16 @@ export function narrativeFacts(reg, root = REPO_ROOT) {
     .join(" ");
   const u = extractSourceUniverse(root);
   if (!u.error) facts.SOURCE_UNIVERSE_COUNT = u.ids.size;
+  // the historical snapshot, for narrative that describes the frozen analysis
+  const h = historicalSnapshot(reg);
+  facts.HIST_S1_RISKS_TOTAL = h.risks;
+  facts.HIST_S1_FINDINGS_TOTAL = h.findings;
+  facts.HIST_SOURCE_UNIVERSE_COUNT = HISTORICAL_SNAPSHOT_PIN.sourceUniverseCount;
+  facts.HIST_SEVERITY_CLAMPS_APPLIED = h.severityClamps;
+  for (const k of SEVERITIES) facts[`HIST_SEVERITY_${k}`] = h.severity[k];
+  for (const k of PRODUCTION_STATES) facts[`HIST_STATE_${k}`] = h.productionState[k];
+  for (const k of FINDING_STATUSES) facts[`HIST_FINDING_STATUS_${k}`] = h.findingStatus[k];
+  facts.HIST_LATENT_DESIGN_FLAWS = h.productionState.CODE_CONFIRMED_RUNTIME_UNPROVEN + h.productionState.LATENT_CONFIG_GUARDED;
   return facts;
 }
 
@@ -3439,7 +4289,7 @@ export const MUTATION_MANIFEST = Object.freeze([
     replace: "against 10 for",
     placebo: "against ${`${disclosure}`} for",
     detector: "S1-R4 FR-03: the truthfulness lead is rendered from the register",
-    fingerprint: "TRUTHFULNESS_LEAD: the disclosure figure in the lead moves with the register" }),
+    fingerprint: "TRUTHFULNESS_LEAD" }),
   Object.freeze({ id: "R4-03b", target: "narrative figures", description: "the unmarked-count scan back to two intervening words",
     find: "{0,4}(?:risks?|findings?|clamps?|positive controls?)",
     replace: "{0,2}(?:risks?|findings?|clamps?|positive controls?)",
@@ -3836,6 +4686,846 @@ export const MUTATION_MANIFEST = Object.freeze([
     placebo: "(?<![.\\w\\/-])ss\\s+-",
     detector: "S1-FA I1: prose that names the same tools passes",
     fingerprint: "PROBE_NEGATIVE:a class -based design" }),
+  Object.freeze({ id: "RL-01", target: "reconciliation: absent block", description: "a register with no reconciliation block passes",
+    find: "push(\"RECONCILIATION_ABSENT\");",
+    replace: "void 0;",
+    placebo: "push(`RECONCILIATION_ABSENT`);",
+    detector: "S1-RLK: a missing reconciliation block is refused",
+    fingerprint: "RECON_RECONCILIATION_ABSENT:expected RECONCILIATION_ABSENT" }),
+  Object.freeze({ id: "RL-02", target: "reconciliation: unknown key", description: "an unknown key in a reconciliation object is ignored",
+    find: "for (const k of Object.keys(obj)) if (!allowed.includes(k)) push(\"UNKNOWN_KEY\", { where, key: k });",
+    replace: "void obj;",
+    placebo: "for (const k of Object.keys(obj)) if (allowed.indexOf(k) < 0) push(\"UNKNOWN_KEY\", { where, key: k });",
+    detector: "S1-RLK: an unknown key in the reconciliation block is refused",
+    fingerprint: "RECON_UNKNOWN_KEY:expected UNKNOWN_KEY" }),
+  Object.freeze({ id: "RL-03", target: "reconciliation: missing key", description: "a missing key in a reconciliation object is ignored",
+    find: "for (const k of allowed) if (!(k in obj)) push(\"MISSING_KEY\", { where, key: k });",
+    replace: "void allowed;",
+    placebo: "for (const k of allowed) if (!Object.hasOwn(obj, k)) push(\"MISSING_KEY\", { where, key: k });",
+    detector: "S1-RLK: a missing key in the reconciliation block is refused",
+    fingerprint: "RECON_MISSING_KEY:expected MISSING_KEY" }),
+  Object.freeze({ id: "RL-04", target: "reconciliation: version", description: "the reconciliation version is not compared",
+    find: "if (rec.version !== RECONCILIATION_VERSION) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(rec.version === RECONCILIATION_VERSION)) push(",
+    detector: "S1-RLK: a reconciliation version drift is refused",
+    fingerprint: "RECON_RECONCILIATION_VERSION:expected RECONCILIATION_VERSION" }),
+  Object.freeze({ id: "RL-05", target: "reconciliation: snapshot pin", description: "a stored historical snapshot that is not the pin passes",
+    find: "if (!same(hs, HISTORICAL_SNAPSHOT_PIN)) push(",
+    replace: "if (false) push(",
+    placebo: "if (JSON.stringify(hs) !== JSON.stringify(HISTORICAL_SNAPSHOT_PIN)) push(",
+    detector: "S1-RLK: a stored snapshot that is not the pin is refused",
+    fingerprint: "RECON_HISTORICAL_SNAPSHOT_DIFFERS_FROM_PIN:expected HISTORICAL_SNAPSHOT_DIFFERS_FROM_PIN" }),
+  Object.freeze({ id: "RL-06", target: "reconciliation: snapshot recomputed", description: "the historical snapshot is not recomputed from the entries",
+    find: "if (!same(recomputed[k], HISTORICAL_SNAPSHOT_PIN[k])) {",
+    replace: "if (false) {",
+    placebo: "if (JSON.stringify(recomputed[k]) !== JSON.stringify(HISTORICAL_SNAPSHOT_PIN[k])) {",
+    detector: "S1-RLK: a historical entry edited without a revision breaks the snapshot",
+    fingerprint: "RECON_HISTORICAL_SNAPSHOT_NOT_REPRODUCED:expected HISTORICAL_SNAPSHOT_NOT_REPRODUCED" }),
+  Object.freeze({ id: "RL-07", target: "reconciliation: source state", description: "a changed source state passes",
+    find: "if (reg.sourceSha !== HISTORICAL_SNAPSHOT_PIN.sourceSha) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(reg.sourceSha === HISTORICAL_SNAPSHOT_PIN.sourceSha)) push(",
+    detector: "S1-RLK: a changed source state is refused",
+    fingerprint: "RECON_SOURCE_SHA_CHANGED:expected SOURCE_SHA_CHANGED" }),
+  Object.freeze({ id: "RL-08", target: "reconciliation: scope of a risk", description: "an unknown origin scope on a risk passes",
+    find: "if (r.originScope !== undefined && !ORIGIN_SCOPES.includes(r.originScope)) push(\"UNKNOWN_ORIGIN_SCOPE\", { id: r.riskId",
+    replace: "if (false) push(\"UNKNOWN_ORIGIN_SCOPE\", { id: r.riskId",
+    placebo: "if (r.originScope !== undefined && ORIGIN_SCOPES.indexOf(r.originScope) < 0) push(\"UNKNOWN_ORIGIN_SCOPE\", { id: r.riskId",
+    detector: "S1-RLK: an unknown origin scope is refused",
+    fingerprint: "RECON_UNKNOWN_ORIGIN_SCOPE:expected UNKNOWN_ORIGIN_SCOPE" }),
+  Object.freeze({ id: "RL-09", target: "reconciliation: family and scope", description: "a delta-family finding without the delta scope passes",
+    find: "if (inDeltaFamily !== isDelta(f)) push(\"DELTA_FAMILY_SCOPE_MISMATCH\"",
+    replace: "if (false) push(\"DELTA_FAMILY_SCOPE_MISMATCH\"",
+    placebo: "if (isDelta(f) !== inDeltaFamily) push(\"DELTA_FAMILY_SCOPE_MISMATCH\"",
+    detector: "S1-RLK: a delta family finding without the delta scope is refused",
+    fingerprint: "RECON_DELTA_FAMILY_SCOPE_MISMATCH:expected DELTA_FAMILY_SCOPE_MISMATCH" }),
+  Object.freeze({ id: "RL-10", target: "reconciliation: id prefix", description: "a delta finding without the delta prefix passes",
+    find: "if (inDeltaFamily !== f.findingId.startsWith(DELTA_FINDING_PREFIX)) push(\"DELTA_ID_PREFIX\"",
+    replace: "if (false) push(\"DELTA_ID_PREFIX\"",
+    placebo: "if (f.findingId.startsWith(DELTA_FINDING_PREFIX) !== inDeltaFamily) push(\"DELTA_ID_PREFIX\"",
+    detector: "S1-RLK: a delta finding without the delta id prefix is refused",
+    fingerprint: "RECON_DELTA_ID_PREFIX:expected DELTA_ID_PREFIX" }),
+  Object.freeze({ id: "RL-11", target: "reconciliation: provenance source", description: "a delta finding that names another source passes",
+    find: "if (f.source !== DELTA_SOURCE_DOCUMENT) push(\"DELTA_SOURCE\"",
+    replace: "if (false) push(\"DELTA_SOURCE\"",
+    placebo: "if (!(f.source === DELTA_SOURCE_DOCUMENT)) push(\"DELTA_SOURCE\"",
+    detector: "S1-RLK: a delta finding that does not name the provenance document is refused",
+    fingerprint: "RECON_DELTA_SOURCE:expected DELTA_SOURCE" }),
+  Object.freeze({ id: "RL-12", target: "reconciliation: disposition vocabulary", description: "an unknown disposition passes",
+    find: "if (!DELTA_DISPOSITIONS.includes(f.deltaDisposition)) push(",
+    replace: "if (false) push(",
+    placebo: "if (DELTA_DISPOSITIONS.indexOf(f.deltaDisposition) < 0) push(",
+    detector: "S1-RLK: a delta finding without a known disposition is refused",
+    fingerprint: "RECON_DELTA_DISPOSITION_UNKNOWN:expected DELTA_DISPOSITION_UNKNOWN" }),
+  Object.freeze({ id: "RL-13", target: "reconciliation: disposition and status", description: "a status that does not follow from the disposition passes",
+    find: "else if (DISPOSITION_STATUS[f.deltaDisposition] !== f.status) {",
+    replace: "else if (false) {",
+    placebo: "else if (!(DISPOSITION_STATUS[f.deltaDisposition] === f.status)) {",
+    detector: "S1-RLK: a disposition whose status does not follow from it is refused",
+    fingerprint: "RECON_DELTA_DISPOSITION_STATUS:expected DELTA_DISPOSITION_STATUS" }),
+  Object.freeze({ id: "RL-14", target: "reconciliation: owner exists", description: "a delta finding with no owning risk passes",
+    find: "if (!owner) push(\"DELTA_FINDING_WITHOUT_OWNER\"",
+    replace: "if (false) push(\"DELTA_FINDING_WITHOUT_OWNER\"",
+    placebo: "if (owner === undefined) push(\"DELTA_FINDING_WITHOUT_OWNER\"",
+    detector: "S1-RLK: a delta finding without an owning risk is refused",
+    fingerprint: "RECON_DELTA_FINDING_WITHOUT_OWNER:expected DELTA_FINDING_WITHOUT_OWNER|Cannot read properties of undefined" }),
+  Object.freeze({ id: "RL-15", target: "reconciliation: new-risk owner", description: "a new-risk disposition on a historical owner passes",
+    find: "else if (f.deltaDisposition === \"OWNED_BY_NEW_RISK\" && !isDelta(owner)) {",
+    replace: "else if (false) {",
+    placebo: "else if (f.deltaDisposition === \"OWNED_BY_NEW_RISK\" && isDelta(owner) === false) {",
+    detector: "S1-RLK: a new-risk disposition owned by a historical risk is refused",
+    fingerprint: "RECON_NEW_RISK_DISPOSITION_ON_HISTORICAL_OWNER:expected NEW_RISK_DISPOSITION_ON_HISTORICAL_OWNER" }),
+  Object.freeze({ id: "RL-16", target: "reconciliation: existing-risk owner", description: "an existing-risk disposition on a delta owner passes",
+    find: "} else if (f.deltaDisposition === \"OWNED_BY_EXISTING_RISK\" && isDelta(owner)) {",
+    replace: "} else if (false) {",
+    placebo: "} else if (f.deltaDisposition === \"OWNED_BY_EXISTING_RISK\" && isDelta(owner) === true) {",
+    detector: "S1-RLK: an existing-risk disposition owned by a delta risk is refused",
+    fingerprint: "RECON_EXISTING_RISK_DISPOSITION_ON_DELTA_OWNER:expected EXISTING_RISK_DISPOSITION_ON_DELTA_OWNER" }),
+  Object.freeze({ id: "RL-17", target: "reconciliation: delta risk owns historical finding", description: "a delta risk that owns a historical finding passes",
+    find: "if (f && f.family !== DELTA_FAMILY) push(\"DELTA_RISK_OWNS_HISTORICAL_FINDING\"",
+    replace: "if (false) push(\"DELTA_RISK_OWNS_HISTORICAL_FINDING\"",
+    placebo: "if (f && !(f.family === DELTA_FAMILY)) push(\"DELTA_RISK_OWNS_HISTORICAL_FINDING\"",
+    detector: "S1-RLK: a delta risk that owns a historical finding is refused",
+    fingerprint: "RECON_DELTA_RISK_OWNS_HISTORICAL_FINDING:expected DELTA_RISK_OWNS_HISTORICAL_FINDING" }),
+  Object.freeze({ id: "RL-18", target: "reconciliation: delta risk without delta finding", description: "a delta risk with no delta finding passes",
+    find: "if (!r.sourceFindingIds.some((id) => id.startsWith(DELTA_FINDING_PREFIX))) push(",
+    replace: "if (false) push(",
+    placebo: "if (r.sourceFindingIds.every((id) => !id.startsWith(DELTA_FINDING_PREFIX))) push(",
+    detector: "S1-RLK: a delta risk with no delta finding is refused",
+    fingerprint: "RECON_DELTA_RISK_WITHOUT_DELTA_FINDING:expected DELTA_RISK_WITHOUT_DELTA_FINDING" }),
+  Object.freeze({ id: "RL-19", target: "reconciliation: revision on a delta entry", description: "a revision on a delta entry passes",
+    find: "if (isDelta(e.e)) push(\"REVISION_ON_DELTA_ENTRY\"",
+    replace: "if (false) push(\"REVISION_ON_DELTA_ENTRY\"",
+    placebo: "if (scopeOf(e.e) === \"DELTA_RELOCK\") push(\"REVISION_ON_DELTA_ENTRY\"",
+    detector: "S1-RLK: a revision on a delta entry is refused",
+    fingerprint: "RECON_REVISION_ON_DELTA_ENTRY:expected REVISION_ON_DELTA_ENTRY" }),
+  Object.freeze({ id: "RL-20", target: "reconciliation: revision scope", description: "a revision of another scope passes",
+    find: "if (rv.scope !== \"DELTA_RELOCK\") push(",
+    replace: "if (false) push(",
+    placebo: "if (!(rv.scope === \"DELTA_RELOCK\")) push(",
+    detector: "S1-RLK: a revision of another scope is refused",
+    fingerprint: "RECON_REVISION_SCOPE:expected REVISION_SCOPE" }),
+  Object.freeze({ id: "RL-21", target: "reconciliation: revision reason", description: "a revision with no reason passes",
+    find: "if (typeof rv.reason !== \"string\" || rv.reason.length < 20) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(typeof rv.reason === \"string\" && rv.reason.length >= 20)) push(",
+    detector: "S1-RLK: a revision without a reason is refused",
+    fingerprint: "RECON_REVISION_WITHOUT_REASON:expected REVISION_WITHOUT_REASON" }),
+  Object.freeze({ id: "RL-22", target: "reconciliation: revision preserves", description: "a revision that preserves nothing passes",
+    find: "if (!rv.supersedes || typeof rv.supersedes !== \"object\" || Object.keys(rv.supersedes).length === 0) push(",
+    replace: "if (false) push(",
+    placebo: "if (!rv.supersedes || typeof rv.supersedes !== \"object\" || !Object.keys(rv.supersedes).length) push(",
+    detector: "S1-RLK: a revision that preserves nothing is refused",
+    fingerprint: "RECON_REVISION_WITHOUT_SUPERSEDED_VALUES:expected REVISION_WITHOUT_SUPERSEDED_VALUES" }),
+  Object.freeze({ id: "RL-23", target: "reconciliation: revision keys", description: "an unknown key in a revision passes",
+    find: "for (const k of Object.keys(rv)) if (!REVISION_KEYS.includes(k)) push(",
+    replace: "for (const k of Object.keys(rv)) if (false) push(",
+    placebo: "for (const k of Object.keys(rv)) if (REVISION_KEYS.indexOf(k) < 0) push(",
+    detector: "S1-RLK: an unknown key in a revision is refused",
+    fingerprint: "RECON_UNKNOWN_KEY:expected UNKNOWN_KEY" }),
+  Object.freeze({ id: "RL-24", target: "reconciliation: delta review shas", description: "a malformed commit id in the delta review passes",
+    find: "if (!/^[0-9a-f]{40}$/.test(dr[k] ?? \"\")) push(\"DELTA_REVIEW_SHA\"",
+    replace: "if (false) push(\"DELTA_REVIEW_SHA\"",
+    placebo: "if (!(/^[0-9a-f]{40}$/.test(dr[k] ?? \"\"))) push(\"DELTA_REVIEW_SHA\"",
+    detector: "S1-RLK: a malformed commit id in the delta review is refused",
+    fingerprint: "RECON_DELTA_REVIEW_SHA:expected DELTA_REVIEW_SHA" }),
+  Object.freeze({ id: "RL-25", target: "reconciliation: frozen source", description: "a drifted frozen source passes",
+    find: "if (dr.frozenSourceSha !== HISTORICAL_SNAPSHOT_PIN.sourceSha) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(dr.frozenSourceSha === HISTORICAL_SNAPSHOT_PIN.sourceSha)) push(",
+    detector: "S1-RLK: a frozen source that drifted is refused",
+    fingerprint: "RECON_DELTA_REVIEW_FROZEN_SOURCE_DRIFT:expected DELTA_REVIEW_FROZEN_SOURCE_DRIFT" }),
+  Object.freeze({ id: "RL-26", target: "reconciliation: range", description: "a range that is not frozen..target passes",
+    find: "if (dr.range !== `${dr.frozenSourceSha}..${dr.targetMainSha}`) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(dr.range === `${dr.frozenSourceSha}..${dr.targetMainSha}`)) push(",
+    detector: "S1-RLK: a range that is not frozen..target is refused",
+    fingerprint: "RECON_DELTA_REVIEW_RANGE:expected DELTA_REVIEW_RANGE" }),
+  Object.freeze({ id: "RL-27", target: "reconciliation: provenance pointer", description: "a pointer to another document passes",
+    find: "if (dr.provenance !== DELTA_SOURCE_DOCUMENT) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(dr.provenance === DELTA_SOURCE_DOCUMENT)) push(",
+    detector: "S1-RLK: a provenance pointer to another document is refused",
+    fingerprint: "RECON_DELTA_REVIEW_PROVENANCE:expected DELTA_REVIEW_PROVENANCE" }),
+  Object.freeze({ id: "RL-28", target: "reconciliation: touched existing risks", description: "a touched-risk list that is not the derived one passes",
+    find: "if (!same([...(dr.existingRisksTouched ?? [])].sort(), expectTouched)) {",
+    replace: "if (false) {",
+    placebo: "if (JSON.stringify([...(dr.existingRisksTouched ?? [])].sort()) !== JSON.stringify(expectTouched)) {",
+    detector: "S1-RLK: a list of touched existing risks that is not the derived one is refused",
+    fingerprint: "RECON_EXISTING_RISKS_TOUCHED_DIFFERS:expected EXISTING_RISKS_TOUCHED_DIFFERS" }),
+  Object.freeze({ id: "RL-29", target: "reconciliation: stored delta count", description: "a stored delta universe count that is wrong passes",
+    find: "if (dr.deltaUniverseCount !== deltaIds.length) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(dr.deltaUniverseCount === deltaIds.length)) push(",
+    detector: "S1-RLK: a stored delta universe count and hash must be the recomputed ones",
+    fingerprint: "RECON_DELTA_UNIVERSE_COUNT_STORED:expected DELTA_UNIVERSE_COUNT_STORED" }),
+  Object.freeze({ id: "RL-30", target: "reconciliation: stored delta hash", description: "a stored delta universe hash that is wrong passes",
+    find: "if (dr.deltaUniverseSha256 !== sha256Hex(universeString(deltaIds))) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(dr.deltaUniverseSha256 === sha256Hex(universeString(deltaIds)))) push(",
+    detector: "S1-RLK: a stored delta universe count and hash must be the recomputed ones",
+    fingerprint: "RECON_DELTA_UNIVERSE_HASH_STORED:expected DELTA_UNIVERSE_HASH_STORED" }),
+  Object.freeze({ id: "RL-31", target: "reconciliation: tree block", description: "a missing reconciled tree block passes",
+    find: "if (!rt || typeof rt !== \"object\") push(\"RECONCILED_TREE_ABSENT\");",
+    replace: "if (false) push(\"RECONCILED_TREE_ABSENT\");",
+    placebo: "if (rt === undefined || rt === null || typeof rt !== \"object\") push(\"RECONCILED_TREE_ABSENT\");",
+    detector: "S1-RLK: the reconciled tree block is held to its shape, its version and the merge",
+    fingerprint: "RECON_RECONCILED_TREE_ABSENT:expected RECONCILED_TREE_ABSENT|Cannot convert undefined or null to object" }),
+  Object.freeze({ id: "RL-32", target: "reconciliation: universe version", description: "a universe version drift passes",
+    find: "if (rt.universeVersion !== UNIVERSE_VERSION) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(rt.universeVersion === UNIVERSE_VERSION)) push(",
+    detector: "S1-RLK: the reconciled tree block is held to its shape, its version and the merge",
+    fingerprint: "RECON_UNIVERSE_VERSION:expected UNIVERSE_VERSION" }),
+  Object.freeze({ id: "RL-33", target: "reconciliation: tree base", description: "a tree base that is not the merge passes",
+    find: "if (dr && rt.base !== dr.integrationMergeSha) push(",
+    replace: "if (false) push(",
+    placebo: "if (dr && !(rt.base === dr.integrationMergeSha)) push(",
+    detector: "S1-RLK: the reconciled tree block is held to its shape, its version and the merge",
+    fingerprint: "RECON_RECONCILED_TREE_BASE_IS_NOT_THE_MERGE:expected RECONCILED_TREE_BASE_IS_NOT_THE_MERGE" }),
+  Object.freeze({ id: "RL-34", target: "reconciliation: stored reconciled count", description: "a stored reconciled universe count that is wrong passes",
+    find: "if (rt.sourceUniverseCount !== ids.length) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(rt.sourceUniverseCount === ids.length)) push(",
+    detector: "S1-RLK: the reconciled tree block is held to its shape, its version and the merge",
+    fingerprint: "RECON_RECONCILED_UNIVERSE_COUNT_STORED:expected RECONCILED_UNIVERSE_COUNT_STORED" }),
+  Object.freeze({ id: "RL-35", target: "reconciliation: stored reconciled hash", description: "a stored reconciled universe hash that is wrong passes",
+    find: "if (rt.sourceUniverseSha256 !== sha256Hex(universeString(ids))) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(rt.sourceUniverseSha256 === sha256Hex(universeString(ids)))) push(",
+    detector: "S1-RLK: the reconciled tree block is held to its shape, its version and the merge",
+    fingerprint: "RECON_RECONCILED_UNIVERSE_HASH_STORED:expected RECONCILED_UNIVERSE_HASH_STORED" }),
+  Object.freeze({ id: "RL-36", target: "reconciliation: document finding absent from register", description: "a delta finding the document declares but the register lacks passes",
+    find: "for (const id of doc.ids) if (!registered.has(id)) push(",
+    replace: "for (const id of doc.ids) if (false) push(",
+    placebo: "for (const id of doc.ids) if (registered.has(id) === false) push(",
+    detector: "S1-RLK: a delta finding the register lacks, seen from the provenance document, is refused",
+    fingerprint: "RECON_DELTA_FINDING_NOT_IN_REGISTER:expected DELTA_FINDING_NOT_IN_REGISTER" }),
+  Object.freeze({ id: "RL-37", target: "reconciliation: register finding absent from document", description: "a register delta finding the document does not declare passes",
+    find: "for (const id of registered) if (!declared.has(id)) push(",
+    replace: "for (const id of registered) if (false) push(",
+    placebo: "for (const id of registered) if (declared.has(id) === false) push(",
+    detector: "S1-RLK: a register delta finding the provenance document does not declare is refused",
+    fingerprint: "RECON_REGISTER_DELTA_FINDING_NOT_IN_DOCUMENT:expected REGISTER_DELTA_FINDING_NOT_IN_DOCUMENT" }),
+  Object.freeze({ id: "RL-38", target: "universe: delta count pin", description: "a changed delta finding count passes",
+    find: "if (deltaIds.length !== DELTA_UNIVERSE_COUNT) {",
+    replace: "if (false) {",
+    placebo: "if (!(deltaIds.length === DELTA_UNIVERSE_COUNT)) {",
+    detector: "S1-RLK: a delta finding the register lacks, or the document lacks, is refused",
+    fingerprint: "UNIVERSE_DELTA_COUNT:expected DELTA_COUNT_CHANGED" }),
+  Object.freeze({ id: "RL-39", target: "universe: delta hash pin", description: "a changed delta finding set of equal size passes",
+    find: "if (deltaHash !== DELTA_UNIVERSE_SHA256) {",
+    replace: "if (false) {",
+    placebo: "if (!(deltaHash === DELTA_UNIVERSE_SHA256)) {",
+    detector: "S1-RLK: a renamed delta finding changes the delta universe hash",
+    fingerprint: "UNIVERSE_DELTA_HASH:expected DELTA_HASH_CHANGED" }),
+  Object.freeze({ id: "RL-40", target: "universe: reconciled count pin", description: "a changed reconciled universe size passes",
+    find: "if (extracted.size !== RECONCILED_UNIVERSE_COUNT) {",
+    replace: "if (false) {",
+    placebo: "if (!(extracted.size === RECONCILED_UNIVERSE_COUNT)) {",
+    detector: "S1-RLK: a changed reconciled universe, by count or by hash, is refused",
+    fingerprint: "UNIVERSE_RECONCILED_COUNT:expected RECONCILED_COUNT_CHANGED" }),
+  Object.freeze({ id: "RL-41", target: "universe: reconciled hash pin", description: "a changed reconciled universe of equal size passes",
+    find: "if (reconciledHash !== RECONCILED_UNIVERSE_SHA256) {",
+    replace: "if (false) {",
+    placebo: "if (!(reconciledHash === RECONCILED_UNIVERSE_SHA256)) {",
+    detector: "S1-RLK: a changed reconciled universe, by count or by hash, is refused",
+    fingerprint: "UNIVERSE_RECONCILED_HASH:expected RECONCILED_HASH_CHANGED" }),
+  Object.freeze({ id: "RL-42", target: "universe: delta ids are extracted", description: "the delta document's identifiers are not part of the source universe",
+    find: "for (const id of deltaDoc.ids) add(id, DELTA_SOURCE_DOCUMENT);",
+    replace: "void deltaDoc;",
+    placebo: "for (const id of deltaDoc.ids.slice()) add(id, DELTA_SOURCE_DOCUMENT);",
+    detector: "S1-RLK: the delta and reconciled universes are pinned by count and hash",
+    fingerprint: "UNIVERSE_PIN" }),
+  Object.freeze({ id: "RL-43", target: "universe: delta family is a source family", description: "the delta family is not a known family",
+    find: "\"A\", \"DB\", \"DELTA\", \"EDGE\"",
+    replace: "\"A\", \"DB\", \"EDGE\"",
+    placebo: "\"A\", \"DB\", `DELTA`, \"EDGE\"",
+    detector: "S1-RLK: the delta and reconciled universes are pinned by count and hash",
+    fingerprint: "UNIVERSE_PIN" }),
+  Object.freeze({ id: "RL-44", target: "wiring: the reconciliation gate", description: "runGates does not stop on a reconciliation violation",
+    find: "if (reconciliation.length) {",
+    replace: "if (false) {",
+    placebo: "if (reconciliation.length > 0) {",
+    detector: "S1-RLK: runGates stops with the reconciliation code, after the universe and before the linkage gate",
+    fingerprint: "WIRING_RECON:expected" }),
+  Object.freeze({ id: "RL-45", target: "exit: the reconciliation code", description: "the reconciliation exit code collides with another",
+    find: "RECONCILIATION: 28,",
+    replace: "RECONCILIATION: 27,",
+    placebo: "RECONCILIATION: 14 + 14,",
+    detector: "S1-RLK: the exit table has a distinct reconciliation code",
+    fingerprint: "EXIT_RECON" }),
+  Object.freeze({ id: "RL-46", target: "vocabulary: unproven maps to an assurance gap", description: "an unproven delta finding maps to a mapped risk",
+    find: "UNPROVEN: \"ASSURANCE_GAP\",",
+    replace: "UNPROVEN: \"MAPPED_TO_RISK\",",
+    placebo: "UNPROVEN: `ASSURANCE_GAP`,",
+    detector: "S1-RLK: the committed register passes every reconciliation gate",
+    fingerprint: "RECON_CLEAN" }),
+  Object.freeze({ id: "RL-47", target: "counters: delta risks", description: "the delta risk counter counts one too many",
+    find: "DELTA_RISKS_TOTAL: reg.risks.filter(isDelta).length,",
+    replace: "DELTA_RISKS_TOTAL: reg.risks.filter(isDelta).length + 1,",
+    placebo: "DELTA_RISKS_TOTAL: reg.risks.filter((r) => isDelta(r)).length,",
+    detector: "S1-RLK: the historical snapshot and the reconciled summary are different numbers, and the difference is exactly the delta",
+    fingerprint: "SNAPSHOT_SCOPES" }),
+  Object.freeze({ id: "RL-48", target: "facts: historical risks", description: "the historical risk fact is the reconciled figure",
+    find: "facts.HIST_S1_RISKS_TOTAL = h.risks;",
+    replace: "facts.HIST_S1_RISKS_TOTAL = reg.risks.length;",
+    placebo: "facts.HIST_S1_RISKS_TOTAL = h.risks + 0;",
+    detector: "S1-RLK: the narrative that describes the historical snapshot uses historical facts, so it cannot be moved by the delta",
+    fingerprint: "HIST_FACTS" }),
+  Object.freeze({ id: "RL-49", target: "snapshot: revisions are honoured", description: "a revised entry is counted at its current value in the historical snapshot",
+    find: "return entry.revision && entry.revision.scope === \"DELTA_RELOCK\" ? { ...entry, ...entry.revision.supersedes } : entry;",
+    replace: "return entry;",
+    placebo: "return entry.revision !== undefined && entry.revision.scope === \"DELTA_RELOCK\" ? { ...entry, ...entry.revision.supersedes } : entry;",
+    detector: "S1-RLK: the committed register passes every reconciliation gate",
+    fingerprint: "RECON_CLEAN" }),
+  Object.freeze({ id: "RL-50", target: "snapshot: top priority", description: "the historical top priority is the last one, not the first",
+    find: "const top = [...reg.risks.filter((r) => !isDelta(r))].sort((a, b) => a.remediationPriority - b.remediationPriority)[0];",
+    replace: "const top = [...reg.risks.filter((r) => !isDelta(r))].sort((a, b) => b.remediationPriority - a.remediationPriority)[0];",
+    placebo: "const top = [...reg.risks.filter((r) => !isDelta(r))].sort((a, b) => a.remediationPriority - b.remediationPriority).at(0);",
+    detector: "S1-RLK: the committed register passes every reconciliation gate",
+    fingerprint: "RECON_CLEAN" }),
+  Object.freeze({ id: "RL-51", target: "snapshot: clamps counted", description: "a clamped historical risk is not counted",
+    find: "severityClamps: risks.filter((r) => r.severityClamp != null).length,",
+    replace: "severityClamps: risks.filter((r) => r.severityClamp == null).length,",
+    placebo: "severityClamps: risks.filter((r) => r.severityClamp !== null && r.severityClamp !== undefined).length,",
+    detector: "S1-RLK: the committed register passes every reconciliation gate",
+    fingerprint: "RECON_CLEAN" }),
+  Object.freeze({ id: "RL-52", target: "render: reconciled priorities table", description: "the reconciled priorities table lists nine rows",
+    find: "remediationPriority - b.remediationPriority).slice(0, 10)) {",
+    replace: "remediationPriority - b.remediationPriority).slice(0, 9)) {",
+    placebo: "remediationPriority - b.remediationPriority).slice(0, 10).slice()) {",
+    detector: "S1-RLK: the reconciliation block of the report is the rendered one, byte for byte",
+    fingerprint: "RECON_BLOCK" }),
+  Object.freeze({ id: "RL-53", target: "priority: permutation", description: "a gap in the remediation priorities passes",
+    find: "if (sorted.some((p, i) => p !== i + 1)) out.push(",
+    replace: "if (false) out.push(",
+    placebo: "if (sorted.some((p, i) => i + 1 !== p)) out.push(",
+    detector: "S1-RLK: a remediation priority with a gap is not a permutation",
+    fingerprint: "PRIORITY_GAP" }),
+  Object.freeze({ id: "FR04-01", target: "closed schema", description: "an unknown key on a risk is accepted",
+    find: "  for (const k of Object.keys(node)) if (!required.includes(k) && !optional.includes(k)) out.push({ where, why: \"UNKNOWN_KEY\", key: k });",
+    replace: "  void 0;",
+    placebo: "  for (const k of Object.keys(node)) if (!(required.includes(k) || optional.includes(k))) out.push({ where, why: \"UNKNOWN_KEY\", key: k });",
+    detector: "FR-04 schema: an unknown key on a risk is refused (UNKNOWN_KEY)",
+    fingerprint: "UNKNOWN_KEY on a risk" }),
+  Object.freeze({ id: "FR04-02", target: "closed schema", description: "an unknown key on a finding is accepted",
+    find: "  for (const k of Object.keys(node)) if (!required.includes(k) && !optional.includes(k)) out.push({ where, why: \"UNKNOWN_KEY\", key: k });",
+    replace: "  void 0;",
+    placebo: "  for (const k of Object.keys(node)) if (!(required.includes(k) || optional.includes(k))) out.push({ where, why: \"UNKNOWN_KEY\", key: k });",
+    detector: "FR-04 schema: an unknown key on a finding is refused (UNKNOWN_KEY)",
+    fingerprint: "UNKNOWN_KEY on a finding" }),
+  Object.freeze({ id: "FR04-03", target: "closed schema", description: "an unknown key inside a nested structure is accepted",
+    find: "  for (const k of Object.keys(node)) if (!required.includes(k) && !optional.includes(k)) out.push({ where, why: \"UNKNOWN_KEY\", key: k });",
+    replace: "  void 0;",
+    placebo: "  for (const k of Object.keys(node)) if (!(required.includes(k) || optional.includes(k))) out.push({ where, why: \"UNKNOWN_KEY\", key: k });",
+    detector: "FR-04 schema: an unknown key inside a nested structure is refused (UNKNOWN_KEY)",
+    fingerprint: "UNKNOWN_KEY: " }),
+  Object.freeze({ id: "FR04-04", target: "closed schema", description: "a missing required key is accepted",
+    find: "  for (const k of required) if (!(k in node)) out.push({ where, why: \"MISSING_KEY\", key: k });",
+    replace: "  void 0;",
+    placebo: "  for (const k of required) if (!Object.hasOwn(node, k)) out.push({ where, why: \"MISSING_KEY\", key: k });",
+    detector: "FR-04 schema: a missing required key is refused (MISSING_KEY)",
+    fingerprint: "MISSING_KEY on a risk" }),
+  Object.freeze({ id: "FR04-05", target: "closed schema", description: "the risk records are not walked",
+    find: "    if (!closedKeys(r, w, RISK_REQUIRED_KEYS, RISK_OPTIONAL_KEYS, out)) continue;",
+    replace: "    continue;",
+    placebo: "    if (!closedKeys(r, w, RISK_REQUIRED_KEYS, [...RISK_OPTIONAL_KEYS], out)) continue;",
+    detector: "FR-04 schema: an unknown key on a risk is refused (UNKNOWN_KEY)",
+    fingerprint: "UNKNOWN_KEY on a risk" }),
+  Object.freeze({ id: "FR04-06", target: "closed schema", description: "the finding records are not walked",
+    find: "    if (!closedKeys(f, w, FINDING_REQUIRED_KEYS, FINDING_OPTIONAL_KEYS, out)) continue;",
+    replace: "    continue;",
+    placebo: "    if (!closedKeys(f, w, FINDING_REQUIRED_KEYS, [...FINDING_OPTIONAL_KEYS], out)) continue;",
+    detector: "FR-04 schema: an unknown key on a finding is refused (UNKNOWN_KEY)",
+    fingerprint: "UNKNOWN_KEY on a finding" }),
+  Object.freeze({ id: "FR04-07", target: "closed schema", description: "the likelihood factors are not held to their keys",
+    find: "    closedKeys(r.likelihoodFactors, `${w} likelihoodFactors`, LIKELIHOOD_FACTOR_KEYS, [], out);",
+    replace: "    void 0;",
+    placebo: "    closedKeys(r.likelihoodFactors, `${w} likelihoodFactors`, [...LIKELIHOOD_FACTOR_KEYS], [], out);",
+    detector: "FR-04 schema: an unknown key inside a nested structure is refused (UNKNOWN_KEY)",
+    fingerprint: "UNKNOWN_KEY: likelihoodFactors" }),
+  Object.freeze({ id: "FR04-08", target: "closed schema", description: "an evidence item is not held to its keys",
+    find: "      if (closedKeys(e, `${w} evidence[${i}]`, EVIDENCE_KEY_ORDER, [], out)) {",
+    replace: "      if (false) {",
+    placebo: "      if (closedKeys(e, `${w} evidence[${i}]`, [...EVIDENCE_KEY_ORDER], [], out)) {",
+    detector: "FR-04 schema: an unknown key inside a nested structure is refused (UNKNOWN_KEY)",
+    fingerprint: "UNKNOWN_KEY: evidence" }),
+  Object.freeze({ id: "FR04-09", target: "closed schema", description: "the schema gate is not wired into runGates",
+    find: "  if (schemaKeys.length) return stop(EXIT.SCHEMA_KEYS,",
+    replace: "  if (false) return stop(EXIT.SCHEMA_KEYS,",
+    placebo: "  if (schemaKeys.length > 0) return stop(EXIT.SCHEMA_KEYS,",
+    detector: "FR-04 wiring: an unknown key stops runGates with exit 29",
+    fingerprint: "WIRING:SCHEMA_KEYS expected 29" }),
+  Object.freeze({ id: "PF-REQ-R-66", target: "policy", description: "the policy of R-66 is no longer mandatory",
+    find: "export const POLICY_REQUIRED_RISKS = Object.freeze([\"R-66\", \"R-72\", \"R-73\"]);",
+    replace: "export const POLICY_REQUIRED_RISKS = Object.freeze([\"R-72\", \"R-73\"]);",
+    placebo: "export const POLICY_REQUIRED_RISKS = Object.freeze([\"R-66\", \"R-72\", \"R-73\"].slice());",
+    detector: "POSTREV-F2 policy: removing the policy of R-66, R-72 or R-73 is refused (POLICY_MISSING)",
+    fingerprint: "POLICY_MISSING: R-66" }),
+  Object.freeze({ id: "PF-REQ-R-72", target: "policy", description: "the policy of R-72 is no longer mandatory",
+    find: "export const POLICY_REQUIRED_RISKS = Object.freeze([\"R-66\", \"R-72\", \"R-73\"]);",
+    replace: "export const POLICY_REQUIRED_RISKS = Object.freeze([\"R-66\", \"R-73\"]);",
+    placebo: "export const POLICY_REQUIRED_RISKS = Object.freeze([\"R-66\", \"R-72\", \"R-73\"].slice());",
+    detector: "POSTREV-F2 policy: removing the policy of R-66, R-72 or R-73 is refused (POLICY_MISSING)",
+    fingerprint: "POLICY_MISSING: R-72" }),
+  Object.freeze({ id: "PF-REQ-R-73", target: "policy", description: "the policy of R-73 is no longer mandatory",
+    find: "export const POLICY_REQUIRED_RISKS = Object.freeze([\"R-66\", \"R-72\", \"R-73\"]);",
+    replace: "export const POLICY_REQUIRED_RISKS = Object.freeze([\"R-66\", \"R-72\"]);",
+    placebo: "export const POLICY_REQUIRED_RISKS = Object.freeze([\"R-66\", \"R-72\", \"R-73\"].slice());",
+    detector: "POSTREV-F2 policy: removing the policy of R-66, R-72 or R-73 is refused (POLICY_MISSING)",
+    fingerprint: "POLICY_MISSING: R-73" }),
+  Object.freeze({ id: "PF-OPEN", target: "policy", description: "an OPEN policy may carry a decision",
+    find: "if (ev !== null) out.push({ riskId: w, why: \"POLICY_OPEN_WITH_DECISION_EVIDENCE\" });",
+    replace: "void 0;",
+    placebo: "if (ev !== null) out.push({ why: \"POLICY_OPEN_WITH_DECISION_EVIDENCE\", riskId: w });",
+    detector: "POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence",
+    fingerprint: "POLICY_OPEN_WITH_DECISION_EVIDENCE" }),
+  Object.freeze({ id: "PF-EVIDENCE-EMPTY", target: "policy", description: "empty evidence is accepted",
+    find: "if (typeof ev.source !== \"string\" || !ev.source.trim() || typeof ev.anchor !== \"string\" || ev.anchor.trim().length < 12) out.push(",
+    replace: "if (false) out.push(",
+    placebo: "if (typeof ev.source !== \"string\" || ev.source.trim() === \"\" || typeof ev.anchor !== \"string\" || ev.anchor.trim().length < 12) out.push(",
+    detector: "POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence",
+    fingerprint: "POLICY_EVIDENCE_EMPTY" }),
+  Object.freeze({ id: "PF-DISTINCT", target: "policy", description: "identical branches are accepted",
+    find: "if (sig(p.branches[i], k) === sig(p.branches[j], k)) out.push(",
+    replace: "if (false) out.push(",
+    placebo: "if (sig(p.branches[j], k) === sig(p.branches[i], k)) out.push(",
+    detector: "POSTREV-F2 policy: two branches may not share a condition, a control, a test set or an acceptance set",
+    fingerprint: "POLICY_BRANCHES_NOT_DISTINCT" }),
+  Object.freeze({ id: "PF-DISTINCT-condition", target: "policy", description: "two branches may share their condition",
+    find: "for (const k of [\"condition\", \"requiredControl\", \"requiredTests\", \"acceptanceCriteria\"]) {",
+    replace: "for (const k of [\"requiredControl\", \"requiredTests\", \"acceptanceCriteria\"]) {",
+    placebo: "for (const k of [\"condition\", \"requiredControl\", \"requiredTests\", \"acceptanceCriteria\"].slice()) {",
+    detector: "POSTREV-F2 policy: two branches may not share a condition, a control, a test set or an acceptance set",
+    fingerprint: "NOT_DISTINCT: condition" }),
+  Object.freeze({ id: "PF-DISTINCT-requiredControl", target: "policy", description: "two branches may share their requiredControl",
+    find: "for (const k of [\"condition\", \"requiredControl\", \"requiredTests\", \"acceptanceCriteria\"]) {",
+    replace: "for (const k of [\"condition\", \"requiredTests\", \"acceptanceCriteria\"]) {",
+    placebo: "for (const k of [\"condition\", \"requiredControl\", \"requiredTests\", \"acceptanceCriteria\"].slice()) {",
+    detector: "POSTREV-F2 policy: two branches may not share a condition, a control, a test set or an acceptance set",
+    fingerprint: "NOT_DISTINCT: requiredControl" }),
+  Object.freeze({ id: "PF-DISTINCT-requiredTests", target: "policy", description: "two branches may share their requiredTests",
+    find: "for (const k of [\"condition\", \"requiredControl\", \"requiredTests\", \"acceptanceCriteria\"]) {",
+    replace: "for (const k of [\"condition\", \"requiredControl\", \"acceptanceCriteria\"]) {",
+    placebo: "for (const k of [\"condition\", \"requiredControl\", \"requiredTests\", \"acceptanceCriteria\"].slice()) {",
+    detector: "POSTREV-F2 policy: two branches may not share a condition, a control, a test set or an acceptance set",
+    fingerprint: "NOT_DISTINCT: requiredTests" }),
+  Object.freeze({ id: "PF-DISTINCT-acceptanceCriteria", target: "policy", description: "two branches may share their acceptanceCriteria",
+    find: "for (const k of [\"condition\", \"requiredControl\", \"requiredTests\", \"acceptanceCriteria\"]) {",
+    replace: "for (const k of [\"condition\", \"requiredControl\", \"requiredTests\"]) {",
+    placebo: "for (const k of [\"condition\", \"requiredControl\", \"requiredTests\", \"acceptanceCriteria\"].slice()) {",
+    detector: "POSTREV-F2 policy: two branches may not share a condition, a control, a test set or an acceptance set",
+    fingerprint: "NOT_DISTINCT: acceptanceCriteria" }),
+  Object.freeze({ id: "PF-TESTS", target: "policy", description: "a branch without a required test is accepted",
+    find: "if (tests.length === 0) out.push(",
+    replace: "if (false) out.push(",
+    placebo: "if (tests.length < 1) out.push(",
+    detector: "POSTREV-F2 policy: a branch needs a verification method, an operational test and a testable, non-generic acceptance criterion",
+    fingerprint: "POLICY_BRANCH_WITHOUT_REQUIRED_TESTS" }),
+  Object.freeze({ id: "PF-TEST-OPERATIONAL", target: "policy", description: "a required test that is a wish is accepted",
+    find: "if (typeof t !== \"string\" || t.trim().length < 40 || !POLICY_TEST_VERB.test(t)) out.push(",
+    replace: "if (false) out.push(",
+    placebo: "if (typeof t !== \"string\" || t.trim().length < 40 || POLICY_TEST_VERB.test(t) === false) out.push(",
+    detector: "POSTREV-F2 policy: a branch needs a verification method, an operational test and a testable, non-generic acceptance criterion",
+    fingerprint: "POLICY_BRANCH_REQUIRED_TEST_NOT_OPERATIONAL" }),
+  Object.freeze({ id: "PF-METHOD", target: "policy", description: "a branch without a verification method is accepted",
+    find: "if (!VERIFICATION_METHODS.includes(b?.verificationMethod) || b.verificationMethod === \"NOT_YET_VERIFIABLE\") out.push(",
+    replace: "if (false) out.push(",
+    placebo: "if (VERIFICATION_METHODS.indexOf(b?.verificationMethod) < 0 || b.verificationMethod === \"NOT_YET_VERIFIABLE\") out.push(",
+    detector: "POSTREV-F2 policy: a branch needs a verification method, an operational test and a testable, non-generic acceptance criterion",
+    fingerprint: "POLICY_BRANCH_VERIFICATION_METHOD_INVALID" }),
+  Object.freeze({ id: "PF-GENERIC", target: "policy", description: "a generic acceptance criterion is accepted",
+    find: "else if (generic(a)) out.push({ ...at, why: \"POLICY_BRANCH_ACCEPTANCE_GENERIC\" });",
+    replace: "else if (false) out.push({ ...at, why: \"POLICY_BRANCH_ACCEPTANCE_GENERIC\" });",
+    placebo: "else if (generic(a) === true) out.push({ ...at, why: \"POLICY_BRANCH_ACCEPTANCE_GENERIC\" });",
+    detector: "POSTREV-F2 policy: a branch needs a verification method, an operational test and a testable, non-generic acceptance criterion",
+    fingerprint: "POLICY_BRANCH_ACCEPTANCE_GENERIC" }),
+  Object.freeze({ id: "PF-TESTABLE", target: "policy", description: "an untestable acceptance criterion is accepted",
+    find: "else if (a.length < 100 || !POLICY_OPERATIONAL.test(a)) out.push(",
+    replace: "else if (false) out.push(",
+    placebo: "else if (a.length < 100 || POLICY_OPERATIONAL.test(a) === false) out.push(",
+    detector: "POSTREV-F2 policy: a branch needs a verification method, an operational test and a testable, non-generic acceptance criterion",
+    fingerprint: "POLICY_BRANCH_ACCEPTANCE_NOT_TESTABLE" }),
+  Object.freeze({ id: "PF-OWNER-ROLE", target: "policy", description: "an unknown owner role is accepted",
+    find: "if (!POLICY_OWNER_ROLES.includes(p.ownerRole)) out.push(",
+    replace: "if (false) out.push(",
+    placebo: "if (POLICY_OWNER_ROLES.indexOf(p.ownerRole) < 0) out.push(",
+    detector: "POSTREV-F2 policy: a branch needs a verification method, an operational test and a testable, non-generic acceptance criterion",
+    fingerprint: "POLICY_OWNER_ROLE_UNKNOWN" }),
+  Object.freeze({ id: "PF-CONDITIONAL", target: "policy", description: "a branch criterion that is not conditional is accepted",
+    find: "if (typeof a !== \"string\" || !a.startsWith(POLICY_BRANCH_PREFIX)) out.push({ ...at, why: \"POLICY_BRANCH_ACCEPTANCE_NOT_CONDITIONAL\" });",
+    replace: "if (false) out.push({ ...at, why: \"POLICY_BRANCH_ACCEPTANCE_NOT_CONDITIONAL\" });",
+    placebo: "if (typeof a !== \"string\" || a.indexOf(POLICY_BRANCH_PREFIX) !== 0) out.push({ ...at, why: \"POLICY_BRANCH_ACCEPTANCE_NOT_CONDITIONAL\" });",
+    detector: "FR-06 policy: a branch criterion that is not conditional is refused (POLICY_BRANCH_ACCEPTANCE_NOT_CONDITIONAL)",
+    fingerprint: "POLICY_BRANCH_ACCEPTANCE_NOT_CONDITIONAL" }),
+  Object.freeze({ id: "PF-LISTED", target: "policy", description: "a branch criterion the risk does not list is accepted",
+    find: "else if (!r.acceptanceCriteria.includes(a)) out.push(",
+    replace: "else if (false) out.push(",
+    placebo: "else if (r.acceptanceCriteria.indexOf(a) < 0) out.push(",
+    detector: "FR-06 policy: a branch criterion the risk does not list is refused (POLICY_BRANCH_ACCEPTANCE_NOT_IN_CRITERIA)",
+    fingerprint: "POLICY_BRANCH_ACCEPTANCE_NOT_IN_CRITERIA" }),
+  Object.freeze({ id: "PF-TWO", target: "policy", description: "a policy with a single branch is accepted",
+    find: "if (!Array.isArray(p.branches) || p.branches.length < 2) {",
+    replace: "if (!Array.isArray(p.branches) || p.branches.length < 1) {",
+    placebo: "if (!Array.isArray(p.branches) || 2 > p.branches.length) {",
+    detector: "FR-06 policy: one branch, an unknown status, a missing question or a bare decision request is refused",
+    fingerprint: "POLICY_NEEDS_TWO_BRANCHES" }),
+  Object.freeze({ id: "PF-STATUS", target: "policy", description: "an unknown policy status is accepted",
+    find: "if (!POLICY_STATUSES.includes(p.status)) out.push(",
+    replace: "if (false) out.push(",
+    placebo: "if (POLICY_STATUSES.indexOf(p.status) < 0) out.push(",
+    detector: "FR-06 policy: one branch, an unknown status, a missing question or a bare decision request is refused",
+    fingerprint: "POLICY_STATUS_UNKNOWN" }),
+  Object.freeze({ id: "PF-WIRE", target: "policy", description: "the policy gate is not wired into runGates",
+    find: "  if (policy.length) return stop(EXIT.POLICY,",
+    replace: "  if (false) return stop(EXIT.POLICY,",
+    placebo: "  if (policy.length > 0) return stop(EXIT.POLICY,",
+    detector: "FR-06 wiring: a malformed policy stops runGates with exit 30",
+    fingerprint: "WIRING:POLICY expected 30" }),
+  Object.freeze({ id: "PF-EVIDENCE-KEYS", target: "closed schema", description: "the owner-decision evidence is not held to its keys",
+    find: "      if (r.policy.ownerDecisionEvidence !== null) closedKeys(",
+    replace: "      if (false) closedKeys(",
+    placebo: "      if (r.policy.ownerDecisionEvidence != null) closedKeys(",
+    detector: "FR-04 schema: an unknown key inside a nested structure is refused (UNKNOWN_KEY)",
+    fingerprint: "UNKNOWN_KEY: policy evidence" }),
+  Object.freeze({ id: "PF-STALE-P1_MUST_BE_RECONCILED", target: "stale text", description: "the stale-text pattern P1 is dropped",
+    find: "  /must be reconciled/i,\n",
+    replace: "",
+    placebo: "  /must be reconciled/i, // pinned\n",
+    detector: "POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables",
+    fingerprint: "STALE_HIT: P1_MUST_BE_RECONCILED" }),
+  Object.freeze({ id: "PF-STALE-P3_OPEN_ITEM", target: "stale text", description: "the stale-text pattern P3 is dropped",
+    find: "  STALE_OPEN_ITEM_PATTERN,\n",
+    replace: "",
+    placebo: "  STALE_OPEN_ITEM_PATTERN, // pinned\n",
+    detector: "POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables",
+    fingerprint: "STALE_HIT: P3_OPEN_ITEM" }),
+  Object.freeze({ id: "PF-STALE-P5_PENDING_EVIDENCE", target: "stale text", description: "the stale-text pattern P5 is dropped",
+    find: "  /pending reviewer evidence/i,\n",
+    replace: "",
+    placebo: "  /pending reviewer evidence/i, // pinned\n",
+    detector: "POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables",
+    fingerprint: "STALE_HIT: P5_PENDING_EVIDENCE" }),
+  Object.freeze({ id: "PF-STALE-P6_TEMPORARY_ADJUDICATION", target: "stale text", description: "the stale-text pattern P6 is dropped",
+    find: "  /temporary adjudication/i,\n",
+    replace: "",
+    placebo: "  /temporary adjudication/i, // pinned\n",
+    detector: "POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables",
+    fingerprint: "STALE_HIT: P6_TEMPORARY_ADJUDICATION" }),
+  Object.freeze({ id: "PF-STALE-P7_TO_BE_RECONCILED", target: "stale text", description: "the stale-text pattern P7 is dropped",
+    find: "  /\\bto be reconciled\\b/i,\n",
+    replace: "",
+    placebo: "  /\\bto be reconciled\\b/i, // pinned\n",
+    detector: "POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables",
+    fingerprint: "STALE_HIT: P7_TO_BE_RECONCILED" }),
+  Object.freeze({ id: "PF-STALE-WIRE", target: "stale text", description: "the stale-text gate is not wired into runGates",
+    find: "  if (stale.length) return stop(EXIT.STALE_TEXT,",
+    replace: "  if (false) return stop(EXIT.STALE_TEXT,",
+    placebo: "  if (stale.length > 0) return stop(EXIT.STALE_TEXT,",
+    detector: "POSTREV-F5 stale text: wiring stops runGates with exit 31",
+    fingerprint: "WIRING:STALE_TEXT expected 31" }),
+  Object.freeze({ id: "PF-STALE-REGISTER", target: "stale text", description: "the register text is not scanned",
+    find: "    ...staleProcessTextHits(registerText, \"docs/security/s1-risk-register.json\"),",
+    replace: "",
+    placebo: "    ...staleProcessTextHits(String(registerText), \"docs/security/s1-risk-register.json\"),",
+    detector: "POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables",
+    fingerprint: "STALE_REGISTER" }),
+  Object.freeze({ id: "PF-STALE-REPORT", target: "stale text", description: "the report text is not scanned",
+    find: "    ...staleProcessTextHits(reportText, \"docs/security/THREAT-MODEL-AND-RISK-REGISTER.md\"),",
+    replace: "",
+    placebo: "    ...staleProcessTextHits(String(reportText), \"docs/security/THREAT-MODEL-AND-RISK-REGISTER.md\"),",
+    detector: "POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables",
+    fingerprint: "STALE_REPORT" }),
+  Object.freeze({ id: "PC-DECIDED-BARE", target: "policy", description: "DECIDED without any evidence is accepted",
+    find: "  if (!isPlainObject(ev)) return [\"POLICY_DECIDED_WITHOUT_EVIDENCE\"];",
+    replace: "  if (!isPlainObject(ev)) return [];",
+    placebo: "  if (!isPlainObject(ev)) return [\"POLICY_DECIDED_WITHOUT_EVIDENCE\"]; // pinned",
+    detector: "POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence",
+    fingerprint: "POLICY_DECIDED_WITHOUT_EVIDENCE: no evidence" }),
+  Object.freeze({ id: "PC-EVIDENCE-SHAPE", target: "policy", description: "evidence without its decider is accepted",
+    find: "keys.some((k) => !POLICY_EVIDENCE_KEYS.includes(k))) return [\"POLICY_EVIDENCE_SHAPE\"];",
+    replace: "keys.some((k) => !POLICY_EVIDENCE_KEYS.includes(k)) && false) return [\"POLICY_EVIDENCE_SHAPE\"];",
+    placebo: "keys.some((k) => !POLICY_EVIDENCE_KEYS.includes(k))) return [\"POLICY_EVIDENCE_SHAPE\"]; /* pinned */",
+    detector: "POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence",
+    fingerprint: "POLICY_EVIDENCE_SHAPE: an unknown key" }),
+  Object.freeze({ id: "PC-EVIDENCE-SHAPE-MISSING", target: "policy", description: "evidence that lacks a required key is accepted",
+    find: "  if (POLICY_EVIDENCE_KEYS.some((k) => !keys.includes(k)) || keys.some(",
+    replace: "  if (false || keys.some(",
+    placebo: "  if (POLICY_EVIDENCE_KEYS.some((k) => !keys.includes(k)) || keys.some( /* pinned */",
+    detector: "POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence",
+    fingerprint: "POLICY_EVIDENCE_SHAPE: no decider" }),
+  Object.freeze({ id: "PC-BRANCH-UNKNOWN", target: "policy", description: "a branch the policy does not have is accepted",
+    find: "  if (!branchIds.has(ev.decidedBranchId)) out.push(\"POLICY_DECISION_NAMES_AN_UNKNOWN_BRANCH\");",
+    replace: "  if (false) out.push(\"POLICY_DECISION_NAMES_AN_UNKNOWN_BRANCH\");",
+    placebo: "  if (!branchIds.has(ev.decidedBranchId)) out.push(\"POLICY_DECISION_NAMES_AN_UNKNOWN_BRANCH\"); /* pinned */",
+    detector: "POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence",
+    fingerprint: "POLICY_DECISION_NAMES_AN_UNKNOWN_BRANCH: an unknown branch" }),
+  Object.freeze({ id: "PC-DECIDER-ROLE", target: "policy", description: "a decision by someone who does not own the policy is accepted",
+    find: "  if (ev.decidedByRole !== p.ownerRole) out.push(\"POLICY_DECISION_NOT_BY_THE_OWNER\");",
+    replace: "  if (false) out.push(\"POLICY_DECISION_NOT_BY_THE_OWNER\");",
+    placebo: "  if (ev.decidedByRole !== p.ownerRole) out.push(\"POLICY_DECISION_NOT_BY_THE_OWNER\"); /* pinned */",
+    detector: "POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence",
+    fingerprint: "POLICY_DECISION_NOT_BY_THE_OWNER: decided by someone" }),
+  Object.freeze({ id: "PC-ANCHOR", target: "policy", description: "an anchor the evidence file does not contain is accepted",
+    find: "      else if (!readFileSync(f.abs, \"utf8\").replace(/\\r\\n?/g, \"\\n\").includes(ev.anchor)) out.push(\"POLICY_EVIDENCE_ANCHOR_ABSENT\");",
+    replace: "      else if (false) out.push(\"POLICY_EVIDENCE_ANCHOR_ABSENT\");",
+    placebo: "      else if (!readFileSync(f.abs, \"utf8\").replace(/\\r\\n?/g, \"\\n\").includes(ev.anchor)) out.push(\"POLICY_EVIDENCE_ANCHOR_ABSENT\"); /* pinned */",
+    detector: "POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence",
+    fingerprint: "POLICY_EVIDENCE_ANCHOR_ABSENT: an anchor the file lacks" }),
+  Object.freeze({ id: "PC-FOR-RISK", target: "policy", description: "evidence about another risk is accepted",
+    find: "        if (!ev.anchor.includes(r.riskId) || otherRisks.length > 0) out.push(\"POLICY_EVIDENCE_NOT_FOR_THIS_RISK\");",
+    replace: "        if (false) out.push(\"POLICY_EVIDENCE_NOT_FOR_THIS_RISK\");",
+    placebo: "        if (!ev.anchor.includes(r.riskId) || otherRisks.length > 0) out.push(\"POLICY_EVIDENCE_NOT_FOR_THIS_RISK\"); /* pinned */",
+    detector: "PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous",
+    fingerprint: "POLICY_EVIDENCE_NOT_FOR_THIS_RISK: an anchor that names" }),
+  Object.freeze({ id: "PC-FOR-RISK-OTHERS", target: "policy", description: "evidence that names this risk and another one is accepted",
+    find: "if (!ev.anchor.includes(r.riskId) || otherRisks.length > 0) out.push(\"POLICY_EVIDENCE_NOT_FOR_THIS_RISK\");",
+    replace: "if (!ev.anchor.includes(r.riskId)) out.push(\"POLICY_EVIDENCE_NOT_FOR_THIS_RISK\");",
+    placebo: "if (!ev.anchor.includes(r.riskId) || otherRisks.length > 0) out.push(\"POLICY_EVIDENCE_NOT_FOR_THIS_RISK\"); /* pinned */",
+    detector: "PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous",
+    fingerprint: "POLICY_EVIDENCE_NOT_FOR_THIS_RISK: an anchor that names this risk and another" }),
+  Object.freeze({ id: "PC-FOR-BRANCH", target: "policy", description: "evidence about another branch is accepted",
+    find: "        if (!ev.anchor.includes(String(ev.decidedBranchId)) || otherBranches.length > 0) out.push(\"POLICY_EVIDENCE_NOT_FOR_THIS_BRANCH\");",
+    replace: "        if (false) out.push(\"POLICY_EVIDENCE_NOT_FOR_THIS_BRANCH\");",
+    placebo: "        if (!ev.anchor.includes(String(ev.decidedBranchId)) || otherBranches.length > 0) out.push(\"POLICY_EVIDENCE_NOT_FOR_THIS_BRANCH\"); /* pinned */",
+    detector: "PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous",
+    fingerprint: "POLICY_EVIDENCE_NOT_FOR_THIS_BRANCH: an anchor that names" }),
+  Object.freeze({ id: "PC-FOR-BRANCH-OTHERS", target: "policy", description: "evidence that names the chosen branch and another one is accepted",
+    find: "if (!ev.anchor.includes(String(ev.decidedBranchId)) || otherBranches.length > 0) out.push(\"POLICY_EVIDENCE_NOT_FOR_THIS_BRANCH\");",
+    replace: "if (!ev.anchor.includes(String(ev.decidedBranchId))) out.push(\"POLICY_EVIDENCE_NOT_FOR_THIS_BRANCH\");",
+    placebo: "if (!ev.anchor.includes(String(ev.decidedBranchId)) || otherBranches.length > 0) out.push(\"POLICY_EVIDENCE_NOT_FOR_THIS_BRANCH\"); /* pinned */",
+    detector: "PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous",
+    fingerprint: "POLICY_EVIDENCE_NOT_FOR_THIS_BRANCH: an anchor that names the chosen branch and another" }),
+  Object.freeze({ id: "PC-REV-SCOPE", target: "policy", description: "a revision of another scope records the decision",
+    find: "  if (!isPlainObject(rev) || rev.scope !== \"OWNER_POLICY_DECISION\") return [\"POLICY_DECISION_REVISION_MISSING\"];",
+    replace: "  if (!isPlainObject(rev) || false) return [\"POLICY_DECISION_REVISION_MISSING\"];",
+    placebo: "  if (!isPlainObject(rev) || rev.scope !== \"OWNER_POLICY_DECISION\") return [\"POLICY_DECISION_REVISION_MISSING\"]; /* pinned */",
+    detector: "POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence",
+    fingerprint: "POLICY_DECISION_REVISION_MISSING: the wrong revision scope" }),
+  Object.freeze({ id: "PC-REV-SUPERSEDES", target: "policy", description: "a revision that rewrites more than the status records the decision",
+    find: "  if (!isPlainObject(sup) || Object.keys(sup).length !== 1 || sup.policyStatus !== \"OPEN\") out.push(\"POLICY_DECISION_REVISION_SUPERSEDES\");",
+    replace: "  if (false) out.push(\"POLICY_DECISION_REVISION_SUPERSEDES\");",
+    placebo: "  if (!isPlainObject(sup) || Object.keys(sup).length !== 1 || sup.policyStatus !== \"OPEN\") out.push(\"POLICY_DECISION_REVISION_SUPERSEDES\"); /* pinned */",
+    detector: "PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous",
+    fingerprint: "POLICY_DECISION_REVISION_SUPERSEDES: the revision rewrites more" }),
+  Object.freeze({ id: "PC-REV-REASON", target: "policy", description: "a revision whose reason names neither the risk nor the branch records the decision",
+    find: "  if (reason.length < 20 || !reason.includes(r.riskId) || chosen === null || !reason.includes(chosen)) out.push(\"POLICY_DECISION_REVISION_REASON\");",
+    replace: "  if (false) out.push(\"POLICY_DECISION_REVISION_REASON\");",
+    placebo: "  if (reason.length < 20 || !reason.includes(r.riskId) || chosen === null || !reason.includes(chosen)) out.push(\"POLICY_DECISION_REVISION_REASON\"); /* pinned */",
+    detector: "PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous",
+    fingerprint: "POLICY_DECISION_REVISION_REASON: the reason names neither" }),
+  Object.freeze({ id: "PC-REV-AMBIGUOUS-BRANCH", target: "policy", description: "a revision that names two branches records the decision",
+    find: "  else if (branchIds.some((id) => id !== chosen && reason.includes(id)) || (reason.match(",
+    replace: "  else if ((reason.match(",
+    placebo: "  else if (branchIds.some((id) => id !== chosen && reason.includes(id) === true) || (reason.match(",
+    detector: "PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous",
+    fingerprint: "POLICY_DECISION_REVISION_AMBIGUOUS: the reason names two branches" }),
+  Object.freeze({ id: "PC-REV-AMBIGUOUS-RISK", target: "policy", description: "a revision that names two risks records the decision",
+    find: "|| (reason.match(/\\bR-\\d+\\b/g) ?? []).some((id) => id !== r.riskId)) out.push(\"POLICY_DECISION_REVISION_AMBIGUOUS\");",
+    replace: ") out.push(\"POLICY_DECISION_REVISION_AMBIGUOUS\");",
+    placebo: "|| (reason.match(/\\bR-\\d+\\b/g) ?? []).some((id) => r.riskId !== id)) out.push(\"POLICY_DECISION_REVISION_AMBIGUOUS\");",
+    detector: "PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous",
+    fingerprint: "POLICY_DECISION_REVISION_AMBIGUOUS: the reason names two risks" }),
+  Object.freeze({ id: "PC-RECON-SCOPE", target: "reconciliation", description: "the reconciliation gate refuses an owner-decision revision",
+    find: "    if (rv.scope === \"OWNER_POLICY_DECISION\" && e.kind === \"risk\") {",
+    replace: "    if (false) {",
+    placebo: "    if (rv.scope === \"OWNER_POLICY_DECISION\" && e.kind === \"risk\" && true) {",
+    detector: "PC-F2-02 reconciliation: a valid owner-decision revision is accepted on a delta risk and rewrites no historical value; the others are refused",
+    fingerprint: "REVISION_OWNER_DECISION_VALID" }),
+  Object.freeze({ id: "PC-RECON-RISK-ONLY", target: "reconciliation", description: "a finding may carry an owner-decision revision",
+    find: "    if (rv.scope === \"OWNER_POLICY_DECISION\" && e.kind === \"risk\") {",
+    replace: "    if (rv.scope === \"OWNER_POLICY_DECISION\") {",
+    placebo: "    if (rv.scope === \"OWNER_POLICY_DECISION\" && e.kind === \"risk\") { /* pinned */",
+    detector: "PC-F2-02 reconciliation: a valid owner-decision revision is accepted on a delta risk and rewrites no historical value; the others are refused",
+    fingerprint: "REVISION_SCOPE: a finding refuses" }),
+  Object.freeze({ id: "PC-RECON-DECIDED", target: "reconciliation", description: "an owner-decision revision on a policy that is still open is accepted",
+    find: "      const decided = isPlainObject(e.e.policy) && e.e.policy.status === \"DECIDED\";",
+    replace: "      const decided = true;",
+    placebo: "      const decided = isPlainObject(e.e.policy) === true && e.e.policy.status === \"DECIDED\";",
+    detector: "PC-F2-02 reconciliation: a valid owner-decision revision is accepted on a delta risk and rewrites no historical value; the others are refused",
+    fingerprint: "REVISION_OWNER_DECISION_INVALID: an owner revision on a policy that is still OPEN" }),
+  Object.freeze({ id: "PC-RECON-PROBLEMS", target: "reconciliation", description: "an owner-decision revision is not judged by the decision contract",
+    find: "      if (!decided || ownerDecisionRevisionProblems(e.e).length > 0) push(\"REVISION_OWNER_DECISION_INVALID\", { id: e.id });",
+    replace: "      if (!decided) push(\"REVISION_OWNER_DECISION_INVALID\", { id: e.id });",
+    placebo: "      if (!decided || ownerDecisionRevisionProblems(e.e).length > 0) push(\"REVISION_OWNER_DECISION_INVALID\", { id: e.id }); /* pinned */",
+    detector: "PC-F2-02 reconciliation: a valid owner-decision revision is accepted on a delta risk and rewrites no historical value; the others are refused",
+    fingerprint: "REVISION_OWNER_DECISION_INVALID: a revision that rewrites more than the status" }),
+  Object.freeze({ id: "PC-TOUCHED-DELTA-ONLY", target: "reconciliation", description: "an owner decision counts as a revision of a historical risk (the touched list)",
+    find: "const revisedRisks = reg.risks.filter((r) => r.revision?.scope === \"DELTA_RELOCK\").map((r) => r.riskId);",
+    replace: "const revisedRisks = reg.risks.filter((r) => r.revision).map((r) => r.riskId);",
+    placebo: "const revisedRisks = reg.risks.filter((r) => r.revision?.scope === \"DELTA_RELOCK\" && true).map((r) => r.riskId);",
+    detector: "PC-F2-02 reconciliation: a valid owner-decision revision is accepted on a delta risk and rewrites no historical value; the others are refused",
+    fingerprint: "REVISION_OWNER_DECISION_VALID" }),
+  Object.freeze({ id: "PC-COUNT-DELTA-ONLY", target: "reconciliation", description: "an owner decision counts as a revised historical risk (the counter)",
+    find: "REVISED_HISTORICAL_RISKS: reg.risks.filter((r) => r.revision?.scope === \"DELTA_RELOCK\").length,",
+    replace: "REVISED_HISTORICAL_RISKS: reg.risks.filter((r) => r.revision).length,",
+    placebo: "REVISED_HISTORICAL_RISKS: reg.risks.filter((r) => r.revision?.scope === \"DELTA_RELOCK\" && true).length,",
+    detector: "PC-F2-02 reconciliation: a valid owner-decision revision is accepted on a delta risk and rewrites no historical value; the others are refused",
+    fingerprint: "REVISION_OWNER_NOT_COUNTED" }),
+  Object.freeze({ id: "PC-PATH-USED", target: "policy", description: "the evidence path is judged as written, not canonical",
+    find: "    const c = canonicalEvidencePath(ev.source);",
+    replace: "    const c = { rel: ev.source, folded: ev.source };",
+    placebo: "    const c = canonicalEvidencePath(ev.source); /* pinned */",
+    detector: "PC-F2-01 policy: every spelling of a security deliverable or a tool is a self-reference, whether or not the file exists",
+    fingerprint: "POLICY_EVIDENCE_SELF_REFERENCE: docs//security" }),
+  Object.freeze({ id: "PC-PATH-FOLD", target: "policy", description: "the comparison form keeps the letter case",
+    find: "  return { rel, folded: rel.toLowerCase() };",
+    replace: "  return { rel, folded: rel };",
+    placebo: "  return { rel, folded: rel.toLowerCase() }; /* pinned */",
+    detector: "PC-F2-01 policy: every spelling of a security deliverable or a tool is a self-reference, whether or not the file exists",
+    fingerprint: "POLICY_EVIDENCE_SELF_REFERENCE: DOCS/SECURITY" }),
+  Object.freeze({ id: "PC-PATH-NFKC", target: "policy", description: "the Unicode form is not normalised",
+    find: "  for (const seg of source.normalize(\"NFKC\").split(\"/\")) {",
+    replace: "  for (const seg of source.split(\"/\")) {",
+    placebo: "  for (const seg of source.normalize(\"NFKC\").split(\"/\")) { /* pinned */",
+    detector: "PC-F2-01 policy: every spelling of a security deliverable or a tool is a self-reference, whether or not the file exists",
+    fingerprint: "POLICY_EVIDENCE_SELF_REFERENCE: ｄｏｃｓ" }),
+  Object.freeze({ id: "PC-PATH-DOTDOT", target: "policy", description: "a parent segment is kept instead of resolved",
+    find: "      kept.pop();",
+    replace: "      kept.push(seg);",
+    placebo: "      kept.pop(); /* pinned */",
+    detector: "PC-F2-01 policy: every spelling of a security deliverable or a tool is a self-reference, whether or not the file exists",
+    fingerprint: "POLICY_EVIDENCE_SELF_REFERENCE: docs/../scripts" }),
+  Object.freeze({ id: "PC-PATH-DOT", target: "policy", description: "a current-directory segment is kept",
+    find: "    if (seg === \"\" || seg === \".\") continue;",
+    replace: "    if (seg === \"\") continue;",
+    placebo: "    if (seg === \"\" || seg === \".\") continue; /* pinned */",
+    detector: "PC-F2-01 policy: every spelling of a security deliverable or a tool is a self-reference, whether or not the file exists",
+    fingerprint: "POLICY_EVIDENCE_SELF_REFERENCE: docs/security/./s1" }),
+  Object.freeze({ id: "PC-PATH-DOUBLE", target: "policy", description: "a doubled separator makes an empty segment that is kept",
+    find: "    if (seg === \"\" || seg === \".\") continue;",
+    replace: "    if (seg === \".\") continue;",
+    placebo: "    if (seg === \"\" || seg === \".\") continue; /* pinned */",
+    detector: "PC-F2-01 policy: every spelling of a security deliverable or a tool is a self-reference, whether or not the file exists",
+    fingerprint: "POLICY_EVIDENCE_SELF_REFERENCE: docs//security" }),
+  Object.freeze({ id: "PC-PATH-ESCAPE", target: "policy", description: "a parent segment may leave the repository",
+    find: "      if (kept.length === 0) return { problem: \"POLICY_EVIDENCE_PATH_ESCAPES_ROOT\" };",
+    replace: "      if (false) return { problem: \"POLICY_EVIDENCE_PATH_ESCAPES_ROOT\" };",
+    placebo: "      if (kept.length === 0) return { problem: \"POLICY_EVIDENCE_PATH_ESCAPES_ROOT\" }; /* pinned */",
+    detector: "PC-F2-01 policy: a path the checker cannot read without guessing is refused, a path leaving the repository is refused",
+    fingerprint: "POLICY_EVIDENCE_PATH_ESCAPES_ROOT: ../outside.md" }),
+  Object.freeze({ id: "PC-PATH-BACKSLASH", target: "policy", description: "a backslash is accepted as a separator",
+    find: "  if (/[\\\\\\u0000-\\u001f:*?\"<>|]/.test(source)) return { problem: \"POLICY_EVIDENCE_PATH_AMBIGUOUS\" };",
+    replace: "  if (/[\\u0000-\\u001f:*?\"<>|]/.test(source)) return { problem: \"POLICY_EVIDENCE_PATH_AMBIGUOUS\" };",
+    placebo: "  if (/[\\\\\\u0000-\\u001f:*?\"<>|]/.test(source)) return { problem: \"POLICY_EVIDENCE_PATH_AMBIGUOUS\" }; /* pinned */",
+    detector: "PC-F2-01 policy: a path the checker cannot read without guessing is refused, a path leaving the repository is refused",
+    fingerprint: "POLICY_EVIDENCE_PATH_AMBIGUOUS: docs" }),
+  Object.freeze({ id: "PC-PATH-RESERVED", target: "policy", description: "a reserved or stream character is accepted",
+    find: "  if (/[\\\\\\u0000-\\u001f:*?\"<>|]/.test(source)) return { problem: \"POLICY_EVIDENCE_PATH_AMBIGUOUS\" };",
+    replace: "  if (/[\\\\\\u0000-\\u001f]/.test(source)) return { problem: \"POLICY_EVIDENCE_PATH_AMBIGUOUS\" };",
+    placebo: "  if (/[\\\\\\u0000-\\u001f:*?\"<>|]/.test(source)) return { problem: \"POLICY_EVIDENCE_PATH_AMBIGUOUS\" }; /* pinned */",
+    detector: "PC-F2-01 policy: a path the checker cannot read without guessing is refused, a path leaving the repository is refused",
+    fingerprint: "POLICY_EVIDENCE_PATH_AMBIGUOUS: docs/owner/decision.md:stream" }),
+  Object.freeze({ id: "PC-PATH-ABSOLUTE", target: "policy", description: "an absolute path is accepted",
+    find: "  if (source.startsWith(\"/\") || /^[A-Za-z]:/.test(source)) return { problem: \"POLICY_EVIDENCE_PATH_ABSOLUTE\" };",
+    replace: "  if (false) return { problem: \"POLICY_EVIDENCE_PATH_ABSOLUTE\" };",
+    placebo: "  if (source.startsWith(\"/\") || /^[A-Za-z]:/.test(source)) return { problem: \"POLICY_EVIDENCE_PATH_ABSOLUTE\" }; /* pinned */",
+    detector: "PC-F2-01 policy: a path the checker cannot read without guessing is refused, a path leaving the repository is refused",
+    fingerprint: "POLICY_EVIDENCE_PATH_ABSOLUTE: /etc/hosts" }),
+  Object.freeze({ id: "PC-PATH-TRAILING", target: "policy", description: "a segment Windows rewrites is accepted",
+    find: "    if (/[. ]$/.test(seg)) return { problem: \"POLICY_EVIDENCE_PATH_AMBIGUOUS\" };",
+    replace: "    if (false) return { problem: \"POLICY_EVIDENCE_PATH_AMBIGUOUS\" };",
+    placebo: "    if (/[. ]$/.test(seg)) return { problem: \"POLICY_EVIDENCE_PATH_AMBIGUOUS\" }; /* pinned */",
+    detector: "PC-F2-01 policy: a path the checker cannot read without guessing is refused, a path leaving the repository is refused",
+    fingerprint: "POLICY_EVIDENCE_PATH_AMBIGUOUS: docs/owner/decision.md." }),
+  Object.freeze({ id: "PC-LINK-ROOT", target: "policy", description: "a link that leaves the repository is followed",
+    find: "  if (within === \"\" || within.startsWith(\"..\") || isAbsolute(within)) return { problem: \"POLICY_EVIDENCE_PATH_ESCAPES_ROOT\" };",
+    replace: "  if (false) return { problem: \"POLICY_EVIDENCE_PATH_ESCAPES_ROOT\" };",
+    placebo: "  if (within === \"\" || within.startsWith(\"..\") || isAbsolute(within)) return { problem: \"POLICY_EVIDENCE_PATH_ESCAPES_ROOT\" }; /* pinned */",
+    detector: "PC-F2-01 policy: a link under a permitted folder to a security deliverable is a self-reference",
+    fingerprint: "POLICY_LINK_ESCAPES_ROOT" }),
+  Object.freeze({ id: "PC-LINK-SELF", target: "policy", description: "a link to a deliverable is not a self-reference",
+    find: "  if (POLICY_SELF_REFERENCE.test(within.normalize(\"NFKC\").toLowerCase())) return { problem: \"POLICY_EVIDENCE_SELF_REFERENCE\" };",
+    replace: "  if (false) return { problem: \"POLICY_EVIDENCE_SELF_REFERENCE\" };",
+    placebo: "  if (POLICY_SELF_REFERENCE.test(within.normalize(\"NFKC\").toLowerCase())) return { problem: \"POLICY_EVIDENCE_SELF_REFERENCE\" }; /* pinned */",
+    detector: "PC-F2-01 policy: a link under a permitted folder to a security deliverable is a self-reference",
+    fingerprint: "POLICY_LINK_SELF_REFERENCE" }),
+  Object.freeze({ id: "PC-NOT-A-FILE", target: "policy", description: "a folder is accepted as evidence",
+    find: "  if (!statSync(real).isFile()) return { problem: \"POLICY_EVIDENCE_NOT_A_FILE\" };",
+    replace: "  if (false) return { problem: \"POLICY_EVIDENCE_NOT_A_FILE\" };",
+    placebo: "  if (!statSync(real).isFile()) return { problem: \"POLICY_EVIDENCE_NOT_A_FILE\" }; /* pinned */",
+    detector: "PC-F2-01 policy: a path the checker cannot read without guessing is refused, a path leaving the repository is refused",
+    fingerprint: "POLICY_EVIDENCE_NOT_A_FILE: docs/owner|EISDIR" }),
+  Object.freeze({ id: "PC-PATH-ABSENT", target: "policy", description: "a path that does not exist is accepted",
+    find: "  } catch {\n    return { problem: \"POLICY_EVIDENCE_PATH_ABSENT\" };\n  }",
+    replace: "  } catch {\n    return { abs };\n  }",
+    placebo: "  } catch {\n    return { problem: \"POLICY_EVIDENCE_PATH_ABSENT\" };\n  } /* pinned */",
+    detector: "POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence",
+    fingerprint: "POLICY_EVIDENCE_PATH_ABSENT: an invented path|ENOENT" }),
+  Object.freeze({ id: "PC-STALE-NFKC", target: "stale text", description: "the Unicode form is not normalised before matching",
+    find: "  return String(line).normalize(\"NFKC\").replace(STALE_ZERO_WIDTH, \"\")",
+    replace: "  return String(line).replace(STALE_ZERO_WIDTH, \"\")",
+    placebo: "  return String(line).normalize(\"NFKC\").replace(STALE_ZERO_WIDTH, \"\") /* pinned */",
+    detector: "PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase",
+    fingerprint: "STALE_SPELLING: full-width" }),
+  Object.freeze({ id: "PC-STALE-ZERO-WIDTH", target: "stale text", description: "zero-width characters are kept",
+    find: ".replace(STALE_ZERO_WIDTH, \"\").replace(STALE_APOSTROPHES, \"'\")",
+    replace: ".replace(STALE_APOSTROPHES, \"'\")",
+    placebo: ".replace(STALE_ZERO_WIDTH, \"\").replace(STALE_APOSTROPHES, \"'\") /* pinned */",
+    detector: "PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase",
+    fingerprint: "STALE_SPELLING: zero-width space" }),
+  Object.freeze({ id: "PC-STALE-APOSTROPHE", target: "stale text", description: "apostrophe look-alikes are not folded",
+    find: ".replace(STALE_APOSTROPHES, \"'\").replace(/\\s+/g, \" \").trim();",
+    replace: ".replace(/\\s+/g, \" \").trim();",
+    placebo: ".replace(STALE_APOSTROPHES, \"'\").replace(/\\s+/g, \" \").trim(); /* pinned */",
+    detector: "PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase",
+    fingerprint: "STALE_SPELLING: right single quotation mark" }),
+  Object.freeze({ id: "PC-STALE-WHITESPACE", target: "stale text", description: "whitespace runs are not reduced",
+    find: ".replace(STALE_APOSTROPHES, \"'\").replace(/\\s+/g, \" \").trim();",
+    replace: ".replace(STALE_APOSTROPHES, \"'\").trim();",
+    placebo: ".replace(STALE_APOSTROPHES, \"'\").replace(/\\s+/g, \" \").trim(); /* pinned */",
+    detector: "PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase",
+    fingerprint: "STALE_SPELLING: double space" }),
+  Object.freeze({ id: "PC-STALE-JOIN", target: "stale text", description: "a wrapped phrase is judged line by line",
+    find: "    if (c === \"\") flush();\n    else run.push({ i, line, c });",
+    replace: "    if (c === \"\") flush();\n    else { run.push({ i, line, c }); flush(); }",
+    placebo: "    if (c === \"\") flush();\n    else run.push({ i, line, c }); /* pinned */",
+    detector: "PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase",
+    fingerprint: "STALE_SPELLING: carriage return|STALE_WRAPPED" }),
+  Object.freeze({ id: "PC-STALE-PARAGRAPH", target: "stale text", description: "a blank line does not end a run",
+    find: "    if (c === \"\") flush();",
+    replace: "    if (c === \"\") void 0;",
+    placebo: "    if (c === \"\") flush(); /* pinned */",
+    detector: "PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase",
+    fingerprint: "STALE_PARAGRAPH" }),
+  Object.freeze({ id: "PC-STALE-SPAN", target: "stale text", description: "the quotation marker is read on the first line of the phrase only",
+    find: "        if (span.some((e) => e.line.includes(STALE_PROCESS_MARKER) || exempt(e.line))) continue;",
+    replace: "        if ([run[first]].some((e) => e.line.includes(STALE_PROCESS_MARKER) || exempt(e.line))) continue;",
+    placebo: "        if (span.some((e) => e.line.includes(STALE_PROCESS_MARKER) || exempt(e.line))) continue; /* pinned */",
+    detector: "PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase",
+    fingerprint: "STALE_QUOTED_WRAPPED" }),
+  Object.freeze({ id: "PC-STALE-REVIEWER", target: "stale text", description: "the possessive pattern is the narrow one again",
+    find: "  /\\breviewer(?:'s?|s'?)\\s+text\\b/i,",
+    replace: "  /reviewer'?s text/i,",
+    placebo: "  /\\breviewer(?:'s?|s'?)\\s+text\\b/i, // pinned",
+    detector: "PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase",
+    fingerprint: "STALE_SPELLING: possessive of the plural|STALE_SPELLING: apostrophe with the s dropped" }),
+  Object.freeze({ id: "PC-STALE-OPEN-OWN", target: "stale text", description: "a defining row is exempt for every open item it names",
+    find: "          if (own && m.index - starts[first] === own.index) continue;",
+    replace: "          if (own) continue;",
+    placebo: "          if (own && m.index - starts[first] === own.index) continue; /* pinned */",
+    detector: "PC-F5-01 stale text: ordinary wording, the detector's own description and a defining open item are not hits, free narration about an open item is",
+    fingerprint: "STALE_OPEN_ROW" }),
+  Object.freeze({ id: "PC-STALE-OPEN-LINE", target: "stale text", description: "a defining row is exempt from every pattern",
+    find: "        if (rx === STALE_OPEN_ITEM_PATTERN && definesOpenItem(run[first].line)) {",
+    replace: "        if (definesOpenItem(run[first].line)) continue;\n        if (rx === STALE_OPEN_ITEM_PATTERN && definesOpenItem(run[first].line)) {",
+    placebo: "        if (rx === STALE_OPEN_ITEM_PATTERN && definesOpenItem(run[first].line)) { /* pinned */",
+    detector: "PC-F5-01 stale text: ordinary wording, the detector's own description and a defining open item are not hits, free narration about an open item is",
+    fingerprint: "STALE_OPEN_NARRATION" }),
+  Object.freeze({ id: "PC-STALE-P2_REVIEWER_TEXT", target: "stale text", description: "the stale-text pattern P2 is dropped",
+    find: "  /\\breviewer(?:'s?|s'?)\\s+text\\b/i,\n",
+    replace: "",
+    placebo: "  /\\breviewer(?:'s?|s'?)\\s+text\\b/i, // pinned\n",
+    detector: "POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables",
+    fingerprint: "STALE_HIT: P2_REVIEWER_TEXT" }),
+  Object.freeze({ id: "PC-STALE-P4_TODO_REVIEWER", target: "stale text", description: "the stale-text pattern P4 is dropped",
+    find: "  /\\bTODO\\b[^.;|\"]{0,60}\\breviewer/i,\n",
+    replace: "",
+    placebo: "  /\\bTODO\\b[^.;|\"]{0,60}\\breviewer/i, // pinned\n",
+    detector: "POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables",
+    fingerprint: "STALE_HIT: P4_TODO_REVIEWER" }),
 ]);
 export const PLACEBO_CONTROLS = Object.freeze([
   Object.freeze({ id: "C-01", kind: "SEMANTIC_NOOP", description: "the secret gate's condition rewritten with the same meaning",
@@ -3876,7 +5566,7 @@ export const PLACEBO_CONTROLS = Object.freeze([
     expected: "ONLY_INCIDENTAL", inRegion: false }),
 ]);
 export const MUTATION_CAMPAIGN = Object.freeze({
-  manifestSha256: "84977cd9b4394e031b7fe7dc480a3dee2402b966034e7f1a283b47bf612c1bc1",
+  manifestSha256: "70286152ded97f6e8a4d6f256aec431dc5120d6beb5d6d69b67144eb9ae7bde4",
   observed: Object.freeze({
     "FA-01a": "TARGETED_KILL",
     "FA-01b": "TARGETED_KILL",
@@ -3905,6 +5595,93 @@ export const MUTATION_CAMPAIGN = Object.freeze({
     "FA-I2a": "TARGETED_KILL",
     "FA-I2b": "TARGETED_KILL",
     "FA-I2c": "TARGETED_KILL",
+    "FR04-01": "TARGETED_KILL",
+    "FR04-02": "TARGETED_KILL",
+    "FR04-03": "TARGETED_KILL",
+    "FR04-04": "TARGETED_KILL",
+    "FR04-05": "TARGETED_KILL",
+    "FR04-06": "TARGETED_KILL",
+    "FR04-07": "TARGETED_KILL",
+    "FR04-08": "TARGETED_KILL",
+    "FR04-09": "TARGETED_KILL",
+    "PC-ANCHOR": "TARGETED_KILL",
+    "PC-BRANCH-UNKNOWN": "TARGETED_KILL",
+    "PC-COUNT-DELTA-ONLY": "TARGETED_KILL",
+    "PC-DECIDED-BARE": "TARGETED_KILL",
+    "PC-DECIDER-ROLE": "TARGETED_KILL",
+    "PC-EVIDENCE-SHAPE": "TARGETED_KILL",
+    "PC-EVIDENCE-SHAPE-MISSING": "TARGETED_KILL",
+    "PC-FOR-BRANCH": "TARGETED_KILL",
+    "PC-FOR-BRANCH-OTHERS": "TARGETED_KILL",
+    "PC-FOR-RISK": "TARGETED_KILL",
+    "PC-FOR-RISK-OTHERS": "TARGETED_KILL",
+    "PC-LINK-ROOT": "TARGETED_KILL",
+    "PC-LINK-SELF": "TARGETED_KILL",
+    "PC-NOT-A-FILE": "TARGETED_KILL",
+    "PC-PATH-ABSENT": "TARGETED_KILL",
+    "PC-PATH-ABSOLUTE": "TARGETED_KILL",
+    "PC-PATH-BACKSLASH": "TARGETED_KILL",
+    "PC-PATH-DOT": "TARGETED_KILL",
+    "PC-PATH-DOTDOT": "TARGETED_KILL",
+    "PC-PATH-DOUBLE": "TARGETED_KILL",
+    "PC-PATH-ESCAPE": "TARGETED_KILL",
+    "PC-PATH-FOLD": "TARGETED_KILL",
+    "PC-PATH-NFKC": "TARGETED_KILL",
+    "PC-PATH-RESERVED": "TARGETED_KILL",
+    "PC-PATH-TRAILING": "TARGETED_KILL",
+    "PC-PATH-USED": "TARGETED_KILL",
+    "PC-RECON-DECIDED": "TARGETED_KILL",
+    "PC-RECON-PROBLEMS": "TARGETED_KILL",
+    "PC-RECON-RISK-ONLY": "TARGETED_KILL",
+    "PC-RECON-SCOPE": "TARGETED_KILL",
+    "PC-REV-AMBIGUOUS-BRANCH": "TARGETED_KILL",
+    "PC-REV-AMBIGUOUS-RISK": "TARGETED_KILL",
+    "PC-REV-REASON": "TARGETED_KILL",
+    "PC-REV-SCOPE": "TARGETED_KILL",
+    "PC-REV-SUPERSEDES": "TARGETED_KILL",
+    "PC-STALE-APOSTROPHE": "TARGETED_KILL",
+    "PC-STALE-JOIN": "TARGETED_KILL",
+    "PC-STALE-NFKC": "TARGETED_KILL",
+    "PC-STALE-OPEN-LINE": "TARGETED_KILL",
+    "PC-STALE-OPEN-OWN": "TARGETED_KILL",
+    "PC-STALE-P2_REVIEWER_TEXT": "TARGETED_KILL",
+    "PC-STALE-P4_TODO_REVIEWER": "TARGETED_KILL",
+    "PC-STALE-PARAGRAPH": "TARGETED_KILL",
+    "PC-STALE-REVIEWER": "TARGETED_KILL",
+    "PC-STALE-SPAN": "TARGETED_KILL",
+    "PC-STALE-WHITESPACE": "TARGETED_KILL",
+    "PC-STALE-ZERO-WIDTH": "TARGETED_KILL",
+    "PC-TOUCHED-DELTA-ONLY": "TARGETED_KILL",
+    "PF-CONDITIONAL": "TARGETED_KILL",
+    "PF-DISTINCT": "TARGETED_KILL",
+    "PF-DISTINCT-acceptanceCriteria": "TARGETED_KILL",
+    "PF-DISTINCT-condition": "TARGETED_KILL",
+    "PF-DISTINCT-requiredControl": "TARGETED_KILL",
+    "PF-DISTINCT-requiredTests": "TARGETED_KILL",
+    "PF-EVIDENCE-EMPTY": "TARGETED_KILL",
+    "PF-EVIDENCE-KEYS": "TARGETED_KILL",
+    "PF-GENERIC": "TARGETED_KILL",
+    "PF-LISTED": "TARGETED_KILL",
+    "PF-METHOD": "TARGETED_KILL",
+    "PF-OPEN": "TARGETED_KILL",
+    "PF-OWNER-ROLE": "TARGETED_KILL",
+    "PF-REQ-R-66": "TARGETED_KILL",
+    "PF-REQ-R-72": "TARGETED_KILL",
+    "PF-REQ-R-73": "TARGETED_KILL",
+    "PF-STALE-P1_MUST_BE_RECONCILED": "TARGETED_KILL",
+    "PF-STALE-P3_OPEN_ITEM": "TARGETED_KILL",
+    "PF-STALE-P5_PENDING_EVIDENCE": "TARGETED_KILL",
+    "PF-STALE-P6_TEMPORARY_ADJUDICATION": "TARGETED_KILL",
+    "PF-STALE-P7_TO_BE_RECONCILED": "TARGETED_KILL",
+    "PF-STALE-REGISTER": "TARGETED_KILL",
+    "PF-STALE-REPORT": "TARGETED_KILL",
+    "PF-STALE-WIRE": "TARGETED_KILL",
+    "PF-STATUS": "TARGETED_KILL",
+    "PF-TEST-OPERATIONAL": "TARGETED_KILL",
+    "PF-TESTABLE": "TARGETED_KILL",
+    "PF-TESTS": "TARGETED_KILL",
+    "PF-TWO": "TARGETED_KILL",
+    "PF-WIRE": "TARGETED_KILL",
     "R3-B01": "TARGETED_KILL",
     "R3-B02": "TARGETED_KILL",
     "R3-B03": "TARGETED_KILL",
@@ -4005,6 +5782,59 @@ export const MUTATION_CAMPAIGN = Object.freeze({
     "R5-I03b": "TARGETED_KILL",
     "R5-I04a": "TARGETED_KILL",
     "R5-I05a": "TARGETED_KILL",
+    "RL-01": "TARGETED_KILL",
+    "RL-02": "TARGETED_KILL",
+    "RL-03": "TARGETED_KILL",
+    "RL-04": "TARGETED_KILL",
+    "RL-05": "TARGETED_KILL",
+    "RL-06": "TARGETED_KILL",
+    "RL-07": "TARGETED_KILL",
+    "RL-08": "TARGETED_KILL",
+    "RL-09": "TARGETED_KILL",
+    "RL-10": "TARGETED_KILL",
+    "RL-11": "TARGETED_KILL",
+    "RL-12": "TARGETED_KILL",
+    "RL-13": "TARGETED_KILL",
+    "RL-14": "TARGETED_KILL",
+    "RL-15": "TARGETED_KILL",
+    "RL-16": "TARGETED_KILL",
+    "RL-17": "TARGETED_KILL",
+    "RL-18": "TARGETED_KILL",
+    "RL-19": "TARGETED_KILL",
+    "RL-20": "TARGETED_KILL",
+    "RL-21": "TARGETED_KILL",
+    "RL-22": "TARGETED_KILL",
+    "RL-23": "TARGETED_KILL",
+    "RL-24": "TARGETED_KILL",
+    "RL-25": "TARGETED_KILL",
+    "RL-26": "TARGETED_KILL",
+    "RL-27": "TARGETED_KILL",
+    "RL-28": "TARGETED_KILL",
+    "RL-29": "TARGETED_KILL",
+    "RL-30": "TARGETED_KILL",
+    "RL-31": "TARGETED_KILL",
+    "RL-32": "TARGETED_KILL",
+    "RL-33": "TARGETED_KILL",
+    "RL-34": "TARGETED_KILL",
+    "RL-35": "TARGETED_KILL",
+    "RL-36": "TARGETED_KILL",
+    "RL-37": "TARGETED_KILL",
+    "RL-38": "TARGETED_KILL",
+    "RL-39": "TARGETED_KILL",
+    "RL-40": "TARGETED_KILL",
+    "RL-41": "TARGETED_KILL",
+    "RL-42": "TARGETED_KILL",
+    "RL-43": "TARGETED_KILL",
+    "RL-44": "TARGETED_KILL",
+    "RL-45": "TARGETED_KILL",
+    "RL-46": "TARGETED_KILL",
+    "RL-47": "TARGETED_KILL",
+    "RL-48": "TARGETED_KILL",
+    "RL-49": "TARGETED_KILL",
+    "RL-50": "TARGETED_KILL",
+    "RL-51": "TARGETED_KILL",
+    "RL-52": "TARGETED_KILL",
+    "RL-53": "TARGETED_KILL",
   }),
   controls: Object.freeze({
     "C-01": "SURVIVED",
@@ -4053,6 +5883,10 @@ export const EXIT = Object.freeze({
   MUTATION_MANIFEST: 25,
   OPEN_REVIEW_FINDING: 26,
   STRUCTURE_LIMIT: 27,
+  RECONCILIATION: 28,
+  SCHEMA_KEYS: 29,
+  POLICY: 30,
+  STALE_TEXT: 31,
   USAGE: 64,
   INTERNAL_ERROR: 70,
 });
@@ -4138,6 +5972,16 @@ export function runGates(reg, md, root = REPO_ROOT, options = {}) {
   const missingFields = missingRequiredFields(reg);
   if (missingFields.length) return stop(EXIT.MISSING_FIELD, "risk missing a required field", missingFields);
 
+  // FR-04: every structure is closed. The gates above keep their historical exit codes for the faults they
+  // always judged (a duplicate identifier, an unknown enum value, an absent required field, a crash on a
+  // malformed register); an unknown key, or a required key absent from a nested structure, stops here —
+  // before the policy gate and every later gate read a field that might not mean what it says.
+  const schemaKeys = schemaKeyViolations(reg);
+  if (schemaKeys.length) return stop(EXIT.SCHEMA_KEYS, "an unknown key or a missing required key in a closed register structure", schemaKeys);
+
+  const policy = policyViolations(reg, root);
+  if (policy.length) return stop(EXIT.POLICY, "a policy object is malformed, or one of its branches is not carried by the risk's acceptance criteria", policy);
+
   const orphans = orphanFindings(reg);
   if (orphans.length) return stop(EXIT.ORPHAN_FINDING, "orphan finding", orphans);
 
@@ -4175,6 +6019,11 @@ export function runGates(reg, md, root = REPO_ROOT, options = {}) {
   const universe = findingUniverseViolations(reg, root);
   if (universe.length) return stop(EXIT.FINDING_UNIVERSE, "the finding universe does not match the source documents", universe);
 
+  const reconciliation = reconciliationViolations(reg, root);
+  if (reconciliation.length) {
+    return stop(EXIT.RECONCILIATION, "the reconciliation of the historical snapshot, the delta review and the reconciled register does not hold", reconciliation);
+  }
+
   const linkage = verificationLinkageViolations(reg);
   if (linkage.length) return stop(EXIT.VERIFICATION_LINKAGE, "a scored risk declares a verification method no criterion names", linkage);
 
@@ -4210,6 +6059,9 @@ export function runGates(reg, md, root = REPO_ROOT, options = {}) {
   if (deliverableForbidden.length) {
     return stop(EXIT.FORBIDDEN_IN_DELIVERABLE, "an absolute path, a date-time or an operational command is present in a deliverable", deliverableForbidden);
   }
+
+  const stale = staleProcessTextViolations(registerText, md);
+  if (stale.length) return stop(EXIT.STALE_TEXT, "a deliverable still carries process text that describes a finished step", stale);
 
   const nextAction = nextSafeActionViolations(reg, md);
   if (nextAction.length) {

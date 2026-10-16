@@ -3,6 +3,63 @@
   "phase": "S1",
   "methodVersion": "s1-v1",
   "sourceSha": "bcf3be9aa51f8d9f8f75e5568a2e4efea5f8fbd2",
+  "reconciliation": {
+    "version": "s1-reconcile-1",
+    "historicalSnapshot": {
+      "sourceSha": "bcf3be9aa51f8d9f8f75e5568a2e4efea5f8fbd2",
+      "registerFileSha256": "8ef30aeeaa0d64a5a7b1e17d083c15d17dda3730f6c658d004304f6a9026774c",
+      "risks": 64,
+      "findings": 161,
+      "severity": {
+        "CRITICAL": 0,
+        "HIGH": 35,
+        "MEDIUM": 17,
+        "LOW": 1,
+        "INFORMATIONAL": 11
+      },
+      "productionState": {
+        "ACTIVE_CONFIRMED": 24,
+        "LATENT_CONFIG_GUARDED": 4,
+        "CODE_CONFIRMED_RUNTIME_UNPROVEN": 12,
+        "ASSURANCE_GAP": 10,
+        "POLICY_AMBIGUITY": 3,
+        "POSITIVE_CONTROL": 11
+      },
+      "findingStatus": {
+        "MAPPED_TO_RISK": 83,
+        "DUPLICATE_OF": 2,
+        "POLICY_QUESTION": 7,
+        "ASSURANCE_GAP": 49,
+        "POSITIVE_CONTROL": 12,
+        "NOT_A_SECURITY_RISK_WITH_REASON": 8
+      },
+      "severityClamps": 2,
+      "lockUniverseCount": 51,
+      "sourceUniverseCount": 110,
+      "topPriorityRiskId": "R-01"
+    },
+    "deltaReview": {
+      "range": "bcf3be9aa51f8d9f8f75e5568a2e4efea5f8fbd2..b461ac9709d6e82973de2b05f15317381c2fcc73",
+      "frozenSourceSha": "bcf3be9aa51f8d9f8f75e5568a2e4efea5f8fbd2",
+      "securityHeadSha": "391fa2f2d3d1a3c714753ef5da8594da2e331658",
+      "targetMainSha": "b461ac9709d6e82973de2b05f15317381c2fcc73",
+      "integrationMergeSha": "e3da6f2e928420f78d5ae95d668d7e67ba4e2cb0",
+      "provenance": "docs/security/s1-relock-delta.json",
+      "deltaUniverseCount": 18,
+      "deltaUniverseSha256": "9f7cc023d6b1b5fa71530f51176a819907cad9db8ef996fc13eb76f19b939d76",
+      "existingRisksTouched": [
+        "R-09",
+        "R-53"
+      ]
+    },
+    "reconciledTree": {
+      "base": "e3da6f2e928420f78d5ae95d668d7e67ba4e2cb0",
+      "assuranceChanges": "the unstaged assurance changes",
+      "universeVersion": "s1-universe-2",
+      "sourceUniverseCount": 128,
+      "sourceUniverseSha256": "06e796b75c8f5f05d1ce464c4eae9db73e52b3ce1e38b3869f528b5971f0d046"
+    }
+  },
   "note": "Threat model and risk register for Hermes OS, derived entirely from the committed S0 documents and the Phase 99 register on the source state named above. Severity is computed from the declared factors by scripts/security/s1/risk-register-check.mjs; there is no manual override. Contains no secret, no request data, no timestamp and no absolute path. A green check means this register is well-formed, never that a risk is mitigated.",
   "scoringMethod": {
     "likelihood": "round(mean(reachability, exploitability, privilegeAccessibility, repeatability))",
@@ -429,7 +486,7 @@
         "INTEGRITY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 37,
+      "remediationPriority": 38,
       "remediationPhase": "S3_IDENTITY_SESSION_AND_MFA",
       "remediationOwnership": "session-mode-fatal-at-startup",
       "acceptanceCriteria": [
@@ -672,7 +729,7 @@
         "AUDITABILITY"
       ],
       "confidence": "MEDIUM",
-      "remediationPriority": 38,
+      "remediationPriority": 39,
       "remediationPhase": "S3_IDENTITY_SESSION_AND_MFA",
       "remediationOwnership": "password-hash-authority",
       "acceptanceCriteria": [
@@ -748,7 +805,7 @@
         "CONFIDENTIALITY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 42,
+      "remediationPriority": 43,
       "remediationPhase": "S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS",
       "remediationOwnership": "candidate-register-enumeration",
       "acceptanceCriteria": [
@@ -869,6 +926,7 @@
         "TENANT_ISOLATION"
       ],
       "sourceFindingIds": [
+        "DELTA-RR-005",
         "LOCK-NO-RLS"
       ],
       "evidence": [
@@ -876,6 +934,11 @@
           "path": "docs/security/DATA-FLOW-AND-TRUST-BOUNDARIES.md",
           "locator": "TB-5",
           "note": "Tenant filtering is caller-side predicates; no PostgreSQL row-level security policy was found."
+        },
+        {
+          "path": "prisma/schema.prisma",
+          "locator": "ErpProject.party",
+          "note": "The composite foreign key into the customer table uses the nullable ErpProject.organizationId; a composite key is not checked when a column is null, so the migration's statement that cross-tenant links are impossible in the database holds only for rows that have an organization."
         },
         {
           "path": "prisma/schema.prisma",
@@ -889,7 +952,8 @@
       ],
       "controlGaps": [
         "Every tenant boundary is one forgotten where clause away from being crossed, with nothing below it to refuse.",
-        "The migration role and the runtime role are the same identity (R-47), so a row-level policy could not currently be enforced against the application role alone."
+        "The migration role and the runtime role are the same identity (R-47), so a row-level policy could not currently be enforced against the application role alone.",
+        "The newest database-level backstop (the composite foreign key to a customer) does not bind a project row whose organization is null."
       ],
       "likelihoodFactors": {
         "reachability": 2,
@@ -929,7 +993,8 @@
       ],
       "relatedRiskIds": [
         "R-08",
-        "R-47"
+        "R-47",
+        "R-70"
       ]
     },
     {
@@ -1090,7 +1155,7 @@
         "INTEGRITY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 43,
+      "remediationPriority": 44,
       "remediationPhase": "S4_TENANT_AND_SITE_ISOLATION",
       "remediationOwnership": "billing-org-ambiguity-refusal",
       "acceptanceCriteria": [
@@ -1176,7 +1241,7 @@
         "INTEGRITY"
       ],
       "confidence": "MEDIUM",
-      "remediationPriority": 44,
+      "remediationPriority": 45,
       "remediationPhase": "S4_TENANT_AND_SITE_ISOLATION",
       "remediationOwnership": "redis-key-namespace",
       "acceptanceCriteria": [
@@ -1441,7 +1506,7 @@
         "AVAILABILITY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 45,
+      "remediationPriority": 46,
       "remediationPhase": "OWNER_POLICY_DECISION",
       "remediationOwnership": "organization-governance-decisions",
       "acceptanceCriteria": [
@@ -1643,7 +1708,7 @@
         "AUDITABILITY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 46,
+      "remediationPriority": 47,
       "remediationPhase": "S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS",
       "remediationOwnership": "customers-surface-gate-or-remove",
       "acceptanceCriteria": [
@@ -2163,7 +2228,7 @@
         "INTEGRITY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 47,
+      "remediationPriority": 50,
       "remediationPhase": "OWNER_POLICY_DECISION",
       "remediationOwnership": "public-content-policy-decisions",
       "acceptanceCriteria": [
@@ -2609,7 +2674,7 @@
         "CONFIDENTIALITY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 53,
+      "remediationPriority": 61,
       "remediationPhase": "S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING",
       "remediationOwnership": "version-disclosure-suppression",
       "acceptanceCriteria": [
@@ -2790,7 +2855,7 @@
         "AUDITABILITY"
       ],
       "confidence": "MEDIUM",
-      "remediationPriority": 48,
+      "remediationPriority": 51,
       "remediationPhase": "S9_OBSERVABILITY_AND_DETECTION",
       "remediationOwnership": "origin-path-stability-observation",
       "acceptanceCriteria": [
@@ -2869,7 +2934,7 @@
         "AUDITABILITY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 52,
+      "remediationPriority": 55,
       "remediationPhase": "S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING",
       "remediationOwnership": "health-surface-exposure",
       "acceptanceCriteria": [
@@ -3796,7 +3861,7 @@
         "AUDITABILITY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 49,
+      "remediationPriority": 52,
       "remediationPhase": "S3_IDENTITY_SESSION_AND_MFA",
       "remediationOwnership": "member-suspension-atomicity",
       "acceptanceCriteria": [
@@ -3883,7 +3948,7 @@
         "AUDITABILITY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 50,
+      "remediationPriority": 53,
       "remediationPhase": "S4_TENANT_AND_SITE_ISOLATION",
       "remediationOwnership": "dead-surface-decision",
       "acceptanceCriteria": [
@@ -4068,7 +4133,7 @@
         "AVAILABILITY"
       ],
       "confidence": "MEDIUM",
-      "remediationPriority": 39,
+      "remediationPriority": 40,
       "remediationPhase": "S2_SCANNING_AND_SUPPLY_CHAIN",
       "remediationOwnership": "open-dependency-advisories",
       "acceptanceCriteria": [
@@ -4136,7 +4201,7 @@
         {
           "path": "docs/security/ARCHITECTURE-INVENTORY.md",
           "locator": "§11",
-          "note": "Phase 99 already built a security programme for this repository, and its findings must be reconciled with each finding's status re-verified rather than inherited, because this repository has a recorded history of findings going stale in both directions."
+          "note": "Phase 99 already built a security programme for this repository, and its findings are reconciled with each finding's status re-verified rather than inherited, because this repository has a recorded history of findings going stale in both directions."
         },
         {
           "path": "docs/security/phase99-findings.json",
@@ -4375,7 +4440,7 @@
         "AUDITABILITY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 36,
+      "remediationPriority": 37,
       "remediationPhase": "S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING",
       "remediationOwnership": "database-role-and-transport",
       "acceptanceCriteria": [
@@ -4467,7 +4532,7 @@
         "INTEGRITY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 51,
+      "remediationPriority": 54,
       "remediationPhase": "S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING",
       "remediationOwnership": "intra-cluster-transport",
       "acceptanceCriteria": [
@@ -4563,7 +4628,7 @@
         "INDUSTRIAL_SAFETY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 40,
+      "remediationPriority": 41,
       "remediationPhase": "S6_OT_GATEWAY_AND_CRYPTO_LIFECYCLE",
       "remediationOwnership": "gateway-identity-lifecycle",
       "acceptanceCriteria": [
@@ -4645,7 +4710,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 54,
+      "remediationPriority": 64,
       "remediationPhase": "S10_OT_PRECONDITIONS_BEFORE_PROTOCOL_CLIENTS",
       "remediationOwnership": "protocol-client-preconditions",
       "acceptanceCriteria": [
@@ -4726,7 +4791,7 @@
         "AVAILABILITY"
       ],
       "confidence": "MEDIUM",
-      "remediationPriority": 41,
+      "remediationPriority": 42,
       "remediationPhase": "S12_DR_RUNBOOKS_AND_REHEARSAL",
       "remediationOwnership": "recovery-rehearsal",
       "acceptanceCriteria": [
@@ -4827,17 +4892,19 @@
     },
     {
       "riskId": "R-53",
-      "title": "The worker boundary is deliberately minimal and holds no database credential",
-      "productionState": "POSITIVE_CONTROL",
+      "title": "Worker containers receive the whole production environment, so the image-level minimality does not bound the credentials a compromised worker holds",
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
       "stride": [
-        "ELEVATION_OF_PRIVILEGE"
+        "ELEVATION_OF_PRIVILEGE",
+        "INFORMATION_DISCLOSURE"
       ],
       "threatActors": [
         "INFRASTRUCTURE_FAILURE",
         "SUPPLY_CHAIN_ATTACKER"
       ],
       "preconditions": [
-        "None. This entry records a control that is present."
+        "Code execution inside a worker container, for example through a compromised base image or a flaw in the worker script's handling of a response.",
+        "The production environment file holds the variables the web tier reads; its contents were not read, so which secrets it holds is inferred from the web tier's documented configuration."
       ],
       "affectedAssets": [
         "POSTGRES",
@@ -4845,9 +4912,20 @@
         "WORKER_BOUNDARY"
       ],
       "sourceFindingIds": [
+        "DELTA-RL-004",
         "LOCK-WORKER-BLAST-RADIUS"
       ],
       "evidence": [
+        {
+          "path": "Dockerfile",
+          "locator": "executive-report-worker",
+          "note": "The image copies one dependency-free script and says it holds no database credential."
+        },
+        {
+          "path": "docker-compose.prod.yml",
+          "locator": "hermes-executive-report-worker",
+          "note": "Each worker service declares env_file for the whole production environment file; the new service does the same."
+        },
         {
           "path": "docs/security/ARCHITECTURE-INVENTORY.md",
           "locator": "§8.1",
@@ -4857,50 +4935,94 @@
           "path": "docs/security/DATA-FLOW-AND-TRUST-BOUNDARIES.md",
           "locator": "TB-9",
           "note": "Each worker image contains exactly one dependency-free script: no installed packages, no object-relational mapper, no application code and no database credential, so a worker cannot corrupt state it cannot reach."
+        },
+        {
+          "path": "scripts/ci/phase997-candidate-gate.mjs",
+          "locator": "ENV_FILE_SERVICES",
+          "note": "The release gate registers each worker's env_file as intended, for the token."
+        },
+        {
+          "path": "scripts/executive/daily-report-worker.mjs",
+          "locator": "process.env",
+          "note": "The script itself reads only the worker token chain, the base URL, the interval and the batch size."
         }
       ],
       "existingControls": [
         "Each worker reaches the platform through one authenticated request, so the web tier's authorization and audit apply to its work.",
         "The work is leased or idempotent at the web tier, so a retry is safe.",
-        "A committed test keeps the packaging boundary from eroding."
+        "A committed test keeps the packaging boundary from eroding.",
+        "Each worker image contains one dependency-free script, no installed packages, no object-relational mapper and no application code (the former positive control, kept as a counter-control).",
+        "The workers publish no port, mount no volume and sit on the internal network."
       ],
       "controlGaps": [
-        "The boundary rests on a worker token, so token handling is the control that must not weaken."
+        "The container environment is the whole file, not the few variables the script reads.",
+        "No test asserts that a worker service lists an explicit environment instead of the file.",
+        "The former positive control measured image contents, not the run-time environment."
       ],
       "likelihoodFactors": {
-        "reachability": 0,
-        "exploitability": 0,
-        "privilegeAccessibility": 0,
-        "repeatability": 0
+        "reachability": 1,
+        "exploitability": 2,
+        "privilegeAccessibility": 1,
+        "repeatability": 3
       },
       "impactFactors": {
-        "confidentiality": 0,
-        "integrity": 0,
-        "availability": 0,
-        "auditability": 0,
+        "confidentiality": 5,
+        "integrity": 3,
+        "availability": 1,
+        "auditability": 1,
         "industrialSafety": 0
       },
-      "likelihood": 0,
-      "impact": 0,
-      "score": 0,
-      "severityFromScore": "INFORMATIONAL",
+      "likelihood": 2,
+      "impact": 5,
+      "score": 10,
+      "severityFromScore": "MEDIUM",
       "severityClamp": null,
-      "severity": "INFORMATIONAL",
-      "dominantImpact": [],
-      "confidence": "HIGH",
-      "remediationPriority": 55,
-      "remediationPhase": "S1_NO_CHANGE_REQUIRED",
+      "severity": "MEDIUM",
+      "dominantImpact": [
+        "CONFIDENTIALITY"
+      ],
+      "confidence": "MEDIUM",
+      "remediationPriority": 48,
+      "remediationPhase": "S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING",
       "remediationOwnership": "worker-boundary-preservation",
       "acceptanceCriteria": [
-        "The packaging test continues to assert that no worker image gains application code, installed packages or a database credential.",
+        "A gate that fails the build when a worker service in the production compose file declares env_file or lists a variable the worker script does not read.",
+        "A test asserts that the image packaging boundary (no application code, no installed packages) still holds.",
         "Worker token rotation is covered by whatever secret-lifecycle work R-49 produces."
       ],
-      "verificationMethod": "AUTOMATED_TEST",
-      "residualRisk": "This control is a packaging property, and packaging properties erode quietly; the committed test is what keeps it, so removing that test is the real risk.",
+      "verificationMethod": "DETERMINISTIC_TOOL_GATE",
+      "residualRisk": "An explicit environment bounds what a compromised worker can read, not what it can do with its one credential, and the same pattern in the web tier's own container is out of scope here.",
       "dependencies": [],
       "relatedRiskIds": [
-        "R-49"
-      ]
+        "R-46",
+        "R-49",
+        "R-67"
+      ],
+      "revision": {
+        "scope": "DELTA_RELOCK",
+        "supersedes": {
+          "title": "The worker boundary is deliberately minimal and holds no database credential",
+          "productionState": "POSITIVE_CONTROL",
+          "severity": "INFORMATIONAL",
+          "score": 0,
+          "likelihoodFactors": {
+            "reachability": 0,
+            "exploitability": 0,
+            "privilegeAccessibility": 0,
+            "repeatability": 0
+          },
+          "impactFactors": {
+            "confidentiality": 0,
+            "integrity": 0,
+            "availability": 0,
+            "auditability": 0,
+            "industrialSafety": 0
+          },
+          "remediationPhase": "S1_NO_CHANGE_REQUIRED",
+          "verificationMethod": "AUTOMATED_TEST"
+        },
+        "reason": "The production compose file injects the whole production environment file into every worker container, including the one added since the frozen source, so the image-level minimality recorded as a positive control does not bound the credentials the running process holds. The positive control stays recorded as an existing control."
+      }
     },
     {
       "riskId": "R-54",
@@ -4964,7 +5086,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 56,
+      "remediationPriority": 65,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "rate-limiter-failclosed-preservation",
       "acceptanceCriteria": [
@@ -5041,7 +5163,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 57,
+      "remediationPriority": 66,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "assignable-roles-clamp-preservation",
       "acceptanceCriteria": [
@@ -5120,7 +5242,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 58,
+      "remediationPriority": 67,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "compliance-scope-ladder-preservation",
       "acceptanceCriteria": [
@@ -5206,7 +5328,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 59,
+      "remediationPriority": 68,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "erp-pattern-propagation",
       "acceptanceCriteria": [
@@ -5284,7 +5406,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 60,
+      "remediationPriority": 69,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "single-mutation-transport-preservation",
       "acceptanceCriteria": [
@@ -5363,7 +5485,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 61,
+      "remediationPriority": 70,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "failclosed-core-preservation",
       "acceptanceCriteria": [
@@ -5449,7 +5571,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 62,
+      "remediationPriority": 71,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "security-control-denial-preservation",
       "acceptanceCriteria": [
@@ -5533,7 +5655,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 63,
+      "remediationPriority": 72,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "public-surface-identity-preservation",
       "acceptanceCriteria": [
@@ -5612,7 +5734,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 64,
+      "remediationPriority": 73,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "envelope-canonicalisation-preservation",
       "acceptanceCriteria": [
@@ -5827,6 +5949,967 @@
         "R-13",
         "R-45"
       ]
+    },
+    {
+      "riskId": "R-65",
+      "title": "An archived nightly report is shown at the organization's full breadth, so a lower-privileged reader sees financial and all-site data that the live dashboard refuses",
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "stride": [
+        "ELEVATION_OF_PRIVILEGE",
+        "INFORMATION_DISCLOSURE"
+      ],
+      "threatActors": [
+        "MALICIOUS_TENANT_MEMBER",
+        "TENANT_ADMIN_OR_TAKEOVER"
+      ],
+      "preconditions": [
+        "The reader holds the platform administrator capability and an active membership of the organization, with an organization role that lacks the financial axis (every role but OWNER) or holds a subset of sites.",
+        "At least one stored report exists. The runner is documented as not started by the deploy, so the archive holds rows only after the runner is activated or a platform administrator triggers a pass.",
+        "That a platform administrator stays within an organization role is a design assumption; no run-time evidence in this programme confirms or refutes it."
+      ],
+      "affectedAssets": [
+        "AUTHORIZATION_BOUNDARY",
+        "FACTORY_AND_ERP_DATA",
+        "SITE_ISOLATION"
+      ],
+      "sourceFindingIds": [
+        "DELTA-RL-001"
+      ],
+      "evidence": [
+        {
+          "path": "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx",
+          "locator": "the detail page",
+          "note": "The stored snapshot is rendered through the shared view with no authority or site check; only the organization is taken from the scope. The archive list returns envelopes only and there is no download or export route."
+        },
+        {
+          "path": "src/lib/executive/report/worker.ts",
+          "locator": "systemScopeFor",
+          "note": "Reports are generated under a synthetic OWNER scope holding every axis and every active site, and the comment promises narrowing at open time."
+        },
+        {
+          "path": "src/lib/executive/scope.ts",
+          "locator": "resolveExecutiveScope",
+          "note": "Opening a report needs the platform administrator capability and one executive axis; it does not need the axis a stored section was built with."
+        },
+        {
+          "path": "src/lib/org/rbac.ts",
+          "locator": "view_erp_compensation",
+          "note": "Financial visibility is OWNER-only, so an ADMIN reaching the archive crosses a role boundary."
+        }
+      ],
+      "existingControls": [
+        "The archive is read by organization and date with the organization taken from the server-resolved scope, so another tenant's report is not reachable.",
+        "The live dashboard and the summary API gate every section on the reader's own axes and site list.",
+        "Reaching the page needs the platform administrator capability, so this is an insider-class exposure and not an anonymous one."
+      ],
+      "controlGaps": [
+        "No code narrows or refuses a stored section by the reader's authority at open time.",
+        "No test opens an archived report as a reader who lacks the financial axis or holds a subset of sites.",
+        "The completion notification goes to OWNER and ADMIN members whether or not they may open every section."
+      ],
+      "likelihoodFactors": {
+        "reachability": 3,
+        "exploitability": 5,
+        "privilegeAccessibility": 2,
+        "repeatability": 5
+      },
+      "impactFactors": {
+        "confidentiality": 3,
+        "integrity": 0,
+        "availability": 0,
+        "auditability": 1,
+        "industrialSafety": 0
+      },
+      "likelihood": 4,
+      "impact": 3,
+      "score": 12,
+      "severityFromScore": "HIGH",
+      "severityClamp": null,
+      "severity": "HIGH",
+      "dominantImpact": [
+        "CONFIDENTIALITY"
+      ],
+      "confidence": "MEDIUM",
+      "remediationPriority": 36,
+      "remediationPhase": "S4_TENANT_AND_SITE_ISOLATION",
+      "remediationOwnership": "report-archive-read-time-authority",
+      "acceptanceCriteria": [
+        "A test asserts that an ADMIN who lacks the financial axis opens a stored report and receives the financial section as refused, not rendered.",
+        "A test asserts that a reader holding a subset of sites receives plant data for those sites only.",
+        "The worker comment and the detail page describe the same rule."
+      ],
+      "verificationMethod": "AUTOMATED_TEST",
+      "residualRisk": "Narrowing at read time protects readers of the archive only. A stored snapshot still contains the names of users who acted on approvals and costs, and the completion notice still reaches every OWNER and ADMIN. The platform-administrator trust assumption stays a design assumption until it is exercised at run time.",
+      "dependencies": [],
+      "relatedRiskIds": [
+        "R-10",
+        "R-63",
+        "R-72"
+      ],
+      "originScope": "DELTA_RELOCK"
+    },
+    {
+      "riskId": "R-66",
+      "title": "The customer project panel returns summed project cost to ADMIN, who is refused cost figures on every ERP surface",
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "stride": [
+        "INFORMATION_DISCLOSURE"
+      ],
+      "threatActors": [
+        "MALICIOUS_TENANT_MEMBER",
+        "TENANT_ADMIN_OR_TAKEOVER"
+      ],
+      "preconditions": [
+        "The caller is an ADMIN of the organization, which holds view_erp and view_customers but not view_erp_compensation.",
+        "At least one project is linked to a customer and has cost rows.",
+        "No authoritative document says whether a customer-level cost aggregate is outside the compensation gate. The behaviour (the route returns recordedCost to an ADMIN) is confirmed in code; whether it is wanted is undecided and is recorded in policy."
+      ],
+      "affectedAssets": [
+        "AUTHORIZATION_BOUNDARY",
+        "FACTORY_AND_ERP_DATA"
+      ],
+      "sourceFindingIds": [
+        "DELTA-RL-002"
+      ],
+      "evidence": [
+        {
+          "path": "src/app/api/tenant/customers/[id]/projects/route.ts",
+          "locator": "GET",
+          "note": "The route requires view_customers and view_erp and does not require view_erp_compensation."
+        },
+        {
+          "path": "src/lib/customers/service.ts",
+          "locator": "linkedProjects",
+          "note": "The response carries recordedCost, summed from the cost ledger per currency, for any caller the route admits."
+        },
+        {
+          "path": "src/lib/erp/operations.ts",
+          "locator": "toProject",
+          "note": "The ERP layer nulls budget and actual cost for everyone without the compensation permission."
+        },
+        {
+          "path": "src/lib/org/rbac.ts",
+          "locator": "view_erp",
+          "note": "ADMIN holds view_erp; only OWNER holds view_erp_compensation."
+        }
+      ],
+      "existingControls": [
+        "The query is filtered by the server-resolved organization and by the customer's own projects.",
+        "Only OWNER and ADMIN reach the route; both are privileged roles of the same organization."
+      ],
+      "controlGaps": [
+        "The cost aggregate is not gated on the compensation permission.",
+        "Linking a project to a customer discloses project granularity to the customer-management role, limited by the need for manage_erp.",
+        "No test asserts either behaviour: neither that an ADMIN does not receive recordedCost nor that the aggregate is the only cost the route returns."
+      ],
+      "likelihoodFactors": {
+        "reachability": 4,
+        "exploitability": 5,
+        "privilegeAccessibility": 3,
+        "repeatability": 5
+      },
+      "impactFactors": {
+        "confidentiality": 2,
+        "integrity": 0,
+        "availability": 0,
+        "auditability": 0,
+        "industrialSafety": 0
+      },
+      "likelihood": 4,
+      "impact": 2,
+      "score": 8,
+      "severityFromScore": "MEDIUM",
+      "severityClamp": null,
+      "severity": "MEDIUM",
+      "dominantImpact": [
+        "CONFIDENTIALITY"
+      ],
+      "confidence": "HIGH",
+      "remediationPriority": 56,
+      "remediationPhase": "S4_TENANT_AND_SITE_ISOLATION",
+      "remediationOwnership": "customer-project-cost-compensation-gate",
+      "acceptanceCriteria": [
+        "If the owner decides that the recorded-cost total is an ERP compensation figure: a test asserts that the customer project route called as an ADMIN returns recordedCost as absent or null, and a test asserts that the same route called as an OWNER returns the figures.",
+        "If the owner decides that the recorded-cost total is a customer-level aggregate outside the compensation gate: the difference from the ERP surfaces is written into the customer feature documentation, a test asserts that the route returns nothing finer than one amount per currency (no per-project cost), and a test asserts that every role without view_erp, including MANAGER, receives no project data and no recordedCost."
+      ],
+      "verificationMethod": "AUTOMATED_TEST",
+      "residualRisk": "Gating the aggregate leaves the project list itself visible to anyone with view_erp, which is intended. Whether a customer-level cost view should exist at all for ADMIN is an owner decision: both outcomes are recorded in policy with their own testable criteria, and neither is chosen here.",
+      "dependencies": [],
+      "relatedRiskIds": [
+        "R-63",
+        "R-73"
+      ],
+      "originScope": "DELTA_RELOCK",
+      "policy": {
+        "status": "OPEN",
+        "question": "Is the per-currency recorded-cost total on a customer an ERP compensation figure that only holders of view_erp_compensation (OWNER) may read, or a customer-level aggregate that holders of view_erp (OWNER and ADMIN) may read?",
+        "ownerRole": "PRODUCT_OWNER",
+        "ownerDecisionEvidence": null,
+        "branches": [
+          {
+            "branchId": "COMPENSATION_GATED",
+            "condition": "The recorded-cost total is an ERP compensation figure and follows the view_erp_compensation gate.",
+            "requiredControl": "The customer project route returns recordedCost only to callers who hold view_erp_compensation, as the ERP surfaces do.",
+            "verificationMethod": "AUTOMATED_TEST",
+            "requiredTests": [
+              "A route test calls the customer project route as an ADMIN and asserts that recordedCost is absent or null.",
+              "A route test calls the same route as an OWNER and asserts that the per-currency totals are returned."
+            ],
+            "acceptanceCriteria": [
+              "If the owner decides that the recorded-cost total is an ERP compensation figure: a test asserts that the customer project route called as an ADMIN returns recordedCost as absent or null, and a test asserts that the same route called as an OWNER returns the figures."
+            ]
+          },
+          {
+            "branchId": "AGGREGATE_VISIBLE",
+            "condition": "The recorded-cost total is a customer-level aggregate that view_erp is enough to read.",
+            "requiredControl": "The route returns nothing finer than one amount per currency, only to callers who hold view_customers and view_erp, and the difference from the ERP surfaces is documented.",
+            "verificationMethod": "AUTOMATED_TEST",
+            "requiredTests": [
+              "A route test asserts that the response carries one amount per currency and no per-project cost.",
+              "A route test calls the route as MANAGER and as every role without view_erp and asserts that it returns no project data and no recordedCost."
+            ],
+            "acceptanceCriteria": [
+              "If the owner decides that the recorded-cost total is a customer-level aggregate outside the compensation gate: the difference from the ERP surfaces is written into the customer feature documentation, a test asserts that the route returns nothing finer than one amount per currency (no per-project cost), and a test asserts that every role without view_erp, including MANAGER, receives no project data and no recordedCost."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "riskId": "R-67",
+      "title": "The nightly-report entrypoint accepts any of three bearer tokens, is public with no origin check or rate limit, and returns other tenants' organization ids",
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "stride": [
+        "ELEVATION_OF_PRIVILEGE",
+        "INFORMATION_DISCLOSURE"
+      ],
+      "threatActors": [
+        "DIRECT_ORIGIN_ATTACKER",
+        "INSIDER_OR_ERRING_OPERATOR",
+        "SUPPLY_CHAIN_ATTACKER"
+      ],
+      "preconditions": [
+        "The caller holds one of EXECUTIVE_REPORT_WORKER_TOKEN, METERING_WORKER_TOKEN or METRICS_TOKEN, or a platform-administrator session.",
+        "The metrics token is the one most likely to be held by a third-party scraper; whether it is, and how strong any of the three tokens is, was not observed."
+      ],
+      "affectedAssets": [
+        "SECRETS_AND_SIGNING_KEYS",
+        "TENANT_ISOLATION",
+        "WORKER_BOUNDARY"
+      ],
+      "sourceFindingIds": [
+        "DELTA-RL-003",
+        "DELTA-RR-006"
+      ],
+      "evidence": [
+        {
+          "path": "deploy/nginx/default.conf",
+          "locator": "location /",
+          "note": "A single catch-all location proxies every path; no allow-list or rate limit applies to this route."
+        },
+        {
+          "path": "scripts/__tests__/executive-guard-recognition.test.ts",
+          "locator": "the worker guard performs the checks its registration vouches for",
+          "note": "The test locks the accept-all chain by asserting that the guard source names all three variables."
+        },
+        {
+          "path": "src/app/api/executive/reports/run/route.ts",
+          "locator": "POST",
+          "note": "The whole pass report is returned, and the route imports no origin or rate-limit helper."
+        },
+        {
+          "path": "src/lib/executive/report/auth.ts",
+          "locator": "tokenAccepted",
+          "note": "Every configured token among three is compared and any match opens the door; the module comment says setting the dedicated variable closes the others, which the code does not do."
+        },
+        {
+          "path": "src/lib/executive/report/worker.ts",
+          "locator": "PassReport",
+          "note": "Failures, undelivered entries and the pagination cursor carry organization ids of tenants other than the caller's."
+        }
+      ],
+      "existingControls": [
+        "The comparison is constant-time, and with no token configured and no administrator session the endpoint answers 401.",
+        "The pass is bounded to 200 organizations per request, leased and idempotent, and the notification carries no figures.",
+        "The session cookies are strict or lax, so a cross-site POST does not carry them."
+      ],
+      "controlGaps": [
+        "Three credentials with different intended blast radii open the same door.",
+        "The response is not reduced to counts for a token caller, and paging with the returned cursor enumerates every organization id.",
+        "The sibling cookie-authenticated writes refuse an untrusted Origin; this one does not.",
+        "No per-credential rate limit protects the token comparison."
+      ],
+      "likelihoodFactors": {
+        "reachability": 3,
+        "exploitability": 2,
+        "privilegeAccessibility": 1,
+        "repeatability": 5
+      },
+      "impactFactors": {
+        "confidentiality": 2,
+        "integrity": 2,
+        "availability": 2,
+        "auditability": 1,
+        "industrialSafety": 0
+      },
+      "likelihood": 3,
+      "impact": 2,
+      "score": 6,
+      "severityFromScore": "MEDIUM",
+      "severityClamp": null,
+      "severity": "MEDIUM",
+      "dominantImpact": [
+        "CONFIDENTIALITY",
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "confidence": "HIGH",
+      "remediationPriority": 58,
+      "remediationPhase": "S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS",
+      "remediationOwnership": "report-run-entrypoint-credential-scope",
+      "acceptanceCriteria": [
+        "A test asserts that, with the dedicated token configured, the metering token and the metrics token are refused.",
+        "A test asserts that the token-path response contains no organization id.",
+        "A test asserts that the entrypoint refuses an untrusted Origin on the session path."
+      ],
+      "verificationMethod": "AUTOMATED_TEST",
+      "residualRisk": "A dedicated token still travels in the environment of the runner and of the web tier; token strength and rotation are outside this entry (R-49), and the entrypoint remains an internet-facing route whose only barrier is that token.",
+      "dependencies": [],
+      "relatedRiskIds": [
+        "R-21",
+        "R-49",
+        "R-53"
+      ],
+      "originScope": "DELTA_RELOCK"
+    },
+    {
+      "riskId": "R-68",
+      "title": "The nightly-report path can freeze, announce or report something other than what happened: a default-zone freeze, a transient site-read failure stored as a FORBIDDEN section, announced-but-undelivered, an outage shown as a normal state, and skipped or colliding business days",
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "stride": [
+        "REPUDIATION",
+        "TAMPERING"
+      ],
+      "threatActors": [
+        "INFRASTRUCTURE_FAILURE",
+        "TENANT_ADMIN_OR_TAKEOVER"
+      ],
+      "preconditions": [
+        "A failure of the batched settings read or of the single site read during a pass, or of the claim release, or an outage of the database while the runner polls; or an organization administrator changing the reporting zone or cutoff; or a night that passes with no pass running.",
+        "The runner is documented as not started by the deploy; until it runs, the archive is empty."
+      ],
+      "affectedAssets": [
+        "AUDIT_EVIDENCE",
+        "FACTORY_AND_ERP_DATA",
+        "WORKER_BOUNDARY"
+      ],
+      "sourceFindingIds": [
+        "DELTA-RL-005",
+        "DELTA-RL-006",
+        "DELTA-RL-007",
+        "DELTA-RR-001",
+        "DELTA-RR-009"
+      ],
+      "evidence": [
+        {
+          "path": "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx",
+          "locator": "the detail page",
+          "note": "An unreadable archive renders as a missing report."
+        },
+        {
+          "path": "src/lib/executive/report/generate.ts",
+          "locator": "generateDailyReport",
+          "note": "An existing report is found by organization and date label only; nothing regenerates a stored night and no caller supplies a correction."
+        },
+        {
+          "path": "src/lib/executive/report/worker.ts",
+          "locator": "announce",
+          "note": "The release of a claim is discarded and its failure swallowed; an absent client yields an empty pass; a failed claim is not listed as undelivered."
+        },
+        {
+          "path": "src/lib/executive/report/worker.ts",
+          "locator": "siteIdsOf",
+          "note": "An unreadable site list is returned as an empty list, which the industrial section answers as FORBIDDEN (no site granted) and the report stores."
+        },
+        {
+          "path": "src/lib/executive/settings.ts",
+          "locator": "loadExecutiveSettingsMany",
+          "note": "Every id starts as the default and stays so when the batched query throws."
+        }
+      ],
+      "existingControls": [
+        "Each stored report names the zone and cutoff it used.",
+        "The next poll retries an unreported night within the same day.",
+        "The archive list page distinguishes an unreadable archive from an empty one."
+      ],
+      "controlGaps": [
+        "A failed batched read is indistinguishable from an absent row.",
+        "A failed site read is indistinguishable from an organization with no site, and is stored with a permission reason.",
+        "A failed claim release is neither logged, retried nor persisted.",
+        "No signal separates no-database from nothing-to-do on the worker path or the detail page.",
+        "The lookup ignores the zone and cutoff, and each pass targets only the last completed day."
+      ],
+      "likelihoodFactors": {
+        "reachability": 3,
+        "exploitability": 1,
+        "privilegeAccessibility": 5,
+        "repeatability": 2
+      },
+      "impactFactors": {
+        "confidentiality": 0,
+        "integrity": 2,
+        "availability": 1,
+        "auditability": 2,
+        "industrialSafety": 0
+      },
+      "likelihood": 3,
+      "impact": 2,
+      "score": 6,
+      "severityFromScore": "MEDIUM",
+      "severityClamp": null,
+      "severity": "MEDIUM",
+      "dominantImpact": [
+        "INTEGRITY",
+        "AUDITABILITY"
+      ],
+      "confidence": "HIGH",
+      "remediationPriority": 59,
+      "remediationPhase": "S7_FAILURE_SEMANTICS_AND_TRUTHFULNESS",
+      "remediationOwnership": "report-path-state-truthfulness",
+      "acceptanceCriteria": [
+        "A test asserts that a failed batched settings read writes no report.",
+        "A test asserts that a failed site read writes no FORBIDDEN industrial section and leaves the night open for a later pass.",
+        "A test asserts that a failed claim release is reported by the pass and retried by a later pass.",
+        "A test asserts that a pass with no database does not look like a held lease and that the detail page shows an unavailable state for an unreadable archive.",
+        "A test asserts that a night missed entirely is reported by a later pass and that a zone change cannot reuse a stored label for a different window."
+      ],
+      "verificationMethod": "AUTOMATED_TEST",
+      "residualRisk": "Fixing the four paths does not make a stored report correctable by itself: the correction path exists in the library and no caller issues it, which is a product decision.",
+      "dependencies": [],
+      "relatedRiskIds": [
+        "R-36",
+        "R-37",
+        "R-40"
+      ],
+      "originScope": "DELTA_RELOCK"
+    },
+    {
+      "riskId": "R-69",
+      "title": "Creating a frozen financial snapshot and reading the archive leave no audit record",
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "stride": [
+        "REPUDIATION"
+      ],
+      "threatActors": [
+        "INSIDER_OR_ERRING_OPERATOR",
+        "MALICIOUS_TENANT_MEMBER"
+      ],
+      "preconditions": [
+        "A report exists, or is about to be written by the runner.",
+        "Opening a stored report needs the platform administrator capability and one executive axis (R-65)."
+      ],
+      "affectedAssets": [
+        "AUDIT_EVIDENCE",
+        "FACTORY_AND_ERP_DATA"
+      ],
+      "sourceFindingIds": [
+        "DELTA-RR-010"
+      ],
+      "evidence": [
+        {
+          "path": "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx",
+          "locator": "the detail page",
+          "note": "Nothing records who opened a report."
+        },
+        {
+          "path": "src/lib/executive/report/generate.ts",
+          "locator": "generateDailyReport",
+          "note": "Only a correction writes an audit event; the ordinary nightly run is deliberately unaudited, and no caller issues a correction."
+        },
+        {
+          "path": "src/lib/executive/report/read.ts",
+          "locator": "the read module",
+          "note": "No audit writer is imported or called."
+        }
+      ],
+      "existingControls": [
+        "Settings changes are audited inside the same transaction, with before and after values.",
+        "The customer data layer writes every change's audit event in the same transaction."
+      ],
+      "controlGaps": [
+        "No event records that a snapshot containing financial figures and user names was created.",
+        "No event records any read of the archive."
+      ],
+      "likelihoodFactors": {
+        "reachability": 3,
+        "exploitability": 2,
+        "privilegeAccessibility": 2,
+        "repeatability": 5
+      },
+      "impactFactors": {
+        "confidentiality": 0,
+        "integrity": 0,
+        "availability": 0,
+        "auditability": 3,
+        "industrialSafety": 0
+      },
+      "likelihood": 3,
+      "impact": 3,
+      "score": 9,
+      "severityFromScore": "MEDIUM",
+      "severityClamp": null,
+      "severity": "MEDIUM",
+      "dominantImpact": [
+        "AUDITABILITY"
+      ],
+      "confidence": "HIGH",
+      "remediationPriority": 49,
+      "remediationPhase": "S8_AUDIT_AND_TAMPER_EVIDENCE",
+      "remediationOwnership": "report-archive-audit-coverage",
+      "acceptanceCriteria": [
+        "A test asserts that opening a stored report, on the archive list page and on the detail page, writes an audit event naming the reader, the organization and the night.",
+        "A test asserts that the creation of a stored report by the nightly pass writes an audit event naming the organization and the night, and that the existing correction event is unchanged."
+      ],
+      "verificationMethod": "AUTOMATED_TEST",
+      "residualRisk": "An audit event proves that a read happened, not that the reader was entitled to it (R-65), and the audit store itself has no tamper evidence (R-38).",
+      "dependencies": [],
+      "relatedRiskIds": [
+        "R-37",
+        "R-38",
+        "R-65"
+      ],
+      "originScope": "DELTA_RELOCK"
+    },
+    {
+      "riskId": "R-70",
+      "title": "Linking a project to a customer is check-then-write: concurrent links can overwrite each other while both audit rows claim success",
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "stride": [
+        "REPUDIATION",
+        "TAMPERING"
+      ],
+      "threatActors": [
+        "INSIDER_OR_ERRING_OPERATOR",
+        "MALICIOUS_TENANT_MEMBER"
+      ],
+      "preconditions": [
+        "Two members holding manage_customers and manage_erp link the same project to different customers at nearly the same time, or a project is deleted between the check and the update.",
+        "The database runs at its default isolation level."
+      ],
+      "affectedAssets": [
+        "AUDIT_EVIDENCE",
+        "FACTORY_AND_ERP_DATA"
+      ],
+      "sourceFindingIds": [
+        "DELTA-RR-003"
+      ],
+      "evidence": [
+        {
+          "path": "src/lib/customers/service.ts",
+          "locator": "setProjectLink",
+          "note": "The project is read once; the update filters by id and organization only and does not check the row count; the audit event follows unconditionally."
+        }
+      ],
+      "existingControls": [
+        "Both foreign keys are composite, so a link cannot cross organizations for a row that has an organization.",
+        "The transaction keeps the read, the update and the audit together."
+      ],
+      "controlGaps": [
+        "The update has no precondition on the partyId that was read and does not repeat the deletedAt filter.",
+        "The audit event is written whatever the update changed."
+      ],
+      "likelihoodFactors": {
+        "reachability": 3,
+        "exploitability": 2,
+        "privilegeAccessibility": 3,
+        "repeatability": 1
+      },
+      "impactFactors": {
+        "confidentiality": 0,
+        "integrity": 2,
+        "availability": 0,
+        "auditability": 2,
+        "industrialSafety": 0
+      },
+      "likelihood": 2,
+      "impact": 2,
+      "score": 4,
+      "severityFromScore": "LOW",
+      "severityClamp": null,
+      "severity": "LOW",
+      "dominantImpact": [
+        "INTEGRITY",
+        "AUDITABILITY"
+      ],
+      "confidence": "HIGH",
+      "remediationPriority": 62,
+      "remediationPhase": "S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS",
+      "remediationOwnership": "customer-project-link-concurrency",
+      "acceptanceCriteria": [
+        "A test asserts that a link whose precondition no longer holds changes nothing and writes no success audit event.",
+        "A test asserts that two concurrent links of one project leave exactly one link and exactly one matching audit event."
+      ],
+      "verificationMethod": "AUTOMATED_TEST",
+      "residualRisk": "A conditional update fixes this path only; any other writer of ErpProject.partyId would need the same precondition.",
+      "dependencies": [],
+      "relatedRiskIds": [
+        "R-09",
+        "R-71"
+      ],
+      "originScope": "DELTA_RELOCK"
+    },
+    {
+      "riskId": "R-71",
+      "title": "Customer name uniqueness is enforced only by a read before the insert, so concurrent creates or a double submit can store duplicates",
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "stride": [
+        "TAMPERING"
+      ],
+      "threatActors": [
+        "AUTHENTICATED_USER",
+        "INSIDER_OR_ERRING_OPERATOR"
+      ],
+      "preconditions": [
+        "Two requests creating or renaming customers to the same name in the same organization run concurrently, for example a double submit of the creation form."
+      ],
+      "affectedAssets": [
+        "FACTORY_AND_ERP_DATA"
+      ],
+      "sourceFindingIds": [
+        "DELTA-RR-004"
+      ],
+      "evidence": [
+        {
+          "path": "prisma/migrations/20261013090000_tenant_customers/migration.sql",
+          "locator": "CREATE UNIQUE INDEX",
+          "note": "The only unique index is on organization and id; none covers the name."
+        },
+        {
+          "path": "src/lib/customers/service.ts",
+          "locator": "assertUniqueName",
+          "note": "A case-insensitive read decides uniqueness inside the transaction; the insert follows."
+        }
+      ],
+      "existingControls": [
+        "The same-name read refuses the ordinary sequential duplicate with a stated conflict.",
+        "Archived customers are excluded from the clash test, so a retired name can be reused deliberately."
+      ],
+      "controlGaps": [
+        "No database constraint backs the rule, so a race stores two active customers with one name."
+      ],
+      "likelihoodFactors": {
+        "reachability": 3,
+        "exploitability": 3,
+        "privilegeAccessibility": 3,
+        "repeatability": 3
+      },
+      "impactFactors": {
+        "confidentiality": 0,
+        "integrity": 1,
+        "availability": 0,
+        "auditability": 0,
+        "industrialSafety": 0
+      },
+      "likelihood": 3,
+      "impact": 1,
+      "score": 3,
+      "severityFromScore": "LOW",
+      "severityClamp": null,
+      "severity": "LOW",
+      "dominantImpact": [
+        "INTEGRITY"
+      ],
+      "confidence": "HIGH",
+      "remediationPriority": 63,
+      "remediationPhase": "S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS",
+      "remediationOwnership": "customer-name-uniqueness-constraint",
+      "acceptanceCriteria": [
+        "A test asserts that two concurrent creates of one name store exactly one active customer."
+      ],
+      "verificationMethod": "AUTOMATED_TEST",
+      "residualRisk": "A partial unique index on the lower-cased active name changes existing rows only if duplicates already exist; the migration needs a check for them first.",
+      "dependencies": [],
+      "relatedRiskIds": [
+        "R-70"
+      ],
+      "originScope": "DELTA_RELOCK"
+    },
+    {
+      "riskId": "R-72",
+      "title": "The executive features keep personal data with no retention, erasure or export rule, and the organization lifecycle for the nightly pass is undefined",
+      "productionState": "POLICY_AMBIGUITY",
+      "stride": [
+        "INFORMATION_DISCLOSURE"
+      ],
+      "threatActors": [
+        "INSIDER_OR_ERRING_OPERATOR",
+        "TENANT_ADMIN_OR_TAKEOVER"
+      ],
+      "preconditions": [
+        "Customer records and stored reports exist and contain personal data of natural persons (contact e-mail and phone, free-text contact log, the names of users who acted on approvals and costs).",
+        "The owner has not decided a retention period, an erasure route or an export route for them, or whether dormant organizations should be skipped by the nightly pass."
+      ],
+      "affectedAssets": [
+        "FACTORY_AND_ERP_DATA",
+        "PII_AND_CANDIDATE_DATA"
+      ],
+      "sourceFindingIds": [
+        "DELTA-RR-007",
+        "DELTA-RR-008",
+        "DELTA-RR-011"
+      ],
+      "evidence": [
+        {
+          "path": "prisma/schema.prisma",
+          "locator": "model ExecutiveDailyReport",
+          "note": "The snapshot is unbounded JSON of the rendered summary; the only removal is the cascade when the organization is deleted."
+        },
+        {
+          "path": "src/lib/compliance/erasure-targets.ts",
+          "locator": "the closed erasure registry",
+          "note": "Party and PartyInteraction are not enumerated."
+        },
+        {
+          "path": "src/lib/compliance/export-sources.ts",
+          "locator": "the closed export registry",
+          "note": "Party and PartyInteraction are not enumerated."
+        },
+        {
+          "path": "src/lib/compliance/processing-inventory.ts",
+          "locator": "the processing inventory",
+          "note": "Customer contact data is not listed."
+        },
+        {
+          "path": "src/lib/customers/service.ts",
+          "locator": "the header",
+          "note": "Nothing is deleted: a customer is archived and interactions are append-only; the service has no delete, anonymise or export operation."
+        },
+        {
+          "path": "src/lib/executive/oversight.ts",
+          "locator": "resolveNames",
+          "note": "User names are resolved into the sections that are frozen."
+        },
+        {
+          "path": "src/lib/executive/report/worker.ts",
+          "locator": "runBatch",
+          "note": "Organizations are selected by id with no lifecycle filter; the Organization model has no status field."
+        }
+      ],
+      "existingControls": [
+        "The candidate-data (ATS) module has its own retention and erasure path, which shows the platform can express one.",
+        "Customers are archived, not lost, and an archived customer is excluded from live counts."
+      ],
+      "controlGaps": [
+        "No retention period, erasure route or export route exists for customer personal data or for report snapshots, and Party and PartyInteraction are in none of the closed registries (erasure-targets, export-sources, processing-inventory).",
+        "Whether a pass should skip a closed or dormant organization is unproven because no lifecycle concept exists."
+      ],
+      "likelihoodFactors": {
+        "reachability": 3,
+        "exploitability": 1,
+        "privilegeAccessibility": 3,
+        "repeatability": 3
+      },
+      "impactFactors": {
+        "confidentiality": 2,
+        "integrity": 0,
+        "availability": 0,
+        "auditability": 1,
+        "industrialSafety": 0
+      },
+      "likelihood": 3,
+      "impact": 2,
+      "score": 6,
+      "severityFromScore": "MEDIUM",
+      "severityClamp": null,
+      "severity": "MEDIUM",
+      "dominantImpact": [
+        "CONFIDENTIALITY"
+      ],
+      "confidence": "MEDIUM",
+      "remediationPriority": 60,
+      "remediationPhase": "OWNER_POLICY_DECISION",
+      "remediationOwnership": "executive-data-retention-policy",
+      "acceptanceCriteria": [
+        "If the owner decides that customer contact data and stored report snapshots are personal data: Party, PartyInteraction and the report snapshot are enumerated in the closed registries erasure-targets, export-sources and processing-inventory with a retention period, the registry completeness tests (erasure-governance and export-governance) pass with them listed, a test asserts that an erasure request for a data subject plans and executes a removal or anonymisation of the matching customer rows, and a test asserts that an export request includes them.",
+        "If the owner decides that customer contact data and stored report snapshots are not subject to erasure and export: the exemption and its basis are recorded in processing-inventory, a test asserts that the closed registries name Party, PartyInteraction and the report snapshot as exempt with that basis, and the customer feature documentation states the retention period that applies.",
+        "The owner records whether the nightly pass skips organizations that are closed or dormant, in the executive report design note; if it skips them, a test asserts that the pass writes no report and sends no notification for such an organization."
+      ],
+      "verificationMethod": "OWNER_POLICY_STATEMENT",
+      "residualRisk": "Until a policy exists the platform cannot show a data subject or a regulator what is kept, for how long or how it is removed; this entry records the question, not a breach.",
+      "dependencies": [],
+      "relatedRiskIds": [
+        "R-65"
+      ],
+      "originScope": "DELTA_RELOCK",
+      "policy": {
+        "status": "OPEN",
+        "question": "Are the customer contact data (Party and PartyInteraction) and the frozen report snapshots personal data of natural persons that the platform must retain for a stated period, erase on request and include in a data export?",
+        "ownerRole": "DATA_PROTECTION_OWNER",
+        "ownerDecisionEvidence": null,
+        "branches": [
+          {
+            "branchId": "RETENTION_AND_ERASURE_APPLY",
+            "condition": "They are personal data and fall under retention, erasure and export.",
+            "requiredControl": "Party, PartyInteraction and the report snapshot are enumerated in the closed registries erasure-targets, export-sources and processing-inventory with a retention period.",
+            "verificationMethod": "AUTOMATED_TEST",
+            "requiredTests": [
+              "A registry test asserts that erasure-governance and export-governance pass with Party, PartyInteraction and the report snapshot enumerated.",
+              "An erasure test asserts that an erasure request for a data subject plans and executes a removal or anonymisation of the matching customer rows.",
+              "An export test asserts that an export request for a data subject includes the matching customer rows."
+            ],
+            "acceptanceCriteria": [
+              "If the owner decides that customer contact data and stored report snapshots are personal data: Party, PartyInteraction and the report snapshot are enumerated in the closed registries erasure-targets, export-sources and processing-inventory with a retention period, the registry completeness tests (erasure-governance and export-governance) pass with them listed, a test asserts that an erasure request for a data subject plans and executes a removal or anonymisation of the matching customer rows, and a test asserts that an export request includes them."
+            ]
+          },
+          {
+            "branchId": "EXEMPT_DOCUMENTED",
+            "condition": "They are not personal data of natural persons, or are held for a documented purpose without erasure or export.",
+            "requiredControl": "The exemption and its basis are recorded in processing-inventory, and the customer feature documentation states the retention period that applies.",
+            "verificationMethod": "AUTOMATED_TEST",
+            "requiredTests": [
+              "A registry test asserts that the closed registries name Party, PartyInteraction and the report snapshot as exempt with that basis."
+            ],
+            "acceptanceCriteria": [
+              "If the owner decides that customer contact data and stored report snapshots are not subject to erasure and export: the exemption and its basis are recorded in processing-inventory, a test asserts that the closed registries name Party, PartyInteraction and the report snapshot as exempt with that basis, and the customer feature documentation states the retention period that applies."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "riskId": "R-73",
+      "title": "The customer and project-link surface skips the platform-administrator gate that all ERP routes apply, so an organization owner or administrator who is not a platform admin reads ERP project data and changes a project's customer",
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "stride": [
+        "ELEVATION_OF_PRIVILEGE",
+        "INFORMATION_DISCLOSURE",
+        "TAMPERING"
+      ],
+      "threatActors": [
+        "MALICIOUS_TENANT_MEMBER",
+        "TENANT_ADMIN_OR_TAKEOVER"
+      ],
+      "preconditions": [
+        "The caller is an OWNER or ADMIN of an organization (view_customers, view_erp and manage_erp) whose account does not hold the platform admin capability.",
+        "The organization has at least one project, and for a write the caller also holds manage_customers.",
+        "Whether tenant owners should reach ERP-derived data without the platform capability is undecided (see policy). The repository's reference behaviour (27 ERP route files, the ERP page scope and the executive scope) requires the capability, while the customer feature documentation grants organization permissions only."
+      ],
+      "affectedAssets": [
+        "AUTHORIZATION_BOUNDARY",
+        "FACTORY_AND_ERP_DATA"
+      ],
+      "sourceFindingIds": [
+        "DELTA-RR-002"
+      ],
+      "evidence": [
+        {
+          "path": "src/app/api/erp/projects/route.ts",
+          "locator": "every handler",
+          "note": "The reference: all 27 ERP route files refuse a caller without the platform capability before the organization permission is checked."
+        },
+        {
+          "path": "src/app/api/tenant/customers/[id]/projects/route.ts",
+          "locator": "GET and PUT",
+          "note": "Both handlers resolve the active organization and check organization permissions only; neither reads the platform identity or the platform capability."
+        },
+        {
+          "path": "src/lib/customers/page-scope.ts",
+          "locator": "resolveCustomerPageScope",
+          "note": "The customer pages gate project data on the organization permission only."
+        },
+        {
+          "path": "src/lib/customers/service.ts",
+          "locator": "setProjectLink and linkableProjects",
+          "note": "The write changes ErpProject.partyId and the list offers the organization's ERP projects."
+        },
+        {
+          "path": "src/lib/executive/scope.ts",
+          "locator": "resolveExecutiveScope",
+          "note": "The executive surface applies the same two layers."
+        }
+      ],
+      "existingControls": [
+        "The organization is the server-resolved active selection and every query filters by it, so another tenant's data is not reachable.",
+        "The customer-to-project foreign key is composite (with the null-organization caveat recorded on R-09).",
+        "Reading and writing still need organization permissions and a trusted origin on writes."
+      ],
+      "controlGaps": [
+        "The platform capability that gates every ERP route is absent from the customer and project-link routes and pages.",
+        "No test asserts either behaviour: neither that a caller who lacks the platform capability is refused by the customer project routes nor that the roles without view_erp are."
+      ],
+      "likelihoodFactors": {
+        "reachability": 3,
+        "exploitability": 5,
+        "privilegeAccessibility": 3,
+        "repeatability": 5
+      },
+      "impactFactors": {
+        "confidentiality": 2,
+        "integrity": 2,
+        "availability": 0,
+        "auditability": 1,
+        "industrialSafety": 0
+      },
+      "likelihood": 4,
+      "impact": 2,
+      "score": 8,
+      "severityFromScore": "MEDIUM",
+      "severityClamp": null,
+      "severity": "MEDIUM",
+      "dominantImpact": [
+        "CONFIDENTIALITY",
+        "INTEGRITY"
+      ],
+      "confidence": "HIGH",
+      "remediationPriority": 57,
+      "remediationPhase": "S4_TENANT_AND_SITE_ISOLATION",
+      "remediationOwnership": "customer-surface-platform-admin-gate",
+      "acceptanceCriteria": [
+        "If the owner decides that the platform-administrator capability is required on the customer surface: the customer routes and pages that read or write project data apply the same two layers as the ERP routes (getCurrentUser and can(user.role, \"admin\") before the organization permission), a test asserts that an OWNER or ADMIN who lacks the platform capability is refused by every customer route that reads or writes project data, and a test asserts that the customer pages do not render project data for such a caller.",
+        "If the owner decides that tenant OWNER and ADMIN may use the customer surface without the platform capability: the difference from the ERP routes is stated in the customer feature documentation, the project data a caller may read or change is limited to the fields the owner names, a test asserts that every role without view_erp (and without manage_erp for the link) is refused by the customer project routes, and a test asserts that no ERP route becomes reachable through the customer surface."
+      ],
+      "verificationMethod": "AUTOMATED_TEST",
+      "residualRisk": "Adding the gate makes the customer feature unavailable to tenant owners who are not platform admins, which may be the opposite of the feature's purpose; keeping the difference needs its own documentation and tests. The fix and the product decision cannot be separated, and both outcomes are recorded in policy without choosing one.",
+      "dependencies": [],
+      "relatedRiskIds": [
+        "R-63",
+        "R-66"
+      ],
+      "originScope": "DELTA_RELOCK",
+      "policy": {
+        "status": "OPEN",
+        "question": "Should an organization OWNER or ADMIN who does not hold the platform administrator capability reach the customer project data and the project-to-customer link, which no ERP route allows without that capability?",
+        "ownerRole": "PRODUCT_OWNER",
+        "ownerDecisionEvidence": null,
+        "branches": [
+          {
+            "branchId": "PLATFORM_ADMIN_REQUIRED",
+            "condition": "The platform-administrator capability is required on the customer surface, as on every ERP route.",
+            "requiredControl": "The customer routes and pages that read or write project data apply getCurrentUser and can(user.role, \"admin\") before the organization permission, as the ERP routes do.",
+            "verificationMethod": "AUTOMATED_TEST",
+            "requiredTests": [
+              "A route test calls every customer route that reads or writes project data as an OWNER and as an ADMIN without the platform capability and asserts that the request is refused.",
+              "A page test asserts that the customer pages do not render project data for such a caller."
+            ],
+            "acceptanceCriteria": [
+              "If the owner decides that the platform-administrator capability is required on the customer surface: the customer routes and pages that read or write project data apply the same two layers as the ERP routes (getCurrentUser and can(user.role, \"admin\") before the organization permission), a test asserts that an OWNER or ADMIN who lacks the platform capability is refused by every customer route that reads or writes project data, and a test asserts that the customer pages do not render project data for such a caller."
+            ]
+          },
+          {
+            "branchId": "TENANT_ACCESS_DOCUMENTED",
+            "condition": "Tenant OWNER and ADMIN may use the customer project surface without the platform capability.",
+            "requiredControl": "The difference from the ERP routes is stated in the customer feature documentation, and the project data a caller may read or change is limited to the fields the owner names.",
+            "verificationMethod": "AUTOMATED_TEST",
+            "requiredTests": [
+              "A route test calls the customer project routes as every role without view_erp, and without manage_erp for the link, and asserts that the request is refused.",
+              "A route test asserts that no ERP route becomes reachable through the customer surface."
+            ],
+            "acceptanceCriteria": [
+              "If the owner decides that tenant OWNER and ADMIN may use the customer surface without the platform capability: the difference from the ERP routes is stated in the customer feature documentation, the project data a caller may read or change is limited to the fields the owner names, a test asserts that every role without view_erp (and without manage_erp for the link) is refused by the customer project routes, and a test asserts that no ERP route becomes reachable through the customer surface."
+            ]
+          }
+        ]
+      }
     }
   ],
   "findings": [
@@ -6069,6 +7152,186 @@
       "summary": "The industrial and twin read paths answer an unavailable database with an empty success: 26 sites on the legacy single-line shape and 98 on the semantic definition, so an operator reads \"zero alarms\" when the truth is \"no connection\".",
       "status": "MAPPED_TO_RISK",
       "ownerRiskId": "R-35"
+    },
+    {
+      "findingId": "DELTA-RL-001",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "The archive list returns envelopes only, but the detail page renders the stored snapshot, built under a synthetic OWNER scope with every axis and every site, without narrowing it to the reader.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-65",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
+    },
+    {
+      "findingId": "DELTA-RL-002",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "The customer project route returns recorded project cost per currency, summed from the cost ledger, to any holder of view_erp (OWNER and ADMIN), although the ERP layer shows cost only to the compensation holder (OWNER).",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-66",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
+    },
+    {
+      "findingId": "DELTA-RL-003",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "POST /api/executive/reports/run accepts the dedicated token, the metering token or the metrics token; the comment that says the dedicated token excludes the others is not what the code does, and the pass response and cursor carry other tenants' organization ids.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-67",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
+    },
+    {
+      "findingId": "DELTA-RL-004",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "The new worker service declares env_file for the whole production environment file, as the three earlier workers do, so the image-level 'no credential' property does not bound what the running process holds.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-53",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_EXISTING_RISK"
+    },
+    {
+      "findingId": "DELTA-RL-005",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "If the worker's batched settings read throws, every organization falls back to the default zone and the pass stores an immutable report for that zone's night.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-68",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
+    },
+    {
+      "findingId": "DELTA-RL-006",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "If the release of the notification claim cannot be performed, the claim stays set and the archive records an announcement nobody received, with no later retry.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-68",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
+    },
+    {
+      "findingId": "DELTA-RL-007",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "A pass with no database answers HTTP 200 like a held lease, a failed claim is reported as not claimed, and the detail page shows an unreadable archive as a missing report.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-68",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
+    },
+    {
+      "findingId": "DELTA-RR-001",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "If the worker's single read of an organization's active sites throws, the empty list becomes the industrial section's site list, the section is stored as FORBIDDEN (no site granted), and the immutable report is never corrected because no product code calls the correction path.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-68",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
+    },
+    {
+      "findingId": "DELTA-RR-002",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "All 27 ERP route files refuse a caller who lacks the platform admin capability before the organization permission is checked; the four customer route files and the customer pages check only organization permissions, so an organization OWNER or ADMIN who is not a platform admin reads linked-project data and changes a project's customer.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-73",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
+    },
+    {
+      "findingId": "DELTA-RR-003",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "setProjectLink reads the project's current customer and then updates by id with no precondition and no row-count check, then writes a success audit event, so a concurrent link can overwrite another and both audit rows claim success.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-70",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
+    },
+    {
+      "findingId": "DELTA-RR-004",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "Creating or renaming a customer checks for a clashing name with a read and then writes; the migration defines no unique index on the name, so concurrent requests can store duplicates.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-71",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
+    },
+    {
+      "findingId": "DELTA-RR-005",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "ErpProject.organizationId is nullable, and a composite foreign key is not enforced when one of its columns is null, so the claim that a cross-tenant link cannot be stored holds only for rows with an organization.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-09",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_EXISTING_RISK"
+    },
+    {
+      "findingId": "DELTA-RR-006",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "The runner entrypoint accepts a platform-administrator session cookie but, unlike the sibling cookie-authenticated writes, does not call the trusted-origin guard.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-67",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
+    },
+    {
+      "findingId": "DELTA-RR-007",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "Each stored report keeps a full snapshot as unbounded JSON, including the names of the users who acted on approvals and costs, with no retention or deletion rule other than cascade on organization deletion.",
+      "status": "POLICY_QUESTION",
+      "ownerRiskId": "R-72",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "POLICY_AMBIGUITY"
+    },
+    {
+      "findingId": "DELTA-RR-008",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "The pass selects every organization by id with no status or activity filter; the Organization model has no status field, so whether dormant organizations should be skipped is undefined and unproven.",
+      "status": "ASSURANCE_GAP",
+      "ownerRiskId": "R-72",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "UNPROVEN"
+    },
+    {
+      "findingId": "DELTA-RR-009",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "An existing report is looked up by organization and date label only, and each pass targets only the last completed day, so a zone change can reuse a label for a different window and a night missed entirely is never reported.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-68",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
+    },
+    {
+      "findingId": "DELTA-RR-010",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "The nightly pass writes a frozen financial snapshot per organization under a synthetic OWNER scope with no audit record, and no read of the archive is audited by the read module, by either archive page or by a database trigger; only a correction is audited and nothing issues one.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-69",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
+    },
+    {
+      "findingId": "DELTA-RR-011",
+      "family": "DELTA",
+      "source": "docs/security/s1-relock-delta.json",
+      "summary": "Customer contact data (Party) and the free-text contact log (PartyInteraction) are stored with no deletion, anonymisation, export or retention rule: the customer library has no such operation and neither model is in the closed erasure registry, the closed export registry or the processing inventory; customers are archived and interactions are append-only.",
+      "status": "POLICY_QUESTION",
+      "ownerRiskId": "R-72",
+      "originScope": "DELTA_RELOCK",
+      "deltaDisposition": "POLICY_AMBIGUITY"
     },
     {
       "findingId": "EDGE-01",
@@ -6710,8 +7973,15 @@
       "family": "LOCK",
       "source": "docs/security/DATA-FLOW-AND-TRUST-BOUNDARIES.md TB-9",
       "summary": "Each worker image contains exactly one dependency-free script with no node_modules, no ORM, no application code and no database credential, and a packaging test asserts the runner and migrator stages copy no scripts.",
-      "status": "POSITIVE_CONTROL",
-      "ownerRiskId": "R-53"
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-53",
+      "revision": {
+        "scope": "DELTA_RELOCK",
+        "supersedes": {
+          "status": "POSITIVE_CONTROL"
+        },
+        "reason": "R-53 is no longer a positive control; the image-level finding stays recorded and is now owned by a current risk."
+      }
     },
     {
       "findingId": "LOCK-ZERO-SERVER-ACTIONS",

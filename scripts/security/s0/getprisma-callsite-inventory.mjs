@@ -57,7 +57,31 @@ export const RESIDUAL_SCREENING_PATH = join(HERE, "getprisma-residual-reachabili
  * record shape. The generated inventory carries it, so a stale inventory is
  * detectable even when the call sites themselves have not moved.
  */
-export const RULESET_VERSION = "s0-b05.5";
+export const RULESET_VERSION = "s0-b05.7";
+
+/**
+ * LINE-ENDING NORMALISATION — the single entry point for every source file the
+ * analyser reads.
+ *
+ * Every budget in this tool is a CHARACTER budget (the 2,600-character window, the
+ * brace walk, the catch search, line and column arithmetic). A carriage return is a
+ * character, so the same file checked out with CRLF has fewer lines inside the same
+ * window than the same file checked out with LF, and a `catch` that sat inside the
+ * window under LF fell outside it under CRLF. Windows with core.autocrlf and a Linux
+ * runner therefore produced different inventories from byte-identical commits.
+ *
+ * Both CR+LF and a lone CR become LF BEFORE the text reaches the tokenizer, the
+ * window, the catch detector, the fingerprint or the line/column maths. The file
+ * LIST (git ls-files or the filesystem walk) is not affected; only reads are, and
+ * every read goes through `readSourceText`.
+ */
+export function normalizeSourceText(text) {
+  return text.replace(/\r\n?/g, "\n");
+}
+
+export function readSourceText(absPath) {
+  return normalizeSourceText(readFileSync(absPath, "utf8"));
+}
 
 /** Directories scanned, POSIX-relative to the repository root. */
 export const SCAN_ROOTS = ["src", "scripts"];
@@ -93,8 +117,17 @@ const SKIP_DIR = new Set(["node_modules", ".next", ".claude", ".git", "fixtures"
  * `scripts/security/` outside this one subtree stays fully scannable: 140 source
  * files under `scripts/` remain in scope, among them
  * `scripts/security/check-env-example.mjs` and `scripts/security/phase100/*`.
+ *
+ * POSTREV-F1. The same holds for the S1 assurance tools: `scripts/security/s1/`
+ * (the register checker, the relock checker, the mutation campaign and their
+ * selftests) is untracked while it is being reviewed and TRACKED the moment it is
+ * committed, at which point the scanner used to read it (860 → 906 textual
+ * occurrences, `check` and the relock check failing). Both subtrees are excluded by
+ * their exact repository-relative prefix, before any file is read, on the
+ * `git ls-files` path and on the filesystem-walk path alike. Look-alikes such as
+ * `scripts/security/s1extra/`, `scripts/s1/` and `src/lib/s1/` stay in scope.
  */
-export const EXCLUDED_PATH_PREFIXES = Object.freeze(["scripts/security/s0/"]);
+export const EXCLUDED_PATH_PREFIXES = Object.freeze(["scripts/security/s0/", "scripts/security/s1/"]);
 
 /** Is this repository-relative path inside an excluded subtree? */
 export function isExcludedPath(rel) {
@@ -1254,7 +1287,7 @@ export function reconcile(root = REPO_ROOT) {
   ];
   const f1 = { perFile: {}, fallbackPoints: 0, bareCatches: 0, independent: {} };
   for (const rel of dbf1Files) {
-    const src = readFileSync(join(root, rel), "utf8");
+    const src = readSourceText(join(root, rel));
     const code = blankCommentsAndStrings(src);
     const points = (code.match(/return\s+fallback\s*\./g) ?? []).length;
     const bare = (code.match(/catch\s*\{/g) ?? []).length;
@@ -1267,7 +1300,7 @@ export function reconcile(root = REPO_ROOT) {
   // mode switch, which is a configuration branch and not a failure path.
   {
     const rel = "src/lib/documents/storage-cleanup.ts";
-    const src = readFileSync(join(root, rel), "utf8");
+    const src = readSourceText(join(root, rel));
     const code = blankCommentsAndStrings(src);
     const all = [...code.matchAll(/return\s+sessionStore\b/g)];
     const modeSwitch = [...code.matchAll(/getStorageMode\s*\(\s*\)\s*!==?\s*$/g)].length;
@@ -1287,7 +1320,7 @@ export function reconcile(root = REPO_ROOT) {
   const f2 = { perFile: {}, total: 0 };
   for (const rel of sourceFiles(root)) {
     if (!f2Dirs.some((d) => rel.startsWith(`${d}/`))) continue;
-    const src = readFileSync(join(root, rel), "utf8");
+    const src = readSourceText(join(root, rel));
     if (!src.includes("getPrisma")) continue;
     const code = blankCommentsAndStrings(src);
     const n = (code.match(/if\s*\(\s*!\s*(?:db|prisma|client)\s*\)\s*return\s*\[\s*\]/g) ?? []).length;
@@ -1300,7 +1333,7 @@ export function reconcile(root = REPO_ROOT) {
   const f2sem = { perFile: {}, total: 0, legacyTotal: f2.total, additional: {} };
   for (const rel of sourceFiles(root)) {
     if (!f2Dirs.some((d) => rel.startsWith(`${d}/`))) continue;
-    const src = readFileSync(join(root, rel), "utf8");
+    const src = readSourceText(join(root, rel));
     if (!src.includes("getPrisma")) continue;
     const code = blankCommentsAndStrings(src);
     let n = 0;
@@ -1460,7 +1493,7 @@ export function buildInventory(root = REPO_ROOT) {
   const seenOverrides = new Set();
 
   for (const relPath of files) {
-    const src = readFileSync(join(root, relPath), "utf8");
+    const src = readSourceText(join(root, relPath));
     if (!src.includes("getPrisma")) continue;
     textual += countTextualOccurrences(src);
     for (const site of findCallSites(relPath, src)) {
@@ -1508,6 +1541,7 @@ export function buildInventory(root = REPO_ROOT) {
         e.terminalBoundary = t.terminalBoundary;
         e.terminalResponse = t.terminalResponse ?? null;
         e.retryBehavior = t.retryBehavior ?? null;
+        if (t.retryTrace !== undefined) e.retryTrace = t.retryTrace;
         e.durability = t.durability ?? null;
         e.auditOutcome = t.auditOutcome ?? null;
         e.callerPath = t.callerPath ?? null;
@@ -1551,6 +1585,7 @@ export function buildInventory(root = REPO_ROOT) {
             callerPath: ov.callerPath ?? null,
             terminalBehavior: ov.terminalBehavior ?? null,
             outcomeFlags: ov.outcomeFlags ?? [],
+            ...(ov.retryTrace === undefined ? {} : { retryTrace: ov.retryTrace }),
             fingerprintMatched: true,
             supersededRuleId: ov.supersededRuleId ?? auto.ruleId,
             // null when the rule set did not reach a verdict at all: there is
@@ -1574,10 +1609,147 @@ export function buildInventory(root = REPO_ROOT) {
   const orphanOverrides = [...byId.keys()].filter((id) => !seenOverrides.has(id)).sort();
   const orphanEdges = [...byEdgeId.keys()].filter((id) => !seenEdges.has(id)).sort();
   const orphanScreenings = [...byScreenId.keys()].filter((id) => !seenScreen.has(id)).sort();
+  const retryTraceProblems = retryTraceViolations(retrySubjects(overrides.adjudications ?? [], edgeTraces.traces ?? []), { root });
   return {
     records, textual, staleOverrides, orphanOverrides, staleEdges, orphanEdges,
-    staleScreenings, orphanScreenings, fileCount: files.length,
+    staleScreenings, orphanScreenings, retryTraceProblems, fileCount: files.length,
   };
+}
+
+/**
+ * RETRY_SUPPRESSION — ONE rule, one structured model, for every call site and every consumer edge.
+ *
+ * The outcome class means: after the failure, the SAME operation will not be attempted again.
+ * It is derived from a `retryTrace` and from nothing else. A flag typed by hand, or the
+ * prose of `retryBehavior` / `terminalBehavior` / `reason`, decides nothing: a record whose
+ * outcome or text concerns a retry must carry a complete trace, and a flag or a prose
+ * verdict that disagrees with the trace is a failure (exit 10).
+ *
+ *   operationIdentity        names the operation that failed
+ *   failureObservedByCaller  the caller receives a signal that identifies a transient failure it can act
+ *                            on by retrying (a 5xx, a thrown error, "unavailable", a 409 that asks for a
+ *                            refresh). A 2xx, an empty answer, a "not found" or a 422 is NOT such a signal.
+ *   sameOperationRetried     a later execution re-attempts THIS operation, not another one
+ *   retryTrigger             NONE                  nobody will run it again;
+ *                            REQUESTER             only the party that made the request can run it again;
+ *                            INDEPENDENT_SCHEDULE  a poll, schedule or later pass runs it again on its own
+ *   retryTiming              NEVER | ON_REQUESTER_RETRY | NEXT_POLL | NEXT_PASS — and it must agree with
+ *                            the trigger
+ *   blockingState            null, or the durable claim / flag / row that stops a later run
+ *   terminal                 what the caller finally receives
+ *   justification            why the previous facts hold
+ *   sourceReferences         repository paths (optionally :line or :from-to) that show it
+ *
+ * RETRY_SUPPRESSION holds when a blocking state exists, or no later run exists, or the later run is
+ * another operation, or only the requester can retry and it was not given a signal it can act on.
+ * A poll or a pass that runs the same operation again is not suppression.
+ */
+export const RETRY_TRIGGERS = Object.freeze(["NONE", "REQUESTER", "INDEPENDENT_SCHEDULE"]);
+export const RETRY_TIMINGS = Object.freeze(["NEVER", "ON_REQUESTER_RETRY", "NEXT_POLL", "NEXT_PASS"]);
+const TIMINGS_OF = Object.freeze({
+  NONE: ["NEVER"],
+  REQUESTER: ["ON_REQUESTER_RETRY"],
+  INDEPENDENT_SCHEDULE: ["NEXT_POLL", "NEXT_PASS"],
+});
+export const RETRY_TRACE_KEYS = Object.freeze([
+  "operationIdentity",
+  "failureObservedByCaller",
+  "sameOperationRetried",
+  "retryTrigger",
+  "retryTiming",
+  "blockingState",
+  "terminal",
+  "justification",
+  "sourceReferences",
+]);
+
+export function deriveRetrySuppression(trace) {
+  if (trace.blockingState !== null && trace.blockingState !== undefined) return true;
+  if (trace.retryTrigger === "NONE") return true;
+  if (trace.sameOperationRetried !== true) return true;
+  if (trace.retryTrigger === "REQUESTER") return trace.failureObservedByCaller !== true;
+  return false;
+}
+
+/** A record that talks about a retry must carry the trace that proves what it says. */
+export const RETRY_STATEMENT = /\bretr(?:y|ied|ies|ying)\b|\bre-announce/i;
+
+const SOURCE_REFERENCE = /^[A-Za-z0-9_@()[\].\/-]+\.(?:ts|tsx|mjs|js)(?::\d+(?:-\d+)?)?$/;
+
+/** The structural check of one trace; returns a list of problems (empty when sound). */
+export function retryTraceShapeProblems(trace, exists = () => true) {
+  const out = [];
+  if (trace === null || typeof trace !== "object" || Array.isArray(trace)) return ["retryTrace is not an object"];
+  for (const k of Object.keys(trace)) if (!RETRY_TRACE_KEYS.includes(k)) out.push(`retryTrace has the unknown key ${k}`);
+  for (const k of RETRY_TRACE_KEYS) if (!(k in trace)) out.push(`retryTrace lacks ${k}`);
+  if (out.length) return out;
+  for (const k of ["operationIdentity", "terminal"]) if (typeof trace[k] !== "string" || trace[k].trim().length < 5) out.push(`retryTrace.${k} names nothing`);
+  if (typeof trace.justification !== "string" || trace.justification.trim().length < 30) out.push("retryTrace.justification is missing or too short");
+  for (const k of ["failureObservedByCaller", "sameOperationRetried"]) if (typeof trace[k] !== "boolean") out.push(`retryTrace.${k} is not a boolean`);
+  if (!RETRY_TRIGGERS.includes(trace.retryTrigger)) out.push(`retryTrace.retryTrigger is not one of ${RETRY_TRIGGERS.join("|")}`);
+  if (!RETRY_TIMINGS.includes(trace.retryTiming)) out.push(`retryTrace.retryTiming is not one of ${RETRY_TIMINGS.join("|")}`);
+  if (trace.blockingState !== null && (typeof trace.blockingState !== "string" || trace.blockingState.trim().length < 10)) out.push("retryTrace.blockingState is neither null nor a described state");
+  if (RETRY_TRIGGERS.includes(trace.retryTrigger) && RETRY_TIMINGS.includes(trace.retryTiming) && !TIMINGS_OF[trace.retryTrigger].includes(trace.retryTiming)) {
+    out.push(`retryTrace.retryTiming ${trace.retryTiming} does not agree with the trigger ${trace.retryTrigger}`);
+  }
+  if (trace.retryTrigger === "NONE" && trace.sameOperationRetried !== false) out.push("retryTrace: no trigger means the same operation is not retried");
+  if (!Array.isArray(trace.sourceReferences) || trace.sourceReferences.length === 0) out.push("retryTrace.sourceReferences is empty");
+  else {
+    for (const r of trace.sourceReferences) {
+      if (typeof r !== "string" || !SOURCE_REFERENCE.test(r)) out.push(`retryTrace.sourceReferences holds a malformed reference: ${String(r).slice(0, 60)}`);
+      else if (!exists(r.replace(/:\d+(?:-\d+)?$/, ""))) out.push(`retryTrace.sourceReferences names a path that does not exist: ${r.split(":")[0]}`);
+    }
+  }
+  return out;
+}
+
+/**
+ * The subjects the completeness gate reads: every adjudicated call site and every traced edge.
+ * `declared` is the verdict the record states today (a flag, or the NO of `retryBehavior`);
+ * `prose` is the text that may talk about a retry.
+ */
+export function retrySubjects(adjudications, edgeTraces) {
+  const subjects = [];
+  for (const a of adjudications) {
+    subjects.push({
+      id: a.callsiteId,
+      kind: "callsite",
+      trace: a.retryTrace,
+      declared: (a.outcomeFlags ?? []).includes("RETRY_SUPPRESSION"),
+      talksAboutRetry: RETRY_STATEMENT.test(`${a.reason ?? ""} ${a.terminalBehavior ?? ""}`),
+    });
+  }
+  for (const t of edgeTraces) {
+    const rb = String(t.retryBehavior ?? "");
+    subjects.push({
+      id: t.consumerEdgeId,
+      kind: "edge",
+      trace: t.retryTrace,
+      declared: /^NO\b/.test(rb),
+      talksAboutRetry: rb !== "n/a" || RETRY_STATEMENT.test(`${t.reason ?? ""} ${t.terminalResponse ?? ""}`),
+    });
+  }
+  return subjects;
+}
+
+export function retryTraceViolations(subjects, options = {}) {
+  const { root = null, exists = root ? (p) => existsSync(join(root, p)) : () => true } = options;
+  const out = [];
+  for (const s of subjects) {
+    const needs = s.declared || s.talksAboutRetry;
+    if (s.trace === undefined) {
+      if (needs) out.push(`${s.id}: the ${s.kind} ${s.declared ? "declares RETRY_SUPPRESSION" : "talks about a retry"} and carries no retryTrace`);
+      continue;
+    }
+    const problems = retryTraceShapeProblems(s.trace, exists);
+    if (problems.length) {
+      for (const p of problems) out.push(`${s.id}: ${p}`);
+      continue;
+    }
+    const derived = deriveRetrySuppression(s.trace);
+    if (derived !== s.declared) out.push(`${s.id}: the trace derives RETRY_SUPPRESSION=${derived} but the ${s.kind} declares ${s.declared}`);
+  }
+  return out.sort();
 }
 
 /**
@@ -1746,7 +1918,7 @@ export function edgeOutcomeFlags(e) {
   if (success && nonDurable) flags.push("SUCCESS_WITHOUT_PERSISTENCE");
   if (/WEBHOOK_200|ACK/.test(e.terminalBoundary ?? "")) flags.push("ACK_WITHOUT_DURABILITY");
   if (isWrite && /^(?:none|NONE)/.test(e.auditOutcome ?? "")) flags.push("AUDIT_LOSS");
-  if (/^NO\b/.test(e.retryBehavior ?? "")) flags.push("RETRY_SUPPRESSION");
+  if (e.retryTrace && deriveRetrySuppression(e.retryTrace)) flags.push("RETRY_SUPPRESSION");
   return flags;
 }
 
@@ -1787,8 +1959,10 @@ export function outcomeSets(records) {
   // Call sites: ONLY from an explicit `outcomeFlags` on the adjudication, so a
   // call site can never enter an outcome set by a prose match.
   for (const r of records) {
-    const flags = r.adjudication?.outcomeFlags;
-    if (!flags || flags.length === 0) continue;
+    // RETRY_SUPPRESSION is derived from the trace, never read from the typed flag
+    const typed = (r.adjudication?.outcomeFlags ?? []).filter((f) => f !== "RETRY_SUPPRESSION");
+    const flags = r.adjudication?.retryTrace && deriveRetrySuppression(r.adjudication.retryTrace) ? [...typed, "RETRY_SUPPRESSION"] : typed;
+    if (flags.length === 0) continue;
     if (r.classification === "WRAPPER_OR_FACTORY") {
       // The dedup rule: a wrapper's outcome is carried by its edges.
       duplicates.push(`WRAPPER_WOULD_DOUBLE_COUNT:${r.id}`);
@@ -1925,7 +2099,7 @@ export function edgeOutcomes(edges) {
     successWithoutPersistence: traced.filter((e) => isSuccess(e) && nonDurable(e)).length,
     ackWithoutDurability: traced.filter((e) => /WEBHOOK_200|ACK/.test(e.terminalBoundary ?? "")).length,
     auditLoss: traced.filter((e) => isWrite(e) && /^(?:none|NONE)/.test(e.auditOutcome ?? "")).length,
-    retrySuppression: traced.filter((e) => /^NO\b/.test(e.retryBehavior ?? "")).length,
+    retrySuppression: traced.filter((e) => e.retryTrace && deriveRetrySuppression(e.retryTrace)).length,
     deadSurface: traced.filter((e) => e.terminalBoundary === "NO_PRODUCT_CALLER").length,
     permanentDelegation: traced.filter((e) => e.terminalBoundary === "PERMANENT_DELEGATION_NOT_AN_OUTAGE_PATH").length,
   };
@@ -1980,6 +2154,12 @@ function main() {
     console.error("[s0-getprisma] ORPHAN residual screenings — the site is no longer in the residual set:");
     for (const id of inv.orphanScreenings) console.error(`  ${id}`);
     process.exit(9);
+  }
+
+  if (inv.retryTraceProblems.length > 0) {
+    console.error("[s0-getprisma] RETRY_SUPPRESSION trace problems — a flag disagrees with the one rule, or a retry statement has no trace:");
+    for (const p of inv.retryTraceProblems) console.error(`  ${p}`);
+    process.exit(10);
   }
 
   const rendered = render(inv);

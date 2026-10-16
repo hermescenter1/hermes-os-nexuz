@@ -8,6 +8,7 @@ inventory, and the deterministic `getPrisma` call-site inventory. No chat summar
 **Method version:** `s1-v1`, declared in §4 and in `scripts/security/s1/risk-register-check.mjs`
 **Machine-readable register:** `docs/security/s1-risk-register.json`
 **Checker:** `node scripts/security/s1/risk-register-check.mjs check`
+**Reconciliation:** §1.2 reconciles the historical snapshot below with the current-main delta review; the register is the only source of any severity, production state or priority
 
 ---
 
@@ -18,7 +19,7 @@ everything below is the detail.
 
 What S1 established, in one paragraph each.
 
-**No critical risk is open, and that is a measurement rather than reassurance.** Every one of the <!-- S1-FACT:S1_RISKS_TOTAL -->64<!-- /S1-FACT --> risks
+**No critical risk is open, and that is a measurement rather than reassurance.** Every one of the <!-- S1-FACT:HIST_S1_RISKS_TOTAL -->64<!-- /S1-FACT --> risks
 was scored by the declared method; **zero** reached the CRITICAL band. Two reached it on raw score and were
 clamped to HIGH because the configuration that would make them exploitable was **observed not to hold** in the
 running container — the clamp is a declared rule, not a judgement call, and both clamps carry that reason on the
@@ -26,7 +27,7 @@ risk. No authentication bypass, no tenant-isolation bypass and no cross-tenant r
 phase of this programme. Four earlier phases each said the same thing independently, and nothing in S1
 contradicts them.
 
-**<!-- S1-FACT:STATE_LATENT_CONFIG_GUARDED:W -->Four<!-- /S1-FACT --> risks are held shut by configuration rather than by code, and each names its guard.** R-01 and R-02
+**<!-- S1-FACT:HIST_STATE_LATENT_CONFIG_GUARDED:W -->Four<!-- /S1-FACT --> risks are held shut by configuration rather than by code, and each names its guard.** R-01 and R-02
 (the legacy signing key and the sid-less revocation bypass), R-16 (the address-pseudonymisation salt) and R-10
 (the site-filter construction) are all `LATENT_CONFIG_GUARDED`. For the first three the guard is an
 owner-supplied read-only presence check already recorded in the committed S0 documents; for R-10 it is a
@@ -36,7 +37,7 @@ check accepts, uniqueness across environments, replica consistency, rotation, ag
 whether it will still be set after the next deploy — and the register claims none of those. Every risk
 carrying such evidence lists, in the register, exactly what it does not prove.
 
-**The platform's security core is genuinely good, and it is bypassed from above.** <!-- S1-FACT:STATE_POSITIVE_CONTROL:W -->Eleven<!-- /S1-FACT --> positive controls
+**The platform's security core is genuinely good, and it is bypassed from above.** <!-- S1-FACT:HIST_STATE_POSITIVE_CONTROL:W -->Eleven<!-- /S1-FACT --> positive controls
 are recorded as register entries with evidence, not as praise: the session store and the tenant contract both
 fail closed by construction; no role can assign organization ownership; the compliance scope helper has a
 complete refusal ladder; the enterprise-resource surface applies four gates uniformly across twenty-six route
@@ -47,7 +48,7 @@ controls is reached through a path that can skip it** — a sid-less token above
 with no predicate beneath the tenant contract, a handler without the four-gate chain beside the ERP module.
 
 <!-- S1-BLOCK:truthfulness -->
-**The largest cluster of risk is not confidentiality — it is truthfulness.** `REPUDIATION` is the most frequent STRIDE category among the 35 HIGH risks — 16 of them, against 10 for `INFORMATION_DISCLOSURE` — and the 5 HIGH risks scheduled for `S7_FAILURE_SEMANTICS_AND_TRUTHFULNESS` are about the platform reporting something that did not happen.
+**The largest cluster of risk is not confidentiality — it is truthfulness.** `REPUDIATION` is the most frequent STRIDE category among the 36 HIGH risks — 16 of them, against 11 for `INFORMATION_DISCLOSURE` — and the 5 HIGH risks scheduled for `S7_FAILURE_SEMANTICS_AND_TRUTHFULNESS` are about the platform reporting something that did not happen.
 <!-- /S1-BLOCK:truthfulness -->
 Among them: a write that went to process memory reported as a
 database write, telemetry answered `201 Created` when the readings were dropped, a payment event
@@ -65,7 +66,7 @@ image scanning, no bill of materials, no artifact signing.
 **Several of the most important numbers in this programme are instrument readings, not measurements of the
 platform.** The route inventory reports complete tenant coverage and cannot see inside a data layer. The
 privilege classifier reports zero tenant-administrative and zero owner-only handlers because **no code path
-can emit those values**, while 59 privileged operations are in fact correctly enforced. <!-- S1-FACT:STATE_ASSURANCE_GAP:W -->Ten<!-- /S1-FACT --> risks are
+can emit those values**, while 59 privileged operations are in fact correctly enforced. <!-- S1-FACT:HIST_STATE_ASSURANCE_GAP:W -->Ten<!-- /S1-FACT --> risks are
 `ASSURANCE_GAP` entries: they record what is not known, and three of them are about the instruments this
 programme itself relies on.
 
@@ -81,7 +82,7 @@ authorising S1 limits the deliverables to four paths and neither is among them.
 **What S1 did not do.** No scanner was run, no request was sent to any environment, no fault was injected, no
 database was stopped, no exploit was written and no production state was changed. **No production or network
 command was run during the reconciliation either** — it used only evidence already committed to the repository.
-Every risk in this register is derived from reading committed source and committed evidence. <!-- S1-FACT:STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN:W -->Twelve<!-- /S1-FACT --> risks
+Every risk in this register is derived from reading committed source and committed evidence. <!-- S1-FACT:HIST_STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN:W -->Twelve<!-- /S1-FACT --> risks
 carry the state `CODE_CONFIRMED_RUNTIME_UNPROVEN` precisely because their behaviour is what the code says it
 will do, traced to the statement that does it, and has not been watched happening.
 
@@ -90,7 +91,7 @@ will do, traced to the statement that does it, and has not been watched happenin
 S1_VERDICT:                 see §16
 GATE_A:                     PASSED_WITH_FINDINGS (S0, closed before this phase)
 CRITICAL_RISKS_OPEN:        0
-HIGH_RISKS_OPEN:            35
+HIGH_RISKS_OPEN:            36
 PROVEN_AUTHENTICATION_BYPASS:   NONE DEMONSTRATED
 PROVEN_TENANT_ISOLATION_BYPASS: NONE DEMONSTRATED
 PROVEN_CLOUD_TO_CONTROLLER_PATH: NONE — the capability does not exist (R-50)
@@ -111,19 +112,19 @@ the drift gate between this document and the JSON.
 <!-- S1-BLOCK:summary -->
 ```
 S1_METHOD_VERSION = s1-v1
-S1_RISKS_TOTAL = 64
-S1_FINDINGS_TOTAL = 161
+S1_RISKS_TOTAL = 73
+S1_FINDINGS_TOTAL = 179
 SEVERITY_CRITICAL = 0
-SEVERITY_HIGH = 35
-SEVERITY_MEDIUM = 17
-SEVERITY_LOW = 1
-SEVERITY_INFORMATIONAL = 11
+SEVERITY_HIGH = 36
+SEVERITY_MEDIUM = 24
+SEVERITY_LOW = 3
+SEVERITY_INFORMATIONAL = 10
 STATE_ACTIVE_CONFIRMED = 24
 STATE_LATENT_CONFIG_GUARDED = 4
-STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN = 12
+STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN = 21
 STATE_ASSURANCE_GAP = 10
-STATE_POLICY_AMBIGUITY = 3
-STATE_POSITIVE_CONTROL = 11
+STATE_POLICY_AMBIGUITY = 4
+STATE_POSITIVE_CONTROL = 10
 FINDING_COVERAGE_PERCENT = 100
 ORPHAN_FINDINGS = 0
 DUPLICATE_REMEDIATION_OWNERSHIP = 0
@@ -138,8 +139,96 @@ SOURCE_UNIVERSE_VIOLATIONS = 0
 LOCK_UNIVERSE_COUNT = 51
 VERIFICATION_LINKAGE_VIOLATIONS = 0
 DOMINANT_IMPACT_VIOLATIONS = 0
+HISTORICAL_S1_RISKS_TOTAL = 64
+HISTORICAL_S1_FINDINGS_TOTAL = 161
+DELTA_RISKS_TOTAL = 9
+DELTA_FINDINGS_TOTAL = 18
+REVISED_HISTORICAL_RISKS = 1
+RECONCILIATION_VIOLATIONS = 0
 ```
 <!-- /S1-BLOCK:summary -->
+
+### 1.2 Reconciliation with the current-main delta
+
+Sections 1 to 14 below are the **historical S1 baseline**: the analysis was performed on the frozen source state and the figures they quote are the pinned historical snapshot, recomputed from the register on every run. The delta between that state and the relock target was reviewed afterwards and its findings were folded into this register. The register is the only place a severity, a production state or a priority is written; the delta provenance document carries none. Where a section below describes an entry the relock revised, the block here states the current value, not the section.
+
+<!-- S1-BLOCK:reconciliation -->
+| Scope | Reference | Risks | Findings |
+|---|---|---|---|
+| Historical S1 baseline (snapshot) | source state `bcf3be9a` | 64 | 161 |
+| Delta review | `bcf3be9a..b461ac97` | 9 new, 1 revised | 18 |
+| Reconciled register | integrated tree `e3da6f2e` plus the unstaged assurance changes | 73 | 179 |
+
+| Severity | Historical snapshot | Reconciled | Change |
+|---|---|---|---|
+| CRITICAL | 0 | 0 | 0 |
+| HIGH | 35 | 36 | +1 |
+| MEDIUM | 17 | 24 | +7 |
+| LOW | 1 | 3 | +2 |
+| INFORMATIONAL | 11 | 10 | -1 |
+
+| Production state | Historical snapshot | Reconciled | Change |
+|---|---|---|---|
+| ACTIVE_CONFIRMED | 24 | 24 | 0 |
+| LATENT_CONFIG_GUARDED | 4 | 4 | 0 |
+| CODE_CONFIRMED_RUNTIME_UNPROVEN | 12 | 21 | +9 |
+| ASSURANCE_GAP | 10 | 10 | 0 |
+| POLICY_AMBIGUITY | 3 | 4 | +1 |
+| POSITIVE_CONTROL | 11 | 10 | -1 |
+
+| Finding status | Historical snapshot | Reconciled | Change |
+|---|---|---|---|
+| MAPPED_TO_RISK | 83 | 99 | +16 |
+| DUPLICATE_OF | 2 | 2 | 0 |
+| POLICY_QUESTION | 7 | 9 | +2 |
+| ASSURANCE_GAP | 49 | 50 | +1 |
+| POSITIVE_CONTROL | 12 | 11 | -1 |
+| NOT_A_SECURITY_RISK_WITH_REASON | 8 | 8 | 0 |
+
+Severity clamps: 2 historical, 2 reconciled. Top remediation priority: `R-01` historical, `R-01` reconciled (unchanged).
+
+| Reconciled priority | Risk | Severity | Score | Scope |
+|---|---|---|---|---|
+| 1 | `R-01` | **HIGH** | 20 | HISTORICAL_S1_BASELINE |
+| 2 | `R-02` | **HIGH** | 20 | HISTORICAL_S1_BASELINE |
+| 3 | `R-04` | **HIGH** | 15 | HISTORICAL_S1_BASELINE |
+| 4 | `R-08` | **HIGH** | 15 | HISTORICAL_S1_BASELINE |
+| 5 | `R-13` | **HIGH** | 15 | HISTORICAL_S1_BASELINE |
+| 6 | `R-16` | **HIGH** | 16 | HISTORICAL_S1_BASELINE |
+| 7 | `R-24` | **HIGH** | 16 | HISTORICAL_S1_BASELINE |
+| 8 | `R-26` | **HIGH** | 16 | HISTORICAL_S1_BASELINE |
+| 9 | `R-32` | **HIGH** | 15 | HISTORICAL_S1_BASELINE |
+| 10 | `R-33` | **HIGH** | 15 | HISTORICAL_S1_BASELINE |
+
+Source universe (`s1-universe-2`): historical 110 identifiers + 51 bookkeeping = 161; delta 18; reconciled 128 identifiers + 51 bookkeeping = 179. Reconciled universe hash `06e796b75c8f5f05d1ce464c4eae9db73e52b3ce1e38b3869f528b5971f0d046`.
+
+| Delta finding | Disposition | Canonical risk | Severity | Production state | Score |
+|---|---|---|---|---|---|
+| `DELTA-RL-001` | OWNED_BY_NEW_RISK | `R-65` | **HIGH** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 12 |
+| `DELTA-RL-002` | OWNED_BY_NEW_RISK | `R-66` | **MEDIUM** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 8 |
+| `DELTA-RL-003` | OWNED_BY_NEW_RISK | `R-67` | **MEDIUM** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 6 |
+| `DELTA-RL-004` | OWNED_BY_EXISTING_RISK | `R-53` | **MEDIUM** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 10 |
+| `DELTA-RL-005` | OWNED_BY_NEW_RISK | `R-68` | **MEDIUM** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 6 |
+| `DELTA-RL-006` | OWNED_BY_NEW_RISK | `R-68` | **MEDIUM** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 6 |
+| `DELTA-RL-007` | OWNED_BY_NEW_RISK | `R-68` | **MEDIUM** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 6 |
+| `DELTA-RR-001` | OWNED_BY_NEW_RISK | `R-68` | **MEDIUM** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 6 |
+| `DELTA-RR-002` | OWNED_BY_NEW_RISK | `R-73` | **MEDIUM** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 8 |
+| `DELTA-RR-003` | OWNED_BY_NEW_RISK | `R-70` | **LOW** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 4 |
+| `DELTA-RR-004` | OWNED_BY_NEW_RISK | `R-71` | **LOW** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 3 |
+| `DELTA-RR-005` | OWNED_BY_EXISTING_RISK | `R-09` | **HIGH** | ACTIVE_CONFIRMED | 15 |
+| `DELTA-RR-006` | OWNED_BY_NEW_RISK | `R-67` | **MEDIUM** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 6 |
+| `DELTA-RR-007` | POLICY_AMBIGUITY | `R-72` | **MEDIUM** | POLICY_AMBIGUITY | 6 |
+| `DELTA-RR-008` | UNPROVEN | `R-72` | **MEDIUM** | POLICY_AMBIGUITY | 6 |
+| `DELTA-RR-009` | OWNED_BY_NEW_RISK | `R-68` | **MEDIUM** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 6 |
+| `DELTA-RR-010` | OWNED_BY_NEW_RISK | `R-69` | **MEDIUM** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 9 |
+| `DELTA-RR-011` | POLICY_AMBIGUITY | `R-72` | **MEDIUM** | POLICY_AMBIGUITY | 6 |
+
+| Revised or touched historical entry | Before the relock | Now | Why |
+|---|---|---|---|
+| `R-09` | unchanged ACTIVE_CONFIRMED / HIGH (score 15) | owns `DELTA-RR-005` | A delta finding falls under this existing risk; its score is not moved. |
+| `R-53` | POSITIVE_CONTROL / INFORMATIONAL (score 0) | CODE_CONFIRMED_RUNTIME_UNPROVEN / MEDIUM (score 10) | The production compose file injects the whole production environment file into every worker container, including the one added since the frozen source, so the image-level minimality recorded as a positive control does not bound the credentials the running process holds. The positive control stays recorded as an existing control. |
+| `LOCK-WORKER-BLAST-RADIUS` | status POSITIVE_CONTROL | status MAPPED_TO_RISK | R-53 is no longer a positive control; the image-level finding stays recorded and is now owned by a current risk. |
+<!-- /S1-BLOCK:reconciliation -->
 
 ---
 
@@ -296,9 +385,9 @@ the result is fully determined; it is stated because "round" alone is ambiguous.
 
 **The CRITICAL clamp, also declared in advance.** A risk whose `productionState` is not `ACTIVE_CONFIRMED`
 **cannot** be CRITICAL: its severity is clamped to HIGH, and the clamp with its rule and reason is recorded on
-the risk. This is a mechanical rule applied uniformly to all <!-- S1-FACT:S1_RISKS_TOTAL -->64<!-- /S1-FACT --> risks, **not** a manual override — there is no
+the risk. This is a mechanical rule applied uniformly to all <!-- S1-FACT:HIST_S1_RISKS_TOTAL -->64<!-- /S1-FACT --> risks, **not** a manual override — there is no
 manual override mechanism in this register, and `CRITICAL_WITHOUT_ACTIVE_CONFIRMED` is a gate counter that
-must be zero. <!-- S1-FACT:SEVERITY_CLAMPS_APPLIED:W -->Two<!-- /S1-FACT --> clamps were applied, both to identity risks whose enabling condition was **checked and
+must be zero. <!-- S1-FACT:HIST_SEVERITY_CLAMPS_APPLIED:W -->Two<!-- /S1-FACT --> clamps were applied, both to identity risks whose enabling condition was **checked and
 observed not to hold in the running container** — so the design flaw is latent, not active. The
 presence of a value proves presence and nothing else: it says nothing about that value's strength,
 rotation, independence from the other names the boot check accepts, or parity across replicas, and the
@@ -330,24 +419,24 @@ different claims and the tool refuses to let the register blur them.
 
 | State | Meaning | Count |
 |---|---|---|
-| `ACTIVE_CONFIRMED` | the condition holds now and was confirmed | <!-- S1-FACT:STATE_ACTIVE_CONFIRMED -->24<!-- /S1-FACT --> |
-| `LATENT_CONFIG_GUARDED` | the defect is in the code and a named guard — a configuration value observed in the running container, or a second code path — currently holds it shut | <!-- S1-FACT:STATE_LATENT_CONFIG_GUARDED -->4<!-- /S1-FACT --> |
-| `CODE_CONFIRMED_RUNTIME_UNPROVEN` | the behaviour is established by reading the code and tracing it to the statement that does it; it has not been observed | <!-- S1-FACT:STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN -->12<!-- /S1-FACT --> |
-| `ASSURANCE_GAP` | something is not known, and the entry records the ignorance rather than a defect | <!-- S1-FACT:STATE_ASSURANCE_GAP -->10<!-- /S1-FACT --> |
-| `POLICY_AMBIGUITY` | the answer is a decision the owner must make, not a measurement | <!-- S1-FACT:STATE_POLICY_AMBIGUITY -->3<!-- /S1-FACT --> |
-| `POSITIVE_CONTROL` | a control that is present; all factors are pinned to 0 by the gate, so the score is 0 | <!-- S1-FACT:STATE_POSITIVE_CONTROL -->11<!-- /S1-FACT --> |
+| `ACTIVE_CONFIRMED` | the condition holds now and was confirmed | <!-- S1-FACT:HIST_STATE_ACTIVE_CONFIRMED -->24<!-- /S1-FACT --> |
+| `LATENT_CONFIG_GUARDED` | the defect is in the code and a named guard — a configuration value observed in the running container, or a second code path — currently holds it shut | <!-- S1-FACT:HIST_STATE_LATENT_CONFIG_GUARDED -->4<!-- /S1-FACT --> |
+| `CODE_CONFIRMED_RUNTIME_UNPROVEN` | the behaviour is established by reading the code and tracing it to the statement that does it; it has not been observed | <!-- S1-FACT:HIST_STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN -->12<!-- /S1-FACT --> |
+| `ASSURANCE_GAP` | something is not known, and the entry records the ignorance rather than a defect | <!-- S1-FACT:HIST_STATE_ASSURANCE_GAP -->10<!-- /S1-FACT --> |
+| `POLICY_AMBIGUITY` | the answer is a decision the owner must make, not a measurement | <!-- S1-FACT:HIST_STATE_POLICY_AMBIGUITY -->3<!-- /S1-FACT --> |
+| `POSITIVE_CONTROL` | a control that is present; all factors are pinned to 0 by the gate, so the score is 0 | <!-- S1-FACT:HIST_STATE_POSITIVE_CONTROL -->11<!-- /S1-FACT --> |
 
-**Finding disposition vocabulary.** Every one of the <!-- S1-FACT:S1_FINDINGS_TOTAL -->161<!-- /S1-FACT --> findings carries exactly one status, and no finding
+**Finding disposition vocabulary.** Every one of the <!-- S1-FACT:HIST_S1_FINDINGS_TOTAL -->161<!-- /S1-FACT --> findings carries exactly one status, and no finding
 has more than one owning risk — both are gate counters.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `MAPPED_TO_RISK` | owned by exactly one risk | <!-- S1-FACT:FINDING_STATUS_MAPPED_TO_RISK -->83<!-- /S1-FACT --> |
-| `DUPLICATE_OF` | the same defect recorded twice across S0 documents; ownership stays with the primary | <!-- S1-FACT:FINDING_STATUS_DUPLICATE_OF -->2<!-- /S1-FACT --> |
-| `POLICY_QUESTION` | needs a decision; owned by a policy risk | <!-- S1-FACT:FINDING_STATUS_POLICY_QUESTION -->7<!-- /S1-FACT --> |
-| `ASSURANCE_GAP` | records what is not known; owned by an assurance risk | <!-- S1-FACT:FINDING_STATUS_ASSURANCE_GAP -->49<!-- /S1-FACT --> |
-| `POSITIVE_CONTROL` | a control that is present; owned by a positive-control entry | <!-- S1-FACT:FINDING_STATUS_POSITIVE_CONTROL -->12<!-- /S1-FACT --> |
-| `NOT_A_SECURITY_RISK_WITH_REASON` | withdrawn, retired, closed by time, or a defect in an audit instrument rather than in the product — each with its reason | <!-- S1-FACT:FINDING_STATUS_NOT_A_SECURITY_RISK -->8<!-- /S1-FACT --> |
+| `MAPPED_TO_RISK` | owned by exactly one risk | <!-- S1-FACT:HIST_FINDING_STATUS_MAPPED_TO_RISK -->83<!-- /S1-FACT --> |
+| `DUPLICATE_OF` | the same defect recorded twice across S0 documents; ownership stays with the primary | <!-- S1-FACT:HIST_FINDING_STATUS_DUPLICATE_OF -->2<!-- /S1-FACT --> |
+| `POLICY_QUESTION` | needs a decision; owned by a policy risk | <!-- S1-FACT:HIST_FINDING_STATUS_POLICY_QUESTION -->7<!-- /S1-FACT --> |
+| `ASSURANCE_GAP` | records what is not known; owned by an assurance risk | <!-- S1-FACT:HIST_FINDING_STATUS_ASSURANCE_GAP -->49<!-- /S1-FACT --> |
+| `POSITIVE_CONTROL` | a control that is present; owned by a positive-control entry | <!-- S1-FACT:HIST_FINDING_STATUS_POSITIVE_CONTROL -->12<!-- /S1-FACT --> |
+| `NOT_A_SECURITY_RISK_WITH_REASON` | withdrawn, retired, closed by time, or a defect in an audit instrument rather than in the product — each with its reason | <!-- S1-FACT:HIST_FINDING_STATUS_NOT_A_SECURITY_RISK_WITH_REASON -->8<!-- /S1-FACT --> |
 
 **The distinctions this register keeps separate**, because collapsing them is how a risk report becomes
 useless: a real vulnerability; a latent design flaw; an active production exposure; an assurance or
@@ -357,9 +446,11 @@ dependencies in R-60 are the worked example.
 
 ---
 
-## 5. The complete risk register
+## 5. The complete risk register — historical snapshot
 
-All <!-- S1-FACT:S1_RISKS_TOTAL -->64<!-- /S1-FACT --> entries, sorted by identifier. `L×I` is likelihood × impact as computed by the
+This table is the register as it stood on the frozen source. The delta entries R-65 to R-73 and the revision of R-53 are in §1.2 and in Appendix A, which are generated from the current register; where they differ from a row below, the generated text governs.
+
+All <!-- S1-FACT:HIST_S1_RISKS_TOTAL -->64<!-- /S1-FACT --> entries, sorted by identifier. `L×I` is likelihood × impact as computed by the
 declared method; a clamped severity is marked. The machine-readable source of every value in this table is
 `docs/security/s1-risk-register.json`, and `check` fails if they disagree.
 
@@ -434,7 +525,7 @@ declared method; a clamped severity is marked. The machine-readable source of ev
 
 ## 6. Top risks by score
 
-No entry reached the CRITICAL band. The <!-- S1-FACT:SEVERITY_CLAMPS_APPLIED:w -->two<!-- /S1-FACT --> highest scores are identity risks whose severity was clamped
+No entry reached the CRITICAL band. The <!-- S1-FACT:HIST_SEVERITY_CLAMPS_APPLIED:w -->two<!-- /S1-FACT --> highest scores are identity risks whose severity was clamped
 because the condition that would make them exploitable was checked and **observed not to hold in the
 running container**; the next band down is dominated by the truthfulness cluster and the perimeter.
 Neither clamp rests on an open question, and neither treats the presence of a value as evidence of its
@@ -465,7 +556,7 @@ quality.
 
 ---
 
-## 7. Active production exposures — `ACTIVE_CONFIRMED` (<!-- S1-FACT:STATE_ACTIVE_CONFIRMED -->24<!-- /S1-FACT -->)
+## 7. Active production exposures — `ACTIVE_CONFIRMED` (<!-- S1-FACT:HIST_STATE_ACTIVE_CONFIRMED -->24<!-- /S1-FACT -->)
 
 These hold now and were confirmed on the source state or by owner-supplied read-only evidence. They are the
 entries where "latent" is not available as a comfort.
@@ -535,7 +626,7 @@ reachable. Both entries name the guard, and both guards are incidental rather th
 
 ---
 
-## 9. Assurance gaps — `ASSURANCE_GAP` (<!-- S1-FACT:STATE_ASSURANCE_GAP -->10<!-- /S1-FACT -->)
+## 9. Assurance gaps — `ASSURANCE_GAP` (<!-- S1-FACT:HIST_STATE_ASSURANCE_GAP -->10<!-- /S1-FACT -->)
 
 Each of these records what is **not known**. Three are about the instruments this programme relies on, which
 is the uncomfortable part: the privilege classifier cannot see the model it reports on, the Phase 99 closures
@@ -558,7 +649,7 @@ were inherited rather than re-verified, and security documentation has drifted f
 
 ## 10. Policy questions and positive controls
 
-### 10.1 Policy questions — `POLICY_AMBIGUITY` (<!-- S1-FACT:STATE_POLICY_AMBIGUITY -->3<!-- /S1-FACT -->)
+### 10.1 Policy questions — `POLICY_AMBIGUITY` (<!-- S1-FACT:HIST_STATE_POLICY_AMBIGUITY -->3<!-- /S1-FACT -->)
 
 These need a decision from the owner. They are not measurements and no amount of further reading will settle
 them.
@@ -569,7 +660,7 @@ them.
 | `R-15` | **MEDIUM** (8) | Four organization-governance questions are undecided, including whether an organization can lose its only owner | An organization that loses its owner has no holder of 13 permissions and no API path to regain one. |
 | `R-23` | **MEDIUM** (6) | Two public-content behaviours need a policy decision rather than a fix | No requirement exists stating who may publish an avatar to the public static surface, so there is nothing to enforce. |
 
-### 10.2 Positive controls — `POSITIVE_CONTROL` (<!-- S1-FACT:STATE_POSITIVE_CONTROL -->11<!-- /S1-FACT -->)
+### 10.2 Positive controls — `POSITIVE_CONTROL` (historical snapshot; R-53 has since been revised, see §1.2) (<!-- S1-FACT:HIST_STATE_POSITIVE_CONTROL -->11<!-- /S1-FACT -->)
 
 Recorded as register entries with evidence and with acceptance criteria whose purpose is to stop them
 eroding. All factors are pinned to zero by the gate, so each scores zero. The third column is the honest
@@ -591,7 +682,7 @@ half: what the control does **not** cover.
 
 ---
 
-## 10.3 Finding coverage — all <!-- S1-FACT:S1_FINDINGS_TOTAL -->161<!-- /S1-FACT --> findings, none orphaned
+## 10.3 Finding coverage — all <!-- S1-FACT:HIST_S1_FINDINGS_TOTAL -->161<!-- /S1-FACT --> findings, none orphaned
 
 Every named finding from the eight S0 documents and the committed Phase 99 register appears below with
 exactly one disposition. A finding is owned by at most one risk — enforced bidirectionally, so the risk must
@@ -637,6 +728,29 @@ also claim it — and `DUPLICATE_OF` entries carry no ownership.
 | `DB-26` | 119 of 124 exception edges are silent; only five log. | `MAPPED_TO_RISK` → `R-40` |
 | `DB-F1` | Silent database-to-session fallback in six core repositories plus one document path: 69 fallback points, 34 inside bare catch blocks, writes included, zero logging, so any transient Prisma exception reroutes a mutation into process memory and reports success. | `MAPPED_TO_RISK` → `R-32` |
 | `DB-F2` | The industrial and twin read paths answer an unavailable database with an empty success: 26 sites on the legacy single-line shape and 98 on the semantic definition, so an operator reads "zero alarms" when the truth is "no connection". | `MAPPED_TO_RISK` → `R-35` |
+
+### DELTA — 18 findings
+
+| Finding | What it records | Disposition |
+|---|---|---|
+| `DELTA-RL-001` | The archive list returns envelopes only, but the detail page renders the stored snapshot, built under a synthetic OWNER scope with every axis and every site, without narrowing it to the reader. | `MAPPED_TO_RISK` → `R-65` |
+| `DELTA-RL-002` | The customer project route returns recorded project cost per currency, summed from the cost ledger, to any holder of view_erp (OWNER and ADMIN), although the ERP layer shows cost only to the compensation holder (OWNER). | `MAPPED_TO_RISK` → `R-66` |
+| `DELTA-RL-003` | POST /api/executive/reports/run accepts the dedicated token, the metering token or the metrics token; the comment that says the dedicated token excludes the others is not what the code does, and the pass response and cursor carry other tenants' organization ids. | `MAPPED_TO_RISK` → `R-67` |
+| `DELTA-RL-004` | The new worker service declares env_file for the whole production environment file, as the three earlier workers do, so the image-level 'no credential' property does not bound what the running process holds. | `MAPPED_TO_RISK` → `R-53` |
+| `DELTA-RL-005` | If the worker's batched settings read throws, every organization falls back to the default zone and the pass stores an immutable report for that zone's night. | `MAPPED_TO_RISK` → `R-68` |
+| `DELTA-RL-006` | If the release of the notification claim cannot be performed, the claim stays set and the archive records an announcement nobody received, with no later retry. | `MAPPED_TO_RISK` → `R-68` |
+| `DELTA-RL-007` | A pass with no database answers HTTP 200 like a held lease, a failed claim is reported as not claimed, and the detail page shows an unreadable archive as a missing report. | `MAPPED_TO_RISK` → `R-68` |
+| `DELTA-RR-001` | If the worker's single read of an organization's active sites throws, the empty list becomes the industrial section's site list, the section is stored as FORBIDDEN (no site granted), and the immutable report is never corrected because no product code calls the correction path. | `MAPPED_TO_RISK` → `R-68` |
+| `DELTA-RR-002` | All 27 ERP route files refuse a caller who lacks the platform admin capability before the organization permission is checked; the four customer route files and the customer pages check only organization permissions, so an organization OWNER or ADMIN who is not a platform admin reads linked-project data and changes a project's customer. | `MAPPED_TO_RISK` → `R-73` |
+| `DELTA-RR-003` | setProjectLink reads the project's current customer and then updates by id with no precondition and no row-count check, then writes a success audit event, so a concurrent link can overwrite another and both audit rows claim success. | `MAPPED_TO_RISK` → `R-70` |
+| `DELTA-RR-004` | Creating or renaming a customer checks for a clashing name with a read and then writes; the migration defines no unique index on the name, so concurrent requests can store duplicates. | `MAPPED_TO_RISK` → `R-71` |
+| `DELTA-RR-005` | ErpProject.organizationId is nullable, and a composite foreign key is not enforced when one of its columns is null, so the claim that a cross-tenant link cannot be stored holds only for rows with an organization. | `MAPPED_TO_RISK` → `R-09` |
+| `DELTA-RR-006` | The runner entrypoint accepts a platform-administrator session cookie but, unlike the sibling cookie-authenticated writes, does not call the trusted-origin guard. | `MAPPED_TO_RISK` → `R-67` |
+| `DELTA-RR-007` | Each stored report keeps a full snapshot as unbounded JSON, including the names of the users who acted on approvals and costs, with no retention or deletion rule other than cascade on organization deletion. | `POLICY_QUESTION` → `R-72` |
+| `DELTA-RR-008` | The pass selects every organization by id with no status or activity filter; the Organization model has no status field, so whether dormant organizations should be skipped is undefined and unproven. | `ASSURANCE_GAP` → `R-72` |
+| `DELTA-RR-009` | An existing report is looked up by organization and date label only, and each pass targets only the last completed day, so a zone change can reuse a label for a different window and a night missed entirely is never reported. | `MAPPED_TO_RISK` → `R-68` |
+| `DELTA-RR-010` | The nightly pass writes a frozen financial snapshot per organization under a synthetic OWNER scope with no audit record, and no read of the archive is audited by the read module, by either archive page or by a database trigger; only a correction is audited and nothing issues one. | `MAPPED_TO_RISK` → `R-69` |
+| `DELTA-RR-011` | Customer contact data (Party) and the free-text contact log (PartyInteraction) are stored with no deletion, anonymisation, export or retention rule: the customer library has no such operation and neither model is in the closed erasure registry, the closed export registry or the processing inventory; customers are archived and interactions are append-only. | `POLICY_QUESTION` → `R-72` |
 
 ### EDGE — 10 findings
 
@@ -740,7 +854,7 @@ also claim it — and `DUPLICATE_OF` entries carry no ownership.
 | `LOCK-TENANT-CONTRACT` | The tenant context resolves to one of five states and only one carries an organizationId, so a tenant-scoped query without an established tenant is unwritable rather than merely discouraged. | `POSITIVE_CONTROL` → `R-59` |
 | `LOCK-TWELVE-RECLASSIFIED` | Twelve security-control dependencies — the session revocation check, the organization and site actor contexts, the login credential lookup, three entitlement reads, the AI-egress policy store, the academy request scope, the candidate retention check and two tenant-context readers — were each traced and confirmed to deny rather than to succeed emptily when the database is unavailable. | `POSITIVE_CONTROL` → `R-60` |
 | `LOCK-UPLOADS-IN-PUBLIC` | The uploads volume is mounted inside the application's public directory, so its contents are served as static assets with no authorization check and no CSP; filenames are 128-bit random, and the only two writers store images intended for public publication. | `MAPPED_TO_RISK` → `R-22` |
-| `LOCK-WORKER-BLAST-RADIUS` | Each worker image contains exactly one dependency-free script with no node_modules, no ORM, no application code and no database credential, and a packaging test asserts the runner and migrator stages copy no scripts. | `POSITIVE_CONTROL` → `R-53` |
+| `LOCK-WORKER-BLAST-RADIUS` | Each worker image contains exactly one dependency-free script with no node_modules, no ORM, no application code and no database credential, and a packaging test asserts the runner and migrator stages copy no scripts. | `MAPPED_TO_RISK` → `R-53` |
 | `LOCK-ZERO-SERVER-ACTIONS` | There are zero server actions in src/, so every state change must pass through an inventoried API route handler and no second mutation transport exists. | `POSITIVE_CONTROL` → `R-58` |
 
 ### P99-DEP — 14 findings
@@ -1016,7 +1130,7 @@ document. Four properties were required of each:
 ### 14.2 Limits of this phase, stated as limits
 
 1. **Nothing was executed against any environment.** No request, no scanner, no fault injection, no database
-   connection, no container change. <!-- S1-FACT:STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN:W -->Twelve<!-- /S1-FACT --> risks are `CODE_CONFIRMED_RUNTIME_UNPROVEN` for that reason.
+   connection, no container change. <!-- S1-FACT:HIST_STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN:W -->Twelve<!-- /S1-FACT --> risks are `CODE_CONFIRMED_RUNTIME_UNPROVEN` for that reason.
 2. **No test was run in this worktree, because it has no installed dependencies.** This is why R-45 exists:
    24 of the 29 Phase 99 closures rest on a prior phase's evidence, including the one critical and three high
    findings. Five of the 29 were independently corroborated in source while other work was done, and the five
@@ -1244,7 +1358,7 @@ cited. The rest are this phase's proposal. The whole mapping carries the label
 | **S12** recovery, runbooks and rehearsal | execute a restore with measured objectives, write and rehearse the incident runbooks | **proposed**; the architecture inventory §9.2 notes Gate I has real machinery behind it and that S0 does not assert it passes | R-51, R-52 |
 | **Owner decision** | the four organization-governance questions, the certificate-token question, the two public-content questions | **anchored** — each is recorded as a policy ambiguity requiring a decision rather than a measurement | R-15, R-18, R-23 |
 
-<!-- S1-FACT:STATE_POSITIVE_CONTROL:W -->Eleven<!-- /S1-FACT --> positive controls (R-50, R-53 through R-62) carry the phase `S1_NO_CHANGE_REQUIRED`, with acceptance
+<!-- S1-FACT:HIST_STATE_POSITIVE_CONTROL:W -->Eleven<!-- /S1-FACT --> positive controls (R-50, R-53 through R-62 in the historical snapshot; R-53 has since been revised, see §1.2) carry the phase `S1_NO_CHANGE_REQUIRED`, with acceptance
 criteria whose purpose is to keep them from eroding rather than to change anything.
 
 ---
@@ -1254,20 +1368,20 @@ criteria whose purpose is to keep them from eroding rather than to change anythi
 <!-- S1-BLOCK:verdict -->
 ```
 S1_STATUS:                       COMPLETE
-S1_RISKS:                        64
-S1_FINDINGS:                     161        coverage 100%        orphans 0
+S1_RISKS:                        73
+S1_FINDINGS:                     179        coverage 100%        orphans 0
 S1_CRITICAL:                     0          (2 clamped from CRITICAL to HIGH, each recorded)
-S1_HIGH:                         35
-S1_MEDIUM:                       17
-S1_LOW:                          1
-S1_INFORMATIONAL:                11         (11 positive controls)
+S1_HIGH:                         36
+S1_MEDIUM:                       24
+S1_LOW:                          3
+S1_INFORMATIONAL:                10         (10 positive controls)
 ACTIVE_PRODUCTION_EXPOSURES:     24
-LATENT_DESIGN_FLAWS:             16         (12 code-confirmed runtime-unproven + 4 config-guarded)
+LATENT_DESIGN_FLAWS:             25         (21 code-confirmed runtime-unproven + 4 config-guarded)
 CONFIG_GUARDED_WITH_EVIDENCE:    4          (each names its guard)
 RISKS_WITH_RUNTIME_EVIDENCE:     3          (all settled from committed S0 evidence)
 RUNTIME_EVIDENCE_CONFLICTS:      0
 ASSURANCE_GAPS:                  10
-POLICY_QUESTIONS:                3
+POLICY_QUESTIONS:                4
 PROVEN_AUTHENTICATION_BYPASS:    NONE DEMONSTRATED
 PROVEN_TENANT_ISOLATION_BYPASS:  NONE DEMONSTRATED
 PRODUCT_BYTES_CHANGED:           0
@@ -1300,6 +1414,8 @@ The single highest-value piece of work it points at is **R-01's acceptance crite
 for the legacy signing variable, so the guard that currently holds Chain A shut moves out of the environment
 and into code. It is a code change in an authorised later phase, requires no production access, and needs no
 further observation — the register already holds the evidence that makes it the right first move.
+
+**For the delta review specifically,** the reviewer should confirm that `DELTA-RR-001` (a transient site-read failure stored as a FORBIDDEN section, owned by `R-68`) and `DELTA-RR-002` (the customer routes lack the platform-administrator gate that all ERP routes apply, owned by `R-73`) carry the authoritative text; the earlier audit-record and customer-privacy topics are kept as `DELTA-RR-010` and `DELTA-RR-011`. The reviewer should also note that the open policy questions of `R-66`, `R-72` and `R-73` are recorded beside the observed behaviour, each with two conditional branches that carry their own tests, and that the remediation decides none of them. The provenance for all of it is `docs/security/s1-relock-delta.json`.
 
 **No production or network command is requested, here or anywhere else in this document.** Every presence
 question this register could settle from committed evidence has been settled; the only one still open is
@@ -1346,7 +1462,7 @@ visible in the management document, only in the machine register.
 
 #### `R-03` — A storage-mode change is a deferred authentication downgrade that the next restart activates
 
-**MEDIUM** (2×5=10) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **CONFIDENTIALITY + INTEGRITY** · confidence HIGH · priority 37 · phase S3_IDENTITY_SESSION_AND_MFA
+**MEDIUM** (2×5=10) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **CONFIDENTIALITY + INTEGRITY** · confidence HIGH · priority 38 · phase S3_IDENTITY_SESSION_AND_MFA
 
 | | |
 |---|---|
@@ -1382,7 +1498,7 @@ visible in the management document, only in the machine register.
 
 #### `R-06` — Two password-hashing libraries are present and the authoritative verifier is unestablished
 
-**MEDIUM** (2×3=6) · ASSURANCE_GAP · dominant impact **CONFIDENTIALITY + AUDITABILITY** · confidence MEDIUM · priority 38 · phase S3_IDENTITY_SESSION_AND_MFA
+**MEDIUM** (2×3=6) · ASSURANCE_GAP · dominant impact **CONFIDENTIALITY + AUDITABILITY** · confidence MEDIUM · priority 39 · phase S3_IDENTITY_SESSION_AND_MFA
 
 | | |
 |---|---|
@@ -1394,7 +1510,7 @@ visible in the management document, only in the machine register.
 
 #### `R-07` — Public candidate registration is an account-existence oracle
 
-**MEDIUM** (4×2=8) · ACTIVE_CONFIRMED · dominant impact **CONFIDENTIALITY** · confidence HIGH · priority 42 · phase S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS
+**MEDIUM** (4×2=8) · ACTIVE_CONFIRMED · dominant impact **CONFIDENTIALITY** · confidence HIGH · priority 43 · phase S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS
 
 | | |
 |---|---|
@@ -1423,7 +1539,7 @@ visible in the management document, only in the machine register.
 | | |
 |---|---|
 | **Existing controls** | One connection string, no published database port, internal network only.<br>• The tenant contract and the organization actor guards concentrate most predicate construction. |
-| **Control gaps** | Every tenant boundary is one forgotten where clause away from being crossed, with nothing below it to refuse.<br>• The migration role and the runtime role are the same identity (R-47), so a row-level policy could not currently be enforced against the application role alone. |
+| **Control gaps** | Every tenant boundary is one forgotten where clause away from being crossed, with nothing below it to refuse.<br>• The migration role and the runtime role are the same identity (R-47), so a row-level policy could not currently be enforced against the application role alone.<br>• The newest database-level backstop (the composite foreign key to a customer) does not bind a project row whose organization is null. |
 | **Acceptance criteria** | A decision is recorded on whether row-level security is adopted, with the reasoning, because adopting it changes every query path.<br>• If adopted, the runtime role is separated from the migration role first (R-47), a policy exists on each root model, and a rehearsal proves a query without a tenant context returns zero rows.<br>• If not adopted, a compensating deterministic gate is named and implemented (R-08) and the acceptance of the residual is recorded with an expiry. |
 | **Verification method** | `FAULT_INJECTION_REHEARSAL` |
 | **Residual risk** | Row-level security protects rows, not aggregates computed in the application, and it cannot help where the application legitimately holds a cross-tenant role such as the platform-administrative surface. |
@@ -1442,7 +1558,7 @@ visible in the management document, only in the machine register.
 
 #### `R-11` — Ambiguous organization membership is resolved by silently picking the oldest
 
-**MEDIUM** (3×3=9) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **CONFIDENTIALITY + INTEGRITY** · confidence HIGH · priority 43 · phase S4_TENANT_AND_SITE_ISOLATION
+**MEDIUM** (3×3=9) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **CONFIDENTIALITY + INTEGRITY** · confidence HIGH · priority 44 · phase S4_TENANT_AND_SITE_ISOLATION
 
 | | |
 |---|---|
@@ -1454,7 +1570,7 @@ visible in the management document, only in the machine register.
 
 #### `R-12` — Redis keys carry no namespace, and tenant scoping of cache keys is unverified
 
-**MEDIUM** (3×3=9) · ASSURANCE_GAP · dominant impact **CONFIDENTIALITY + INTEGRITY** · confidence MEDIUM · priority 44 · phase S4_TENANT_AND_SITE_ISOLATION
+**MEDIUM** (3×3=9) · ASSURANCE_GAP · dominant impact **CONFIDENTIALITY + INTEGRITY** · confidence MEDIUM · priority 45 · phase S4_TENANT_AND_SITE_ISOLATION
 
 | | |
 |---|---|
@@ -1490,7 +1606,7 @@ visible in the management document, only in the machine register.
 
 #### `R-15` — Four organization-governance questions are undecided, including whether an organization can lose its only owner
 
-**MEDIUM** (2×4=8) · POLICY_AMBIGUITY · dominant impact **AVAILABILITY** · confidence HIGH · priority 45 · phase OWNER_POLICY_DECISION
+**MEDIUM** (2×4=8) · POLICY_AMBIGUITY · dominant impact **AVAILABILITY** · confidence HIGH · priority 46 · phase OWNER_POLICY_DECISION
 
 | | |
 |---|---|
@@ -1514,7 +1630,7 @@ visible in the management document, only in the machine register.
 
 #### `R-17` — Six unauthenticated endpoints publish an internal commercial dashboard built from fabricated records
 
-**MEDIUM** (5×2=10) · ACTIVE_CONFIRMED · dominant impact **CONFIDENTIALITY + AUDITABILITY** · confidence HIGH · priority 46 · phase S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS
+**MEDIUM** (5×2=10) · ACTIVE_CONFIRMED · dominant impact **CONFIDENTIALITY + AUDITABILITY** · confidence HIGH · priority 47 · phase S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS
 
 | | |
 |---|---|
@@ -1586,7 +1702,7 @@ visible in the management document, only in the machine register.
 
 #### `R-23` — Two public-content behaviours need a policy decision rather than a fix
 
-**MEDIUM** (3×2=6) · POLICY_AMBIGUITY · dominant impact **INTEGRITY** · confidence HIGH · priority 47 · phase OWNER_POLICY_DECISION
+**MEDIUM** (3×2=6) · POLICY_AMBIGUITY · dominant impact **INTEGRITY** · confidence HIGH · priority 50 · phase OWNER_POLICY_DECISION
 
 | | |
 |---|---|
@@ -1646,7 +1762,7 @@ visible in the management document, only in the machine register.
 
 #### `R-28` — The platform discloses its framework and does not suppress server version tokens
 
-**LOW** (4×1=4) · ACTIVE_CONFIRMED · dominant impact **CONFIDENTIALITY** · confidence HIGH · priority 53 · phase S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING
+**LOW** (4×1=4) · ACTIVE_CONFIRMED · dominant impact **CONFIDENTIALITY** · confidence HIGH · priority 61 · phase S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING
 
 | | |
 |---|---|
@@ -1670,7 +1786,7 @@ visible in the management document, only in the machine register.
 
 #### `R-30` — The network path to the origin address was unstable between two observations and the mechanism is unknown
 
-**MEDIUM** (2×4=8) · ASSURANCE_GAP · dominant impact **AUDITABILITY** · confidence MEDIUM · priority 48 · phase S9_OBSERVABILITY_AND_DETECTION
+**MEDIUM** (2×4=8) · ASSURANCE_GAP · dominant impact **AUDITABILITY** · confidence MEDIUM · priority 51 · phase S9_OBSERVABILITY_AND_DETECTION
 
 | | |
 |---|---|
@@ -1682,7 +1798,7 @@ visible in the management document, only in the machine register.
 
 #### `R-31` — The health surface is unauthenticated and its access logging is disabled at the proxy
 
-**MEDIUM** (4×2=8) · ACTIVE_CONFIRMED · dominant impact **AUDITABILITY** · confidence HIGH · priority 52 · phase S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING
+**MEDIUM** (4×2=8) · ACTIVE_CONFIRMED · dominant impact **AUDITABILITY** · confidence HIGH · priority 55 · phase S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING
 
 | | |
 |---|---|
@@ -1802,7 +1918,7 @@ visible in the management document, only in the machine register.
 
 #### `R-41` — A partial failure between two writes can leave a suspended member's sessions live
 
-**MEDIUM** (2×3=6) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **CONFIDENTIALITY + AUDITABILITY** · confidence HIGH · priority 49 · phase S3_IDENTITY_SESSION_AND_MFA
+**MEDIUM** (2×3=6) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **CONFIDENTIALITY + AUDITABILITY** · confidence HIGH · priority 52 · phase S3_IDENTITY_SESSION_AND_MFA
 
 | | |
 |---|---|
@@ -1814,7 +1930,7 @@ visible in the management document, only in the machine register.
 
 #### `R-42` — Dead product surface refuses correctly where nothing can observe it, including all site-membership management
 
-**MEDIUM** (2×3=6) · ASSURANCE_GAP · dominant impact **AUDITABILITY** · confidence HIGH · priority 50 · phase S4_TENANT_AND_SITE_ISOLATION
+**MEDIUM** (2×3=6) · ASSURANCE_GAP · dominant impact **AUDITABILITY** · confidence HIGH · priority 53 · phase S4_TENANT_AND_SITE_ISOLATION
 
 | | |
 |---|---|
@@ -1838,7 +1954,7 @@ visible in the management document, only in the machine register.
 
 #### `R-44` — Five dependency advisories are open in the production tree
 
-**MEDIUM** (3×3=9) · ACTIVE_CONFIRMED · dominant impact **CONFIDENTIALITY + INTEGRITY + AVAILABILITY** · confidence MEDIUM · priority 39 · phase S2_SCANNING_AND_SUPPLY_CHAIN
+**MEDIUM** (3×3=9) · ACTIVE_CONFIRMED · dominant impact **CONFIDENTIALITY + INTEGRITY + AVAILABILITY** · confidence MEDIUM · priority 40 · phase S2_SCANNING_AND_SUPPLY_CHAIN
 
 | | |
 |---|---|
@@ -1874,7 +1990,7 @@ visible in the management document, only in the machine register.
 
 #### `R-47` — The database connection is unencrypted by configuration and one identity holds both migration and runtime rights
 
-**MEDIUM** (2×5=10) · ACTIVE_CONFIRMED · dominant impact **INTEGRITY + AUDITABILITY** · confidence HIGH · priority 36 · phase S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING
+**MEDIUM** (2×5=10) · ACTIVE_CONFIRMED · dominant impact **INTEGRITY + AUDITABILITY** · confidence HIGH · priority 37 · phase S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING
 
 | | |
 |---|---|
@@ -1886,7 +2002,7 @@ visible in the management document, only in the machine register.
 
 #### `R-48` — Traffic inside the cluster is unencrypted between the proxy, the application and the cache
 
-**MEDIUM** (2×3=6) · ACTIVE_CONFIRMED · dominant impact **CONFIDENTIALITY + INTEGRITY** · confidence HIGH · priority 51 · phase S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING
+**MEDIUM** (2×3=6) · ACTIVE_CONFIRMED · dominant impact **CONFIDENTIALITY + INTEGRITY** · confidence HIGH · priority 54 · phase S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING
 
 | | |
 |---|---|
@@ -1898,7 +2014,7 @@ visible in the management document, only in the machine register.
 
 #### `R-49` — The gateway boundary is per-gateway shared-secret authentication, not the mutual certificate design the target architecture requires
 
-**MEDIUM** (2×4=8) · ACTIVE_CONFIRMED · dominant impact **INTEGRITY + INDUSTRIAL_SAFETY** · confidence HIGH · priority 40 · phase S6_OT_GATEWAY_AND_CRYPTO_LIFECYCLE
+**MEDIUM** (2×4=8) · ACTIVE_CONFIRMED · dominant impact **INTEGRITY + INDUSTRIAL_SAFETY** · confidence HIGH · priority 41 · phase S6_OT_GATEWAY_AND_CRYPTO_LIFECYCLE
 
 | | |
 |---|---|
@@ -1910,7 +2026,7 @@ visible in the management document, only in the machine register.
 
 #### `R-50` — No code path from the platform reaches a programmable controller, because the capability is absent
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 54 · phase S10_OT_PRECONDITIONS_BEFORE_PROTOCOL_CLIENTS
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 64 · phase S10_OT_PRECONDITIONS_BEFORE_PROTOCOL_CLIENTS
 
 | | |
 |---|---|
@@ -1922,7 +2038,7 @@ visible in the management document, only in the machine register.
 
 #### `R-51` — Backup, restore and recovery machinery exists and none of it was executed
 
-**MEDIUM** (2×5=10) · ASSURANCE_GAP · dominant impact **AVAILABILITY** · confidence MEDIUM · priority 41 · phase S12_DR_RUNBOOKS_AND_REHEARSAL
+**MEDIUM** (2×5=10) · ASSURANCE_GAP · dominant impact **AVAILABILITY** · confidence MEDIUM · priority 42 · phase S12_DR_RUNBOOKS_AND_REHEARSAL
 
 | | |
 |---|---|
@@ -1944,21 +2060,21 @@ visible in the management document, only in the machine register.
 | **Verification method** | `FAULT_INJECTION_REHEARSAL` |
 | **Residual risk** | An unrehearsed runbook is a document, not a capability; the rehearsal criterion is what makes this entry closable, and rehearsals are the part most likely to be deferred. |
 
-#### `R-53` — The worker boundary is deliberately minimal and holds no database credential
+#### `R-53` — Worker containers receive the whole production environment, so the image-level minimality does not bound the credentials a compromised worker holds
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 55 · phase S1_NO_CHANGE_REQUIRED
+**MEDIUM** (2×5=10) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **CONFIDENTIALITY** · confidence MEDIUM · priority 48 · phase S11_INFRASTRUCTURE_AND_CONTAINER_HARDENING
 
 | | |
 |---|---|
-| **Existing controls** | Each worker reaches the platform through one authenticated request, so the web tier's authorization and audit apply to its work.<br>• The work is leased or idempotent at the web tier, so a retry is safe.<br>• A committed test keeps the packaging boundary from eroding. |
-| **Control gaps** | The boundary rests on a worker token, so token handling is the control that must not weaken. |
-| **Acceptance criteria** | The packaging test continues to assert that no worker image gains application code, installed packages or a database credential.<br>• Worker token rotation is covered by whatever secret-lifecycle work R-49 produces. |
-| **Verification method** | `AUTOMATED_TEST` |
-| **Residual risk** | This control is a packaging property, and packaging properties erode quietly; the committed test is what keeps it, so removing that test is the real risk. |
+| **Existing controls** | Each worker reaches the platform through one authenticated request, so the web tier's authorization and audit apply to its work.<br>• The work is leased or idempotent at the web tier, so a retry is safe.<br>• A committed test keeps the packaging boundary from eroding.<br>• Each worker image contains one dependency-free script, no installed packages, no object-relational mapper and no application code (the former positive control, kept as a counter-control).<br>• The workers publish no port, mount no volume and sit on the internal network. |
+| **Control gaps** | The container environment is the whole file, not the few variables the script reads.<br>• No test asserts that a worker service lists an explicit environment instead of the file.<br>• The former positive control measured image contents, not the run-time environment. |
+| **Acceptance criteria** | A gate that fails the build when a worker service in the production compose file declares env_file or lists a variable the worker script does not read.<br>• A test asserts that the image packaging boundary (no application code, no installed packages) still holds.<br>• Worker token rotation is covered by whatever secret-lifecycle work R-49 produces. |
+| **Verification method** | `DETERMINISTIC_TOOL_GATE` |
+| **Residual risk** | An explicit environment bounds what a compromised worker can read, not what it can do with its one credential, and the same pattern in the web tier's own container is out of scope here. |
 
 #### `R-54` — The rate limiter fails closed on an undeclared bucket and audits the refusal
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 56 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 65 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -1970,7 +2086,7 @@ visible in the management document, only in the machine register.
 
 #### `R-55` — No role can assign organization ownership, and every client-supplied role is clamped
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 57 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 66 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -1982,7 +2098,7 @@ visible in the management document, only in the machine register.
 
 #### `R-56` — The compliance organization-scope helper has a complete fail-closed ladder
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 58 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 67 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -1994,7 +2110,7 @@ visible in the management document, only in the machine register.
 
 #### `R-57` — The enterprise-resource surface is the reference implementation of the target failure policy
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 59 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 68 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2006,7 +2122,7 @@ visible in the management document, only in the machine register.
 
 #### `R-58` — There is exactly one mutation transport, because the framework's alternative is unused
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 60 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 69 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2018,7 +2134,7 @@ visible in the management document, only in the machine register.
 
 #### `R-59` — The session store and the tenant contract both fail closed by construction
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 61 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 70 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2030,7 +2146,7 @@ visible in the management document, only in the machine register.
 
 #### `R-60` — Twelve security-control dependencies were traced and confirmed to deny rather than to succeed emptily
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 62 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 71 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2042,7 +2158,7 @@ visible in the management document, only in the machine register.
 
 #### `R-61` — No public handler accepts a tenant, user or role identifier, and every privileged column a public writer sets is hardcoded
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 63 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 72 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2054,7 +2170,7 @@ visible in the management document, only in the machine register.
 
 #### `R-62` — The gateway envelope is canonicalised and replay-bounded by construction
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 64 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 73 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2087,43 +2203,155 @@ visible in the management document, only in the machine register.
 | **Acceptance criteria** | Each of the five is examined and its result recorded, with the webhook signature check and the platform-administrative tier taken first because they carry the most authority.<br>• Any finding is added to this register with its own risk entry rather than appended to this one.<br>• This entry is closed only when all five have been read, not when a subset has. |
 | **Verification method** | `SOURCE_REVIEW` |
 | **Residual risk** | THE CONFIDENCE ON THIS ENTRY IS LOW AND THE SCORE IS THEREFORE THE LEAST RELIABLE IN THE REGISTER. It is an estimate of the risk of not knowing, derived from what these surfaces are rather than from what they contain, and it may move sharply in either direction once they are read. |
+
+#### `R-65` — An archived nightly report is shown at the organization's full breadth, so a lower-privileged reader sees financial and all-site data that the live dashboard refuses
+
+**HIGH** (4×3=12) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **CONFIDENTIALITY** · confidence MEDIUM · priority 36 · phase S4_TENANT_AND_SITE_ISOLATION
+
+| | |
+|---|---|
+| **Existing controls** | The archive is read by organization and date with the organization taken from the server-resolved scope, so another tenant's report is not reachable.<br>• The live dashboard and the summary API gate every section on the reader's own axes and site list.<br>• Reaching the page needs the platform administrator capability, so this is an insider-class exposure and not an anonymous one. |
+| **Control gaps** | No code narrows or refuses a stored section by the reader's authority at open time.<br>• No test opens an archived report as a reader who lacks the financial axis or holds a subset of sites.<br>• The completion notification goes to OWNER and ADMIN members whether or not they may open every section. |
+| **Acceptance criteria** | A test asserts that an ADMIN who lacks the financial axis opens a stored report and receives the financial section as refused, not rendered.<br>• A test asserts that a reader holding a subset of sites receives plant data for those sites only.<br>• The worker comment and the detail page describe the same rule. |
+| **Verification method** | `AUTOMATED_TEST` |
+| **Residual risk** | Narrowing at read time protects readers of the archive only. A stored snapshot still contains the names of users who acted on approvals and costs, and the completion notice still reaches every OWNER and ADMIN. The platform-administrator trust assumption stays a design assumption until it is exercised at run time. |
+
+#### `R-66` — The customer project panel returns summed project cost to ADMIN, who is refused cost figures on every ERP surface
+
+**MEDIUM** (4×2=8) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **CONFIDENTIALITY** · confidence HIGH · priority 56 · phase S4_TENANT_AND_SITE_ISOLATION
+
+| | |
+|---|---|
+| **Existing controls** | The query is filtered by the server-resolved organization and by the customer's own projects.<br>• Only OWNER and ADMIN reach the route; both are privileged roles of the same organization. |
+| **Control gaps** | The cost aggregate is not gated on the compensation permission.<br>• Linking a project to a customer discloses project granularity to the customer-management role, limited by the need for manage_erp.<br>• No test asserts either behaviour: neither that an ADMIN does not receive recordedCost nor that the aggregate is the only cost the route returns. |
+| **Acceptance criteria** | If the owner decides that the recorded-cost total is an ERP compensation figure: a test asserts that the customer project route called as an ADMIN returns recordedCost as absent or null, and a test asserts that the same route called as an OWNER returns the figures.<br>• If the owner decides that the recorded-cost total is a customer-level aggregate outside the compensation gate: the difference from the ERP surfaces is written into the customer feature documentation, a test asserts that the route returns nothing finer than one amount per currency (no per-project cost), and a test asserts that every role without view_erp, including MANAGER, receives no project data and no recordedCost. |
+| **Verification method** | `AUTOMATED_TEST` |
+| **Open policy** | OPEN (PRODUCT_OWNER): Is the per-currency recorded-cost total on a customer an ERP compensation figure that only holders of view_erp_compensation (OWNER) may read, or a customer-level aggregate that holders of view_erp (OWNER and ADMIN) may read?<br>• COMPENSATION_GATED: The recorded-cost total is an ERP compensation figure and follows the view_erp_compensation gate.<br>• AGGREGATE_VISIBLE: The recorded-cost total is a customer-level aggregate that view_erp is enough to read. |
+| **Residual risk** | Gating the aggregate leaves the project list itself visible to anyone with view_erp, which is intended. Whether a customer-level cost view should exist at all for ADMIN is an owner decision: both outcomes are recorded in policy with their own testable criteria, and neither is chosen here. |
+
+#### `R-67` — The nightly-report entrypoint accepts any of three bearer tokens, is public with no origin check or rate limit, and returns other tenants' organization ids
+
+**MEDIUM** (3×2=6) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **CONFIDENTIALITY + INTEGRITY + AVAILABILITY** · confidence HIGH · priority 58 · phase S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS
+
+| | |
+|---|---|
+| **Existing controls** | The comparison is constant-time, and with no token configured and no administrator session the endpoint answers 401.<br>• The pass is bounded to 200 organizations per request, leased and idempotent, and the notification carries no figures.<br>• The session cookies are strict or lax, so a cross-site POST does not carry them. |
+| **Control gaps** | Three credentials with different intended blast radii open the same door.<br>• The response is not reduced to counts for a token caller, and paging with the returned cursor enumerates every organization id.<br>• The sibling cookie-authenticated writes refuse an untrusted Origin; this one does not.<br>• No per-credential rate limit protects the token comparison. |
+| **Acceptance criteria** | A test asserts that, with the dedicated token configured, the metering token and the metrics token are refused.<br>• A test asserts that the token-path response contains no organization id.<br>• A test asserts that the entrypoint refuses an untrusted Origin on the session path. |
+| **Verification method** | `AUTOMATED_TEST` |
+| **Residual risk** | A dedicated token still travels in the environment of the runner and of the web tier; token strength and rotation are outside this entry (R-49), and the entrypoint remains an internet-facing route whose only barrier is that token. |
+
+#### `R-68` — The nightly-report path can freeze, announce or report something other than what happened: a default-zone freeze, a transient site-read failure stored as a FORBIDDEN section, announced-but-undelivered, an outage shown as a normal state, and skipped or colliding business days
+
+**MEDIUM** (3×2=6) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **INTEGRITY + AUDITABILITY** · confidence HIGH · priority 59 · phase S7_FAILURE_SEMANTICS_AND_TRUTHFULNESS
+
+| | |
+|---|---|
+| **Existing controls** | Each stored report names the zone and cutoff it used.<br>• The next poll retries an unreported night within the same day.<br>• The archive list page distinguishes an unreadable archive from an empty one. |
+| **Control gaps** | A failed batched read is indistinguishable from an absent row.<br>• A failed site read is indistinguishable from an organization with no site, and is stored with a permission reason.<br>• A failed claim release is neither logged, retried nor persisted.<br>• No signal separates no-database from nothing-to-do on the worker path or the detail page.<br>• The lookup ignores the zone and cutoff, and each pass targets only the last completed day. |
+| **Acceptance criteria** | A test asserts that a failed batched settings read writes no report.<br>• A test asserts that a failed site read writes no FORBIDDEN industrial section and leaves the night open for a later pass.<br>• A test asserts that a failed claim release is reported by the pass and retried by a later pass.<br>• A test asserts that a pass with no database does not look like a held lease and that the detail page shows an unavailable state for an unreadable archive.<br>• A test asserts that a night missed entirely is reported by a later pass and that a zone change cannot reuse a stored label for a different window. |
+| **Verification method** | `AUTOMATED_TEST` |
+| **Residual risk** | Fixing the four paths does not make a stored report correctable by itself: the correction path exists in the library and no caller issues it, which is a product decision. |
+
+#### `R-69` — Creating a frozen financial snapshot and reading the archive leave no audit record
+
+**MEDIUM** (3×3=9) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **AUDITABILITY** · confidence HIGH · priority 49 · phase S8_AUDIT_AND_TAMPER_EVIDENCE
+
+| | |
+|---|---|
+| **Existing controls** | Settings changes are audited inside the same transaction, with before and after values.<br>• The customer data layer writes every change's audit event in the same transaction. |
+| **Control gaps** | No event records that a snapshot containing financial figures and user names was created.<br>• No event records any read of the archive. |
+| **Acceptance criteria** | A test asserts that opening a stored report, on the archive list page and on the detail page, writes an audit event naming the reader, the organization and the night.<br>• A test asserts that the creation of a stored report by the nightly pass writes an audit event naming the organization and the night, and that the existing correction event is unchanged. |
+| **Verification method** | `AUTOMATED_TEST` |
+| **Residual risk** | An audit event proves that a read happened, not that the reader was entitled to it (R-65), and the audit store itself has no tamper evidence (R-38). |
+
+#### `R-70` — Linking a project to a customer is check-then-write: concurrent links can overwrite each other while both audit rows claim success
+
+**LOW** (2×2=4) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **INTEGRITY + AUDITABILITY** · confidence HIGH · priority 62 · phase S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS
+
+| | |
+|---|---|
+| **Existing controls** | Both foreign keys are composite, so a link cannot cross organizations for a row that has an organization.<br>• The transaction keeps the read, the update and the audit together. |
+| **Control gaps** | The update has no precondition on the partyId that was read and does not repeat the deletedAt filter.<br>• The audit event is written whatever the update changed. |
+| **Acceptance criteria** | A test asserts that a link whose precondition no longer holds changes nothing and writes no success audit event.<br>• A test asserts that two concurrent links of one project leave exactly one link and exactly one matching audit event. |
+| **Verification method** | `AUTOMATED_TEST` |
+| **Residual risk** | A conditional update fixes this path only; any other writer of ErpProject.partyId would need the same precondition. |
+
+#### `R-71` — Customer name uniqueness is enforced only by a read before the insert, so concurrent creates or a double submit can store duplicates
+
+**LOW** (3×1=3) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **INTEGRITY** · confidence HIGH · priority 63 · phase S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS
+
+| | |
+|---|---|
+| **Existing controls** | The same-name read refuses the ordinary sequential duplicate with a stated conflict.<br>• Archived customers are excluded from the clash test, so a retired name can be reused deliberately. |
+| **Control gaps** | No database constraint backs the rule, so a race stores two active customers with one name. |
+| **Acceptance criteria** | A test asserts that two concurrent creates of one name store exactly one active customer. |
+| **Verification method** | `AUTOMATED_TEST` |
+| **Residual risk** | A partial unique index on the lower-cased active name changes existing rows only if duplicates already exist; the migration needs a check for them first. |
+
+#### `R-72` — The executive features keep personal data with no retention, erasure or export rule, and the organization lifecycle for the nightly pass is undefined
+
+**MEDIUM** (3×2=6) · POLICY_AMBIGUITY · dominant impact **CONFIDENTIALITY** · confidence MEDIUM · priority 60 · phase OWNER_POLICY_DECISION
+
+| | |
+|---|---|
+| **Existing controls** | The candidate-data (ATS) module has its own retention and erasure path, which shows the platform can express one.<br>• Customers are archived, not lost, and an archived customer is excluded from live counts. |
+| **Control gaps** | No retention period, erasure route or export route exists for customer personal data or for report snapshots, and Party and PartyInteraction are in none of the closed registries (erasure-targets, export-sources, processing-inventory).<br>• Whether a pass should skip a closed or dormant organization is unproven because no lifecycle concept exists. |
+| **Acceptance criteria** | If the owner decides that customer contact data and stored report snapshots are personal data: Party, PartyInteraction and the report snapshot are enumerated in the closed registries erasure-targets, export-sources and processing-inventory with a retention period, the registry completeness tests (erasure-governance and export-governance) pass with them listed, a test asserts that an erasure request for a data subject plans and executes a removal or anonymisation of the matching customer rows, and a test asserts that an export request includes them.<br>• If the owner decides that customer contact data and stored report snapshots are not subject to erasure and export: the exemption and its basis are recorded in processing-inventory, a test asserts that the closed registries name Party, PartyInteraction and the report snapshot as exempt with that basis, and the customer feature documentation states the retention period that applies.<br>• The owner records whether the nightly pass skips organizations that are closed or dormant, in the executive report design note; if it skips them, a test asserts that the pass writes no report and sends no notification for such an organization. |
+| **Verification method** | `OWNER_POLICY_STATEMENT` |
+| **Open policy** | OPEN (DATA_PROTECTION_OWNER): Are the customer contact data (Party and PartyInteraction) and the frozen report snapshots personal data of natural persons that the platform must retain for a stated period, erase on request and include in a data export?<br>• RETENTION_AND_ERASURE_APPLY: They are personal data and fall under retention, erasure and export.<br>• EXEMPT_DOCUMENTED: They are not personal data of natural persons, or are held for a documented purpose without erasure or export. |
+| **Residual risk** | Until a policy exists the platform cannot show a data subject or a regulator what is kept, for how long or how it is removed; this entry records the question, not a breach. |
+
+#### `R-73` — The customer and project-link surface skips the platform-administrator gate that all ERP routes apply, so an organization owner or administrator who is not a platform admin reads ERP project data and changes a project's customer
+
+**MEDIUM** (4×2=8) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **CONFIDENTIALITY + INTEGRITY** · confidence HIGH · priority 57 · phase S4_TENANT_AND_SITE_ISOLATION
+
+| | |
+|---|---|
+| **Existing controls** | The organization is the server-resolved active selection and every query filters by it, so another tenant's data is not reachable.<br>• The customer-to-project foreign key is composite (with the null-organization caveat recorded on R-09).<br>• Reading and writing still need organization permissions and a trusted origin on writes. |
+| **Control gaps** | The platform capability that gates every ERP route is absent from the customer and project-link routes and pages.<br>• No test asserts either behaviour: neither that a caller who lacks the platform capability is refused by the customer project routes nor that the roles without view_erp are. |
+| **Acceptance criteria** | If the owner decides that the platform-administrator capability is required on the customer surface: the customer routes and pages that read or write project data apply the same two layers as the ERP routes (getCurrentUser and can(user.role, "admin") before the organization permission), a test asserts that an OWNER or ADMIN who lacks the platform capability is refused by every customer route that reads or writes project data, and a test asserts that the customer pages do not render project data for such a caller.<br>• If the owner decides that tenant OWNER and ADMIN may use the customer surface without the platform capability: the difference from the ERP routes is stated in the customer feature documentation, the project data a caller may read or change is limited to the fields the owner names, a test asserts that every role without view_erp (and without manage_erp for the link) is refused by the customer project routes, and a test asserts that no ERP route becomes reachable through the customer surface. |
+| **Verification method** | `AUTOMATED_TEST` |
+| **Open policy** | OPEN (PRODUCT_OWNER): Should an organization OWNER or ADMIN who does not hold the platform administrator capability reach the customer project data and the project-to-customer link, which no ERP route allows without that capability?<br>• PLATFORM_ADMIN_REQUIRED: The platform-administrator capability is required on the customer surface, as on every ERP route.<br>• TENANT_ACCESS_DOCUMENTED: Tenant OWNER and ADMIN may use the customer project surface without the platform capability. |
+| **Residual risk** | Adding the gate makes the customer feature unavailable to tenant owners who are not platform admins, which may be the opposite of the feature's purpose; keeping the difference needs its own documentation and tests. The fix and the product decision cannot be separated, and both outcomes are recorded in policy without choosing one. |
 <!-- /S1-BLOCK:matrix -->
 
 ### Appendix B — scoring calibration
 
 <!-- S1-BLOCK:calibration -->
 ```
-SCORED_RISKS                 53   (the 11 positive controls score 0 by construction)
-HIGH_COUNT                   35
-HIGH_PERCENT_OF_SCORED       66%
-DISTINCT_SCORES_USED         9 of 14 reachable
+SCORED_RISKS                 63   (the 10 positive controls score 0 by construction)
+HIGH_COUNT                   36
+HIGH_PERCENT_OF_SCORED       57%
+DISTINCT_SCORES_USED         10 of 14 reachable
 
 score histogram
-   4  # (1)
-   6  ##### (5)
-   8  ##### (5)
-   9  ### (3)
-  10  #### (4)
-  12  ############### (15)
+   3  # (1)
+   4  ## (2)
+   6  ######## (8)
+   8  ####### (7)
+   9  #### (4)
+  10  ##### (5)
+  12  ################ (16)
   15  ############## (14)
   16  #### (4)
   20  ## (2)
 
 likelihood distribution
-  L=2  10
-  L=3  27
-  L=4  12
+  L=2  12
+  L=3  32
+  L=4  15
   L=5  4
 
 impact distribution
-  I=1  1
-  I=2  4
-  I=3  13
+  I=1  2
+  I=2  10
+  I=3  15
   I=4  19
-  I=5  16
+  I=5  17
 ```
 
-**What this means, and it is a weakness of the method rather than of the estate.** 35 of 53 scored risks (66%) land in HIGH, and only 9 of the 14 reachable scores are used. Likelihood clusters because it is a *mean* of four factors, and the HIGH band spans 12 to 19, which is wide. **Severity therefore does not order the work on its own.** The remediation order in §12 is a severity-consistent total order over `remediationPriority`, and `productionState` is what separates a confirmed exposure from a configuration-guarded one inside the same band. Reading the band alone will mislead; the register is built so that nobody has to.
+**What this means, and it is a weakness of the method rather than of the estate.** 36 of 63 scored risks (57%) land in HIGH, and only 10 of the 14 reachable scores are used. Likelihood clusters because it is a *mean* of four factors, and the HIGH band spans 12 to 19, which is wide. **Severity therefore does not order the work on its own.** The remediation order in §12 is a severity-consistent total order over `remediationPriority`, and `productionState` is what separates a confirmed exposure from a configuration-guarded one inside the same band. Reading the band alone will mislead; the register is built so that nobody has to.
 <!-- /S1-BLOCK:calibration -->
 
 ### Appendix C — the dominant impact dimension
@@ -2133,21 +2361,21 @@ Which axis set each risk's band, because `max()` does not say.
 <!-- S1-BLOCK:dominant -->
 | Dominant impact dimension | Scored risks | Of which HIGH |
 |---|---|---|
-| AUDITABILITY | 14 | 11 |
-| CONFIDENTIALITY + INTEGRITY | 10 | 6 |
-| CONFIDENTIALITY | 9 | 7 |
+| AUDITABILITY | 15 | 11 |
+| CONFIDENTIALITY | 13 | 8 |
+| CONFIDENTIALITY + INTEGRITY | 11 | 6 |
+| INTEGRITY + AUDITABILITY | 6 | 3 |
 | AVAILABILITY | 5 | 3 |
-| INTEGRITY + AUDITABILITY | 4 | 3 |
 | CONFIDENTIALITY + AUDITABILITY | 3 | 0 |
+| CONFIDENTIALITY + INTEGRITY + AVAILABILITY | 2 | 0 |
+| INTEGRITY | 2 | 0 |
 | INTEGRITY + AVAILABILITY | 2 | 2 |
 | AVAILABILITY + AUDITABILITY | 1 | 1 |
 | CONFIDENTIALITY + INTEGRITY + AUDITABILITY | 1 | 1 |
-| CONFIDENTIALITY + INTEGRITY + AVAILABILITY | 1 | 0 |
 | INDUSTRIAL_SAFETY | 1 | 1 |
-| INTEGRITY | 1 | 0 |
 | INTEGRITY + INDUSTRIAL_SAFETY | 1 | 0 |
 
-**14 risks take their impact from `AUDITABILITY` alone, 11 of them HIGH.** That is the register's most important calibration caveat: `max()` is correct for security impact — averaging would dilute a confidentiality breach — but it makes one number stand for very different kinds of harm. An `ASSURANCE_GAP` risk can reach HIGH because the platform cannot *evidence* a control, not because data can leak. The dimension column above is derived from the factors on every run and gated, so the kind of harm always travels with the band.
+**15 risks take their impact from `AUDITABILITY` alone, 11 of them HIGH.** That is the register's most important calibration caveat: `max()` is correct for security impact — averaging would dilute a confidentiality breach — but it makes one number stand for very different kinds of harm. An `ASSURANCE_GAP` risk can reach HIGH because the platform cannot *evidence* a control, not because data can leak. The dimension column above is derived from the factors on every run and gated, so the kind of harm always travels with the band.
 <!-- /S1-BLOCK:dominant -->
 
 ### Appendix D — independent review closure
@@ -2168,8 +2396,13 @@ The findings of the first independent adversarial review of this register, and w
 | `S1-RV-009` | INFORMATIONAL | **FIXED_BY_DISCLOSURE_AND_DERIVED_PRESENTATION** | report appendix B, generated | markdownBlockDrift over the calibration block |
 | `S1-RV-010` | INFORMATIONAL | **FIXED_BY_DISCLOSURE_AND_DERIVED_PRESENTATION** | register dominantImpact + report appendix C | dominantImpactViolations; tie ordering is the fixed factor order |
 | `S1-RV-011` | INFORMATIONAL | **FIXED** | privilegeAccessibility across all four artifacts | zero occurrences of the old key; monotonic direction asserted |
+| `S1-RLK-OB-1` | PRECISION | **FIXED** | S0 adjudications and the relock delta document: decision counts, positions, consumers | relock selftests: derived decision counts, call-site position and consumer gates |
+| `S1-RLK-OB-2` | BLOCKING | **FIXED** | register: delta family, revision records and the reconciliation block | reconciliation selftests and exit 28 from the command line |
+| `S1-RLK-SURVIVORS` | SURVIVOR | **FIXED** | relock checker and its end-to-end tests | relock mutation campaign, verified by the campaign tool |
+| `S1-RLK-TEXT` | PRECISION | **FIXED** | register risks R-65 to R-73, R-53 and the relock report | register arithmetic, ownership and universe gates |
+| `S1-RLK-SCOPE` | PRECISION | **FIXED** | product-path definitions and the historical-file statement | relock checker: strict and broad path counts, historical-file gate |
 
-No review finding is OPEN. The two marked `FIXED_BY_DISCLOSURE_AND_DERIVED_PRESENTATION` were calibration criticisms of the scoring method, not defects in the data: the bands and every severity are unchanged, and what was added is derived presentation so a reader can see the saturation and the dominant harm without recomputing them. **The review identifiers are deliberately NOT security findings** — they are not among the register's 161 and they own no risk.
+No review finding is OPEN. The two marked `FIXED_BY_DISCLOSURE_AND_DERIVED_PRESENTATION` were calibration criticisms of the scoring method, not defects in the data: the bands and every severity are unchanged, and what was added is derived presentation so a reader can see the saturation and the dominant harm without recomputing them. **The review identifiers are deliberately NOT security findings** — they are not among the register's 179 and they own no risk.
 <!-- /S1-BLOCK:closure -->
 
 ### Appendix E — the mutation manifest
@@ -2204,6 +2437,93 @@ No review finding is OPEN. The two marked `FIXED_BY_DISCLOSURE_AND_DERIVED_PRESE
 | `FA-I2a` | secret detector | the compact-name rule removed | S1-FA I2: dotted and compact credential names fail; words that merely contain a family do not | **TARGETED_KILL** |
 | `FA-I2b` | secret detector | a dot no longer joins two segments of a name | S1-FA I2: dotted and compact credential names fail; words that merely contain a family do not | **TARGETED_KILL** |
 | `FA-I2c` | secret detector | the assignment key stops at a dot | S1-FA I2: dotted and compact credential names fail; words that merely contain a family do not | **TARGETED_KILL** |
+| `FR04-01` | closed schema | an unknown key on a risk is accepted | FR-04 schema: an unknown key on a risk is refused (UNKNOWN_KEY) | **TARGETED_KILL** |
+| `FR04-02` | closed schema | an unknown key on a finding is accepted | FR-04 schema: an unknown key on a finding is refused (UNKNOWN_KEY) | **TARGETED_KILL** |
+| `FR04-03` | closed schema | an unknown key inside a nested structure is accepted | FR-04 schema: an unknown key inside a nested structure is refused (UNKNOWN_KEY) | **TARGETED_KILL** |
+| `FR04-04` | closed schema | a missing required key is accepted | FR-04 schema: a missing required key is refused (MISSING_KEY) | **TARGETED_KILL** |
+| `FR04-05` | closed schema | the risk records are not walked | FR-04 schema: an unknown key on a risk is refused (UNKNOWN_KEY) | **TARGETED_KILL** |
+| `FR04-06` | closed schema | the finding records are not walked | FR-04 schema: an unknown key on a finding is refused (UNKNOWN_KEY) | **TARGETED_KILL** |
+| `FR04-07` | closed schema | the likelihood factors are not held to their keys | FR-04 schema: an unknown key inside a nested structure is refused (UNKNOWN_KEY) | **TARGETED_KILL** |
+| `FR04-08` | closed schema | an evidence item is not held to its keys | FR-04 schema: an unknown key inside a nested structure is refused (UNKNOWN_KEY) | **TARGETED_KILL** |
+| `FR04-09` | closed schema | the schema gate is not wired into runGates | FR-04 wiring: an unknown key stops runGates with exit 29 | **TARGETED_KILL** |
+| `PC-ANCHOR` | policy | an anchor the evidence file does not contain is accepted | POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence | **TARGETED_KILL** |
+| `PC-BRANCH-UNKNOWN` | policy | a branch the policy does not have is accepted | POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence | **TARGETED_KILL** |
+| `PC-COUNT-DELTA-ONLY` | reconciliation | an owner decision counts as a revised historical risk (the counter) | PC-F2-02 reconciliation: a valid owner-decision revision is accepted on a delta risk and rewrites no historical value; the others are refused | **TARGETED_KILL** |
+| `PC-DECIDED-BARE` | policy | DECIDED without any evidence is accepted | POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence | **TARGETED_KILL** |
+| `PC-DECIDER-ROLE` | policy | a decision by someone who does not own the policy is accepted | POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence | **TARGETED_KILL** |
+| `PC-EVIDENCE-SHAPE` | policy | evidence without its decider is accepted | POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence | **TARGETED_KILL** |
+| `PC-EVIDENCE-SHAPE-MISSING` | policy | evidence that lacks a required key is accepted | POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence | **TARGETED_KILL** |
+| `PC-FOR-BRANCH` | policy | evidence about another branch is accepted | PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous | **TARGETED_KILL** |
+| `PC-FOR-BRANCH-OTHERS` | policy | evidence that names the chosen branch and another one is accepted | PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous | **TARGETED_KILL** |
+| `PC-FOR-RISK` | policy | evidence about another risk is accepted | PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous | **TARGETED_KILL** |
+| `PC-FOR-RISK-OTHERS` | policy | evidence that names this risk and another one is accepted | PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous | **TARGETED_KILL** |
+| `PC-LINK-ROOT` | policy | a link that leaves the repository is followed | PC-F2-01 policy: a link under a permitted folder to a security deliverable is a self-reference | **TARGETED_KILL** |
+| `PC-LINK-SELF` | policy | a link to a deliverable is not a self-reference | PC-F2-01 policy: a link under a permitted folder to a security deliverable is a self-reference | **TARGETED_KILL** |
+| `PC-NOT-A-FILE` | policy | a folder is accepted as evidence | PC-F2-01 policy: a path the checker cannot read without guessing is refused, a path leaving the repository is refused | **TARGETED_KILL** |
+| `PC-PATH-ABSENT` | policy | a path that does not exist is accepted | POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence | **TARGETED_KILL** |
+| `PC-PATH-ABSOLUTE` | policy | an absolute path is accepted | PC-F2-01 policy: a path the checker cannot read without guessing is refused, a path leaving the repository is refused | **TARGETED_KILL** |
+| `PC-PATH-BACKSLASH` | policy | a backslash is accepted as a separator | PC-F2-01 policy: a path the checker cannot read without guessing is refused, a path leaving the repository is refused | **TARGETED_KILL** |
+| `PC-PATH-DOT` | policy | a current-directory segment is kept | PC-F2-01 policy: every spelling of a security deliverable or a tool is a self-reference, whether or not the file exists | **TARGETED_KILL** |
+| `PC-PATH-DOTDOT` | policy | a parent segment is kept instead of resolved | PC-F2-01 policy: every spelling of a security deliverable or a tool is a self-reference, whether or not the file exists | **TARGETED_KILL** |
+| `PC-PATH-DOUBLE` | policy | a doubled separator makes an empty segment that is kept | PC-F2-01 policy: every spelling of a security deliverable or a tool is a self-reference, whether or not the file exists | **TARGETED_KILL** |
+| `PC-PATH-ESCAPE` | policy | a parent segment may leave the repository | PC-F2-01 policy: a path the checker cannot read without guessing is refused, a path leaving the repository is refused | **TARGETED_KILL** |
+| `PC-PATH-FOLD` | policy | the comparison form keeps the letter case | PC-F2-01 policy: every spelling of a security deliverable or a tool is a self-reference, whether or not the file exists | **TARGETED_KILL** |
+| `PC-PATH-NFKC` | policy | the Unicode form is not normalised | PC-F2-01 policy: every spelling of a security deliverable or a tool is a self-reference, whether or not the file exists | **TARGETED_KILL** |
+| `PC-PATH-RESERVED` | policy | a reserved or stream character is accepted | PC-F2-01 policy: a path the checker cannot read without guessing is refused, a path leaving the repository is refused | **TARGETED_KILL** |
+| `PC-PATH-TRAILING` | policy | a segment Windows rewrites is accepted | PC-F2-01 policy: a path the checker cannot read without guessing is refused, a path leaving the repository is refused | **TARGETED_KILL** |
+| `PC-PATH-USED` | policy | the evidence path is judged as written, not canonical | PC-F2-01 policy: every spelling of a security deliverable or a tool is a self-reference, whether or not the file exists | **TARGETED_KILL** |
+| `PC-RECON-DECIDED` | reconciliation | an owner-decision revision on a policy that is still open is accepted | PC-F2-02 reconciliation: a valid owner-decision revision is accepted on a delta risk and rewrites no historical value; the others are refused | **TARGETED_KILL** |
+| `PC-RECON-PROBLEMS` | reconciliation | an owner-decision revision is not judged by the decision contract | PC-F2-02 reconciliation: a valid owner-decision revision is accepted on a delta risk and rewrites no historical value; the others are refused | **TARGETED_KILL** |
+| `PC-RECON-RISK-ONLY` | reconciliation | a finding may carry an owner-decision revision | PC-F2-02 reconciliation: a valid owner-decision revision is accepted on a delta risk and rewrites no historical value; the others are refused | **TARGETED_KILL** |
+| `PC-RECON-SCOPE` | reconciliation | the reconciliation gate refuses an owner-decision revision | PC-F2-02 reconciliation: a valid owner-decision revision is accepted on a delta risk and rewrites no historical value; the others are refused | **TARGETED_KILL** |
+| `PC-REV-AMBIGUOUS-BRANCH` | policy | a revision that names two branches records the decision | PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous | **TARGETED_KILL** |
+| `PC-REV-AMBIGUOUS-RISK` | policy | a revision that names two risks records the decision | PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous | **TARGETED_KILL** |
+| `PC-REV-REASON` | policy | a revision whose reason names neither the risk nor the branch records the decision | PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous | **TARGETED_KILL** |
+| `PC-REV-SCOPE` | policy | a revision of another scope records the decision | POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence | **TARGETED_KILL** |
+| `PC-REV-SUPERSEDES` | policy | a revision that rewrites more than the status records the decision | PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous | **TARGETED_KILL** |
+| `PC-STALE-APOSTROPHE` | stale text | apostrophe look-alikes are not folded | PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase | **TARGETED_KILL** |
+| `PC-STALE-JOIN` | stale text | a wrapped phrase is judged line by line | PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase | **TARGETED_KILL** |
+| `PC-STALE-NFKC` | stale text | the Unicode form is not normalised before matching | PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase | **TARGETED_KILL** |
+| `PC-STALE-OPEN-LINE` | stale text | a defining row is exempt from every pattern | PC-F5-01 stale text: ordinary wording, the detector's own description and a defining open item are not hits, free narration about an open item is | **TARGETED_KILL** |
+| `PC-STALE-OPEN-OWN` | stale text | a defining row is exempt for every open item it names | PC-F5-01 stale text: ordinary wording, the detector's own description and a defining open item are not hits, free narration about an open item is | **TARGETED_KILL** |
+| `PC-STALE-P2_REVIEWER_TEXT` | stale text | the stale-text pattern P2 is dropped | POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables | **TARGETED_KILL** |
+| `PC-STALE-P4_TODO_REVIEWER` | stale text | the stale-text pattern P4 is dropped | POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables | **TARGETED_KILL** |
+| `PC-STALE-PARAGRAPH` | stale text | a blank line does not end a run | PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase | **TARGETED_KILL** |
+| `PC-STALE-REVIEWER` | stale text | the possessive pattern is the narrow one again | PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase | **TARGETED_KILL** |
+| `PC-STALE-SPAN` | stale text | the quotation marker is read on the first line of the phrase only | PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase | **TARGETED_KILL** |
+| `PC-STALE-WHITESPACE` | stale text | whitespace runs are not reduced | PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase | **TARGETED_KILL** |
+| `PC-STALE-ZERO-WIDTH` | stale text | zero-width characters are kept | PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase | **TARGETED_KILL** |
+| `PC-TOUCHED-DELTA-ONLY` | reconciliation | an owner decision counts as a revision of a historical risk (the touched list) | PC-F2-02 reconciliation: a valid owner-decision revision is accepted on a delta risk and rewrites no historical value; the others are refused | **TARGETED_KILL** |
+| `PF-CONDITIONAL` | policy | a branch criterion that is not conditional is accepted | FR-06 policy: a branch criterion that is not conditional is refused (POLICY_BRANCH_ACCEPTANCE_NOT_CONDITIONAL) | **TARGETED_KILL** |
+| `PF-DISTINCT` | policy | identical branches are accepted | POSTREV-F2 policy: two branches may not share a condition, a control, a test set or an acceptance set | **TARGETED_KILL** |
+| `PF-DISTINCT-acceptanceCriteria` | policy | two branches may share their acceptanceCriteria | POSTREV-F2 policy: two branches may not share a condition, a control, a test set or an acceptance set | **TARGETED_KILL** |
+| `PF-DISTINCT-condition` | policy | two branches may share their condition | POSTREV-F2 policy: two branches may not share a condition, a control, a test set or an acceptance set | **TARGETED_KILL** |
+| `PF-DISTINCT-requiredControl` | policy | two branches may share their requiredControl | POSTREV-F2 policy: two branches may not share a condition, a control, a test set or an acceptance set | **TARGETED_KILL** |
+| `PF-DISTINCT-requiredTests` | policy | two branches may share their requiredTests | POSTREV-F2 policy: two branches may not share a condition, a control, a test set or an acceptance set | **TARGETED_KILL** |
+| `PF-EVIDENCE-EMPTY` | policy | empty evidence is accepted | POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence | **TARGETED_KILL** |
+| `PF-EVIDENCE-KEYS` | closed schema | the owner-decision evidence is not held to its keys | FR-04 schema: an unknown key inside a nested structure is refused (UNKNOWN_KEY) | **TARGETED_KILL** |
+| `PF-GENERIC` | policy | a generic acceptance criterion is accepted | POSTREV-F2 policy: a branch needs a verification method, an operational test and a testable, non-generic acceptance criterion | **TARGETED_KILL** |
+| `PF-LISTED` | policy | a branch criterion the risk does not list is accepted | FR-06 policy: a branch criterion the risk does not list is refused (POLICY_BRANCH_ACCEPTANCE_NOT_IN_CRITERIA) | **TARGETED_KILL** |
+| `PF-METHOD` | policy | a branch without a verification method is accepted | POSTREV-F2 policy: a branch needs a verification method, an operational test and a testable, non-generic acceptance criterion | **TARGETED_KILL** |
+| `PF-OPEN` | policy | an OPEN policy may carry a decision | POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence | **TARGETED_KILL** |
+| `PF-OWNER-ROLE` | policy | an unknown owner role is accepted | POSTREV-F2 policy: a branch needs a verification method, an operational test and a testable, non-generic acceptance criterion | **TARGETED_KILL** |
+| `PF-REQ-R-66` | policy | the policy of R-66 is no longer mandatory | POSTREV-F2 policy: removing the policy of R-66, R-72 or R-73 is refused (POLICY_MISSING) | **TARGETED_KILL** |
+| `PF-REQ-R-72` | policy | the policy of R-72 is no longer mandatory | POSTREV-F2 policy: removing the policy of R-66, R-72 or R-73 is refused (POLICY_MISSING) | **TARGETED_KILL** |
+| `PF-REQ-R-73` | policy | the policy of R-73 is no longer mandatory | POSTREV-F2 policy: removing the policy of R-66, R-72 or R-73 is refused (POLICY_MISSING) | **TARGETED_KILL** |
+| `PF-STALE-P1_MUST_BE_RECONCILED` | stale text | the stale-text pattern P1 is dropped | POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables | **TARGETED_KILL** |
+| `PF-STALE-P3_OPEN_ITEM` | stale text | the stale-text pattern P3 is dropped | POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables | **TARGETED_KILL** |
+| `PF-STALE-P5_PENDING_EVIDENCE` | stale text | the stale-text pattern P5 is dropped | POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables | **TARGETED_KILL** |
+| `PF-STALE-P6_TEMPORARY_ADJUDICATION` | stale text | the stale-text pattern P6 is dropped | POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables | **TARGETED_KILL** |
+| `PF-STALE-P7_TO_BE_RECONCILED` | stale text | the stale-text pattern P7 is dropped | POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables | **TARGETED_KILL** |
+| `PF-STALE-REGISTER` | stale text | the register text is not scanned | POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables | **TARGETED_KILL** |
+| `PF-STALE-REPORT` | stale text | the report text is not scanned | POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables | **TARGETED_KILL** |
+| `PF-STALE-WIRE` | stale text | the stale-text gate is not wired into runGates | POSTREV-F5 stale text: wiring stops runGates with exit 31 | **TARGETED_KILL** |
+| `PF-STATUS` | policy | an unknown policy status is accepted | FR-06 policy: one branch, an unknown status, a missing question or a bare decision request is refused | **TARGETED_KILL** |
+| `PF-TEST-OPERATIONAL` | policy | a required test that is a wish is accepted | POSTREV-F2 policy: a branch needs a verification method, an operational test and a testable, non-generic acceptance criterion | **TARGETED_KILL** |
+| `PF-TESTABLE` | policy | an untestable acceptance criterion is accepted | POSTREV-F2 policy: a branch needs a verification method, an operational test and a testable, non-generic acceptance criterion | **TARGETED_KILL** |
+| `PF-TESTS` | policy | a branch without a required test is accepted | POSTREV-F2 policy: a branch needs a verification method, an operational test and a testable, non-generic acceptance criterion | **TARGETED_KILL** |
+| `PF-TWO` | policy | a policy with a single branch is accepted | FR-06 policy: one branch, an unknown status, a missing question or a bare decision request is refused | **TARGETED_KILL** |
+| `PF-WIRE` | policy | the policy gate is not wired into runGates | FR-06 wiring: a malformed policy stops runGates with exit 30 | **TARGETED_KILL** |
 | `R3-B01` | block parser and drift | block extraction trims the text | whitespace at either edge of a block is drift | **TARGETED_KILL** |
 | `R3-B02` | block parser and drift | parser ignores an unterminated block | a known block whose CLOSING marker is missing is UNTERMINATED, named as such | **TARGETED_KILL** |
 | `R3-B03` | block parser and drift | block order check removed | reordering the blocks fails, and each invariant is asserted on its own | **TARGETED_KILL** |
@@ -2304,6 +2624,59 @@ No review finding is OPEN. The two marked `FIXED_BY_DISCLOSURE_AND_DERIVED_PRESE
 | `R5-I03b` | error reporting | the missing-register message carries the absolute path again | S1-R5 I-03: a missing register exits 1 and prints no absolute path and no stack trace | **TARGETED_KILL** |
 | `R5-I04a` | secret detector | a leading underscore hides a credential name again | S1-R5 I-04: leading underscores do not hide a credential name | **TARGETED_KILL** |
 | `R5-I05a` | secret detector | the valkey, memcached, ldap and http schemes dropped from the URI rule | S1-R5 I-05: credentials in URI userinfo fail for every scheme; credential-free and placeholder URIs pass | **TARGETED_KILL** |
+| `RL-01` | reconciliation: absent block | a register with no reconciliation block passes | S1-RLK: a missing reconciliation block is refused | **TARGETED_KILL** |
+| `RL-02` | reconciliation: unknown key | an unknown key in a reconciliation object is ignored | S1-RLK: an unknown key in the reconciliation block is refused | **TARGETED_KILL** |
+| `RL-03` | reconciliation: missing key | a missing key in a reconciliation object is ignored | S1-RLK: a missing key in the reconciliation block is refused | **TARGETED_KILL** |
+| `RL-04` | reconciliation: version | the reconciliation version is not compared | S1-RLK: a reconciliation version drift is refused | **TARGETED_KILL** |
+| `RL-05` | reconciliation: snapshot pin | a stored historical snapshot that is not the pin passes | S1-RLK: a stored snapshot that is not the pin is refused | **TARGETED_KILL** |
+| `RL-06` | reconciliation: snapshot recomputed | the historical snapshot is not recomputed from the entries | S1-RLK: a historical entry edited without a revision breaks the snapshot | **TARGETED_KILL** |
+| `RL-07` | reconciliation: source state | a changed source state passes | S1-RLK: a changed source state is refused | **TARGETED_KILL** |
+| `RL-08` | reconciliation: scope of a risk | an unknown origin scope on a risk passes | S1-RLK: an unknown origin scope is refused | **TARGETED_KILL** |
+| `RL-09` | reconciliation: family and scope | a delta-family finding without the delta scope passes | S1-RLK: a delta family finding without the delta scope is refused | **TARGETED_KILL** |
+| `RL-10` | reconciliation: id prefix | a delta finding without the delta prefix passes | S1-RLK: a delta finding without the delta id prefix is refused | **TARGETED_KILL** |
+| `RL-11` | reconciliation: provenance source | a delta finding that names another source passes | S1-RLK: a delta finding that does not name the provenance document is refused | **TARGETED_KILL** |
+| `RL-12` | reconciliation: disposition vocabulary | an unknown disposition passes | S1-RLK: a delta finding without a known disposition is refused | **TARGETED_KILL** |
+| `RL-13` | reconciliation: disposition and status | a status that does not follow from the disposition passes | S1-RLK: a disposition whose status does not follow from it is refused | **TARGETED_KILL** |
+| `RL-14` | reconciliation: owner exists | a delta finding with no owning risk passes | S1-RLK: a delta finding without an owning risk is refused | **TARGETED_KILL** |
+| `RL-15` | reconciliation: new-risk owner | a new-risk disposition on a historical owner passes | S1-RLK: a new-risk disposition owned by a historical risk is refused | **TARGETED_KILL** |
+| `RL-16` | reconciliation: existing-risk owner | an existing-risk disposition on a delta owner passes | S1-RLK: an existing-risk disposition owned by a delta risk is refused | **TARGETED_KILL** |
+| `RL-17` | reconciliation: delta risk owns historical finding | a delta risk that owns a historical finding passes | S1-RLK: a delta risk that owns a historical finding is refused | **TARGETED_KILL** |
+| `RL-18` | reconciliation: delta risk without delta finding | a delta risk with no delta finding passes | S1-RLK: a delta risk with no delta finding is refused | **TARGETED_KILL** |
+| `RL-19` | reconciliation: revision on a delta entry | a revision on a delta entry passes | S1-RLK: a revision on a delta entry is refused | **TARGETED_KILL** |
+| `RL-20` | reconciliation: revision scope | a revision of another scope passes | S1-RLK: a revision of another scope is refused | **TARGETED_KILL** |
+| `RL-21` | reconciliation: revision reason | a revision with no reason passes | S1-RLK: a revision without a reason is refused | **TARGETED_KILL** |
+| `RL-22` | reconciliation: revision preserves | a revision that preserves nothing passes | S1-RLK: a revision that preserves nothing is refused | **TARGETED_KILL** |
+| `RL-23` | reconciliation: revision keys | an unknown key in a revision passes | S1-RLK: an unknown key in a revision is refused | **TARGETED_KILL** |
+| `RL-24` | reconciliation: delta review shas | a malformed commit id in the delta review passes | S1-RLK: a malformed commit id in the delta review is refused | **TARGETED_KILL** |
+| `RL-25` | reconciliation: frozen source | a drifted frozen source passes | S1-RLK: a frozen source that drifted is refused | **TARGETED_KILL** |
+| `RL-26` | reconciliation: range | a range that is not frozen..target passes | S1-RLK: a range that is not frozen..target is refused | **TARGETED_KILL** |
+| `RL-27` | reconciliation: provenance pointer | a pointer to another document passes | S1-RLK: a provenance pointer to another document is refused | **TARGETED_KILL** |
+| `RL-28` | reconciliation: touched existing risks | a touched-risk list that is not the derived one passes | S1-RLK: a list of touched existing risks that is not the derived one is refused | **TARGETED_KILL** |
+| `RL-29` | reconciliation: stored delta count | a stored delta universe count that is wrong passes | S1-RLK: a stored delta universe count and hash must be the recomputed ones | **TARGETED_KILL** |
+| `RL-30` | reconciliation: stored delta hash | a stored delta universe hash that is wrong passes | S1-RLK: a stored delta universe count and hash must be the recomputed ones | **TARGETED_KILL** |
+| `RL-31` | reconciliation: tree block | a missing reconciled tree block passes | S1-RLK: the reconciled tree block is held to its shape, its version and the merge | **TARGETED_KILL** |
+| `RL-32` | reconciliation: universe version | a universe version drift passes | S1-RLK: the reconciled tree block is held to its shape, its version and the merge | **TARGETED_KILL** |
+| `RL-33` | reconciliation: tree base | a tree base that is not the merge passes | S1-RLK: the reconciled tree block is held to its shape, its version and the merge | **TARGETED_KILL** |
+| `RL-34` | reconciliation: stored reconciled count | a stored reconciled universe count that is wrong passes | S1-RLK: the reconciled tree block is held to its shape, its version and the merge | **TARGETED_KILL** |
+| `RL-35` | reconciliation: stored reconciled hash | a stored reconciled universe hash that is wrong passes | S1-RLK: the reconciled tree block is held to its shape, its version and the merge | **TARGETED_KILL** |
+| `RL-36` | reconciliation: document finding absent from register | a delta finding the document declares but the register lacks passes | S1-RLK: a delta finding the register lacks, seen from the provenance document, is refused | **TARGETED_KILL** |
+| `RL-37` | reconciliation: register finding absent from document | a register delta finding the document does not declare passes | S1-RLK: a register delta finding the provenance document does not declare is refused | **TARGETED_KILL** |
+| `RL-38` | universe: delta count pin | a changed delta finding count passes | S1-RLK: a delta finding the register lacks, or the document lacks, is refused | **TARGETED_KILL** |
+| `RL-39` | universe: delta hash pin | a changed delta finding set of equal size passes | S1-RLK: a renamed delta finding changes the delta universe hash | **TARGETED_KILL** |
+| `RL-40` | universe: reconciled count pin | a changed reconciled universe size passes | S1-RLK: a changed reconciled universe, by count or by hash, is refused | **TARGETED_KILL** |
+| `RL-41` | universe: reconciled hash pin | a changed reconciled universe of equal size passes | S1-RLK: a changed reconciled universe, by count or by hash, is refused | **TARGETED_KILL** |
+| `RL-42` | universe: delta ids are extracted | the delta document's identifiers are not part of the source universe | S1-RLK: the delta and reconciled universes are pinned by count and hash | **TARGETED_KILL** |
+| `RL-43` | universe: delta family is a source family | the delta family is not a known family | S1-RLK: the delta and reconciled universes are pinned by count and hash | **TARGETED_KILL** |
+| `RL-44` | wiring: the reconciliation gate | runGates does not stop on a reconciliation violation | S1-RLK: runGates stops with the reconciliation code, after the universe and before the linkage gate | **TARGETED_KILL** |
+| `RL-45` | exit: the reconciliation code | the reconciliation exit code collides with another | S1-RLK: the exit table has a distinct reconciliation code | **TARGETED_KILL** |
+| `RL-46` | vocabulary: unproven maps to an assurance gap | an unproven delta finding maps to a mapped risk | S1-RLK: the committed register passes every reconciliation gate | **TARGETED_KILL** |
+| `RL-47` | counters: delta risks | the delta risk counter counts one too many | S1-RLK: the historical snapshot and the reconciled summary are different numbers, and the difference is exactly the delta | **TARGETED_KILL** |
+| `RL-48` | facts: historical risks | the historical risk fact is the reconciled figure | S1-RLK: the narrative that describes the historical snapshot uses historical facts, so it cannot be moved by the delta | **TARGETED_KILL** |
+| `RL-49` | snapshot: revisions are honoured | a revised entry is counted at its current value in the historical snapshot | S1-RLK: the committed register passes every reconciliation gate | **TARGETED_KILL** |
+| `RL-50` | snapshot: top priority | the historical top priority is the last one, not the first | S1-RLK: the committed register passes every reconciliation gate | **TARGETED_KILL** |
+| `RL-51` | snapshot: clamps counted | a clamped historical risk is not counted | S1-RLK: the committed register passes every reconciliation gate | **TARGETED_KILL** |
+| `RL-52` | render: reconciled priorities table | the reconciled priorities table lists nine rows | S1-RLK: the reconciliation block of the report is the rendered one, byte for byte | **TARGETED_KILL** |
+| `RL-53` | priority: permutation | a gap in the remediation priorities passes | S1-RLK: a remediation priority with a gap is not a permutation | **TARGETED_KILL** |
 
 | Placebo control | Kind | What it does | Named test | Expected | Observed |
 |---|---|---|---|---|---|
@@ -2316,15 +2689,15 @@ No review finding is OPEN. The two marked `FIXED_BY_DISCLOSURE_AND_DERIVED_PRESE
 
 ```
 MUTATION_MANIFEST_VERSION    s1-mut-2
-MUTANTS_TOTAL                127
-TARGETED_KILL                127
+MUTANTS_TOTAL                267
+TARGETED_KILL                267
 ONLY_INCIDENTAL              0
 SURVIVED                     0
 INVALID_MUTANT               0
 PLACEBO_CONTROLS             6
 CONTROLS_AS_EXPECTED         6
-MANIFEST_SHA256              84977cd9b4394e031b7fe7dc480a3dee2402b966034e7f1a283b47bf612c1bc1
-CAMPAIGN_BOUND_TO            84977cd9b4394e031b7fe7dc480a3dee2402b966034e7f1a283b47bf612c1bc1
+MANIFEST_SHA256              70286152ded97f6e8a4d6f256aec431dc5120d6beb5d6d69b67144eb9ae7bde4
+CAMPAIGN_BOUND_TO            70286152ded97f6e8a4d6f256aec431dc5120d6beb5d6d69b67144eb9ae7bde4
 ```
 
 Each mutant is applied to the checker's own source in a temporary copy outside the repository, and only its named test is run. **A mutant counts as TARGETED_KILL only when** its anchor occurs exactly once, the named test ran and failed, the failure carries the mutant's fingerprint, the failure is not the manifest gate, a manifest drift or a setup error, and a semantically equivalent placebo on the same source text leaves the named test green. Because a mutation removes its own anchor, this list is, in the mutated copy only, rebound to the entries whose anchors survive, and Appendix E of the copy is re-rendered from it; the mutated code is never repaired, and the placebo copy is rebound the same way, so a failure caused by the scaffolding appears in the placebo and voids the proof. The placebo controls prove the classifier does not mistake a no-op, a drift, a setup break, an earlier gate or an unrelated failure for a kill. `check` refuses a record bound to a different list, any result other than TARGETED_KILL, and any control whose result differs from its expectation (exit 25). The campaign is reproduced by the `mutants` mode (§18).
@@ -2351,6 +2724,11 @@ node --test scripts/security/s1/__tests__/risk-register.selftest.mjs
 
 # the mutation campaign behind Appendix E, in a temporary copy outside the repository
 node scripts/security/s1/risk-register-check.mjs mutants --workers=6
+
+# the delta relock: provenance, its mutation campaign and its tests
+node scripts/security/s1/relock-delta-check.mjs check
+node scripts/security/s1/relock-mutation-campaign.mjs verify
+node --test scripts/security/s1/__tests__/relock-delta.selftest.mjs scripts/security/s1/__tests__/relock-delta.e2e.mjs
 
 # the surrounding gates
 npm run security:phase99:inventory:check                      # exit 0

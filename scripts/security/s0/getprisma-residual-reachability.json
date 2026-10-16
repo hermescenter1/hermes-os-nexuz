@@ -615,6 +615,19 @@
       "screenedBy": "S0 residual reachability screening"
     },
     {
+      "callsiteId": "src/lib/executive/settings.ts#L146C24",
+      "file": "src/lib/executive/settings.ts",
+      "function": "db",
+      "sourceFingerprint": "50c0473ad7845941",
+      "verdict": "AUTHENTICATED_USER_VISIBLE",
+      "caller": "src/lib/executive/settings.ts — loadExecutiveSettings and saveExecutiveSettings when called WITHOUT an explicit client",
+      "terminalSurface": "every executive page and API through resolveExecutiveScope (loadExecutiveSettings), the settings API GET and the settings page; the settings API PUT through saveExecutiveSettings",
+      "fullTrace": true,
+      "reason": "The accessor returns null for an absent client or delegate. `loadExecutiveSettings` turns that into the environment default zone and cutoff (`source: DEFAULT`) instead of failing, so a signed-in reader sees the live pages on the default day boundary, with the source reported as DEFAULT. `saveExecutiveSettings` answers UNAVAILABLE for the same null. The nightly worker does not reach this accessor: it passes its own already-resolved client to `loadExecutiveSettingsMany`, which skips `db()`; the worker's fallback lives in that function's catch block, which is not a getPrisma call site.",
+      "evidence": "src/lib/executive/settings.ts:145-151 (accessor), :225-236 (loadExecutiveSettings falls back), :298 (saveExecutiveSettings answers UNAVAILABLE); consumers src/lib/executive/scope.ts (loadExecutiveSettings without a client) and src/app/api/executive/settings/route.ts; worker.ts passes `client` explicitly to loadExecutiveSettingsMany",
+      "screenedBy": "S0 residual reachability screening"
+    },
+    {
       "callsiteId": "src/lib/industrial/assets.ts#L61C24",
       "file": "src/lib/industrial/assets.ts",
       "function": "src/app/api/industrial/assets/[id]/route.ts and 12 other consumers",

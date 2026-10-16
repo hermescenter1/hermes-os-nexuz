@@ -14,7 +14,9 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -58,6 +60,12 @@ import {
   REACHABILITY_VERDICTS,
   CLASSIFICATIONS,
   RULES,
+  normalizeSourceText,
+  readSourceText,
+  deriveRetrySuppression,
+  retryTraceViolations,
+  RETRY_STATEMENT,
+  retrySubjects,
 } from "../getprisma-callsite-inventory.mjs";
 
 /**
@@ -872,13 +880,16 @@ test("the residual screening found and corrected real misclassifications", () =>
 // offer the tool's own subtree to the scanner at all.
 
 test("isExcludedPath covers the tool's own subtree and nothing that merely resembles it", () => {
-  assert.deepEqual([...EXCLUDED_PATH_PREFIXES], ["scripts/security/s0/"]);
+  assert.deepEqual([...EXCLUDED_PATH_PREFIXES], ["scripts/security/s0/", "scripts/security/s1/"]);
   for (const p of [
     "scripts/security/s0/getprisma-callsite-inventory.mjs",
     "scripts/security/s0/__tests__/getprisma-inventory.selftest.mjs",
     "scripts/security/s0/fixtures/scenarios.fixture.txt",
     "scripts/security/s0/getprisma-manual-adjudications.json",
     "scripts/security/s0",
+    "scripts/security/s1/relock-delta-check.mjs",
+    "scripts/security/s1/__tests__/risk-register.selftest.mjs",
+    "scripts/security/s1",
   ]) {
     assert.equal(isExcludedPath(p), true, `${p} must be excluded`);
   }
@@ -891,6 +902,9 @@ test("isExcludedPath covers the tool's own subtree and nothing that merely resem
     "scripts/security/phase100/closure-evaluation.mjs",
     "scripts/security/s0extra/thing.mjs",
     "scripts/s0/thing.mjs",
+    "scripts/security/s1extra/thing.mjs",
+    "scripts/s1/thing.mjs",
+    "src/lib/s1/thing.ts",
     "src/lib/s0/thing.ts",
     "src/lib/db/prisma.ts",
   ]) {
@@ -930,14 +944,314 @@ test("sourceFiles still lists scripts/ files OUTSIDE the excluded subtree", () =
 
 test("the exclusion is output-neutral: no audited record comes from the tool", () => {
   // The exclusion changes which FILES are offered, never how a call site is
-  // classified, so the rule-set version deliberately does not move and the
-  // rendered inventory keeps the hash it had before the tool became tracked.
-  assert.equal(RULESET_VERSION, "s0-b05.5");
+  // classified. The rule-set version is s0-b05.7 because the FR-01 line-ending
+  // normalisation and the FR-08 retryTrace record shape changed after it; the
+  // exclusion itself is still neutral, which the two assertions below prove.
+  assert.equal(RULESET_VERSION, "s0-b05.7");
   const { records } = INVENTORY_LAZY();
-  assert.equal(records.length, 392, "the audited call-site count must not move");
+  assert.equal(records.length, 404, "the audited call-site count must not move");
   assert.equal(
     records.filter((r) => r.file.startsWith("scripts/security/s0/")).length,
     0,
     "the tool must contribute no call site of its own",
   );
+});
+
+// ─────────────── FR-01: the inventory does not depend on the line-ending convention ───────────────
+//
+// Every window in the analyser is a CHARACTER budget and a carriage return is a
+// character. The same commit checked out with CRLF (Windows, core.autocrlf) and with
+// LF (Linux, CI) used to give different inventories. These tests build ONE source in
+// both conventions and demand that nothing downstream can tell them apart.
+
+const GP_CALL_SOURCE_HEAD = "export async function demo() {\n  const db = await getPrisma();\n  if (!db) return null;\n  try {\n";
+const GP_FILLER_LINE = "    await db.noop(1);\n";
+
+/** A function whose unlogged `catch` sits just inside the 2,600-character window under LF. */
+function eolSensitiveSource() {
+  const base = GP_CALL_SOURCE_HEAD.length;
+  const callOffset = GP_CALL_SOURCE_HEAD.indexOf("getPrisma");
+  let lines = 0;
+  // stop while the catch is still comfortably inside the window under LF
+  while (base - callOffset + (lines + 1) * GP_FILLER_LINE.length < 2560) lines += 1;
+  return `${GP_CALL_SOURCE_HEAD}${GP_FILLER_LINE.repeat(lines)}  } catch {\n    return null;\n  }\n}\n`;
+}
+
+function eolRoot(content, eol, withGit) {
+  const dir = mkdtempSync(join(tmpdir(), "s0-eol-"));
+  mkdirSync(join(dir, "src", "lib"), { recursive: true });
+  writeFileSync(join(dir, "src", "lib", "demo.ts"), eol === "CRLF" ? content.replace(/\n/g, "\r\n") : eol === "CR" ? content.replace(/\n/g, "\r") : content);
+  if (withGit) {
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    execFileSync("git", ["-c", "core.autocrlf=false", "add", "-A"], { cwd: dir });
+  }
+  return dir;
+}
+
+test("eol: normalizeSourceText turns CRLF and a lone CR into LF and leaves LF alone", () => {
+  assert.equal(normalizeSourceText("a\r\nb\r\n"), "a\nb\n", "NORMALIZE_CRLF: CRLF becomes LF");
+  assert.equal(normalizeSourceText("a\rb\r"), "a\nb\n", "NORMALIZE_CR: a lone CR becomes LF");
+  assert.equal(normalizeSourceText("a\r\n\r\nb\n"), "a\n\nb\n");
+  assert.equal(normalizeSourceText("a\nb\n"), "a\nb\n");
+  const once = normalizeSourceText("x\r\ny\rz\n");
+  assert.equal(normalizeSourceText(once), once, "the normaliser is idempotent");
+  assert.ok(!/\r/.test(once), "no carriage return survives");
+});
+
+test("eol: LF, CRLF and CR-only checkouts give identical call sites, classifications, outcome flags and bytes", () => {
+  const content = eolSensitiveSource();
+  const roots = [];
+  try {
+    for (const withGit of [false, true]) {
+      for (const eol of ["LF", "CRLF", "CR"]) roots.push({ withGit, eol, dir: eolRoot(content, eol, withGit) });
+    }
+    const built = roots.map((r) => ({ ...r, inv: buildInventory(r.dir) }));
+    const lf = built.find((b) => b.eol === "LF" && !b.withGit);
+    // the fixture must be sensitive: under LF the unlogged catch IS inside the window
+    assert.equal(lf.inv.records.length, 1, "the fixture has exactly one call site");
+    assert.ok(lf.inv.records[0].secondaryTags.includes("SILENT_CATCH"), "the fixture must put its catch inside the window under LF");
+    const reference = JSON.stringify(lf.inv.records);
+    for (const b of built) {
+      const label = `${b.eol}${b.withGit ? " via git ls-files" : " via the filesystem walk"}`;
+      assert.equal(
+        JSON.stringify(b.inv.records.map((r) => r.id)),
+        JSON.stringify(lf.inv.records.map((r) => r.id)),
+        `CALLSITE_SET_IDENTICAL: ${label}`,
+      );
+      assert.equal(
+        JSON.stringify(b.inv.records.map((r) => [r.id, r.classification, r.confidence])),
+        JSON.stringify(lf.inv.records.map((r) => [r.id, r.classification, r.confidence])),
+        `CLASSIFICATIONS_IDENTICAL: ${label}`,
+      );
+      assert.equal(
+        JSON.stringify(b.inv.records.map((r) => [r.id, r.secondaryTags, r.adjudication?.outcomeFlags ?? null])),
+        JSON.stringify(lf.inv.records.map((r) => [r.id, r.secondaryTags, r.adjudication?.outcomeFlags ?? null])),
+        `OUTCOME_FLAGS_IDENTICAL: ${label}`,
+      );
+      assert.equal(JSON.stringify(b.inv.records), reference, `GENERATED_BYTES_IDENTICAL: ${label}`);
+    }
+  } finally {
+    for (const r of roots) rmSync(r.dir, { recursive: true, force: true });
+  }
+});
+
+test("eol: every analyser read of a source file goes through readSourceText", () => {
+  const text = readFileSync(join(HERE, "..", "getprisma-callsite-inventory.mjs"), "utf8");
+  const raw = text.match(/readFileSync\(join\(root,/g) ?? [];
+  assert.equal(raw.length, 0, `a raw readFileSync of a source file bypasses the normaliser (${raw.length})`);
+  const viaHelper = text.match(/readSourceText\(join\(root,/g) ?? [];
+  assert.ok(viaHelper.length >= 5, `the five analyser reads must use readSourceText, found ${viaHelper.length}`);
+  const dir = mkdtempSync(join(tmpdir(), "s0-eol-read-"));
+  try {
+    writeFileSync(join(dir, "f.ts"), "a\r\nb\r\n");
+    assert.equal(readSourceText(join(dir, "f.ts")), "a\nb\n");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// ─────────────── POSTREV-F1: the S1 assurance tools are outside the scan, exactly ───────────────
+//
+// Tracked or not, scripts/security/s0/ and scripts/security/s1/ are never offered to the scanner, on the
+// git ls-files path and on the filesystem-walk path. Look-alike prefixes stay in scope.
+
+const SCOPE_FILES = {
+  "scripts/security/s1/tool.ts": "export async function a() { return await getPrisma(); }\n",
+  "scripts/security/s0/tool.ts": "export async function b() { return await getPrisma(); }\n",
+  "scripts/security/s1extra/tool.ts": "export async function c() { return await getPrisma(); }\n",
+  "scripts/s1/tool.ts": "export async function d() { return await getPrisma(); }\n",
+  "src/lib/s1/tool.ts": "export async function e() { return await getPrisma(); }\n",
+  "scripts/other.ts": "export async function f() { return await getPrisma(); }\n",
+};
+const SCOPE_EXPECTED = ["scripts/other.ts", "scripts/s1/tool.ts", "scripts/security/s1extra/tool.ts", "src/lib/s1/tool.ts"];
+
+function scopeRoot(withGit) {
+  const dir = mkdtempSync(join(tmpdir(), "s0-scope-"));
+  for (const [rel, text] of Object.entries(SCOPE_FILES)) {
+    mkdirSync(join(dir, rel, ".."), { recursive: true });
+    writeFileSync(join(dir, rel), text);
+  }
+  if (withGit) {
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    execFileSync("git", ["-c", "core.autocrlf=false", "add", "-A"], { cwd: dir });
+  }
+  return dir;
+}
+
+test("scope: isExcludedPath uses exact repository-relative prefixes for scripts/security/s0 and scripts/security/s1", () => {
+  assert.deepEqual([...EXCLUDED_PATH_PREFIXES], ["scripts/security/s0/", "scripts/security/s1/"], "SCOPE_PREFIXES: exactly the two exact prefixes");
+  for (const p of ["scripts/security/s1/relock-delta-check.mjs", "scripts/security/s1/__tests__/x.mjs", "./scripts/security/s1/x.mjs", "scripts/security/s1", "scripts/security/s0/x.mjs"]) {
+    assert.equal(isExcludedPath(p), true, `SCOPE_EXCLUDED: ${p} is excluded`);
+  }
+  for (const p of ["scripts/security/s1extra/x.ts", "scripts/s1/x.ts", "src/lib/s1/x.ts", "xscripts/security/s1/x.ts", "scripts/security/phase100/x.mjs", "scripts/security/check-env-example.mjs", "scripts/other.ts"]) {
+    assert.equal(isExcludedPath(p), false, `SCOPE_KEPT: ${p} is not excluded`);
+  }
+});
+
+test("scope: tracked files in scripts/security/s0 and scripts/security/s1 are not scanned, look-alikes and other scripts are, on both file-list paths", () => {
+  const roots = [];
+  try {
+    for (const withGit of [true, false]) {
+      const dir = scopeRoot(withGit);
+      roots.push(dir);
+      const label = withGit ? "git ls-files" : "filesystem walk";
+      assert.deepEqual(sourceFiles(dir), SCOPE_EXPECTED, `SCOPE_FILES: ${label}`);
+      const inv = buildInventory(dir);
+      assert.deepEqual(inv.records.map((r) => r.file).sort(), SCOPE_EXPECTED, `SCOPE_RECORDS: ${label}`);
+      assert.equal(inv.textual, SCOPE_EXPECTED.length, `SCOPE_TEXTUAL: ${label} counts only the scanned files`);
+    }
+  } finally {
+    for (const r of roots) rmSync(r, { recursive: true, force: true });
+  }
+});
+
+// ─────────────── RETRY_SUPPRESSION: one structured model, derived, complete ───────────────
+
+const TRACE = (over) => ({
+  operationIdentity: "the operation behind a#L1C1",
+  failureObservedByCaller: false,
+  sameOperationRetried: true,
+  retryTrigger: "INDEPENDENT_SCHEDULE",
+  retryTiming: "NEXT_POLL",
+  blockingState: null,
+  terminal: "HTTP 200 and nothing else",
+  justification: "A fixture justification that is long enough to be accepted by the shape check.",
+  sourceReferences: ["src/x.ts:1"],
+  ...over,
+});
+const CS = (over = {}) => ({ id: "a#L1C1", kind: "callsite", trace: TRACE({}), declared: false, talksAboutRetry: false, ...over });
+const EDGE = (over = {}) => ({ id: "a#L1C1::f@L2:NULL_GUARD", kind: "edge", trace: TRACE({}), declared: false, talksAboutRetry: true, ...over });
+const problemsOf = (subjects) => retryTraceViolations(subjects);
+
+test("retry: durable state that blocks a later run is suppression", () => {
+  assert.equal(deriveRetrySuppression(TRACE({ blockingState: "a claim that stays set after a failed release" })), true, "RETRY_BLOCKED_BY_STATE: a claim that blocks the later run suppresses the retry");
+});
+
+test("retry: an independent next run of the same operation is not suppression", () => {
+  assert.equal(deriveRetrySuppression(TRACE({})), false, "RETRY_INDEPENDENT_NEXT_RUN: an independent next run of the same operation is not suppression");
+  assert.equal(deriveRetrySuppression(TRACE({ retryTiming: "NEXT_PASS", failureObservedByCaller: true })), false, "RETRY_NEXT_PASS: a later pass of the same operation is not suppression");
+});
+
+test("retry: a later run of a different operation, or no later run, is suppression", () => {
+  assert.equal(deriveRetrySuppression(TRACE({ sameOperationRetried: false })), true, "RETRY_DIFFERENT_OPERATION: a later run of another operation is suppression");
+  assert.equal(deriveRetrySuppression(TRACE({ retryTrigger: "NONE", retryTiming: "NEVER", sameOperationRetried: false })), true, "RETRY_NO_LATER_RUN: no later run is suppression");
+});
+
+test("retry: a requester that is not given a signal it can act on cannot retry, one that is can", () => {
+  const requester = { retryTrigger: "REQUESTER", retryTiming: "ON_REQUESTER_RETRY" };
+  assert.equal(deriveRetrySuppression(TRACE({ ...requester, failureObservedByCaller: false })), true, "RETRY_REQUESTER_NOT_TOLD: a requester that is not told cannot retry");
+  assert.equal(deriveRetrySuppression(TRACE({ ...requester, failureObservedByCaller: true })), false, "RETRY_REQUESTER_TOLD: a requester that is told can retry");
+});
+
+test("retry: flipping any field that decides the verdict changes the verdict", () => {
+  const base = TRACE({ retryTrigger: "REQUESTER", retryTiming: "ON_REQUESTER_RETRY", failureObservedByCaller: true });
+  assert.equal(deriveRetrySuppression(base), false, "FLIP_BASE: a told requester retries");
+  assert.equal(deriveRetrySuppression({ ...base, failureObservedByCaller: false }), true, "FLIP_OBSERVED: not told");
+  assert.equal(deriveRetrySuppression({ ...base, sameOperationRetried: false }), true, "FLIP_SAME_OPERATION: another operation");
+  assert.equal(deriveRetrySuppression({ ...base, retryTrigger: "NONE", retryTiming: "NEVER", sameOperationRetried: false }), true, "FLIP_TRIGGER: nobody retries");
+  assert.equal(deriveRetrySuppression({ ...base, blockingState: "a durable claim that stops the retry" }), true, "FLIP_BLOCKING: a blocking state");
+});
+
+test("retry: a trace with a missing key, an unknown key, a bad enum, a timing that disagrees or a bad reference is a violation", () => {
+  const bad = (over, pattern, label) => assert.match(problemsOf([CS({ trace: TRACE(over) })])[0] ?? "no problem", pattern, `RETRY_SHAPE:${label}`);
+  const missing = TRACE({});
+  delete missing.justification;
+  assert.match(problemsOf([CS({ trace: missing })])[0], /lacks justification/, "RETRY_SHAPE:missing key");
+  bad({ extra: 1 }, /unknown key extra/, "unknown key");
+  bad({ retryTrigger: "SOMETIME" }, /retryTrigger is not one of/, "trigger enum");
+  bad({ retryTiming: "LATER" }, /retryTiming is not one of/, "timing enum");
+  bad({ retryTrigger: "REQUESTER", retryTiming: "NEXT_POLL" }, /does not agree with the trigger/, "timing against trigger");
+  bad({ retryTrigger: "NONE", retryTiming: "NEVER", sameOperationRetried: true }, /no trigger means the same operation is not retried/, "none with a retry");
+  bad({ failureObservedByCaller: "yes" }, /failureObservedByCaller is not a boolean/, "boolean");
+  bad({ blockingState: "x" }, /blockingState is neither null nor a described state/, "blocking state");
+  bad({ justification: "short" }, /justification is missing or too short/, "justification");
+  bad({ sourceReferences: [] }, /sourceReferences is empty/, "empty references");
+  bad({ sourceReferences: ["not a path"] }, /malformed reference/, "malformed reference");
+  const withMissingPath = retryTraceViolations([CS({ trace: TRACE({ sourceReferences: ["src/does-not-exist.ts:3"] }) })], { exists: () => false });
+  assert.match(withMissingPath[0], /names a path that does not exist/, "RETRY_SHAPE:missing path");
+});
+
+test("retry: a flag or a prose verdict that disagrees with its trace is a violation, for a call site and for an edge", () => {
+  assert.deepEqual(problemsOf([CS({ declared: false }), EDGE({ declared: false })]), [], "RETRY_AGREE: matching verdicts are clean");
+  assert.match(problemsOf([CS({ declared: true })])[0], /derives RETRY_SUPPRESSION=false but the callsite declares true/, "RETRY_CONFLICT: callsite flag");
+  assert.match(problemsOf([EDGE({ declared: true })])[0], /derives RETRY_SUPPRESSION=false but the edge declares true/, "RETRY_CONFLICT: edge prose");
+  const blocked = TRACE({ blockingState: "a durable claim that stops the retry" });
+  assert.match(problemsOf([CS({ trace: blocked, declared: false })])[0], /derives RETRY_SUPPRESSION=true but the callsite declares false/, "RETRY_CONFLICT: trace blocks, flag absent");
+});
+
+test("retry: a call site or an edge that talks about a retry, or declares the outcome, without a trace is a violation", () => {
+  assert.match(problemsOf([CS({ trace: undefined, talksAboutRetry: true })])[0], /talks about a retry and carries no retryTrace/, "RETRY_UNTRACED: callsite prose");
+  assert.match(problemsOf([CS({ trace: undefined, declared: true })])[0], /declares RETRY_SUPPRESSION and carries no retryTrace/, "RETRY_UNTRACED: callsite flag");
+  assert.match(problemsOf([EDGE({ trace: undefined, declared: true })])[0], /declares RETRY_SUPPRESSION and carries no retryTrace/, "RETRY_UNTRACED: edge prose NO");
+  assert.match(problemsOf([EDGE({ trace: undefined })])[0], /talks about a retry and carries no retryTrace/, "RETRY_UNTRACED: edge prose");
+  assert.deepEqual(problemsOf([CS({ trace: undefined })]), [], "a call site that says nothing about a retry needs none");
+  assert.deepEqual(problemsOf([EDGE({ trace: undefined, talksAboutRetry: false })]), [], "an edge whose retry behaviour is n/a needs none");
+  const subjects = retrySubjects([{ callsiteId: "x#L1C1", reason: "the client can retry later", terminalBehavior: "HTTP 500", outcomeFlags: [] }], [{ consumerEdgeId: "y::f@L1:NULL_GUARD", retryBehavior: "NO — a client will not retry", terminalBoundary: "HTTP_200_EMPTY_LIST" }, { consumerEdgeId: "z::g@L1:NULL_GUARD", retryBehavior: "n/a", terminalBoundary: "NO_PRODUCT_CALLER" }]);
+  assert.deepEqual(subjects.map((s) => [s.kind, s.declared, s.talksAboutRetry]), [["callsite", false, true], ["edge", true, true], ["edge", false, false]], "RETRY_SUBJECTS: prose is read into subjects");
+});
+
+test("retry: poll, requester and claim-blocked retries derive as documented", () => {
+  assert.equal(deriveRetrySuppression(TRACE({ retryTrigger: "INDEPENDENT_SCHEDULE", retryTiming: "NEXT_POLL" })), false, "RETRY_POLL: a worker poll runs the same pass again");
+  assert.equal(deriveRetrySuppression(TRACE({ retryTrigger: "INDEPENDENT_SCHEDULE", retryTiming: "NEXT_PASS", blockingState: "the claim stays set" })), true, "RETRY_CLAIM: a claim blocks the next pass");
+  assert.equal(deriveRetrySuppression(TRACE({ retryTrigger: "REQUESTER", retryTiming: "ON_REQUESTER_RETRY", failureObservedByCaller: true })), false, "RETRY_CALLER: a told caller retries");
+});
+
+test("retry: the three report callsites are traced and their flags follow the rule", () => {
+  const { records } = INVENTORY_LAZY();
+  const by = (id) => records.find((r) => r.id === id);
+  const worker = by("src/lib/executive/report/worker.ts#L191C24");
+  const claim = by("src/lib/executive/report/generate.ts#L248C24");
+  const release = by("src/lib/executive/report/generate.ts#L281C24");
+  for (const r of [worker, claim, release]) {
+    assert.ok(r?.adjudication?.retryTrace, `${r?.id} carries a retryTrace`);
+    assert.equal(r.adjudication.outcomeFlags.includes("RETRY_SUPPRESSION"), deriveRetrySuppression(r.adjudication.retryTrace), `${r.id}: the flag is the derivation of its trace`);
+  }
+  assert.equal(worker.adjudication.retryTrace.retryTiming, "NEXT_POLL", "the worker is retried by the next poll");
+  assert.equal(deriveRetrySuppression(worker.adjudication.retryTrace), false, "the next poll runs the same pass again");
+  assert.equal(deriveRetrySuppression(claim.adjudication.retryTrace), false, "notifiedAt stays null and the next pass announces");
+  assert.equal(deriveRetrySuppression(release.adjudication.retryTrace), true, "the claim stays set and no later pass announces");
+});
+
+test("retry: every adjudicated call site and every traced edge that concerns a retry carries a complete trace", () => {
+  const adj = JSON.parse(readFileSync(join(HERE, "..", "getprisma-manual-adjudications.json"), "utf8")).adjudications;
+  const edges = JSON.parse(readFileSync(join(HERE, "..", "getprisma-consumer-edge-traces.json"), "utf8")).traces;
+  const subjects = retrySubjects(adj, edges);
+  assert.deepEqual(retryTraceViolations(subjects, { root: join(HERE, "..", "..", "..", "..") }), [], "RETRY_COMPLETE: no violation in the committed data");
+  const traced = subjects.filter((s) => s.trace);
+  const untraced = subjects.filter((s) => !s.trace);
+  assert.ok(traced.length >= 300, `the committed data carries its traces (${traced.length})`);
+  assert.deepEqual(untraced.filter((s) => s.declared || s.talksAboutRetry).map((s) => s.id), [], "RETRY_COMPLETE: nothing that concerns a retry is untraced");
+  assert.ok(untraced.filter((s) => s.kind === "edge").every((s) => !s.declared && !s.talksAboutRetry), "an untraced edge is one whose retry behaviour is n/a");
+});
+
+test("retry: the outcome total is counted from the traces and equals the independent count", () => {
+  const { records } = INVENTORY_LAZY();
+  const sets = outcomeSets(records);
+  const edges = records.flatMap((r) => r.consumerEdges ?? []).filter((e) => e.manuallyTraced && e.retryTrace && deriveRetrySuppression(e.retryTrace)).length;
+  const sites = records.filter((r) => r.classification !== "WRAPPER_OR_FACTORY" && r.adjudication?.retryTrace && deriveRetrySuppression(r.adjudication.retryTrace)).length;
+  assert.equal(sets.totals.RETRY_SUPPRESSION, edges + sites, "RETRY_TOTAL: the total is edges plus call sites derived from their traces");
+  assert.equal(sets.totals.RETRY_SUPPRESSION, sets.sets.RETRY_SUPPRESSION.length);
+});
+
+test("retry: the completeness gate is computed from the committed data and stops the command line with exit 10", () => {
+  const text = readFileSync(join(HERE, "..", "getprisma-callsite-inventory.mjs"), "utf8");
+  assert.match(text, /const retryTraceProblems = retryTraceViolations\(retrySubjects\(overrides\.adjudications \?\? \[\], edgeTraces\.traces \?\? \[\]\), \{ root \}\);/, "WIRING_RETRY_COMPUTE: the problems are derived from every adjudication and every edge trace");
+  assert.match(text, /if \(inv\.retryTraceProblems\.length > 0\) \{[\s\S]{0,400}?process\.exit\(10\);/, "WIRING_RETRY_EXIT: a retry problem stops the command line with exit 10");
+  assert.match(text, /retryTraceProblems, fileCount: files\.length/, "WIRING_RETRY_EXPOSED: buildInventory exposes the problems");
+});
+
+test("retry: the outcome sets derive RETRY_SUPPRESSION from the trace, for an edge and for a call site, and never from a typed flag", () => {
+  const blocked = TRACE({ blockingState: "a durable claim that stops the later run" });
+  const edge = { consumerEdgeId: "a#L1C1::f@L2:NULL_GUARD", manuallyTraced: true, operation: "READ", terminalBoundary: "HTTP_500", durability: "DURABLE", auditOutcome: "n/a", retryTrace: blocked };
+  const records = [
+    { id: "a#L1C1", classification: "DIRECT", secondaryTags: [], consumerEdges: [edge], adjudication: { outcomeFlags: [], retryTrace: blocked } },
+    { id: "b#L1C1", classification: "DIRECT", secondaryTags: [], consumerEdges: [], adjudication: { outcomeFlags: ["RETRY_SUPPRESSION"], retryTrace: TRACE({}) } },
+    { id: "c#L1C1", classification: "DIRECT", secondaryTags: [], consumerEdges: [], adjudication: null },
+  ];
+  const { sets, totals } = outcomeSets(records);
+  const members = sets.RETRY_SUPPRESSION;
+  assert.ok(members.includes("edge:a#L1C1::f@L2:NULL_GUARD"), "RETRY_SYNTH_EDGE: an edge whose trace blocks the later run is in the set");
+  assert.ok(members.includes("callsite:a#L1C1"), "RETRY_SYNTH_SITE: a call site whose trace blocks the later run is in the set");
+  assert.ok(!members.includes("callsite:b#L1C1"), "RETRY_SYNTH_TYPED_IGNORED: a typed flag the trace does not support is not in the set");
+  assert.equal(totals.RETRY_SUPPRESSION, 2, "RETRY_SYNTH_TOTAL: the total is the derived count");
 });

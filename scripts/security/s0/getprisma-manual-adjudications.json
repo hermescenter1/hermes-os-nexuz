@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "phase": "S0-B-05",
   "rulesetVersion": "s0-b05.4",
-  "note": "Manual adjudications for getPrisma() call sites the rule set cannot classify exactly. Each entry pins a sourceFingerprint; when the source moves under an entry the scanner reports it STALE and exits 3, and when the call site disappears it reports it ORPHAN and exits 4, rather than carrying a verdict forward onto code it no longer describes. Every entry records the caller path that was traced and the terminal behaviour observed at that caller. The reviewer label is 'S0 manual adjudication' and does not claim an independent human review.",
+  "note": "Manual adjudications for getPrisma() call sites the rule set cannot classify exactly. Each entry pins a sourceFingerprint; when the source moves under an entry the scanner reports it STALE and exits 3, and when the call site disappears it reports it ORPHAN and exits 4, rather than carrying a verdict forward onto code it no longer describes. Every entry records the caller path that was traced and the terminal behaviour observed at that caller. The reviewer label is 'S0 manual adjudication' and does not claim an independent human review. An adjudication whose terminal behaviour states what happens on a retry carries a structured retryTrace, and its RETRY_SUPPRESSION flag is derived from that trace by one rule (deriveRetrySuppression in the scanner); a flag that disagrees with its trace exits 10.",
   "adjudications": [
     {
       "callsiteId": "src/app/[locale]/videos/data.ts#L126C17",
@@ -38,6 +38,20 @@
       "outcomeFlags": [
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/app/api/academy/certificates/[id]/route.ts#L19C20",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 200 asserting a valid certificate held by \"Unknown\"",
+        "justification": "The caller is answered with a success, an acknowledgement or an empty result, so it has no signal that invites a retry; only the requester could run the operation again and nothing tells it to. Class ACK_SUCCESS.",
+        "sourceReferences": [
+          "src/app/api/academy/certificates/[id]/route.ts:19",
+          "src/app/api/academy/certificates/[id]/route.ts:17-30"
+        ]
+      },
       "supersededRuleId": "R21-silent-exception",
       "reviewer": "S0 manual adjudication"
     },
@@ -177,6 +191,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/app/api/auth/route.ts#L188C22",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": false,
+        "retryTrigger": "NONE",
+        "retryTiming": "NEVER",
+        "blockingState": null,
+        "terminal": "the login still fails, and no brute-force counter or login.failed event is recorded",
+        "justification": "Nothing is reported to a caller and no poll, pass or schedule runs the operation again, so the operation is not attempted a second time. Class SILENT_NO_RETRY.",
+        "sourceReferences": [
+          "src/app/api/auth/route.ts:188",
+          "src/app/api/auth/route.ts:188-196"
+        ]
+      },
       "supersededRuleId": "R16-positive-guard-no-else",
       "reviewer": "S0 manual adjudication"
     },
@@ -216,6 +244,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/app/api/auth/route.ts#L48C20",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": false,
+        "retryTrigger": "NONE",
+        "retryTiming": "NEVER",
+        "blockingState": null,
+        "terminal": "the login proceeds normally and no login metadata or lockout state is written",
+        "justification": "Nothing is reported to a caller and no poll, pass or schedule runs the operation again, so the operation is not attempted a second time. Class SILENT_NO_RETRY.",
+        "sourceReferences": [
+          "src/app/api/auth/route.ts:48",
+          "src/app/api/auth/route.ts:47-49"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -251,7 +293,23 @@
       "evidence": "src/app/api/billing/webhooks/stripe/route.ts:71-73 (`if (!db) return null;`) and the 200 at :296-297",
       "callerPath": "src/app/api/billing/webhooks/stripe/route.ts:296-297",
       "terminalBehavior": "HTTP 200 to Stripe with no owner attribution and no notification",
-      "outcomeFlags": [],
+      "outcomeFlags": [
+        "RETRY_SUPPRESSION"
+      ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/app/api/billing/webhooks/stripe/route.ts#L72C20",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 200 to Stripe with no owner attribution and no notification",
+        "justification": "The caller is answered with a success, an acknowledgement or an empty result, so it has no signal that invites a retry; only the requester could run the operation again and nothing tells it to. Class ACK_SUCCESS.",
+        "sourceReferences": [
+          "src/app/api/billing/webhooks/stripe/route.ts:72",
+          "src/app/api/billing/webhooks/stripe/route.ts:71-73"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -306,6 +364,22 @@
       "outcomeFlags": [
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/app/api/industrial-graph/route.ts#L41C22",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 200 with an empty graph; the skipped site filter is masked by the loader failing closed on the same condition",
+        "justification": "The caller is answered with a success, an acknowledgement or an empty result, so it has no signal that invites a retry; only the requester could run the operation again and nothing tells it to. Class ACK_SUCCESS.",
+        "sourceReferences": [
+          "src/app/api/industrial-graph/route.ts:41",
+          "src/app/api/industrial-graph/route.ts:40-56",
+          "src/lib/knowledge-graph/query.ts:282-287",
+          "src/lib/knowledge-graph/query.ts:126-131"
+        ]
+      },
       "supersededRuleId": "R10-no-guard",
       "reviewer": "S0 manual adjudication"
     },
@@ -412,6 +486,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/app/api/media/assets/[id]/upload/route.ts#L237C20",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": false,
+        "retryTrigger": "NONE",
+        "retryTiming": "NEVER",
+        "blockingState": null,
+        "terminal": "the asset keeps its prior status; the failure is not recorded",
+        "justification": "Nothing is reported to a caller and no poll, pass or schedule runs the operation again, so the operation is not attempted a second time. Class SILENT_NO_RETRY.",
+        "sourceReferences": [
+          "src/app/api/media/assets/[id]/upload/route.ts:237",
+          "src/app/api/media/assets/[id]/upload/route.ts:232-238"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -568,6 +656,19 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/api/meter.ts#L29C3",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": false,
+        "retryTrigger": "NONE",
+        "retryTiming": "NEVER",
+        "blockingState": null,
+        "terminal": "the usage record is dropped silently; the caller is never informed",
+        "justification": "Nothing is reported to a caller and no poll, pass or schedule runs the operation again, so the operation is not attempted a second time. Class SILENT_NO_RETRY.",
+        "sourceReferences": [
+          "src/lib/api/meter.ts:29"
+        ]
+      },
       "supersededRuleId": "R11-ambiguous",
       "reviewer": "S0 manual adjudication"
     },
@@ -589,6 +690,19 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/api/meter.ts#L56C3",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": false,
+        "retryTrigger": "NONE",
+        "retryTiming": "NEVER",
+        "blockingState": null,
+        "terminal": "the usage record is dropped silently; the caller is never informed",
+        "justification": "Nothing is reported to a caller and no poll, pass or schedule runs the operation again, so the operation is not attempted a second time. Class SILENT_NO_RETRY.",
+        "sourceReferences": [
+          "src/lib/api/meter.ts:56"
+        ]
+      },
       "supersededRuleId": "R11-ambiguous",
       "reviewer": "S0 manual adjudication"
     },
@@ -1042,6 +1156,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/auth/session-store.ts#L187C20",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 404 Session not found, no revocation, no audit row",
+        "justification": "The caller is answered with a not-found or validation status that reads as a client error, so a retry policy does not retry; only the requester could run the operation again and the status tells it not to. Class NOT_RETRYABLE_4XX.",
+        "sourceReferences": [
+          "src/lib/auth/session-store.ts:187",
+          "src/app/api/auth/sessions/[id]/route.ts:26-30"
+        ]
+      },
       "supersededRuleId": "R09-guard-false-zero",
       "reviewer": "S0 manual adjudication"
     },
@@ -1262,6 +1390,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/billing-governance/runtime/subscription-events.ts#L63C25",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 200 {received:true, outcome:IGNORED} to the provider",
+        "justification": "Every non-applied result is answered HTTP 200 IGNORED, so the only party that could redeliver the event, the provider, is told it was received.",
+        "sourceReferences": [
+          "src/lib/billing-governance/runtime/subscription-events.ts:63",
+          "src/app/api/billing/webhooks/stripe/route.ts:161-183"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1317,6 +1459,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/billing-governance/runtime/trial-service.ts#L88C25",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": false,
+        "retryTrigger": "NONE",
+        "retryTiming": "NEVER",
+        "blockingState": null,
+        "terminal": "the conversion is silently not recorded",
+        "justification": "Nothing is reported to a caller and no poll, pass or schedule runs the operation again, so the operation is not attempted a second time. Class SILENT_NO_RETRY.",
+        "sourceReferences": [
+          "src/lib/billing-governance/runtime/trial-service.ts:88",
+          "src/lib/billing-governance/runtime/trial-service.ts:86-89"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -1337,6 +1493,21 @@
         "ACK_WITHOUT_DURABILITY",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/billing-governance/runtime/webhook-store.ts#L21C29",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 200 — the event is acknowledged and never processed",
+        "justification": "The caller is answered with a success, an acknowledgement or an empty result, so it has no signal that invites a retry; only the requester could run the operation again and nothing tells it to. Class ACK_SUCCESS.",
+        "sourceReferences": [
+          "src/lib/billing-governance/runtime/webhook-store.ts:21",
+          "src/lib/billing-governance/runtime/webhook-store.ts:21-25",
+          "src/app/api/billing/webhooks/stripe/route.ts:236"
+        ]
+      },
       "supersededRuleId": "R11-ambiguous",
       "reviewer": "S0 manual adjudication"
     },
@@ -1357,6 +1528,20 @@
         "SUCCESS_WITHOUT_PERSISTENCE",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/billing-governance/runtime/webhook-store.ts#L62C29",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": false,
+        "retryTrigger": "NONE",
+        "retryTiming": "NEVER",
+        "blockingState": null,
+        "terminal": "the event row is not moved to PROCESSED",
+        "justification": "Nothing is reported to a caller and no poll, pass or schedule runs the operation again, so the operation is not attempted a second time. Class SILENT_NO_RETRY.",
+        "sourceReferences": [
+          "src/lib/billing-governance/runtime/webhook-store.ts:62",
+          "src/lib/billing-governance/runtime/webhook-store.ts:56"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -1377,6 +1562,20 @@
         "SUCCESS_WITHOUT_PERSISTENCE",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/billing-governance/runtime/webhook-store.ts#L71C29",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": false,
+        "retryTrigger": "NONE",
+        "retryTiming": "NEVER",
+        "blockingState": null,
+        "terminal": "the event row is not moved to IGNORED",
+        "justification": "Nothing is reported to a caller and no poll, pass or schedule runs the operation again, so the operation is not attempted a second time. Class SILENT_NO_RETRY.",
+        "sourceReferences": [
+          "src/lib/billing-governance/runtime/webhook-store.ts:71",
+          "src/lib/billing-governance/runtime/webhook-store.ts:56"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -1397,6 +1596,20 @@
         "SUCCESS_WITHOUT_PERSISTENCE",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/billing-governance/runtime/webhook-store.ts#L80C29",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": false,
+        "retryTrigger": "NONE",
+        "retryTiming": "NEVER",
+        "blockingState": null,
+        "terminal": "the event row is not moved to FAILED",
+        "justification": "Nothing is reported to a caller and no poll, pass or schedule runs the operation again, so the operation is not attempted a second time. Class SILENT_NO_RETRY.",
+        "sourceReferences": [
+          "src/lib/billing-governance/runtime/webhook-store.ts:80",
+          "src/lib/billing-governance/runtime/webhook-store.ts:56"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -1503,6 +1716,20 @@
       "callerPath": "src/app/api/compliance/legal-documents/entries/[id]/route.ts:97",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/db.ts#L556C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/db.ts:556",
+          "src/app/api/compliance/legal-documents/entries/[id]/route.ts:97"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1519,6 +1746,21 @@
       "callerPath": "src/lib/compliance/erasure-planning.ts:71 → src/app/api/compliance/erasures/[id]/plan/route.ts:24",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/erasure-db.ts#L163C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/erasure-db.ts:163",
+          "src/lib/compliance/erasure-planning.ts:71",
+          "src/app/api/compliance/erasures/[id]/plan/route.ts:24"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1535,6 +1777,20 @@
       "callerPath": "src/app/api/compliance/erasures/[id]/route.ts:69",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/erasure-db.ts#L220C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/erasure-db.ts:220",
+          "src/app/api/compliance/erasures/[id]/route.ts:69"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1551,6 +1807,20 @@
       "callerPath": "src/app/api/compliance/erasures/[id]/resolutions/route.ts:43",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/erasure-db.ts#L286C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/erasure-db.ts:286",
+          "src/app/api/compliance/erasures/[id]/resolutions/route.ts:43"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1567,6 +1837,20 @@
       "callerPath": "src/app/api/compliance/erasures/[id]/route.ts:94",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/erasure-db.ts#L401C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/erasure-db.ts:401",
+          "src/app/api/compliance/erasures/[id]/route.ts:94"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1583,6 +1867,20 @@
       "callerPath": "src/app/api/compliance/erasures/[id]/route.ts:108-109",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/erasure-db.ts#L432C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/erasure-db.ts:432",
+          "src/app/api/compliance/erasures/[id]/route.ts:108-109"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1599,6 +1897,20 @@
       "callerPath": "src/app/api/compliance/erasures/[id]/plan/route.ts:24",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/erasure-planning.ts#L40C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/erasure-planning.ts:40",
+          "src/app/api/compliance/erasures/[id]/plan/route.ts:24"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1615,6 +1927,20 @@
       "callerPath": "src/app/api/compliance/evidence-packs/route.ts:43",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/evidence-pack-db.ts#L248C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/evidence-pack-db.ts:248",
+          "src/app/api/compliance/evidence-packs/route.ts:43"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1631,6 +1957,20 @@
       "callerPath": "src/app/api/compliance/evidence-packs/route.ts:58",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/evidence-pack-db.ts#L284C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/evidence-pack-db.ts:284",
+          "src/app/api/compliance/evidence-packs/route.ts:58"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1654,6 +1994,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/evidence-pack-db.ts#L340C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": false,
+        "retryTrigger": "NONE",
+        "retryTiming": "NEVER",
+        "blockingState": null,
+        "terminal": "the pack keeps its prior lifecycle state and is never marked FAILED",
+        "justification": "Nothing is reported to a caller and no poll, pass or schedule runs the operation again, so the operation is not attempted a second time. Class SILENT_NO_RETRY.",
+        "sourceReferences": [
+          "src/lib/compliance/evidence-pack-db.ts:340",
+          "src/lib/compliance/evidence-pack-db.ts:339-340"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -1670,6 +2024,20 @@
       "callerPath": "src/app/api/compliance/evidence-packs/[id]/revoke/route.ts:18",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/evidence-pack-db.ts#L359C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/evidence-pack-db.ts:359",
+          "src/app/api/compliance/evidence-packs/[id]/revoke/route.ts:18"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1686,6 +2054,20 @@
       "callerPath": "src/app/api/compliance/exports/[id]/token/route.ts:26",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/export-db.ts#L270C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/export-db.ts:270",
+          "src/app/api/compliance/exports/[id]/token/route.ts:26"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1702,6 +2084,20 @@
       "callerPath": "src/app/api/compliance/exports/[id]/route.ts:80",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/export-db.ts#L318C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/export-db.ts:318",
+          "src/app/api/compliance/exports/[id]/route.ts:80"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1722,6 +2118,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/export-db.ts#L361C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 404 and an audit row asserting EXPORT_TOKEN_REPLAY_DENIED",
+        "justification": "The caller is answered with a not-found or validation status that reads as a client error, so a retry policy does not retry; only the requester could run the operation again and the status tells it not to. Class NOT_RETRYABLE_4XX.",
+        "sourceReferences": [
+          "src/lib/compliance/export-db.ts:361",
+          "src/app/api/compliance/exports/[id]/download/route.ts:80-84"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1738,6 +2148,20 @@
       "callerPath": "src/app/api/compliance/incidents/route.ts:39-41",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/incident-db.ts#L193C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/incident-db.ts:193",
+          "src/app/api/compliance/incidents/route.ts:39-41"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1754,6 +2178,20 @@
       "callerPath": "src/app/api/compliance/incidents/[id]/route.ts:57-61",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/incident-db.ts#L237C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/incident-db.ts:237",
+          "src/app/api/compliance/incidents/[id]/route.ts:57-61"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1770,6 +2208,20 @@
       "callerPath": "src/app/api/compliance/incidents/[id]/assignment/route.ts:27-31",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/incident-db.ts#L272C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/incident-db.ts:272",
+          "src/app/api/compliance/incidents/[id]/assignment/route.ts:27-31"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1786,6 +2238,20 @@
       "callerPath": "src/app/api/compliance/incidents/[id]/route.ts:81-86",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/incident-db.ts#L309C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/incident-db.ts:309",
+          "src/app/api/compliance/incidents/[id]/route.ts:81-86"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1802,6 +2268,20 @@
       "callerPath": "src/app/api/compliance/incidents/[id]/assessment/route.ts:47-49",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/incident-db.ts#L372C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/incident-db.ts:372",
+          "src/app/api/compliance/incidents/[id]/assessment/route.ts:47-49"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1818,6 +2298,20 @@
       "callerPath": "src/app/api/compliance/incidents/[id]/actions/route.ts:37-39",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/incident-db.ts#L436C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/incident-db.ts:436",
+          "src/app/api/compliance/incidents/[id]/actions/route.ts:37-39"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1834,6 +2328,20 @@
       "callerPath": "src/app/api/compliance/incidents/[id]/actions/route.ts:37-39",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/incident-db.ts#L471C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/incident-db.ts:471",
+          "src/app/api/compliance/incidents/[id]/actions/route.ts:37-39"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1850,6 +2358,20 @@
       "callerPath": "src/app/api/compliance/legal-holds/[id]/route.ts:146",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/incident-db.ts#L536C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/incident-db.ts:536",
+          "src/app/api/compliance/legal-holds/[id]/route.ts:146"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1866,6 +2388,20 @@
       "callerPath": "src/app/api/compliance/legal-holds/[id]/route.ts:141",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/incident-db.ts#L662C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/incident-db.ts:662",
+          "src/app/api/compliance/legal-holds/[id]/route.ts:141"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1882,6 +2418,20 @@
       "callerPath": "src/app/api/compliance/legal-holds/[id]/route.ts:154",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/incident-db.ts#L738C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/incident-db.ts:738",
+          "src/app/api/compliance/legal-holds/[id]/route.ts:154"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1898,6 +2448,20 @@
       "callerPath": "src/app/api/compliance/subprocessors/[id]/route.ts:60 and src/app/api/compliance/transfers/[id]/route.ts",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/transfer-db.ts#L241C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/transfer-db.ts:241",
+          "src/app/api/compliance/subprocessors/[id]/route.ts:60"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1914,6 +2478,20 @@
       "callerPath": "src/app/api/compliance/subprocessors/[id]/route.ts:111-115",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/transfer-db.ts#L286C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/transfer-db.ts:286",
+          "src/app/api/compliance/subprocessors/[id]/route.ts:111-115"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1930,6 +2508,20 @@
       "callerPath": "src/app/api/compliance/subprocessors/[id]/route.ts:90",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/transfer-db.ts#L332C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/transfer-db.ts:332",
+          "src/app/api/compliance/subprocessors/[id]/route.ts:90"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -1946,6 +2538,20 @@
       "callerPath": "src/app/api/compliance/transfers/[id]/route.ts:95",
       "terminalBehavior": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/compliance/transfer-db.ts#L408C24",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 409 (client conflict) — the write does not happen and no audit row is written",
+        "justification": "The caller is answered with a conflict that asks it to refresh and try again, so the requester can run the same operation again and is given a signal to do so. Class CONFLICT_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/compliance/transfer-db.ts:408",
+          "src/app/api/compliance/transfers/[id]/route.ts:95"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -2097,7 +2703,23 @@
       "evidence": "src/lib/digital-twin/relations.ts:57 — `if (!db) return null;`; the 422 at src/app/api/digital-twin/relations/route.ts:64",
       "callerPath": "src/app/api/digital-twin/relations/route.ts:64",
       "terminalBehavior": "HTTP 422 \"Failed to create relation (may be duplicate)\" — the record is not created and the reason is wrong",
-      "outcomeFlags": [],
+      "outcomeFlags": [
+        "RETRY_SUPPRESSION"
+      ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/digital-twin/relations.ts#L57C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 422 \"Failed to create relation (may be duplicate)\" — the record is not created and the reason is wrong",
+        "justification": "The caller is answered with a not-found or validation status that reads as a client error, so a retry policy does not retry; only the requester could run the operation again and the status tells it not to. Class NOT_RETRYABLE_4XX.",
+        "sourceReferences": [
+          "src/lib/digital-twin/relations.ts:57",
+          "src/app/api/digital-twin/relations/route.ts:64"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -2129,7 +2751,23 @@
       "evidence": "src/lib/digital-twin/tags.ts:65 — `if (!db) return null;`; the 422 at src/app/api/digital-twin/tags/route.ts:51",
       "callerPath": "src/app/api/digital-twin/tags/route.ts:51",
       "terminalBehavior": "HTTP 422 \"Failed to create tag (may be duplicate tagPath)\" — the record is not created and the reason is wrong",
-      "outcomeFlags": [],
+      "outcomeFlags": [
+        "RETRY_SUPPRESSION"
+      ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/digital-twin/tags.ts#L65C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 422 \"Failed to create tag (may be duplicate tagPath)\" — the record is not created and the reason is wrong",
+        "justification": "The caller is answered with a not-found or validation status that reads as a client error, so a retry policy does not retry; only the requester could run the operation again and the status tells it not to. Class NOT_RETRYABLE_4XX.",
+        "sourceReferences": [
+          "src/lib/digital-twin/tags.ts:65",
+          "src/app/api/digital-twin/tags/route.ts:51"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -2169,6 +2807,21 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/documents/document-repository.ts#L480C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 200 {deleted: true, storageMode: \"database\"} for a row that was never in the database",
+        "justification": "The caller is answered with a success, an acknowledgement or an empty result, so it has no signal that invites a retry; only the requester could run the operation again and nothing tells it to. Class ACK_SUCCESS.",
+        "sourceReferences": [
+          "src/lib/documents/document-repository.ts:480",
+          "src/lib/documents/document-repository.ts:479-486",
+          "src/app/api/documents/[id]/route.ts:106"
+        ]
+      },
       "supersededRuleId": "R06-guard-session-fallback",
       "reviewer": "S0 manual adjudication"
     },
@@ -2221,6 +2874,225 @@
       "reviewer": "S0 manual adjudication"
     },
     {
+      "callsiteId": "src/lib/executive/oversight.ts#L232C24",
+      "sourceFingerprint": "cf90d8c50e99756d",
+      "classification": "EXPLICIT_DEGRADED_MODE",
+      "secondaryTags": [
+        "READ",
+        "TENANT_SCOPED",
+        "USER_VISIBLE"
+      ],
+      "reason": "This expression is the `return null;` of a local accessor `db()`, so its behaviour is the behaviour of its consumers (the same convention as rule R22). It has exactly one consumer, `buildFinancialOversight`, which tests the accessor's result and answers every affected section as `refusedSection(\"UNAVAILABLE\", sourceUnavailable)` (or FORBIDDEN where the axis is not held). The null is therefore an explicit, stated unavailability and never an empty-success panel.",
+      "evidence": "src/lib/executive/oversight.ts:231-236 (accessor), :698-712 (consumer test at :698-712)",
+      "callerPath": "src/app/[locale]/dashboard/executive/oversight/page.tsx → buildFinancialOversight (src/lib/executive/oversight.ts:673)",
+      "terminalBehavior": "the oversight page renders both sections as UNAVAILABLE with the stated reason",
+      "outcomeFlags": [],
+      "supersededRuleId": "R08-guard-null-undefined",
+      "reviewer": "S0 manual adjudication"
+    },
+    {
+      "callsiteId": "src/lib/executive/priorities.ts#L273C24",
+      "sourceFingerprint": "3c80c3eb5d33ca6f",
+      "classification": "EXPLICIT_DEGRADED_MODE",
+      "secondaryTags": [
+        "READ",
+        "TENANT_SCOPED",
+        "USER_VISIBLE"
+      ],
+      "reason": "This expression is the `return null;` of a local accessor `db()`, so its behaviour is the behaviour of its consumers (the same convention as rule R22). It has exactly one consumer, `buildTomorrowsPriorities`, which tests the accessor's result and answers every affected section as `refusedSection(\"UNAVAILABLE\", sourceUnavailable)` (or FORBIDDEN where the axis is not held). The null is therefore an explicit, stated unavailability and never an empty-success panel.",
+      "evidence": "src/lib/executive/priorities.ts:272-278 (accessor), :393 (consumer test at :393)",
+      "callerPath": "src/app/[locale]/dashboard/executive/priorities/page.tsx → buildTomorrowsPriorities (src/lib/executive/priorities.ts:361)",
+      "terminalBehavior": "the priorities page renders the section as UNAVAILABLE with the stated reason",
+      "outcomeFlags": [],
+      "supersededRuleId": "R08-guard-null-undefined",
+      "reviewer": "S0 manual adjudication"
+    },
+    {
+      "callsiteId": "src/lib/executive/report/generate.ts#L112C24",
+      "sourceFingerprint": "8460b67c90dc58fd",
+      "classification": "DB_REQUIRED_FAIL_CLOSED",
+      "secondaryTags": [
+        "TENANT_SCOPED",
+        "WRITE",
+        "BACKGROUND_JOB"
+      ],
+      "reason": "`generateDailyReport` reads the client and its report delegate; when either is absent it returns the typed outcome `{ kind: \"FAILED\", reasonKey: sourceUnavailable }` before building or writing anything. The pass counts it in `failed` and lists the organization in `failures`. No row is created and no success is claimed.",
+      "evidence": "src/lib/executive/report/generate.ts:112-114 (absent delegate returns FAILED); src/lib/executive/report/worker.ts (failed counter and failures list)",
+      "callerPath": "POST /api/executive/reports/run → runReportPass → runBatch → generateDailyReport",
+      "terminalBehavior": "pass JSON reports failed and a failures entry for the organization; nothing is persisted",
+      "outcomeFlags": [],
+      "supersededRuleId": "R10-no-guard",
+      "reviewer": "S0 manual adjudication"
+    },
+    {
+      "callsiteId": "src/lib/executive/report/generate.ts#L248C24",
+      "sourceFingerprint": "189eee756297e423",
+      "classification": "DB_REQUIRED_FAIL_CLOSED",
+      "secondaryTags": [
+        "TENANT_SCOPED",
+        "WRITE",
+        "BACKGROUND_JOB",
+        "SILENT"
+      ],
+      "reason": "This expression is `if (!reports) return false;` in `claimNotification`. With no client or delegate it writes nothing and returns false, which is the same value the function returns when another replica already holds the claim. The caller answers NOT_CLAIMED and sends nothing: the safe direction (no duplicate, no unrecorded send), and because the row keeps `notifiedAt = null` the next pass tries again. The residual defect is observability: the two situations are indistinguishable and NOT_CLAIMED is excluded from the pass's `undelivered` list, so an outage here leaves no trace in the pass report.",
+      "evidence": "src/lib/executive/report/generate.ts:250 (`if (!reports) return false;`); caller src/lib/executive/report/worker.ts:384 (`if (!claimed) return \"NOT_CLAIMED\"`) and :336 (`result !== \"NOT_CLAIMED\"` is the only path into `undelivered`)",
+      "callerPath": "POST /api/executive/reports/run → runReportPass → runBatch → announce → claimNotification",
+      "terminalBehavior": "no notification this pass, no undelivered entry, retried by the next pass",
+      "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/executive/report/generate.ts#L248C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "INDEPENDENT_SCHEDULE",
+        "retryTiming": "NEXT_PASS",
+        "blockingState": null,
+        "terminal": "no notification this pass and no undelivered entry",
+        "justification": "A claim that could not be taken writes nothing, so notifiedAt stays null; the next pass finds the report already reported with no announcement and announces it again.",
+        "sourceReferences": [
+          "src/lib/executive/report/generate.ts:248-250",
+          "src/lib/executive/report/worker.ts:321-325"
+        ]
+      },
+      "supersededRuleId": "R10-no-guard",
+      "reviewer": "S0 manual adjudication"
+    },
+    {
+      "callsiteId": "src/lib/executive/report/generate.ts#L281C24",
+      "sourceFingerprint": "a2c047349cdc9c33",
+      "classification": "DB_REQUIRED_FAIL_CLOSED",
+      "secondaryTags": [
+        "TENANT_SCOPED",
+        "WRITE",
+        "BACKGROUND_JOB",
+        "SILENT"
+      ],
+      "reason": "This expression is `if (!reports) return false;` in `releaseNotificationClaim`. With no client or delegate it performs no write and returns false: it refuses, it does not claim success and it swallows no exception. The harm is not in this expression but in what its only caller does with the answer: `announce` neither reads the boolean nor logs, and wraps the call in `.catch(() => false)`, so the claim taken just before stays set. RETRY_SUPPRESSION is therefore a consequence at the caller of this refusal, recorded here because this call is the only way a report nobody received can be retried; the row then says notified although nobody was told.",
+      "evidence": "src/lib/executive/report/generate.ts:283 (`if (!reports) return false;`); caller src/lib/executive/report/worker.ts:394 (`.catch(() => false)`, result not inspected)",
+      "callerPath": "POST /api/executive/reports/run → runReportPass → runBatch → announce → releaseNotificationClaim",
+      "terminalBehavior": "release not performed; the claim stays set; no later pass re-announces the report; visible only in that pass's undelivered list",
+      "outcomeFlags": [
+        "RETRY_SUPPRESSION"
+      ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/executive/report/generate.ts#L281C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "INDEPENDENT_SCHEDULE",
+        "retryTiming": "NEXT_PASS",
+        "blockingState": "the claim keeps notifiedAt set after the failed release, and a later pass announces only a report whose notifiedAtIso is null",
+        "terminal": "release not performed; the claim stays set; visible only in that pass's undelivered list",
+        "justification": "The release returns false and clears nothing, its caller neither reads the result nor logs it and swallows a throw, so the durable claim stops every later pass from announcing the report.",
+        "sourceReferences": [
+          "src/lib/executive/report/generate.ts:283",
+          "src/lib/executive/report/worker.ts:394",
+          "src/lib/executive/report/worker.ts:321-325"
+        ]
+      },
+      "supersededRuleId": "R10-no-guard",
+      "reviewer": "S0 manual adjudication"
+    },
+    {
+      "callsiteId": "src/lib/executive/report/read.ts#L126C36",
+      "sourceFingerprint": "9a004a4bff3edce2",
+      "classification": "EMPTY_SUCCESS_FALLBACK",
+      "secondaryTags": [
+        "READ",
+        "TENANT_SCOPED",
+        "USER_VISIBLE",
+        "SILENT"
+      ],
+      "reason": "This expression is `delegateOf(await getPrisma())` in `getReport`, followed by `if (!reports) return null;`; the query's catch also returns null, as does a missing row. The function therefore answers null for an absent client, a failed query and a report that does not exist. The detail page renders every null as `reports.notFound`, so an outage is presented as a missing report; the list page has an unavailable state for the same condition, the detail page has none.",
+      "evidence": "src/lib/executive/report/read.ts:126-127 (null branch), :140 (missing row) and :145-146 (catch); src/app/[locale]/dashboard/executive/reports/[date]/page.tsx (`report ? view : NotFound`)",
+      "callerPath": "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx → getReport",
+      "terminalBehavior": "an outage renders as 'report not found'",
+      "outcomeFlags": [],
+      "supersededRuleId": "R11-ambiguous",
+      "reviewer": "S0 manual adjudication"
+    },
+    {
+      "callsiteId": "src/lib/executive/report/read.ts#L152C36",
+      "sourceFingerprint": "af76db2511aaa751",
+      "classification": "EXPLICIT_DEGRADED_MODE",
+      "secondaryTags": [
+        "READ",
+        "TENANT_SCOPED",
+        "USER_VISIBLE"
+      ],
+      "reason": "This expression is `delegateOf(await getPrisma())` in `countReports`, followed by `if (!reports) return null;`; the query's catch also returns null, and a successful query returns a number. The return type separates 'unreadable' (null) from 'empty' (0), and the doc comment states that purpose ('Used to tell EMPTY from UNAVAILABLE'). The archive page branches on null and shows the archive-unavailable alert.",
+      "evidence": "src/lib/executive/report/read.ts:152-153 (null branch) and :156-157 (catch); src/app/[locale]/dashboard/executive/reports/page.tsx:52 (`total === null` → archiveUnavailable)",
+      "callerPath": "src/app/[locale]/dashboard/executive/reports/page.tsx → countReports",
+      "terminalBehavior": "the archive page states that the archive is unavailable",
+      "outcomeFlags": [],
+      "supersededRuleId": "R11-ambiguous",
+      "reviewer": "S0 manual adjudication"
+    },
+    {
+      "callsiteId": "src/lib/executive/report/read.ts#L96C36",
+      "sourceFingerprint": "c658450ef17befb3",
+      "classification": "EMPTY_SUCCESS_FALLBACK",
+      "secondaryTags": [
+        "READ",
+        "TENANT_SCOPED",
+        "USER_VISIBLE",
+        "SILENT"
+      ],
+      "reason": "This expression is `delegateOf(await getPrisma())` in `listReports`, followed by `if (!reports) return [];`; the query's catch also returns `[]`. The function therefore answers an empty list both for an absent client and for a failed query, and the empty list is indistinguishable from an archive with no reports. The archive page pairs it with `countReports`, whose null means 'unreadable', so a total outage is stated on the page; a failure that hits only this query while the count succeeds falls into the 'no reports yet' branch, because that branch tests only `entries.length === 0`.",
+      "evidence": "src/lib/executive/report/read.ts:96-97 (null branch) and :108-112 (catch); src/app/[locale]/dashboard/executive/reports/page.tsx:52 (`total === null` → archiveUnavailable) and :58 (`entries.length === 0` → no reports)",
+      "callerPath": "src/app/[locale]/dashboard/executive/reports/page.tsx → listReports",
+      "terminalBehavior": "'no reports yet' for a partial read failure; 'archive unavailable' for a full outage",
+      "outcomeFlags": [],
+      "supersededRuleId": "R11-ambiguous",
+      "reviewer": "S0 manual adjudication"
+    },
+    {
+      "callsiteId": "src/lib/executive/report/worker.ts#L191C24",
+      "sourceFingerprint": "d4d34462846d6ae1",
+      "classification": "EMPTY_SUCCESS_FALLBACK",
+      "secondaryTags": [
+        "TENANT_SCOPED",
+        "BACKGROUND_JOB",
+        "SILENT"
+      ],
+      "reason": "This expression is `const client = await getPrisma();` in `runReportPass`, followed by `if (!client) return emptyPass(nowMs, false, after);`. With no client the pass returns the empty report and the route serialises it as HTTP 200 with `leaseHeld: false` and every counter at zero, which is byte-for-byte the answer for 'another replica holds the lease'. The scheduler is not told anything failed, so it cannot tell a database outage from a normal lease loss, and it logs only counts. Nothing is lost: an unreported night stays unreported and the next poll retries. The cost is that an outage on this path is invisible to the scheduler and to any alert keyed on pass failures.",
+      "evidence": "src/lib/executive/report/worker.ts:191-192 (absent client returns emptyPass) and :204 (lease not taken returns the same shape); src/app/api/executive/reports/run/route.ts (the pass is returned with status 200)",
+      "callerPath": "scripts/executive/daily-report-worker.mjs → POST /api/executive/reports/run → runReportPass",
+      "terminalBehavior": "HTTP 200, zero work, indistinguishable from a held lease; retried at the next poll",
+      "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/executive/report/worker.ts#L191C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "INDEPENDENT_SCHEDULE",
+        "retryTiming": "NEXT_POLL",
+        "blockingState": null,
+        "terminal": "HTTP 200, zero work, indistinguishable from a held lease",
+        "justification": "The report worker loop sleeps its interval and posts the pass again; the empty pass persists nothing, so no claim, row or lease blocks the next pass, and the next pass is the same operation.",
+        "sourceReferences": [
+          "scripts/executive/daily-report-worker.mjs:181-200",
+          "src/lib/executive/report/worker.ts:191-192"
+        ]
+      },
+      "supersededRuleId": "R19-named-or-shaped-return",
+      "reviewer": "S0 manual adjudication"
+    },
+    {
+      "callsiteId": "src/lib/executive/summary.ts#L181C24",
+      "sourceFingerprint": "3c8fecce5ec174f6",
+      "classification": "EXPLICIT_DEGRADED_MODE",
+      "secondaryTags": [
+        "READ",
+        "TENANT_SCOPED",
+        "USER_VISIBLE"
+      ],
+      "reason": "This expression is the `return null;` of a local accessor `db()`, so its behaviour is the behaviour of its consumers (the same convention as rule R22). It has exactly one consumer, `buildExecutiveSummary`, which tests the accessor's result and answers every affected section as `refusedSection(\"UNAVAILABLE\", sourceUnavailable)` (or FORBIDDEN where the axis is not held). The null is therefore an explicit, stated unavailability and never an empty-success panel. The summary route additionally maps an inconsistent section set to HTTP 503, and the nightly report path records FAILED for a throw.",
+      "evidence": "src/lib/executive/summary.ts:180-187 (accessor), :857-872 (consumer test at :857-872); src/app/api/executive/summary/route.ts (consistency check, 503)",
+      "callerPath": "src/app/api/executive/summary/route.ts and src/app/[locale]/dashboard/executive/page.tsx → buildExecutiveSummary; src/lib/executive/report/generate.ts → buildExecutiveSummary",
+      "terminalBehavior": "HTTP 200 with every section marked UNAVAILABLE and a stated reason; never an empty or zeroed section",
+      "outcomeFlags": [],
+      "supersededRuleId": "R08-guard-null-undefined",
+      "reviewer": "S0 manual adjudication"
+    },
+    {
       "callsiteId": "src/lib/industrial/alerts.ts#L217C20",
       "sourceFingerprint": "8996298a44161e0e",
       "classification": "DB_REQUIRED_FAIL_CLOSED",
@@ -2237,6 +3109,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/industrial/alerts.ts#L217C20",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 404 \"Alert not found\" — no write, no audit row",
+        "justification": "The caller is answered with a not-found or validation status that reads as a client error, so a retry policy does not retry; only the requester could run the operation again and the status tells it not to. Class NOT_RETRYABLE_4XX.",
+        "sourceReferences": [
+          "src/lib/industrial/alerts.ts:217",
+          "src/app/api/industrial/assets/[id]/alerts/[alertId]/route.ts:39-40"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -2257,6 +3143,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/industrial/assets.ts#L113C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 404 \"Asset not found\" — no write, no audit row",
+        "justification": "The caller is answered with a not-found or validation status that reads as a client error, so a retry policy does not retry; only the requester could run the operation again and the status tells it not to. Class NOT_RETRYABLE_4XX.",
+        "sourceReferences": [
+          "src/lib/industrial/assets.ts:113",
+          "src/app/api/industrial/assets/[id]/route.ts:80-81"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -2310,6 +3210,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/industrial/automation-run-store.ts#L250C20",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": false,
+        "retryTrigger": "NONE",
+        "retryTiming": "NEVER",
+        "blockingState": null,
+        "terminal": "the run is not marked RUNNING and nothing reports it",
+        "justification": "Nothing is reported to a caller and no poll, pass or schedule runs the operation again, so the operation is not attempted a second time. Class SILENT_NO_RETRY.",
+        "sourceReferences": [
+          "src/lib/industrial/automation-run-store.ts:250",
+          "src/lib/industrial/automation-run-store.ts:249-251"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -2362,6 +3276,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/industrial/connectors.ts#L90C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 404 \"Connector not found\" — no write, no audit row",
+        "justification": "The caller is answered with a not-found or validation status that reads as a client error, so a retry policy does not retry; only the requester could run the operation again and the status tells it not to. Class NOT_RETRYABLE_4XX.",
+        "sourceReferences": [
+          "src/lib/industrial/connectors.ts:90",
+          "src/app/api/industrial/connectors/[id]/route.ts:64-70"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -2383,6 +3311,21 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/industrial/gateways.ts#L112C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 404 \"already revoked\" — the credential is NOT revoked and no audit row is written",
+        "justification": "The caller is answered with a not-found or validation status that reads as a client error, so a retry policy does not retry; only the requester could run the operation again and the status tells it not to. Class NOT_RETRYABLE_4XX.",
+        "sourceReferences": [
+          "src/lib/industrial/gateways.ts:112",
+          "src/lib/industrial/gateways.ts:111-113",
+          "src/app/api/industrial/gateways/[id]/route.ts:110-111"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -2406,6 +3349,22 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/industrial/gateways.ts#L126C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "the heartbeat endpoint answers success and audits a heartbeat that was never persisted",
+        "justification": "The caller is answered with a success, an acknowledgement or an empty result, so it has no signal that invites a retry; only the requester could run the operation again and nothing tells it to. Class ACK_SUCCESS.",
+        "sourceReferences": [
+          "src/lib/industrial/gateways.ts:126",
+          "src/lib/industrial/gateways.ts:125-127",
+          "src/app/api/industrial/gateways/[id]/heartbeat/route.ts:36-44",
+          "src/lib/scada-control-room/contract.ts:8-20"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -2442,6 +3401,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/industrial/gateways.ts#L98C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 404 \"Gateway not found\" — no write, no audit row",
+        "justification": "The caller is answered with a not-found or validation status that reads as a client error, so a retry policy does not retry; only the requester could run the operation again and the status tells it not to. Class NOT_RETRYABLE_4XX.",
+        "sourceReferences": [
+          "src/lib/industrial/gateways.ts:98",
+          "src/app/api/industrial/gateways/[id]/route.ts:73-74"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -2475,6 +3448,19 @@
       "callerPath": "the metering worker entry points and health surfaces",
       "terminalBehavior": "a zeroed pass report indistinguishable from an idle pass",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/industrial/metering-outbox.ts#L152C39",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "INDEPENDENT_SCHEDULE",
+        "retryTiming": "NEXT_POLL",
+        "blockingState": null,
+        "terminal": "a zeroed pass report indistinguishable from an idle pass",
+        "justification": "The caller sees a report identical to an idle pass, but a worker loop runs the same pass again on its own interval and nothing persisted by this pass blocks it. Class POLL_IDLE.",
+        "sourceReferences": [
+          "src/lib/industrial/metering-outbox.ts:152"
+        ]
+      },
       "supersededRuleId": "R19-named-or-shaped-return",
       "reviewer": "S0 manual adjudication"
     },
@@ -2610,6 +3596,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/industrial/sites.ts#L79C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 404 \"Site not found\" — no write, no audit row",
+        "justification": "The caller is answered with a not-found or validation status that reads as a client error, so a retry policy does not retry; only the requester could run the operation again and the status tells it not to. Class NOT_RETRYABLE_4XX.",
+        "sourceReferences": [
+          "src/lib/industrial/sites.ts:79",
+          "src/app/api/industrial/sites/[id]/route.ts:64-68"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -2635,6 +3635,21 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/industrial/telemetry.ts#L64C24",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 201 Created {ingested: 0} plus a TELEMETRY_INGESTED audit row",
+        "justification": "The caller is answered with a success, an acknowledgement or an empty result, so it has no signal that invites a retry; only the requester could run the operation again and nothing tells it to. Class ACK_SUCCESS.",
+        "sourceReferences": [
+          "src/lib/industrial/telemetry.ts:64",
+          "src/lib/industrial/telemetry.ts:58-65",
+          "src/app/api/industrial/telemetry/route.ts:70-88"
+        ]
+      },
       "supersededRuleId": "R18-result-object-refusal",
       "reviewer": "S0 manual adjudication"
     },
@@ -2721,6 +3736,20 @@
         "AUDIT_LOSS",
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/knowledge/procedures.ts#L125C20",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 404 \"Not found or update failed\"",
+        "justification": "The caller is answered with a not-found or validation status that reads as a client error, so a retry policy does not retry; only the requester could run the operation again and the status tells it not to. Class NOT_RETRYABLE_4XX.",
+        "sourceReferences": [
+          "src/lib/knowledge/procedures.ts:125",
+          "src/app/api/knowledge/procedures/[id]/route.ts:45-46"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -2738,6 +3767,20 @@
       "callerPath": "src/app/api/knowledge/procedures/route.ts:63-64",
       "terminalBehavior": "HTTP 500 Failed to create procedure",
       "outcomeFlags": [],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/knowledge/procedures.ts#L82C20",
+        "failureObservedByCaller": true,
+        "sameOperationRetried": true,
+        "retryTrigger": "REQUESTER",
+        "retryTiming": "ON_REQUESTER_RETRY",
+        "blockingState": null,
+        "terminal": "HTTP 500 Failed to create procedure",
+        "justification": "The caller is answered with a server-side error class, which a requester may retry; no state prevents it. Class SERVER_ERROR_RETRYABLE.",
+        "sourceReferences": [
+          "src/lib/knowledge/procedures.ts:82",
+          "src/app/api/knowledge/procedures/route.ts:63-64"
+        ]
+      },
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
@@ -3108,6 +4151,21 @@
       "outcomeFlags": [
         "RETRY_SUPPRESSION"
       ],
+      "retryTrace": {
+        "operationIdentity": "the operation behind src/lib/storage/case-repository.ts#L225C20",
+        "failureObservedByCaller": false,
+        "sameOperationRetried": false,
+        "retryTrigger": "NONE",
+        "retryTiming": "NEVER",
+        "blockingState": null,
+        "terminal": "a published-case list served from globalThis, presented as the real estate",
+        "justification": "Nothing is reported to a caller and no poll, pass or schedule runs the operation again, so the operation is not attempted a second time. Class SILENT_NO_RETRY.",
+        "sourceReferences": [
+          "src/lib/storage/case-repository.ts:225",
+          "src/lib/storage/case-repository.ts:220-230",
+          "src/lib/eng-graph/builder.ts:440"
+        ]
+      },
       "supersededRuleId": "R06-guard-session-fallback",
       "reviewer": "S0 manual adjudication"
     },

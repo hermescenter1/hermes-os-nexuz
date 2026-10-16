@@ -77,6 +77,15 @@ import {
   reportContradictions,
   narrativeOnly,
   findingUniverseViolations,
+  RECONCILED_UNIVERSE_COUNT,
+  HISTORICAL_SNAPSHOT_PIN,
+  historicalSnapshot,
+  reconciliationViolations,
+  DELTA_UNIVERSE_COUNT,
+  DELTA_UNIVERSE_SHA256,
+  RECONCILED_UNIVERSE_SHA256,
+  universeString,
+  UNIVERSE_VERSION,
   extractSourceUniverse,
   SOURCE_DOCUMENTS,
   PHASE99_REGISTER,
@@ -124,6 +133,14 @@ import {
   normalizeKeyName,
   SENSITIVE_KEY_FAMILIES,
   narrativeFactViolations,
+  schemaKeyViolations,
+  policyViolations,
+  SCHEMA_KEYS_VERSION,
+  POLICY_BRANCH_PREFIX,
+  staleProcessTextHits,
+  staleProcessTextViolations,
+  STALE_PROCESS_MARKER,
+  SCHEMA_KEY_EXIT_CONTRACT,
   narrativeFacts,
   numberToWords,
   renderHeadlinePanel,
@@ -191,6 +208,10 @@ const pinsWith = (...lines) => ({
 /** A deep copy, so a mutation in one test cannot leak into another. */
 const clone = () => JSON.parse(RAW);
 const riskIn = (reg, id) => reg.risks.find((r) => r.riskId === id);
+const HISTOGRAM_NOW = Object.entries(calibration(REGISTER).histogram)
+  .sort((x, y) => Number(x[0]) - Number(y[0]))
+  .map(([k, v]) => `${k}:${v}`)
+  .join(" ");
 const findingIn = (reg, id) => reg.findings.find((f) => f.findingId === id);
 /** Re-derive after a factor change, so only the invariant under test is violated. */
 function resync(risk) {
@@ -618,7 +639,7 @@ test("the report carries a summary block that mirrors every required counter", (
 });
 
 test("a changed counter in the report is detected as drift", () => {
-  const tampered = REPORT.replace("SEVERITY_HIGH = 35", "SEVERITY_HIGH = 7");
+  const tampered = REPORT.replace(`SEVERITY_HIGH = ${counters(REGISTER).SEVERITY_HIGH}`, "SEVERITY_HIGH = 7");
   assert.notEqual(tampered, REPORT, "the anchor must exist, or this test proves nothing");
   assert.ok(markdownDrift(REGISTER, tampered).some((d) => d.key === "SEVERITY_HIGH" && d.why === "VALUE_DIFFERS"));
 });
@@ -1124,10 +1145,10 @@ test("the finding universe matches the source documents exactly", () => {
   assert.deepEqual(findingUniverseViolations(REGISTER), []);
   const { error, ids } = extractSourceUniverse();
   assert.equal(error, null);
-  assert.equal(ids.size, 110, "the eight S0 documents plus the Phase 99 register carry 110 identifiers");
+  assert.equal(ids.size, RECONCILED_UNIVERSE_COUNT, "the eight S0 documents, the Phase 99 register and the delta document carry the reconciled identifiers");
   const lock = REGISTER.findings.filter((f) => f.family === "LOCK");
   assert.equal(lock.length, LOCK_UNIVERSE_COUNT);
-  assert.equal(ids.size + lock.length, REGISTER.findings.length, "110 source + 51 bookkeeping = every finding");
+  assert.equal(ids.size + lock.length, REGISTER.findings.length, "source identifiers + bookkeeping = every finding");
   assert.equal(sha256Hex(lockUniverseString(REGISTER)), LOCK_UNIVERSE_SHA256);
 });
 
@@ -1225,7 +1246,7 @@ test("the review findings are NOT security findings and own nothing", () => {
     assert.equal(findingIn(REGISTER, id), undefined, `${id} must not be in the register`);
     for (const r of REGISTER.risks) assert.ok(!r.sourceFindingIds.includes(id), `${r.riskId} must not claim ${id}`);
   }
-  assert.equal(REVIEW_CLOSURE.length, 11, "all eleven review findings are accounted for");
+  assert.equal(REVIEW_CLOSURE.length, 16, "all sixteen review findings are accounted for");
   for (const [, , status] of REVIEW_CLOSURE) {
     assert.ok(
       ["FIXED", "FIXED_BY_DISCLOSURE_AND_DERIVED_PRESENTATION"].includes(status),
@@ -1993,32 +2014,39 @@ test("the report discloses which gates are consistency-only and why the scan is 
 // ──────── the register is untouched by any of this ──────────────────────────
 
 test("no risk datum moved during the checker hardening", () => {
+  // the HISTORICAL snapshot is pinned and recomputed; the reconciled figures are derived from it plus the delta
+  const h = historicalSnapshot(REGISTER);
+  assert.equal(h.risks, 64);
+  assert.equal(h.findings, 161);
+  assert.deepEqual(h.severity, { CRITICAL: 0, HIGH: 35, MEDIUM: 17, LOW: 1, INFORMATIONAL: 11 });
+  assert.equal(h.productionState.ACTIVE_CONFIRMED, 24);
+  assert.equal(h.productionState.LATENT_CONFIG_GUARDED, 4);
+  assert.equal(h.productionState.CODE_CONFIRMED_RUNTIME_UNPROVEN, 12);
+  assert.equal(h.productionState.ASSURANCE_GAP, 10);
+  assert.equal(h.productionState.POLICY_AMBIGUITY, 3);
+  assert.equal(h.productionState.POSITIVE_CONTROL, 11);
+  assert.equal(h.severityClamps, 2);
   const c = counters(REGISTER);
-  assert.equal(c.S1_RISKS_TOTAL, 64);
-  assert.equal(c.S1_FINDINGS_TOTAL, 161);
+  assert.equal(c.S1_RISKS_TOTAL, h.risks + c.DELTA_RISKS_TOTAL);
+  assert.equal(c.S1_FINDINGS_TOTAL, h.findings + c.DELTA_FINDINGS_TOTAL);
   assert.equal(c.SEVERITY_CRITICAL, 0);
-  assert.equal(c.SEVERITY_HIGH, 35);
-  assert.equal(c.SEVERITY_MEDIUM, 17);
-  assert.equal(c.SEVERITY_LOW, 1);
-  assert.equal(c.SEVERITY_INFORMATIONAL, 11);
-  assert.equal(c.STATE_ACTIVE_CONFIRMED, 24);
-  assert.equal(c.STATE_LATENT_CONFIG_GUARDED, 4);
-  assert.equal(c.STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN, 12);
-  assert.equal(c.STATE_ASSURANCE_GAP, 10);
-  assert.equal(c.STATE_POLICY_AMBIGUITY, 3);
-  assert.equal(c.STATE_POSITIVE_CONTROL, 11);
   assert.equal(c.SEVERITY_CLAMPS_APPLIED, 2);
   assert.equal(c.FINDING_COVERAGE_PERCENT, 100);
   assert.equal(c.ORPHAN_FINDINGS, 0);
   assert.equal(c.LOCK_UNIVERSE_COUNT, 51);
   assert.equal(sha256Hex(lockUniverseString(REGISTER)), LOCK_UNIVERSE_SHA256);
-  assert.equal(extractSourceUniverse().ids.size, 110);
+  assert.equal(extractSourceUniverse().ids.size, RECONCILED_UNIVERSE_COUNT);
   assert.equal(riskIn(REGISTER, "R-20").impactFactors.integrity, 3);
   assert.equal(riskIn(REGISTER, "R-26").likelihoodFactors.exploitability, 2);
   assert.ok(riskIn(REGISTER, "R-26").dependencies.includes("R-24"));
   assert.equal(riskIn(REGISTER, "R-52").score, 12);
   assert.ok(riskIn(REGISTER, "R-52").affectedAssets.includes("OT_GATEWAY_BOUNDARY"));
-  const hist = calibration(REGISTER).histogram;
+  // the HISTORICAL score histogram, rebuilt from the entries the delta did not add, with a revised entry at its former score
+  const hist = {};
+  for (const r of REGISTER.risks.filter((x) => x.originScope !== "DELTA_RELOCK")) {
+    const score = r.revision ? r.revision.supersedes.score : r.score;
+    if (score > 0) hist[score] = (hist[score] ?? 0) + 1;
+  }
   assert.deepEqual(hist, { 4: 1, 6: 5, 8: 5, 9: 3, 10: 4, 12: 15, 15: 14, 16: 4, 20: 2 });
 });
 
@@ -2552,25 +2580,25 @@ test("the live narrative carries only derived figures", () => {
 });
 
 test("the two figures that went stale are caught, in both shapes", () => {
-  const stale160 = REPORT.replace("<!-- S1-FACT:S1_FINDINGS_TOTAL -->161<!-- /S1-FACT --> findings carries", "<!-- S1-FACT:S1_FINDINGS_TOTAL -->160<!-- /S1-FACT --> findings carries");
+  const stale160 = REPORT.replace("<!-- S1-FACT:HIST_S1_FINDINGS_TOTAL -->161<!-- /S1-FACT --> findings carries", "<!-- S1-FACT:HIST_S1_FINDINGS_TOTAL -->160<!-- /S1-FACT --> findings carries");
   assert.notEqual(stale160, REPORT, "the anchor must exist");
   assert.ok(
-    narrativeFactViolations(REGISTER, stale160).some((v) => v.why === "FACT_DIFFERS" && v.key === "S1_FINDINGS_TOTAL" && v.written === "160" && v.derived === "161"),
+    narrativeFactViolations(REGISTER, stale160).some((v) => v.why === "FACT_DIFFERS" && v.key === "HIST_S1_FINDINGS_TOTAL" && v.written === "160" && v.derived === "161"),
     "FACT_DIFFERS: a marked figure that no longer matches the register is refused, with both values named",
   );
 
   const staleWord = REPORT.replace(
-    "<!-- S1-FACT:STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN:W -->Twelve<!-- /S1-FACT --> risks are `CODE_CONFIRMED_RUNTIME_UNPROVEN`",
-    "<!-- S1-FACT:STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN:W -->Fourteen<!-- /S1-FACT --> risks are `CODE_CONFIRMED_RUNTIME_UNPROVEN`",
+    "<!-- S1-FACT:HIST_STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN:W -->Twelve<!-- /S1-FACT --> risks are `CODE_CONFIRMED_RUNTIME_UNPROVEN`",
+    "<!-- S1-FACT:HIST_STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN:W -->Fourteen<!-- /S1-FACT --> risks are `CODE_CONFIRMED_RUNTIME_UNPROVEN`",
   );
   assert.notEqual(staleWord, REPORT);
   assert.ok(narrativeFactViolations(REGISTER, staleWord).some((v) => v.why === "FACT_DIFFERS" && v.written === "Fourteen" && v.derived === "Twelve"));
 
   // the unmarked originals
-  const bare160 = REPORT.replace("<!-- S1-FACT:S1_FINDINGS_TOTAL -->161<!-- /S1-FACT --> findings carries", "160 findings carries");
+  const bare160 = REPORT.replace("<!-- S1-FACT:HIST_S1_FINDINGS_TOTAL -->161<!-- /S1-FACT --> findings carries", "160 findings carries");
   assert.ok(narrativeFactViolations(REGISTER, bare160).some((v) => v.why === "UNMARKED_NARRATIVE_FACT"), "FACT_UNMARKED: a figure typed into the prose without a marker is refused");
   const bareWord = REPORT.replace(
-    "<!-- S1-FACT:STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN:W -->Twelve<!-- /S1-FACT --> risks are `CODE_CONFIRMED_RUNTIME_UNPROVEN`",
+    "<!-- S1-FACT:HIST_STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN:W -->Twelve<!-- /S1-FACT --> risks are `CODE_CONFIRMED_RUNTIME_UNPROVEN`",
     "Fourteen risks are `CODE_CONFIRMED_RUNTIME_UNPROVEN`",
   );
   assert.ok(narrativeFactViolations(REGISTER, bareWord).some((v) => v.why === "UNMARKED_NARRATIVE_FACT"));
@@ -2595,17 +2623,22 @@ test("a new count typed into the narrative without a marker is refused, and a ma
 
 test("the facts a marker may name cover every figure the review required", () => {
   const f = narrativeFacts(REGISTER);
-  assert.equal(f.S1_RISKS_TOTAL, 64);
-  assert.equal(f.S1_FINDINGS_TOTAL, 161);
-  assert.equal(f.SEVERITY_HIGH, 35);
-  assert.equal(f.STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN, 12);
+  assert.equal(f.HIST_S1_RISKS_TOTAL, 64);
+  assert.equal(f.HIST_S1_FINDINGS_TOTAL, 161);
+  assert.equal(f.HIST_SEVERITY_HIGH, 35);
+  assert.equal(f.HIST_STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN, 12);
+  assert.equal(f.S1_RISKS_TOTAL, REGISTER.risks.length);
+  assert.equal(f.S1_FINDINGS_TOTAL, REGISTER.findings.length);
+  assert.equal(f.SEVERITY_HIGH, REGISTER.risks.filter((r) => r.severity === "HIGH").length);
   assert.equal(f.SEVERITY_CLAMPS_APPLIED, 2);
   assert.equal(f.LOCK_UNIVERSE_COUNT, 51);
-  assert.equal(f.SOURCE_UNIVERSE_COUNT, 110);
-  assert.equal(f.LATENT_DESIGN_FLAWS, 16, "FACT_LATENT: the latent-design-flaw figure is the sum of the two states that make it up");
-  assert.equal(f.HISTOGRAM, "4:1 6:5 8:5 9:3 10:4 12:15 15:14 16:4 20:2");
+  assert.equal(f.SOURCE_UNIVERSE_COUNT, RECONCILED_UNIVERSE_COUNT);
+  assert.equal(f.HIST_SOURCE_UNIVERSE_COUNT, HISTORICAL_SNAPSHOT_PIN.sourceUniverseCount);
+  assert.equal(f.HIST_LATENT_DESIGN_FLAWS, 16, "FACT_LATENT: the latent-design-flaw figure is the sum of the two states that make it up");
+  assert.equal(f.LATENT_DESIGN_FLAWS, f.STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN + f.STATE_LATENT_CONFIG_GUARDED, "FACT_LATENT: the latent-design-flaw figure is the sum of the two states that make it up");
+  assert.equal(f.HISTOGRAM, HISTOGRAM_NOW);
   // a figure that is not in the register cannot be invented by a marker
-  for (const [key, text, fmt] of [["SOURCE_UNIVERSE_COUNT", "110"], ["HISTOGRAM", "4:1 6:5 8:5 9:3 10:4 12:15 15:14 16:4 20:2"], ["LOCK_UNIVERSE_COUNT", "51"]]) {
+  for (const [key, text, fmt] of [["SOURCE_UNIVERSE_COUNT", String(RECONCILED_UNIVERSE_COUNT)], ["HISTOGRAM", HISTOGRAM_NOW], ["LOCK_UNIVERSE_COUNT", "51"]]) {
     const md = REPORT.replace("## 2. Threat model", `Fact: <!-- S1-FACT:${key} -->${text}<!-- /S1-FACT -->.\n\n## 2. Threat model`);
     assert.deepEqual(narrativeFactViolations(REGISTER, md), [], `${key} is accepted when true`);
     const wrong = md.replace(`>${text}<`, ">999<");
@@ -2615,9 +2648,11 @@ test("the facts a marker may name cover every figure the review required", () =>
 
 test("number words are derived, in both letter cases", () => {
   assert.deepEqual([0, 4, 12, 19, 20, 35, 64, 99].map(numberToWords), ["zero", "four", "twelve", "nineteen", "twenty", "thirty-five", "sixty-four", "ninety-nine"]);
-  const md = REPORT.replace("## 2. Threat model", "Fact: <!-- S1-FACT:SEVERITY_HIGH:w -->thirty-five<!-- /S1-FACT --> and <!-- S1-FACT:SEVERITY_HIGH:W -->Thirty-five<!-- /S1-FACT -->.\n\n## 2. Threat model");
+  const highWord = numberToWords(counters(REGISTER).SEVERITY_HIGH);
+  const highCap = highWord[0].toUpperCase() + highWord.slice(1);
+  const md = REPORT.replace("## 2. Threat model", `Fact: <!-- S1-FACT:SEVERITY_HIGH:w -->${highWord}<!-- /S1-FACT --> and <!-- S1-FACT:SEVERITY_HIGH:W -->${highCap}<!-- /S1-FACT -->.\n\n## 2. Threat model`);
   assert.deepEqual(narrativeFactViolations(REGISTER, md), []);
-  const bad = md.replace(">thirty-five<", ">thirty-six<");
+  const bad = md.replace(`>${highWord}<`, ">thirty-nine<");
   assert.ok(narrativeFactViolations(REGISTER, bad).some((v) => v.why === "FACT_DIFFERS"));
 });
 
@@ -2629,10 +2664,11 @@ test("the two verdict panels are generated from the register, not typed", () => 
   for (const k of Object.keys(riskIn(reg, "R-04").likelihoodFactors)) riskIn(reg, "R-04").likelihoodFactors[k] = 0;
   Object.assign(riskIn(reg, "R-04"), derive(riskIn(reg, "R-04")));
   assert.notEqual(renderVerdictPanel(reg), renderVerdictPanel(REGISTER), "a changed register changes the panel");
-  assert.ok(renderVerdictPanel(REGISTER).includes("S1_HIGH:                         35"));
-  assert.ok(renderHeadlinePanel(REGISTER).includes("HIGH_RISKS_OPEN:            35"));
+  const high = counters(REGISTER).SEVERITY_HIGH;
+  assert.ok(renderVerdictPanel(REGISTER).includes(`S1_HIGH:                         ${high}`));
+  assert.ok(renderHeadlinePanel(REGISTER).includes(`HIGH_RISKS_OPEN:            ${high}`));
   // a hand edit of a panel figure is block drift
-  const edited = REPORT.replace("S1_HIGH:                         35", "S1_HIGH:                         36");
+  const edited = REPORT.replace(`S1_HIGH:                         ${high}`, `S1_HIGH:                         ${high + 1}`);
   assert.ok(markdownBlockDrift(REGISTER, edited).some((v) => v.block === "verdict" && v.why === "BLOCK_DRIFT"));
 });
 
@@ -2729,7 +2765,7 @@ test("the real command line exits 0 on the live deliverables, from a mirror outs
     assert.ok(!`${dir}${sep}`.startsWith(`${REPO_ROOT}${sep}`));
     const r = run();
     assert.equal(r.code, EXIT.OK, r.err);
-    assert.match(r.out, /register consistent — 64 risks, 161 findings, coverage 100%/);
+    assert.ok(r.out.includes(`register consistent — ${REGISTER.risks.length} risks, ${REGISTER.findings.length} findings, coverage 100%`), `expected the success line for ${REGISTER.risks.length} risks, got ${r.out}`);
   });
   // and the mirror is gone afterwards
 });
@@ -2759,6 +2795,15 @@ test("every exit code of `check` is reachable from the command line, with the co
     expectExit("ownership", EXIT.OWNERSHIP, { registerText: render(withRisk("R-02", (r) => r.sourceFindingIds.push("L-5"))) });
     expectExit("evidence path", EXIT.MISSING_EVIDENCE, { registerText: render(withRisk("R-04", (r) => r.evidence.push({ path: "src/lib/auth/does-not-exist.ts", locator: "x", note: "y" }))) });
     expectExit("missing required field", EXIT.MISSING_FIELD, { registerText: render(withRisk("R-04", (r) => { delete r.title; })) });
+    // 29, 30 — the closed schema and the policy gate (FR-04, FR-06); written RAW, because the renderer would normalise the register
+    {
+      const unknown = clone();
+      riskIn(unknown, "R-04").bogusKey = 1;
+      expectExit("unknown key", EXIT.SCHEMA_KEYS, { registerText: `${JSON.stringify(unknown, null, 2)}\n` });
+      const malformed = clone();
+      riskIn(malformed, "R-73").policy.branches.pop();
+      expectExit("malformed policy", EXIT.POLICY, { registerText: `${JSON.stringify(malformed, null, 2)}\n` });
+    }
     // 7 — a stored derived value (two gates share this code); written RAW, because the renderer would repair it
     {
       const raw = clone();
@@ -2807,7 +2852,7 @@ test("every exit code of `check` is reachable from the command line, with the co
       expectExit("guard evidence", EXIT.GUARD_EVIDENCE, { registerText: render(guard), reportText: regenerated(guard) });
     }
     // 13 — the report's summary counters
-    expectExit("summary drift", EXIT.SUMMARY_DRIFT, { reportText: REPORT.replace("SEVERITY_HIGH = 35", "SEVERITY_HIGH = 36") });
+    expectExit("summary drift", EXIT.SUMMARY_DRIFT, { reportText: REPORT.replace(`SEVERITY_HIGH = ${counters(REGISTER).SEVERITY_HIGH}`, `SEVERITY_HIGH = ${counters(REGISTER).SEVERITY_HIGH + 1}`) });
     // 15 — a contradiction, and the three marker mutations
     expectExit("contradiction", EXIT.CONTRADICTION, { reportText: REPORT.replace("## 2. Threat model", "The single precondition is unverified.\n\n## 2. Threat model") });
     expectExit("third historical marker", EXIT.CONTRADICTION, { reportText: REPORT.replace("## 2. Threat model", `Quoted. ${HISTORICAL_MARKER}\n\n## 2. Threat model`) });
@@ -2821,7 +2866,7 @@ test("every exit code of `check` is reachable from the command line, with the co
       expectExit("blank line inside a block", EXIT.BLOCK_DRIFT, { reportText: REPORT.replace(`${BLOCK_OPEN("closure")}\n`, `${BLOCK_OPEN("closure")}\n\n`) });
     }
     // 24 — a stale figure in the prose
-    expectExit("narrative fact", EXIT.NARRATIVE_FACT, { reportText: REPORT.replace("<!-- S1-FACT:S1_FINDINGS_TOTAL -->161<", "<!-- S1-FACT:S1_FINDINGS_TOTAL -->160<") });
+    expectExit("narrative fact", EXIT.NARRATIVE_FACT, { reportText: REPORT.replace("<!-- S1-FACT:HIST_S1_FINDINGS_TOTAL -->161<", "<!-- S1-FACT:HIST_S1_FINDINGS_TOTAL -->160<") });
     // 22 — a secret, in the report and in the register
     expectExit("secret in the report", EXIT.SECRET_IN_DELIVERABLE, { reportText: `${REPORT}\nJWT_ACCESS_SECRET=s3cr3tvaluethatislong\n` });
     {
@@ -2830,11 +2875,19 @@ test("every exit code of `check` is reachable from the command line, with the co
     }
     // 23 — an operational command or a date-time, in the report and in the register
     expectExit("command in the report", EXIT.FORBIDDEN_IN_DELIVERABLE, { reportText: `${REPORT}\nsudo ufw status verbose\n` });
+    // 31 — process text that describes a finished step (POSTREV-F5-C)
+    expectExit("stale process text in the report", EXIT.STALE_TEXT, { reportText: `${REPORT}\nA closing remark: this is pending reviewer evidence.\n` });
     {
       const reg = withRisk("R-04", (r) => { r.residualRisk += " Use docker inspect to confirm."; });
       expectExit("command in the register", EXIT.FORBIDDEN_IN_DELIVERABLE, { registerText: render(reg), reportText: regenerated(reg) });
     }
 
+    // 28 — the reconciliation: a version drift, with the blocks re-rendered as a real edit would leave them
+    {
+      const reg = clone();
+      reg.reconciliation.version = "s1-reconcile-0";
+      expectExit("reconciliation", EXIT.RECONCILIATION, { registerText: render(reg), reportText: regenerated(reg) });
+    }
     // 70 — an internal failure: a register that is not JSON
     expectExit("register that is not JSON", EXIT.INTERNAL_ERROR, { registerText: "{ not json" });
     // 27 — a register nested past the structure budget (S1-FA-02)
@@ -3071,7 +3124,7 @@ test("S1-R4 FR-02: nothing may be glued to a quoted placeholder", () => {
 });
 
 test("S1-R4 FR-03: the truthfulness lead is rendered from the register", () => {
-  assert.equal(extractBlock(REPORT, "truthfulness"), renderTruthfulnessLead(REGISTER), "the live lead is the rendered one");
+  assert.equal(extractBlock(REPORT, "truthfulness"), renderTruthfulnessLead(REGISTER), "TRUTHFULNESS_LEAD: the live lead is the rendered one");
   // the figures, computed here without the renderer
   const high = REGISTER.risks.filter((r) => r.severity === "HIGH");
   const rep = high.filter((r) => r.stride.includes("REPUDIATION")).length;
@@ -3116,10 +3169,10 @@ test("S1-R4 FR-03: a typed 'N of the M HIGH risks' claim is refused", () => {
   // the same claim with both figures derived and marked passes only when true
   const marked = REPORT.replace(
     "## 2. Threat model",
-    "Of the <!-- S1-FACT:SEVERITY_HIGH -->35<!-- /S1-FACT --> HIGH risks, <!-- S1-FACT:STATE_ACTIVE_CONFIRMED -->24<!-- /S1-FACT --> states are confirmed.\n\n## 2. Threat model",
+    `Of the <!-- S1-FACT:SEVERITY_HIGH -->${counters(REGISTER).SEVERITY_HIGH}<!-- /S1-FACT --> HIGH risks, <!-- S1-FACT:STATE_ACTIVE_CONFIRMED -->${counters(REGISTER).STATE_ACTIVE_CONFIRMED}<!-- /S1-FACT --> states are confirmed.\n\n## 2. Threat model`,
   );
   assert.deepEqual(narrativeFactViolations(REGISTER, marked), []);
-  assert.ok(narrativeFactViolations(REGISTER, marked.replace(">35<", ">36<")).some((v) => v.why === "FACT_DIFFERS"));
+  assert.ok(narrativeFactViolations(REGISTER, marked.replace(`>${counters(REGISTER).SEVERITY_HIGH}<`, ">999<")).some((v) => v.why === "FACT_DIFFERS"));
 });
 
 test("S1-R4 FR-04: renderer figures move with the register", () => {
@@ -3133,11 +3186,13 @@ test("S1-R4 FR-04: renderer figures move with the register", () => {
 
   // a fixture with one more zero-score risk
   const zero = clone();
-  const r = riskIn(zero, "R-04");
-  for (const k of Object.keys(r.likelihoodFactors)) r.likelihoodFactors[k] = 0;
-  Object.assign(r, derive(r));
+  for (const id of ["R-04", "R-05"]) {
+    const r = riskIn(zero, id);
+    for (const k of Object.keys(r.likelihoodFactors)) r.likelihoodFactors[k] = 0;
+    Object.assign(r, derive(r));
+  }
   const unscored = zero.risks.filter((x) => x.score === 0).length;
-  assert.equal(unscored, REGISTER.risks.filter((x) => x.score === 0).length + 1);
+  assert.equal(unscored, REGISTER.risks.filter((x) => x.score === 0).length + 2);
   assert.ok(renderCalibration(zero).includes(`(the ${unscored} positive controls score 0`), "the count follows the register");
 
   // a fixture with one finding fewer
@@ -3236,7 +3291,7 @@ test("S1-R4 FR-08: the checker run through a junction or symlink still checks", 
       assert.equal(isEntrypoint(join(dir, "elsewhere.mjs"), pathToFileURL(join(realDir, "risk-register-check.mjs")).href), false);
       assert.equal(isEntrypoint(undefined, pathToFileURL(join(realDir, "risk-register-check.mjs")).href), false);
       // the behaviour: a defect reached through the link is still reported
-      run({ reportText: REPORT.replace("SEVERITY_HIGH = 35", "SEVERITY_HIGH = 36") });
+      run({ reportText: REPORT.replace(`SEVERITY_HIGH = ${counters(REGISTER).SEVERITY_HIGH}`, `SEVERITY_HIGH = ${counters(REGISTER).SEVERITY_HIGH + 1}`) });
       const bad = spawnSync(process.execPath, [viaLink, "check"], { encoding: "utf8", timeout: 120000 });
       assert.equal(bad.status, EXIT.SUMMARY_DRIFT, `through the link the drift must be caught, got ${bad.status}`);
       run();
@@ -3438,7 +3493,7 @@ test("S1-R5 F-01 wiring: a contradiction of the runtime evidence stops runGates 
 });
 
 test("S1-R5 F-01 wiring: summary drift stops runGates with exit 13", () => {
-  wiring("SUMMARY_DRIFT", { md: REPORT.replace("SEVERITY_HIGH = 35", "SEVERITY_HIGH = 36") });
+  wiring("SUMMARY_DRIFT", { md: REPORT.replace(`SEVERITY_HIGH = ${counters(REGISTER).SEVERITY_HIGH}`, `SEVERITY_HIGH = ${counters(REGISTER).SEVERITY_HIGH + 1}`) });
 });
 
 test("S1-R5 F-01 wiring: a hand edit inside a generated block stops runGates with exit 21", () => {
@@ -3447,7 +3502,7 @@ test("S1-R5 F-01 wiring: a hand edit inside a generated block stops runGates wit
 });
 
 test("S1-R5 F-01 wiring: a stale narrative figure stops runGates with exit 24", () => {
-  wiring("NARRATIVE_FACT", { md: REPORT.replace("<!-- S1-FACT:S1_FINDINGS_TOTAL -->161<", "<!-- S1-FACT:S1_FINDINGS_TOTAL -->160<") });
+  wiring("NARRATIVE_FACT", { md: REPORT.replace("<!-- S1-FACT:HIST_S1_FINDINGS_TOTAL -->161<", "<!-- S1-FACT:HIST_S1_FINDINGS_TOTAL -->160<") });
 });
 
 test("S1-R5 F-01 wiring: a secret in a deliverable stops runGates with exit 22", () => {
@@ -4005,7 +4060,10 @@ test("S1-FA-02: the command line finds a secret 128 levels deep, and refuses a r
   withMirror(({ run }) => {
     const deep = withRisk("R-04", (r) => { r.notes = nestObjects(128, { [`AUTH_SECRET=${UNSAFE_VALUE}`]: "x" }); });
     const r1 = run({ registerText: render(deep), reportText: regenerated(deep) });
-    assert.equal(r1.code, EXIT.SECRET_IN_DELIVERABLE, `DEPTH_CLI:expected 22 got ${r1.code} ${r1.err.split("\n")[0]}`);
+    // FR-04: the hiding place no longer exists. `notes` is an undeclared key, so the closed schema refuses the
+    // register (exit 29) before the secret gate is reached; the scanner itself still sees the secret at that depth.
+    assert.equal(r1.code, EXIT.SCHEMA_KEYS, `DEPTH_CLI:expected 29 got ${r1.code} ${r1.err.split("\n")[0]}`);
+    assert.ok(registerSecretHits(render(deep)).some((h) => h.kind !== "STRUCTURE_LIMIT_EXCEEDED"), "DEPTH_CLI:the scanner still finds the secret 128 levels deep");
     const over = withRisk("R-04", (r) => { r.notes = nestObjects(300, "x"); });
     const r2 = run({ registerText: render(over), reportText: regenerated(over) });
     assert.equal(r2.code, EXIT.STRUCTURE_LIMIT, `DEPTH_CLI:expected 27 got ${r2.code} ${r2.err.split("\n")[0]}`);
@@ -4216,6 +4274,815 @@ test("S1-FA I3: a credential URI in the register is evidence for both gates, and
   assert.ok(forbiddenContent(JSON.parse(text)).some((h) => h.kind === "ABSOLUTE_PATH"), "URI_EVIDENCE:the older register rule sees the scheme separator");
   const got = runGates(JSON.parse(text), REPORT, REPO_ROOT, { registerText: text });
   assert.equal(got?.code, EXIT.FORBIDDEN_IN_REGISTER, `URI_EVIDENCE:the earlier gate (11) is the exit, expected 11 got ${got?.code}`);
+});
+
+// ──────── the delta relock: the reconciled register, its snapshots and its universe ────────
+//
+// The register is the one canonical source. The historical snapshot is pinned and
+// recomputed; the delta review owns delta entries; the reconciled register is the sum.
+// Every assertion message starts with the code the gate must report, which is the
+// fingerprint the mutation campaign matches.
+
+const recon = (mutate, root) => {
+  const reg = clone();
+  mutate(reg);
+  return reconciliationViolations(reg, root);
+};
+const reconCodes = (mutate, root) => new Set(recon(mutate, root).map((v) => v.why));
+const expectRecon = (code, mutate, root) => {
+  const found = reconCodes(mutate, root);
+  assert.ok(found.has(code), `RECON_${code}:expected ${code}, got ${[...found].join(",") || "no violation"}`);
+};
+const deltaFinding = (reg, id) => reg.findings.find((f) => f.findingId === id);
+
+test("S1-RLK: the committed register passes every reconciliation gate", () => {
+  assert.deepEqual(reconciliationViolations(REGISTER), [], "RECON_CLEAN:the committed register has no reconciliation violation");
+});
+
+test("S1-RLK: the historical snapshot is pinned, and the pin is the frozen register's figures", () => {
+  assert.deepEqual(REGISTER.reconciliation.historicalSnapshot, HISTORICAL_SNAPSHOT_PIN, "SNAPSHOT_PIN:the stored snapshot is the pin");
+  const h = historicalSnapshot(REGISTER);
+  assert.equal(h.risks, HISTORICAL_SNAPSHOT_PIN.risks, "SNAPSHOT_PIN:the recomputed risk count is the pin");
+  assert.equal(h.findings, HISTORICAL_SNAPSHOT_PIN.findings, "SNAPSHOT_PIN:the recomputed finding count is the pin");
+  assert.deepEqual(h.severity, HISTORICAL_SNAPSHOT_PIN.severity, "SNAPSHOT_PIN:the recomputed severities are the pin");
+  assert.deepEqual(h.productionState, HISTORICAL_SNAPSHOT_PIN.productionState, "SNAPSHOT_PIN:the recomputed states are the pin");
+  assert.deepEqual(h.findingStatus, HISTORICAL_SNAPSHOT_PIN.findingStatus, "SNAPSHOT_PIN:the recomputed finding statuses are the pin");
+  assert.equal(h.topPriorityRiskId, HISTORICAL_SNAPSHOT_PIN.topPriorityRiskId, "SNAPSHOT_PIN:the historical top priority is the pin");
+});
+
+test("S1-RLK: the historical snapshot and the reconciled summary are different numbers, and the difference is exactly the delta", () => {
+  const c = counters(REGISTER);
+  const h = historicalSnapshot(REGISTER);
+  assert.notEqual(c.S1_RISKS_TOTAL, h.risks, "SNAPSHOT_SCOPES:the reconciled risk total is not the historical one");
+  assert.equal(c.S1_RISKS_TOTAL, h.risks + c.DELTA_RISKS_TOTAL, "SNAPSHOT_SCOPES:reconciled = historical + delta risks");
+  assert.equal(c.S1_FINDINGS_TOTAL, h.findings + c.DELTA_FINDINGS_TOTAL, "SNAPSHOT_SCOPES:reconciled = historical + delta findings");
+  assert.equal(c.HISTORICAL_S1_RISKS_TOTAL, h.risks, "SNAPSHOT_SCOPES:the counter for the snapshot is the recomputed one");
+});
+
+test("S1-RLK: a missing reconciliation block is refused", () => {
+  expectRecon("RECONCILIATION_ABSENT", (reg) => delete reg.reconciliation);
+});
+
+test("S1-RLK: an unknown key in the reconciliation block is refused", () => {
+  expectRecon("UNKNOWN_KEY", (reg) => (reg.reconciliation.note = "free text"));
+});
+
+test("S1-RLK: a missing key in the reconciliation block is refused", () => {
+  expectRecon("MISSING_KEY", (reg) => delete reg.reconciliation.deltaReview);
+});
+
+test("S1-RLK: a reconciliation version drift is refused", () => {
+  expectRecon("RECONCILIATION_VERSION", (reg) => (reg.reconciliation.version = "s1-reconcile-0"));
+});
+
+test("S1-RLK: a stored snapshot that is not the pin is refused", () => {
+  expectRecon("HISTORICAL_SNAPSHOT_DIFFERS_FROM_PIN", (reg) => (reg.reconciliation.historicalSnapshot.risks += 1));
+});
+
+test("S1-RLK: a historical entry edited without a revision breaks the snapshot", () => {
+  expectRecon("HISTORICAL_SNAPSHOT_NOT_REPRODUCED", (reg) => {
+    const r = riskIn(reg, "R-04");
+    r.severity = "MEDIUM";
+  });
+});
+
+test("S1-RLK: a changed source state is refused", () => {
+  expectRecon("SOURCE_SHA_CHANGED", (reg) => (reg.sourceSha = "0".repeat(40)));
+});
+
+test("S1-RLK: an unknown origin scope is refused", () => {
+  expectRecon("UNKNOWN_ORIGIN_SCOPE", (reg) => (riskIn(reg, "R-65").originScope = "SOMEWHERE"));
+});
+
+test("S1-RLK: a delta family finding without the delta scope is refused", () => {
+  expectRecon("DELTA_FAMILY_SCOPE_MISMATCH", (reg) => delete deltaFinding(reg, "DELTA-RL-001").originScope);
+});
+
+test("S1-RLK: a delta finding without the delta id prefix is refused", () => {
+  expectRecon("DELTA_ID_PREFIX", (reg) => (deltaFinding(reg, "DELTA-RL-001").findingId = "RL-001"));
+});
+
+test("S1-RLK: a delta finding that does not name the provenance document is refused", () => {
+  expectRecon("DELTA_SOURCE", (reg) => (deltaFinding(reg, "DELTA-RL-001").source = "docs/security/other.md"));
+});
+
+test("S1-RLK: a delta finding without a known disposition is refused", () => {
+  expectRecon("DELTA_DISPOSITION_UNKNOWN", (reg) => (deltaFinding(reg, "DELTA-RL-001").deltaDisposition = "WONT_FIX"));
+});
+
+test("S1-RLK: a disposition whose status does not follow from it is refused", () => {
+  expectRecon("DELTA_DISPOSITION_STATUS", (reg) => (deltaFinding(reg, "DELTA-RR-007").status = "MAPPED_TO_RISK"));
+});
+
+test("S1-RLK: a delta finding without an owning risk is refused", () => {
+  expectRecon("DELTA_FINDING_WITHOUT_OWNER", (reg) => (deltaFinding(reg, "DELTA-RL-001").ownerRiskId = "R-99"));
+});
+
+test("S1-RLK: a new-risk disposition owned by a historical risk is refused", () => {
+  expectRecon("NEW_RISK_DISPOSITION_ON_HISTORICAL_OWNER", (reg) => (deltaFinding(reg, "DELTA-RL-001").ownerRiskId = "R-04"));
+});
+
+test("S1-RLK: an existing-risk disposition owned by a delta risk is refused", () => {
+  expectRecon("EXISTING_RISK_DISPOSITION_ON_DELTA_OWNER", (reg) => (deltaFinding(reg, "DELTA-RL-004").ownerRiskId = "R-65"));
+});
+
+test("S1-RLK: a delta risk that owns a historical finding is refused", () => {
+  expectRecon("DELTA_RISK_OWNS_HISTORICAL_FINDING", (reg) => riskIn(reg, "R-65").sourceFindingIds.push("L-5"));
+});
+
+test("S1-RLK: a delta risk with no delta finding is refused", () => {
+  expectRecon("DELTA_RISK_WITHOUT_DELTA_FINDING", (reg) => (riskIn(reg, "R-71").sourceFindingIds = ["L-5"]));
+});
+
+test("S1-RLK: a revision on a delta entry is refused", () => {
+  expectRecon("REVISION_ON_DELTA_ENTRY", (reg) => (riskIn(reg, "R-65").revision = { ...riskIn(reg, "R-53").revision }));
+});
+
+test("S1-RLK: a revision of another scope is refused", () => {
+  expectRecon("REVISION_SCOPE", (reg) => (riskIn(reg, "R-53").revision.scope = "HISTORICAL_S1_BASELINE"));
+});
+
+test("S1-RLK: a revision without a reason is refused", () => {
+  expectRecon("REVISION_WITHOUT_REASON", (reg) => (riskIn(reg, "R-53").revision.reason = "short"));
+});
+
+test("S1-RLK: a revision that preserves nothing is refused", () => {
+  expectRecon("REVISION_WITHOUT_SUPERSEDED_VALUES", (reg) => (riskIn(reg, "R-53").revision.supersedes = {}));
+});
+
+test("S1-RLK: an unknown key in a revision is refused", () => {
+  expectRecon("UNKNOWN_KEY", (reg) => (riskIn(reg, "R-53").revision.extra = 1));
+});
+
+test("S1-RLK: a malformed commit id in the delta review is refused", () => {
+  expectRecon("DELTA_REVIEW_SHA", (reg) => (reg.reconciliation.deltaReview.targetMainSha = "b461ac97"));
+});
+
+test("S1-RLK: a frozen source that drifted is refused", () => {
+  expectRecon("DELTA_REVIEW_FROZEN_SOURCE_DRIFT", (reg) => (reg.reconciliation.deltaReview.frozenSourceSha = "0".repeat(40)));
+});
+
+test("S1-RLK: a range that is not frozen..target is refused", () => {
+  expectRecon("DELTA_REVIEW_RANGE", (reg) => (reg.reconciliation.deltaReview.range = "a..b"));
+});
+
+test("S1-RLK: a provenance pointer to another document is refused", () => {
+  expectRecon("DELTA_REVIEW_PROVENANCE", (reg) => (reg.reconciliation.deltaReview.provenance = "docs/security/other.json"));
+});
+
+test("S1-RLK: a list of touched existing risks that is not the derived one is refused", () => {
+  expectRecon("EXISTING_RISKS_TOUCHED_DIFFERS", (reg) => reg.reconciliation.deltaReview.existingRisksTouched.pop());
+});
+
+test("S1-RLK: a stored delta universe count and hash must be the recomputed ones", () => {
+  expectRecon("DELTA_UNIVERSE_COUNT_STORED", (reg) => (reg.reconciliation.deltaReview.deltaUniverseCount += 1));
+  expectRecon("DELTA_UNIVERSE_HASH_STORED", (reg) => (reg.reconciliation.deltaReview.deltaUniverseSha256 = "0".repeat(64)));
+});
+
+test("S1-RLK: the reconciled tree block is held to its shape, its version and the merge", () => {
+  expectRecon("RECONCILED_TREE_ABSENT", (reg) => delete reg.reconciliation.reconciledTree);
+  expectRecon("UNIVERSE_VERSION", (reg) => (reg.reconciliation.reconciledTree.universeVersion = "s1-universe-1"));
+  expectRecon("RECONCILED_TREE_BASE_IS_NOT_THE_MERGE", (reg) => (reg.reconciliation.reconciledTree.base = "0".repeat(40)));
+  expectRecon("RECONCILED_UNIVERSE_COUNT_STORED", (reg) => (reg.reconciliation.reconciledTree.sourceUniverseCount += 1));
+  expectRecon("RECONCILED_UNIVERSE_HASH_STORED", (reg) => (reg.reconciliation.reconciledTree.sourceUniverseSha256 = "0".repeat(64)));
+});
+
+test("S1-RLK: a delta finding the register lacks, or the document lacks, is refused", () => {
+  const without = clone();
+  without.findings = without.findings.filter((f) => f.findingId !== "DELTA-RR-004");
+  assert.ok(
+    findingUniverseViolations(without).some((v) => v.why === "MISSING_FROM_REGISTER" && v.findingId === "DELTA-RR-004"),
+    "UNIVERSE_DELTA_MISSING:expected MISSING_FROM_REGISTER for a delta finding the document declares",
+  );
+  assert.ok(
+    findingUniverseViolations(without).some((v) => v.why === "DELTA_COUNT_CHANGED"),
+    "UNIVERSE_DELTA_COUNT:expected DELTA_COUNT_CHANGED when a delta finding is deleted",
+  );
+  const invented = clone();
+  invented.findings.push({ ...deltaFinding(invented, "DELTA-RR-004"), findingId: "DELTA-RR-099" });
+  assert.ok(
+    findingUniverseViolations(invented).some((v) => v.why === "NOT_IN_ANY_SOURCE_DOCUMENT" && v.findingId === "DELTA-RR-099"),
+    "UNIVERSE_DELTA_INVENTED:expected NOT_IN_ANY_SOURCE_DOCUMENT for a delta finding no document declares",
+  );
+});
+
+test("S1-RLK: the delta and reconciled universes are pinned by count and hash", () => {
+  const delta = REGISTER.findings.filter((f) => f.family === "DELTA").map((f) => f.findingId);
+  assert.equal(delta.length, DELTA_UNIVERSE_COUNT, "UNIVERSE_PIN:the delta count is the pin");
+  assert.equal(sha256Hex(universeString(delta)), DELTA_UNIVERSE_SHA256, "UNIVERSE_PIN:the delta hash is the pin");
+  const { ids } = extractSourceUniverse();
+  assert.equal(sha256Hex(universeString([...ids.keys()])), RECONCILED_UNIVERSE_SHA256, "UNIVERSE_PIN:the reconciled hash is the pin");
+  assert.equal(UNIVERSE_VERSION, "s1-universe-2", "UNIVERSE_PIN:the universe version is bumped");
+  const stale = clone();
+  stale.findings.find((f) => f.findingId === "DELTA-RR-004").findingId = "DELTA-RR-004";
+  assert.deepEqual(findingUniverseViolations(stale), [], "UNIVERSE_PIN:an unchanged universe has no violation");
+});
+
+test("S1-RLK: the reconciliation block of the report is the rendered one, byte for byte", () => {
+  assert.equal(extractBlock(REPORT, "reconciliation"), markdownBlocks(REGISTER).reconciliation, "RECON_BLOCK:the report block is the rendering");
+  assert.ok(markdownBlockDrift(REGISTER, REPORT.replace("| Historical S1 baseline (snapshot) |", "| Historical S1 baseline  (snapshot) |")).some((v) => v.block === "reconciliation" && v.why === "BLOCK_DRIFT"), "RECON_BLOCK:a hand edit is block drift");
+  const text = markdownBlocks(REGISTER).reconciliation;
+  assert.ok(text.includes(`| Historical S1 baseline (snapshot) | source state \`${HISTORICAL_SNAPSHOT_PIN.sourceSha.slice(0, 8)}\` | ${HISTORICAL_SNAPSHOT_PIN.risks} | ${HISTORICAL_SNAPSHOT_PIN.findings} |`), "RECON_BLOCK:the historical row is the pin");
+  assert.ok(text.includes(`| Reconciled register |`) && text.includes(`| ${REGISTER.risks.length} | ${REGISTER.findings.length} |`), "RECON_BLOCK:the reconciled row is the register");
+});
+
+test("S1-RLK: the narrative that describes the historical snapshot uses historical facts, so it cannot be moved by the delta", () => {
+  const f = narrativeFacts(REGISTER);
+  assert.equal(f.HIST_S1_RISKS_TOTAL, HISTORICAL_SNAPSHOT_PIN.risks, "HIST_FACTS:the historical risk fact is the snapshot");
+  assert.equal(f.HIST_SEVERITY_HIGH, HISTORICAL_SNAPSHOT_PIN.severity.HIGH, "HIST_FACTS:the historical severity fact is the snapshot");
+  assert.equal(f.HIST_STATE_POSITIVE_CONTROL, HISTORICAL_SNAPSHOT_PIN.productionState.POSITIVE_CONTROL, "HIST_FACTS:the historical state fact is the snapshot");
+  assert.equal(f.HIST_FINDING_STATUS_POSITIVE_CONTROL, HISTORICAL_SNAPSHOT_PIN.findingStatus.POSITIVE_CONTROL, "HIST_FACTS:the historical status fact is the snapshot");
+  assert.notEqual(f.S1_RISKS_TOTAL, f.HIST_S1_RISKS_TOTAL, "HIST_FACTS:the live and historical facts differ");
+});
+
+test("S1-RLK: R-53 is revised, its former state is preserved, and the image-level control is kept as an existing control", () => {
+  const r = riskIn(REGISTER, "R-53");
+  assert.notEqual(r.productionState, "POSITIVE_CONTROL", "R53:the risk is no longer a positive control");
+  assert.equal(r.revision.supersedes.productionState, "POSITIVE_CONTROL", "R53:the revision preserves the former state");
+  assert.equal(r.revision.supersedes.severity, "INFORMATIONAL", "R53:the revision preserves the former severity");
+  assert.ok(r.score > 0, "R53:the revised risk is scored");
+  assert.ok(r.existingControls.some((c) => /one dependency-free script/.test(c)), "R53:the image-level control is kept");
+  assert.ok(r.sourceFindingIds.includes("LOCK-WORKER-BLAST-RADIUS") && r.sourceFindingIds.includes("DELTA-RL-004"), "R53:it owns the historical finding and the delta finding");
+  assert.ok(deltaFinding(REGISTER, "LOCK-WORKER-BLAST-RADIUS").revision.supersedes.status === "POSITIVE_CONTROL", "R53:the historical finding preserves its former status");
+});
+
+test("S1-RLK: the delta findings are all owned, once, by a risk that lists them", () => {
+  for (const f of REGISTER.findings.filter((x) => x.family === "DELTA")) {
+    const owners = REGISTER.risks.filter((r) => r.sourceFindingIds.includes(f.findingId)).map((r) => r.riskId);
+    assert.deepEqual(owners, [f.ownerRiskId], `DELTA_OWNERSHIP:${f.findingId} is listed by exactly its owner`);
+  }
+});
+
+test("S1-RLK: the severity of every delta risk is derived and the arithmetic holds", () => {
+  for (const r of REGISTER.risks.filter((x) => x.originScope === "DELTA_RELOCK")) {
+    const d = derive(r);
+    assert.equal(r.score, d.score, `DELTA_SCORE:${r.riskId} score is derived`);
+    assert.equal(r.severity, d.severity, `DELTA_SCORE:${r.riskId} severity is derived`);
+  }
+  assert.deepEqual(arithmeticViolations(REGISTER), [], "DELTA_SCORE:no arithmetic violation in the reconciled register");
+});
+
+test("S1-RLK: the remediation priority is a complete permutation and the top priority is unchanged", () => {
+  const ps = REGISTER.risks.map((r) => r.remediationPriority).sort((a, b) => a - b);
+  assert.deepEqual(ps, REGISTER.risks.map((_, i) => i + 1), "PRIORITY_PERMUTATION:priorities are exactly 1..N");
+  assert.deepEqual(priorityViolations(REGISTER), [], "PRIORITY_PERMUTATION:no severity inversion");
+  const top = [...REGISTER.risks].sort((a, b) => a.remediationPriority - b.remediationPriority)[0];
+  assert.equal(top.riskId, HISTORICAL_SNAPSHOT_PIN.topPriorityRiskId, "PRIORITY_TOP:the top priority is the historical one");
+});
+
+test("S1-RLK: the exit table has a distinct reconciliation code", () => {
+  assert.equal(EXIT.RECONCILIATION, 28, "EXIT_RECON:the reconciliation exit is 28");
+  assert.equal(new Set(Object.values(EXIT)).size, Object.values(EXIT).length, "EXIT_RECON:every exit code is distinct");
+});
+
+test("S1-RLK: runGates stops with the reconciliation code, after the universe and before the linkage gate", () => {
+  const reg = clone();
+  reg.reconciliation.version = "s1-reconcile-0";
+  const got = runGates(reg, regenerated(reg), REPO_ROOT, { registerText: render(reg) });
+  assert.equal(got?.code, EXIT.RECONCILIATION, `WIRING_RECON:expected ${EXIT.RECONCILIATION}, got ${got?.code}`);
+});
+
+test("S1-RLK: a delta finding the register lacks, seen from the provenance document, is refused", () => {
+  expectRecon("DELTA_FINDING_NOT_IN_REGISTER", (reg) => {
+    reg.findings = reg.findings.filter((f) => f.findingId !== "DELTA-RR-004");
+  });
+});
+
+test("S1-RLK: a register delta finding the provenance document does not declare is refused", () => {
+  expectRecon("REGISTER_DELTA_FINDING_NOT_IN_DOCUMENT", (reg) => {
+    reg.findings.push({ ...deltaFinding(reg, "DELTA-RR-004"), findingId: "DELTA-RR-099" });
+  });
+});
+
+test("S1-RLK: a renamed delta finding changes the delta universe hash", () => {
+  const renamed = clone();
+  deltaFinding(renamed, "DELTA-RR-004").findingId = "DELTA-RR-044";
+  const found = findingUniverseViolations(renamed);
+  assert.equal(renamed.findings.filter((f) => f.family === "DELTA").length, DELTA_UNIVERSE_COUNT, "UNIVERSE_DELTA_HASH:a rename keeps the count");
+  assert.ok(found.some((v) => v.why === "DELTA_HASH_CHANGED"), "UNIVERSE_DELTA_HASH:expected DELTA_HASH_CHANGED for a renamed delta finding");
+  assert.ok(!found.some((v) => v.why === "DELTA_COUNT_CHANGED"), "UNIVERSE_DELTA_HASH:a rename must not look like a count change");
+});
+
+/** A copy of the documents the universe reads, with the delta document changed, outside the repository. */
+function withDeltaDocument(change, fn) {
+  const dir = mkdtempSync(join(tmpdir(), "s1-universe-"));
+  try {
+    cpSync(join(REPO_ROOT, "docs", "security"), join(dir, "docs", "security"), { recursive: true });
+    const p = join(dir, "docs", "security", "s1-relock-delta.json");
+    const doc = JSON.parse(readFileSync(p, "utf8"));
+    change(doc);
+    writeFileSync(p, JSON.stringify(doc), "utf8");
+    return fn(dir);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test("S1-RLK: a changed reconciled universe, by count or by hash, is refused", () => {
+  const grown = withDeltaDocument(
+    (doc) => doc.findings.push({ ...doc.findings[0], findingId: "RR-099" }),
+    (dir) => findingUniverseViolations(REGISTER, dir),
+  );
+  assert.ok(grown.some((v) => v.why === "RECONCILED_COUNT_CHANGED"), "UNIVERSE_RECONCILED_COUNT:expected RECONCILED_COUNT_CHANGED for a universe that grew");
+  const renamed = withDeltaDocument(
+    (doc) => (doc.findings.find((f) => f.findingId === "RR-004").findingId = "RR-044"),
+    (dir) => findingUniverseViolations(REGISTER, dir),
+  );
+  assert.ok(!renamed.some((v) => v.why === "RECONCILED_COUNT_CHANGED"), "UNIVERSE_RECONCILED_HASH:a rename keeps the count");
+  assert.ok(renamed.some((v) => v.why === "RECONCILED_HASH_CHANGED"), "UNIVERSE_RECONCILED_HASH:expected RECONCILED_HASH_CHANGED for a renamed identifier");
+});
+
+test("S1-RLK: a remediation priority with a gap is not a permutation", () => {
+  const reg = clone();
+  riskIn(reg, "R-71").remediationPriority = 99;
+  assert.ok(priorityViolations(reg).some((v) => v.why === "PRIORITY_NOT_A_PERMUTATION"), "PRIORITY_GAP:expected PRIORITY_NOT_A_PERMUTATION for a gap in the order");
+  assert.ok(!priorityViolations(REGISTER).some((v) => v.why === "PRIORITY_NOT_A_PERMUTATION"), "PRIORITY_GAP:the committed order is a permutation");
+});
+
+// ─────────────── FR-04: every register structure is closed ───────────────
+
+const textOf = (reg) => `${JSON.stringify(reg, null, 2)}\n`;
+const keyProblems = (reg) => schemaKeyViolations(reg).map((v) => `${v.where}:${v.why}:${v.key ?? ""}`);
+
+test("FR-04 schema: the committed register has no unknown key and no missing required key", () => {
+  assert.deepEqual(schemaKeyViolations(REGISTER), []);
+  assert.equal(SCHEMA_KEYS_VERSION, "s1-keys-1");
+});
+
+test("FR-04 schema: an unknown key on a risk is refused (UNKNOWN_KEY)", () => {
+  const reg = clone();
+  riskIn(reg, "R-73").bogusKey = 1;
+  assert.deepEqual(keyProblems(reg), ["risk R-73:UNKNOWN_KEY:bogusKey"], "UNKNOWN_KEY on a risk");
+});
+
+test("FR-04 schema: an unknown key on a finding is refused (UNKNOWN_KEY)", () => {
+  const reg = clone();
+  findingIn(reg, "DELTA-RR-010").bogusKey = 1;
+  assert.deepEqual(keyProblems(reg), ["finding DELTA-RR-010:UNKNOWN_KEY:bogusKey"], "UNKNOWN_KEY on a finding");
+});
+
+test("FR-04 schema: an unknown key inside a nested structure is refused (UNKNOWN_KEY)", () => {
+  const cases = [
+    ["top level", (r) => { r.extra = 1; }, "register:UNKNOWN_KEY:extra"],
+    ["scoringMethod", (r) => { r.scoringMethod.extra = 1; }, "scoringMethod:UNKNOWN_KEY:extra"],
+    ["enums", (r) => { r.enums.extra = []; }, "enums:UNKNOWN_KEY:extra"],
+    ["evidence", (r) => { riskIn(r, "R-73").evidence[0].extra = "x"; }, "risk R-73 evidence[0]:UNKNOWN_KEY:extra"],
+    ["likelihoodFactors", (r) => { riskIn(r, "R-73").likelihoodFactors.extra = 1; }, "risk R-73 likelihoodFactors:UNKNOWN_KEY:extra"],
+    ["impactFactors", (r) => { riskIn(r, "R-73").impactFactors.extra = 1; }, "risk R-73 impactFactors:UNKNOWN_KEY:extra"],
+    ["severityClamp", (r) => { riskIn(r, "R-01").severityClamp.extra = 1; }, "risk R-01 severityClamp:UNKNOWN_KEY:extra"],
+    ["revision of a risk", (r) => { riskIn(r, "R-53").revision.extra = 1; }, "risk R-53 revision:UNKNOWN_KEY:extra"],
+    ["revision of a finding", (r) => { findingIn(r, "LOCK-WORKER-BLAST-RADIUS").revision.extra = 1; }, "finding LOCK-WORKER-BLAST-RADIUS revision:UNKNOWN_KEY:extra"],
+    ["policy", (r) => { riskIn(r, "R-73").policy.extra = 1; }, "risk R-73 policy:UNKNOWN_KEY:extra"],
+    ["policy branch", (r) => { riskIn(r, "R-73").policy.branches[0].extra = 1; }, "risk R-73 policy.branches[0]:UNKNOWN_KEY:extra"],
+    ["policy evidence", (r) => { riskIn(r, "R-73").policy.ownerDecisionEvidence = { source: "docs/owner/decision.md", anchor: "the owner decided", decidedBranchId: "COMPENSATION_GATED", decidedByRole: "PRODUCT_OWNER", extra: 1 }; }, "risk R-73 policy.ownerDecisionEvidence:UNKNOWN_KEY:extra"],
+  ];
+  const withRuntime = REGISTER.risks.find((r) => r.runtimeEvidence);
+  if (withRuntime) cases.push(["runtimeEvidence", (r) => { riskIn(r, withRuntime.riskId).runtimeEvidence.extra = 1; }, `risk ${withRuntime.riskId} runtimeEvidence[0]:UNKNOWN_KEY:extra`]);
+  for (const [label, mutate, expected] of cases) {
+    const reg = clone();
+    mutate(reg);
+    assert.deepEqual(keyProblems(reg), [expected], `UNKNOWN_KEY: ${label}`);
+  }
+});
+
+test("FR-04 schema: a missing required key is refused (MISSING_KEY)", () => {
+  const a = clone();
+  delete riskIn(a, "R-73").title;
+  assert.ok(keyProblems(a).includes("risk R-73:MISSING_KEY:title"), "MISSING_KEY on a risk");
+  const b = clone();
+  delete findingIn(b, "DELTA-RR-010").summary;
+  assert.ok(keyProblems(b).includes("finding DELTA-RR-010:MISSING_KEY:summary"), "MISSING_KEY on a finding");
+  const c = clone();
+  delete riskIn(c, "R-73").evidence[0].note;
+  assert.ok(keyProblems(c).includes("risk R-73 evidence[0]:MISSING_KEY:note"), "MISSING_KEY inside evidence");
+  const d = clone();
+  delete riskIn(d, "R-73").policy.question;
+  assert.ok(keyProblems(d).includes("risk R-73 policy:MISSING_KEY:question"), "MISSING_KEY inside policy");
+});
+
+test("FR-04 wiring: an unknown key stops runGates with exit 29", () => {
+  const raw = clone();
+  riskIn(raw, "R-73").bogusKey = 1;
+  wiring("SCHEMA_KEYS", { reg: raw, registerText: textOf(raw) });
+});
+
+// ─────────────── FR-06 / POSTREV-F2: observed behaviour and an undecided policy are recorded apart ───────────────
+
+const policyProblems = (reg, root) => policyViolations(reg, root).map((v) => v.why);
+const POLICY_RISKS = ["R-66", "R-72", "R-73"];
+const branchOf = (reg, id, i = 0) => riskIn(reg, id).policy.branches[i];
+
+test("FR-06 policy: R-66, R-73 and R-72 carry an open two-branch policy that the risk lists verbatim", () => {
+  for (const id of POLICY_RISKS) {
+    const r = riskIn(REGISTER, id);
+    assert.equal(r.policy.status, "OPEN", `${id} leaves the decision open`);
+    assert.equal(r.policy.ownerDecisionEvidence, null, `${id} has no owner decision`);
+    assert.equal(r.policy.branches.length, 2, `${id} has two branches`);
+    for (const b of r.policy.branches) {
+      assert.ok(b.requiredTests.length >= 1 && b.verificationMethod, `${id}/${b.branchId}: a test and a method`);
+      for (const a of b.acceptanceCriteria) {
+        assert.ok(a.startsWith(POLICY_BRANCH_PREFIX), `${id}: a branch criterion is conditional`);
+        assert.ok(r.acceptanceCriteria.includes(a), `${id}: the risk lists the branch criterion verbatim`);
+      }
+    }
+  }
+  assert.equal(riskIn(REGISTER, "R-66").productionState, "CODE_CONFIRMED_RUNTIME_UNPROVEN", "observed behaviour stays code-confirmed");
+  assert.equal(riskIn(REGISTER, "R-73").productionState, "CODE_CONFIRMED_RUNTIME_UNPROVEN", "observed behaviour stays code-confirmed");
+  assert.deepEqual(policyViolations(REGISTER), []);
+});
+
+test("POSTREV-F2 policy: removing the policy of R-66, R-72 or R-73 is refused (POLICY_MISSING)", () => {
+  for (const id of POLICY_RISKS) {
+    const reg = clone();
+    delete riskIn(reg, id).policy;
+    assert.deepEqual(policyViolations(reg), [{ riskId: id, why: "POLICY_MISSING" }], `POLICY_MISSING: ${id}`);
+  }
+});
+
+// ──────── PC-F2-01 / PC-F2-02: a decided policy, proven from the evidence path to the command line ────────
+
+const OWNER_TWO_RISKS = "Owner decision for R-66 and R-73: COMPENSATION_GATED is chosen.";
+const OWNER_TWO_BRANCHES = "Owner decision for R-66: COMPENSATION_GATED is chosen rather than AGGREGATE_VISIBLE.";
+const OWNER_FILE_TEXT = `# Owner decisions\n\nOwner decision for R-66: the recorded-cost total follows COMPENSATION_GATED.\nOwner decision for R-73: PLATFORM_ADMIN_REQUIRED applies to the customer surface.\n${OWNER_TWO_RISKS}\n${OWNER_TWO_BRANCHES}\n`;
+const OWNER_ANCHOR = {
+  "R-66": "Owner decision for R-66: the recorded-cost total follows COMPENSATION_GATED.",
+  "R-73": "Owner decision for R-73: PLATFORM_ADMIN_REQUIRED applies to the customer surface.",
+};
+const OWNER_BRANCH = { "R-66": "COMPENSATION_GATED", "R-73": "PLATFORM_ADMIN_REQUIRED" };
+
+/** A register in which `id` is DECIDED the way a real owner decision is recorded, then changed by `mutate`. */
+function decidedRegister(mutate, id = "R-66", base = clone()) {
+  const reg = base;
+  const r = riskIn(reg, id);
+  r.policy.status = "DECIDED";
+  r.policy.ownerDecisionEvidence = { source: "docs/owner/decision.md", anchor: OWNER_ANCHOR[id], decidedBranchId: OWNER_BRANCH[id], decidedByRole: r.policy.ownerRole };
+  r.revision = { scope: "OWNER_POLICY_DECISION", supersedes: { policyStatus: "OPEN" }, reason: `The owner decision for ${id} chose ${OWNER_BRANCH[id]}.` };
+  mutate?.(r, reg);
+  return reg;
+}
+
+/** A temporary repository root with one real evidence file OUTSIDE the security deliverables. */
+function withOwnerRoot(fn) {
+  const root = mkdtempSync(join(tmpdir(), "s1-owner-"));
+  try {
+    mkdirSync(join(root, "docs", "owner"), { recursive: true });
+    writeFileSync(join(root, "docs", "owner", "decision.md"), OWNER_FILE_TEXT);
+    return fn(root);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+test("POSTREV-F2 policy: OPEN must carry no decision and DECIDED must carry real owner evidence", () => {
+  const withEvidence = clone();
+  riskIn(withEvidence, "R-66").policy.ownerDecisionEvidence = { source: "docs/owner/decision.md", anchor: "the owner decided option A", decidedBranchId: "COMPENSATION_GATED", decidedByRole: "PRODUCT_OWNER" };
+  assert.ok(policyProblems(withEvidence).includes("POLICY_OPEN_WITH_DECISION_EVIDENCE"), "POLICY_OPEN_WITH_DECISION_EVIDENCE");
+
+  withOwnerRoot((root) => {
+    assert.deepEqual(policyProblems(decidedRegister(), root), [], "POLICY_DECIDED_OK: a real decision with its evidence and revision is accepted");
+    assert.deepEqual(policyProblems(decidedRegister(null, "R-73"), root), [], "POLICY_DECIDED_OK: the same for R-73");
+    const bad = (mutate, why, label) => assert.ok(policyProblems(decidedRegister(mutate), root).includes(why), `${why}: ${label}`);
+    bad((r) => { r.policy.ownerDecisionEvidence = null; }, "POLICY_DECIDED_WITHOUT_EVIDENCE", "no evidence");
+    bad((r) => { r.policy.ownerDecisionEvidence.anchor = ""; }, "POLICY_EVIDENCE_EMPTY", "empty anchor");
+    bad((r) => { r.policy.ownerDecisionEvidence.source = ""; }, "POLICY_EVIDENCE_EMPTY", "empty source");
+    bad((r) => { r.policy.ownerDecisionEvidence.source = "docs/owner/invented.md"; }, "POLICY_EVIDENCE_PATH_ABSENT", "an invented path");
+    bad((r) => { r.policy.ownerDecisionEvidence.anchor = "a sentence the file does not contain at all"; }, "POLICY_EVIDENCE_ANCHOR_ABSENT", "an anchor the file lacks");
+    bad((r) => { r.policy.ownerDecisionEvidence.decidedBranchId = "SOMETHING_ELSE"; }, "POLICY_DECISION_NAMES_AN_UNKNOWN_BRANCH", "an unknown branch");
+    bad((r) => { r.policy.ownerDecisionEvidence.decidedByRole = "SECURITY_OWNER"; }, "POLICY_DECISION_NOT_BY_THE_OWNER", "decided by someone who does not own the policy");
+    bad((r) => { delete r.policy.ownerDecisionEvidence.decidedByRole; }, "POLICY_EVIDENCE_SHAPE", "no decider");
+    bad((r) => { r.policy.ownerDecisionEvidence.extra = 1; }, "POLICY_EVIDENCE_SHAPE", "an unknown key in the evidence");
+    bad((r) => { delete r.revision; }, "POLICY_DECISION_REVISION_MISSING", "no revision");
+    bad((r) => { r.revision.scope = "DELTA_RELOCK"; }, "POLICY_DECISION_REVISION_MISSING", "the wrong revision scope");
+  });
+  // the committed register has no owner evidence anywhere in the repository, so none of the three may be DECIDED
+  assert.ok(POLICY_RISKS.every((id) => riskIn(REGISTER, id).policy.status === "OPEN"), "POLICY_NO_SELF_DECISION: nothing is decided without owner evidence");
+  const bare = clone();
+  riskIn(bare, "R-66").policy.status = "DECIDED";
+  assert.ok(policyProblems(bare).includes("POLICY_DECIDED_WITHOUT_EVIDENCE"), "POLICY_DECIDED_WITHOUT_EVIDENCE: DECIDED typed into the register alone");
+});
+
+const SELF_REFERENCES = [
+  "docs/security/../security/s1-risk-register.json",
+  "docs/security/./s1-risk-register.json",
+  "docs//security/s1-risk-register.json",
+  "DOCS/SECURITY/S1-RISK-REGISTER.JSON",
+  "docs/../scripts/security/s1/risk-register-check.mjs",
+  "docs/security/../security/s1-relock-delta.json",
+  "docs/security/s0-getprisma-callsite-inventory.json",
+];
+
+test("PC-F2-01 policy: every spelling of a security deliverable or a tool is a self-reference, whether or not the file exists", () => {
+  const seen = [];
+  const run = (root, label) => {
+    for (const source of SELF_REFERENCES) {
+      assert.deepEqual(policyProblems(decidedRegister((r) => { r.policy.ownerDecisionEvidence.source = source; }), root), ["POLICY_EVIDENCE_SELF_REFERENCE"], `POLICY_EVIDENCE_SELF_REFERENCE: ${source} (${label})`);
+      seen.push(source);
+    }
+  };
+  withOwnerRoot((root) => run(root, "no such file under the root"));
+  run(REPO_ROOT, "the file exists under the root");
+  assert.equal(seen.length, SELF_REFERENCES.length * 2, "each spelling was judged under both roots");
+  // the other deliverables and trees named in the review
+  withOwnerRoot((root) => {
+    for (const source of ["docs/security/S1-CURRENT-MAIN-DELTA-RELOCK.md", "docs/security/THREAT-MODEL-AND-RISK-REGISTER.md", "docs/security/s1-relock-mutation-record.json", "scripts/security/s0/getprisma-callsite-inventory.mjs", "docs/security/EDGE-ORIGIN-AND-CLIENT-IP.md", "Scripts/Security/S1/__tests__/risk-register.selftest.mjs", "\uff44\uff4f\uff43\uff53/security/s1-risk-register.json"]) {
+      assert.deepEqual(policyProblems(decidedRegister((r) => { r.policy.ownerDecisionEvidence.source = source; }), root), ["POLICY_EVIDENCE_SELF_REFERENCE"], `POLICY_EVIDENCE_SELF_REFERENCE: ${source}`);
+    }
+  });
+});
+
+test("PC-F2-01 policy: a path the checker cannot read without guessing is refused, a path leaving the repository is refused", () => {
+  withOwnerRoot((root) => {
+    const refuse = (source, why) => assert.deepEqual(policyProblems(decidedRegister((r) => { r.policy.ownerDecisionEvidence.source = source; }), root), [why], `${why}: ${source}`);
+    refuse("docs\\security\\s1-risk-register.json", "POLICY_EVIDENCE_PATH_AMBIGUOUS");
+    refuse("docs/owner\\decision.md", "POLICY_EVIDENCE_PATH_AMBIGUOUS");
+    refuse("docs/owner/decision.md.", "POLICY_EVIDENCE_PATH_AMBIGUOUS");
+    refuse("docs/owner /decision.md", "POLICY_EVIDENCE_PATH_AMBIGUOUS");
+    refuse("docs/owner/decision.md:stream", "POLICY_EVIDENCE_PATH_AMBIGUOUS");
+    refuse("docs/owner/*.md", "POLICY_EVIDENCE_PATH_AMBIGUOUS");
+    refuse("../outside.md", "POLICY_EVIDENCE_PATH_ESCAPES_ROOT");
+    refuse("docs/../../outside.md", "POLICY_EVIDENCE_PATH_ESCAPES_ROOT");
+    refuse("/etc/hosts", "POLICY_EVIDENCE_PATH_ABSOLUTE");
+    refuse("C:/Windows/win.ini", "POLICY_EVIDENCE_PATH_ABSOLUTE");
+    refuse("docs/owner", "POLICY_EVIDENCE_NOT_A_FILE");
+    // the same file spelled with a dot, a `..` and a doubled separator is the same file and is accepted
+    for (const ok of ["docs/owner/decision.md", "docs/./owner/decision.md", "docs/owner/../owner/decision.md", "docs//owner/decision.md"]) {
+      assert.deepEqual(policyProblems(decidedRegister((r) => { r.policy.ownerDecisionEvidence.source = ok; }), root), [], `POLICY_PATH_EQUIVALENT: ${ok}`);
+    }
+  });
+});
+
+test("PC-F2-01 policy: a link under a permitted folder to a security deliverable is a self-reference", () => {
+  const root = mkdtempSync(join(tmpdir(), "s1-owner-link-"));
+  try {
+    mkdirSync(join(root, "docs", "security"), { recursive: true });
+    writeFileSync(join(root, "docs", "security", "note.md"), OWNER_FILE_TEXT);
+    mkdirSync(join(root, "docs", "owner"), { recursive: true });
+    symlinkSync(join(root, "docs", "security"), join(root, "docs", "owner", "sec"), process.platform === "win32" ? "junction" : "dir");
+    assert.deepEqual(policyProblems(decidedRegister((r) => { r.policy.ownerDecisionEvidence.source = "docs/owner/sec/note.md"; }), root), ["POLICY_EVIDENCE_SELF_REFERENCE"], "POLICY_LINK_SELF_REFERENCE: the file system resolves the link to a deliverable");
+    rmdirSync(join(root, "docs", "owner", "sec"));
+    // and a link that leaves the repository root altogether
+    const outside = mkdtempSync(join(tmpdir(), "s1-owner-outside-"));
+    try {
+      writeFileSync(join(outside, "elsewhere.md"), OWNER_FILE_TEXT);
+      symlinkSync(outside, join(root, "docs", "owner", "out"), process.platform === "win32" ? "junction" : "dir");
+      assert.deepEqual(policyProblems(decidedRegister((r) => { r.policy.ownerDecisionEvidence.source = "docs/owner/out/elsewhere.md"; }), root), ["POLICY_EVIDENCE_PATH_ESCAPES_ROOT"], "POLICY_LINK_ESCAPES_ROOT: a link to a folder outside the repository");
+      rmdirSync(join(root, "docs", "owner", "out"));
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("PC-F2-02 policy: the evidence must be about THIS risk and THIS branch, the decider the policy's owner, the revision unambiguous", () => {
+  withOwnerRoot((root) => {
+    const bad = (mutate, why, label, id = "R-66") => assert.ok(policyProblems(decidedRegister(mutate, id), root).includes(why), `${why}: ${label}`);
+    // the evidence of another risk
+    bad((r) => { r.policy.ownerDecisionEvidence.anchor = OWNER_ANCHOR["R-73"]; r.policy.ownerDecisionEvidence.decidedBranchId = "COMPENSATION_GATED"; }, "POLICY_EVIDENCE_NOT_FOR_THIS_RISK", "an anchor that names another risk");
+    bad((r) => { r.policy.ownerDecisionEvidence.anchor = OWNER_TWO_RISKS; }, "POLICY_EVIDENCE_NOT_FOR_THIS_RISK", "an anchor that names this risk and another one");
+    bad((r) => { r.policy.ownerDecisionEvidence.anchor = OWNER_TWO_BRANCHES; }, "POLICY_EVIDENCE_NOT_FOR_THIS_BRANCH", "an anchor that names the chosen branch and another one");
+    bad((r) => { r.policy.ownerDecisionEvidence.anchor = "the recorded-cost total follows COMPENSATION_GATED and nothing else."; }, "POLICY_EVIDENCE_ANCHOR_ABSENT", "a sentence the file does not contain");
+    // the evidence names another branch
+    bad((r) => { r.policy.ownerDecisionEvidence.decidedBranchId = "AGGREGATE_VISIBLE"; }, "POLICY_EVIDENCE_NOT_FOR_THIS_BRANCH", "the anchor names a branch other than the chosen one");
+    // a revision that is ambiguous or on the wrong subject
+    bad((r) => { r.revision.reason = "The owner decision for R-66 chose COMPENSATION_GATED over AGGREGATE_VISIBLE."; }, "POLICY_DECISION_REVISION_AMBIGUOUS", "the reason names two branches");
+    bad((r) => { r.revision.reason = "The owner decision for R-66 and R-73 chose COMPENSATION_GATED."; }, "POLICY_DECISION_REVISION_AMBIGUOUS", "the reason names two risks");
+    bad((r) => { r.revision.reason = "The owner decided and it is final and recorded here."; }, "POLICY_DECISION_REVISION_REASON", "the reason names neither risk nor branch");
+    bad((r) => { r.revision.supersedes = { policyStatus: "OPEN", severity: "LOW" }; }, "POLICY_DECISION_REVISION_SUPERSEDES", "the revision rewrites more than the status");
+    bad((r) => { r.revision.supersedes = { policyStatus: "DECIDED" }; }, "POLICY_DECISION_REVISION_SUPERSEDES", "the revision supersedes a status that was not open");
+  });
+});
+
+test("PC-F2-02 reconciliation: a valid owner-decision revision is accepted on a delta risk and rewrites no historical value; the others are refused", () => {
+  const codesOf = (reg) => reconciliationViolations(reg).map((v) => v.why);
+  const base = codesOf(clone());
+  assert.deepEqual(codesOf(decidedRegister()), base, "REVISION_OWNER_DECISION_VALID: the decision adds no reconciliation violation and keeps the snapshot");
+  // the touched-risk list and the revised-historical count still follow the delta revisions only
+  assert.equal(counters(decidedRegister()).REVISED_HISTORICAL_RISKS, counters(REGISTER).REVISED_HISTORICAL_RISKS, "REVISION_OWNER_NOT_COUNTED: an owner decision is not a historical revision");
+  const refuse = (mutate, why, label) => assert.ok(codesOf(decidedRegister(mutate)).includes(why), `${why}: ${label}`);
+  refuse((r) => { r.policy.status = "OPEN"; }, "REVISION_OWNER_DECISION_INVALID", "an owner revision on a policy that is still OPEN");
+  refuse((r) => { r.revision.supersedes = { policyStatus: "OPEN", severity: "LOW" }; }, "REVISION_OWNER_DECISION_INVALID", "a revision that rewrites more than the status");
+  refuse((r) => { r.revision.reason = "The owner decision for R-66 chose COMPENSATION_GATED over AGGREGATE_VISIBLE."; }, "REVISION_OWNER_DECISION_INVALID", "an ambiguous revision");
+  refuse((r) => { r.revision.scope = "SOMETHING_ELSE"; }, "REVISION_SCOPE", "an unknown revision scope");
+  // a finding never carries an owner-decision revision
+  const onFinding = clone();
+  findingIn(onFinding, "DELTA-RR-010").revision = { scope: "OWNER_POLICY_DECISION", supersedes: { status: "MAPPED_TO_RISK" }, reason: "an owner decision recorded on a finding" };
+  assert.ok(codesOf(onFinding).includes("REVISION_SCOPE"), "REVISION_SCOPE: a finding refuses the owner-decision scope");
+  // the historical revision of a delta entry is still refused
+  const delta = clone();
+  riskIn(delta, "R-66").revision = { scope: "DELTA_RELOCK", supersedes: { severity: "LOW" }, reason: "a historical revision of a risk the delta created" };
+  assert.ok(codesOf(delta).includes("REVISION_ON_DELTA_ENTRY"), "REVISION_ON_DELTA_ENTRY: unchanged");
+});
+
+test("PC-F2-02 command line: a decided policy passes the whole `check`, and every way of breaking it fails with its own code", () => {
+  withMirror(({ dir, run }) => {
+    mkdirSync(join(dir, "docs", "owner"), { recursive: true });
+    writeFileSync(join(dir, "docs", "owner", "decision.md"), OWNER_FILE_TEXT);
+    const decide = (mutate, id = "R-73") => {
+      const reg = decidedRegister(mutate, id);
+      return { registerText: render(reg), reportText: regenerated(reg) };
+    };
+    // the live, open register is the baseline
+    assert.equal(run().code, EXIT.OK, "CLI_OPEN: the open register passes");
+    // a real decision: the whole command line, not a helper
+    const good = run(decide(null, "R-73"));
+    assert.equal(good.code, EXIT.OK, `CLI_DECIDED: a decided policy with valid evidence must pass check, got ${good.code}\n${good.err.split("\n").slice(0, 4).join("\n")}`);
+    assert.equal(run(decide(null, "R-66")).code, EXIT.OK, "CLI_DECIDED: the same for R-66");
+    // every break fails, and not with success
+    const broken = [
+      ["evidence file absent", (r) => { r.policy.ownerDecisionEvidence.source = "docs/owner/missing.md"; }, EXIT.POLICY],
+      ["anchor absent from the file", (r) => { r.policy.ownerDecisionEvidence.anchor = "a sentence that the owner file does not hold anywhere"; }, EXIT.POLICY],
+      ["unknown branch", (r) => { r.policy.ownerDecisionEvidence.decidedBranchId = "SOMETHING_ELSE"; }, EXIT.POLICY],
+      ["evidence of another risk", (r) => { r.policy.ownerDecisionEvidence.anchor = OWNER_ANCHOR["R-66"]; }, EXIT.POLICY],
+      ["self-referential evidence", (r) => { r.policy.ownerDecisionEvidence.source = "docs/security/../security/s1-risk-register.json"; }, EXIT.POLICY],
+      ["decider is not the owner role", (r) => { r.policy.ownerDecisionEvidence.decidedByRole = r.policy.ownerRole === "SECURITY_OWNER" ? "PRODUCT_OWNER" : "SECURITY_OWNER"; }, EXIT.POLICY],
+      ["revision scope", (r) => { r.revision.scope = "DELTA_RELOCK"; }, null],
+      ["revision deleted", (r) => { delete r.revision; }, EXIT.POLICY],
+      ["revision reason names two branches", (r) => { r.revision.reason = "The owner decision for R-73 chose PLATFORM_ADMIN_REQUIRED over TENANT_ACCESS_DOCUMENTED."; }, null],
+    ];
+    for (const [label, mutate, want] of broken) {
+      const r = run(decide(mutate, "R-73"));
+      assert.notEqual(r.code, EXIT.OK, `CLI_BROKEN: ${label} must not pass`);
+      if (want !== null) assert.equal(r.code, want, `CLI_BROKEN: ${label} expected exit ${want}, got ${r.code}`);
+    }
+  });
+});
+
+test("POSTREV-F2 policy: two branches may not share a condition, a control, a test set or an acceptance set", () => {
+  for (const field of ["condition", "requiredControl", "requiredTests", "acceptanceCriteria"]) {
+    const reg = clone();
+    branchOf(reg, "R-73", 1)[field] = structuredClone(branchOf(reg, "R-73", 0)[field]);
+    const got = policyViolations(reg).filter((v) => v.why === "POLICY_BRANCHES_NOT_DISTINCT");
+    assert.ok(got.some((v) => v.field === field), `POLICY_BRANCHES_NOT_DISTINCT: ${field}`);
+  }
+});
+
+test("POSTREV-F2 policy: a branch needs a verification method, an operational test and a testable, non-generic acceptance criterion", () => {
+  const bad = (mutate, why, label) => {
+    const reg = clone();
+    mutate(branchOf(reg, "R-73", 0), riskIn(reg, "R-73"));
+    assert.ok(policyProblems(reg).includes(why), `${why}: ${label}`);
+  };
+  bad((b) => { b.verificationMethod = "NOT_YET_VERIFIABLE"; }, "POLICY_BRANCH_VERIFICATION_METHOD_INVALID", "an unverifiable method");
+  bad((b) => { delete b.verificationMethod; }, "POLICY_BRANCH_VERIFICATION_METHOD_INVALID", "no method");
+  bad((b) => { b.requiredTests = []; }, "POLICY_BRANCH_WITHOUT_REQUIRED_TESTS", "no required test");
+  bad((b) => { b.requiredTests = ["document the policy"]; }, "POLICY_BRANCH_REQUIRED_TEST_NOT_OPERATIONAL", "a wish as a test");
+  const generic = (text) => (b, r) => { const old = b.acceptanceCriteria[0]; b.acceptanceCriteria = [text]; r.acceptanceCriteria = r.acceptanceCriteria.map((c) => (c === old ? text : c)); };
+  bad(generic(`${POLICY_BRANCH_PREFIX}the policy is settled: nothing further is needed`), "POLICY_BRANCH_ACCEPTANCE_GENERIC", "nothing further is needed");
+  bad(generic(`${POLICY_BRANCH_PREFIX}the policy is settled: document the policy in the readme and nothing more`), "POLICY_BRANCH_ACCEPTANCE_GENERIC", "document the policy");
+  bad(generic(`${POLICY_BRANCH_PREFIX}the policy is settled: the owner should decide what to do about the customer surface later on`), "POLICY_BRANCH_ACCEPTANCE_GENERIC", "owner should decide");
+  bad(generic(`${POLICY_BRANCH_PREFIX}that the customer surface is wanted: the matter is dealt with in the usual way by the team`), "POLICY_BRANCH_ACCEPTANCE_NOT_TESTABLE", "not testable");
+  bad((b) => { b.branchId = "x"; }, "POLICY_BRANCH_ID_INVALID", "a bad id");
+  bad((b) => { b.requiredControl = "short"; }, "POLICY_BRANCH_REQUIREDCONTROL_MISSING", "no control");
+  const reg = clone();
+  riskIn(reg, "R-73").policy.ownerRole = "SOMEONE";
+  assert.ok(policyProblems(reg).includes("POLICY_OWNER_ROLE_UNKNOWN"), "POLICY_OWNER_ROLE_UNKNOWN");
+});
+
+test("FR-06 policy: a branch criterion that is not conditional is refused (POLICY_BRANCH_ACCEPTANCE_NOT_CONDITIONAL)", () => {
+  const reg = clone();
+  const r = riskIn(reg, "R-73");
+  const unconditional = "A test asserts that every customer route is refused without the platform capability, for every role that lacks it.";
+  const old = r.policy.branches[0].acceptanceCriteria[0];
+  r.policy.branches[0].acceptanceCriteria = [unconditional];
+  r.acceptanceCriteria = r.acceptanceCriteria.map((c) => (c === old ? unconditional : c));
+  assert.ok(policyProblems(reg).includes("POLICY_BRANCH_ACCEPTANCE_NOT_CONDITIONAL"), "POLICY_BRANCH_ACCEPTANCE_NOT_CONDITIONAL");
+});
+
+test("FR-06 policy: a branch criterion the risk does not list is refused (POLICY_BRANCH_ACCEPTANCE_NOT_IN_CRITERIA)", () => {
+  const reg = clone();
+  const r = riskIn(reg, "R-73");
+  r.acceptanceCriteria = [r.acceptanceCriteria[1]];
+  assert.ok(policyProblems(reg).includes("POLICY_BRANCH_ACCEPTANCE_NOT_IN_CRITERIA"), "POLICY_BRANCH_ACCEPTANCE_NOT_IN_CRITERIA");
+});
+
+test("FR-06 policy: one branch, an unknown status, a missing question or a bare decision request is refused", () => {
+  const one = clone();
+  riskIn(one, "R-73").policy.branches.pop();
+  assert.ok(policyProblems(one).includes("POLICY_NEEDS_TWO_BRANCHES"), "POLICY_NEEDS_TWO_BRANCHES");
+  const status = clone();
+  riskIn(status, "R-73").policy.status = "MAYBE";
+  assert.ok(policyProblems(status).includes("POLICY_STATUS_UNKNOWN"), "POLICY_STATUS_UNKNOWN");
+  const question = clone();
+  riskIn(question, "R-73").policy.question = "";
+  assert.ok(policyProblems(question).includes("POLICY_QUESTION_MISSING"), "POLICY_QUESTION_MISSING");
+  const bare = clone();
+  riskIn(bare, "R-73").acceptanceCriteria.push("The owner records the intended policy.");
+  assert.ok(policyProblems(bare).includes("POLICY_CRITERION_IS_A_BARE_DECISION_REQUEST"), "POLICY_CRITERION_IS_A_BARE_DECISION_REQUEST");
+});
+
+test("FR-06 wiring: a malformed policy stops runGates with exit 30", () => {
+  const raw = clone();
+  riskIn(raw, "R-73").policy.branches.pop();
+  wiring("POLICY", { reg: raw, registerText: textOf(raw) });
+});
+
+// ─────────────── POSTREV-F5-C / F5-D: stale process text and the exit-code contract ───────────────
+
+test("POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables", () => {
+  assert.deepEqual(staleProcessTextViolations(RAW, REPORT), [], "STALE_CLEAN: the committed deliverables carry none");
+  const STALE_NAMES = ["P1_MUST_BE_RECONCILED","P2_REVIEWER_TEXT","P3_OPEN_ITEM","P4_TODO_REVIEWER","P5_PENDING_EVIDENCE","P6_TEMPORARY_ADJUDICATION","P7_TO_BE_RECONCILED"];
+  const STALE_PHRASES = ["this must be reconciled later", "see the reviewer's text for details", "see OPEN-3 for the remaining reconciliation", "TODO ask the reviewer about this", "pending reviewer evidence", "a temporary adjudication", "this is still to be reconciled"];
+  STALE_PHRASES.forEach((phrase, i) => {
+    const hits = staleProcessTextHits(`first line\nthe note says: ${phrase}.\nlast line`, "fixture");
+    assert.equal(hits.length === 1 && hits[0].line === 2, true, `STALE_HIT: ${STALE_NAMES[i]}`);
+  });
+  const quoted = staleProcessTextHits(`an earlier draft said "must be reconciled" ${STALE_PROCESS_MARKER}`, "fixture");
+  assert.deepEqual(quoted, [], "STALE_QUOTED: an explicitly superseded quotation is exempt");
+  assert.ok(staleProcessTextViolations(`{\n"note": "pending reviewer evidence"\n}`, "# clean\n").length === 1, "STALE_REGISTER: a register line is checked");
+  assert.ok(staleProcessTextViolations(`{}`, "# report\nOPEN-3 is still open\n").length === 1, "STALE_REPORT: a report line is checked");
+});
+
+test("PC-F5-01 stale text: a phrase is the phrase in any spelling the editor can produce, and a wrapped phrase is one phrase", () => {
+  const found = (body) => staleProcessTextHits(`first line\n${body}\nlast line`, "fixture");
+  const positives = [
+    ["right single quotation mark", "the reviewer’s text says so"],
+    ["modifier apostrophe", "the reviewerʼs text says so"],
+    ["prime", "the reviewer′s text says so"],
+    ["possessive of the plural", "the reviewers' text says so"],
+    ["apostrophe with the s dropped", "the reviewer' text says so"],
+    ["full-width apostrophe", "the reviewer＇s text says so"],
+    ["double space", "it must  be reconciled"],
+    ["tab", "it must\tbe reconciled"],
+    ["no-break space", "it must be reconciled"],
+    ["mixed no-break space and tab", "it must \tbe reconciled"],
+    ["full-width letters", "it ｍｕｓｔ be reconciled"],
+    ["zero-width space inside a gap", "pending​ reviewer evidence"],
+    ["soft hyphen", "a temporary­ adjudication"],
+    ["carriage return as a line end", "it must\rbe reconciled"],
+  ];
+  for (const [label, body] of positives) {
+    const hits = found(body);
+    assert.equal(hits.length === 1 && hits[0].line === 2, true, `STALE_SPELLING: ${label}`);
+  }
+  // an editor wrapped the sentence
+  const wrapped = [
+    ["wrapped after must", "the text must\nbe reconciled before use"],
+    ["wrapped inside the possessive", "the reviewer's\ntext says so"],
+    ["wrapped inside a three-word phrase", "pending reviewer\n   evidence for this"],
+    ["wrapped after a tab", "to be\treconciled\nlater"],
+  ];
+  for (const [label, body] of wrapped) {
+    const hits = found(body);
+    assert.equal(hits.length === 1 && hits[0].line === 2, true, `STALE_WRAPPED: ${label}`);
+  }
+  // a blank line ends the sentence: two halves in two paragraphs are two unrelated texts
+  assert.deepEqual(found("the text must\n\nbe reconciled before use"), [], "STALE_PARAGRAPH: a blank line separates unrelated lines");
+  // a quotation marker on any line of the wrapped phrase exempts it
+  assert.deepEqual(staleProcessTextHits(`an earlier draft said it must\nbe reconciled ${STALE_PROCESS_MARKER}`, "fixture"), [], "STALE_QUOTED_WRAPPED: the marker on the second line exempts the phrase");
+});
+
+test("PC-F5-01 stale text: ordinary wording, the detector's own description and a defining open item are not hits, free narration about an open item is", () => {
+  for (const [label, body] of [
+    ["a field called reviewer text", "the reviewer text field is empty"],
+    ["a reconciled register", "the register is reconciled with the delta"],
+    ["the word reviewer alone", "an independent reviewer reads the register"],
+    ["a finding title", "RR-003 customer cost view"],
+  ]) {
+    assert.deepEqual(staleProcessTextHits(body, "fixture"), [], `STALE_NEGATIVE: ${label}`);
+  }
+  const openRow = (line) => /^\| `OPEN-\d+` \|/.test(line);
+  assert.deepEqual(staleProcessTextHits("| `OPEN-3` | the item is defined here |", "fixture", { openIdLine: openRow }), [], "STALE_OPEN_DEFINITION: the row that defines an open item may name it");
+  const narration = staleProcessTextHits("| `OPEN-3` | it follows the reviewer’s text for now |", "fixture", { openIdLine: openRow });
+  assert.equal(narration.length, 1, "STALE_OPEN_NARRATION: a defining row is not exempt from the other patterns");
+  assert.equal(staleProcessTextHits("see OPEN-3 for what is left", "fixture", { openIdLine: openRow }).length, 1, "STALE_OPEN_POINTER: a line that points at an open item is a hit");
+  assert.equal(staleProcessTextHits("| `OPEN-4` | see OPEN-3 for what is left |", "fixture", { openIdLine: openRow }).length, 1, "STALE_OPEN_ROW: a defining row is exempt only for the id it defines, not for a pointer to another item");
+});
+
+test("POSTREV-F5 stale text: wiring stops runGates with exit 31", () => {
+  wiring("STALE_TEXT", { md: `${REPORT}
+A closing remark: this is pending reviewer evidence.
+` });
+});
+
+test("POSTREV-F5 contract: a required key is judged by the first gate that reads it, so the exit code is not always 29", () => {
+  assert.match(SCHEMA_KEY_EXIT_CONTRACT, /first gate that reads it/);
+  const title = clone();
+  delete riskIn(title, "R-04").title;
+  const gotTitle = runGates(title, REPORT, REPO_ROOT, { registerText: textOf(title) });
+  assert.equal(gotTitle?.code, EXIT.MISSING_FIELD, "CONTRACT_9: an absent required risk field is exit 9");
+  const accept = clone();
+  riskIn(accept, "R-01").acceptanceCriteria = [];
+  const gotAccept = runGates(accept, REPORT, REPO_ROOT, { registerText: textOf(accept) });
+  assert.equal(gotAccept?.code, EXIT.MISSING_ACCEPTANCE, "CONTRACT_8: an absent acceptance criterion on a HIGH risk is exit 8");
+  const clamp = clone();
+  delete riskIn(clamp, "R-04").severityClamp;
+  const gotClamp = runGates(clamp, REPORT, REPO_ROOT, { registerText: textOf(clamp) });
+  assert.equal(gotClamp?.code, EXIT.SCHEMA_KEYS, "CONTRACT_29: a required key no earlier gate reads is exit 29");
+  const unknown = clone();
+  riskIn(unknown, "R-04").bogusKey = 1;
+  assert.equal(runGates(unknown, REPORT, REPO_ROOT, { registerText: textOf(unknown) })?.code, EXIT.SCHEMA_KEYS, "CONTRACT_29: an unknown key is always exit 29");
+});
+
+test("FR-06 policy: the report matrix shows the open policy of exactly the risks that carry one", () => {
+  const rows = markdownBlocks(REGISTER).matrix.split("\n").filter((l) => l.startsWith("| **Open policy** |"));
+  const withPolicy = REGISTER.risks.filter((r) => r.policy).map((r) => r.riskId);
+  assert.deepEqual(withPolicy, ["R-66", "R-72", "R-73"], "only the three undecided risks carry a policy");
+  assert.equal(rows.length, withPolicy.length, "one Open policy row per risk with a policy");
+  const none = clone();
+  for (const r of none.risks) delete r.policy;
+  assert.equal(markdownBlocks(none).matrix.includes("**Open policy**"), false, "no row when no risk carries a policy");
 });
 
 // ──────── the last test: the ledger's reconciliation (S1-FA-04 / I4) ───────────
