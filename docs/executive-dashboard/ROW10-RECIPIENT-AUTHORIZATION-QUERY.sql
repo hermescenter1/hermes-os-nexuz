@@ -34,10 +34,56 @@
 -- ============================================================================
 
 \set business_date '2026-10-14'
-\set report_org ''   -- leave empty to cover every organization
+-- A HASH PREFIX, never a raw organization id: section 0 prints the candidates
+-- as hashes, and that is what gets pasted back here. An operator running this
+-- never has to handle a raw tenant identifier, and none is ever printed.
+-- Empty means "every organization that reported that day".
+\set report_org_hash ''
 
 \pset pager off
 \timing off
+
+-- ── PRECONDITIONS · a zero result must never look like a success ───────────
+--
+-- The first production run of this file returned zero in every section while
+-- the worker's log said a report and a notification existed. Zero rows is an
+-- ANSWER to a question, and it is indistinguishable from the question never
+-- having been asked properly. These checks make the difference visible before
+-- any section runs.
+--
+-- `businessDate` is VARCHAR(10) and compared as text, so a stray byte in the
+-- parameter — a carriage return from a CRLF checkout is the obvious one —
+-- silently matches nothing. ON_ERROR_STOP turns each failure below into a
+-- stop, not a zero.
+SELECT
+  CASE
+    WHEN length(:'business_date') <> 10
+      OR :'business_date' !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+    THEN
+      1 / 0  -- forces a stop under ON_ERROR_STOP=1
+    ELSE 0
+  END AS business_date_parameter_is_a_plain_yyyy_mm_dd;
+
+-- No report for that day means the premise of every later section is false.
+SELECT
+  CASE
+    WHEN count(*) = 0 THEN 1 / 0  -- forces a stop under ON_ERROR_STOP=1
+    ELSE count(*)
+  END AS reports_found_for_this_business_date
+FROM "ExecutiveDailyReport"
+WHERE "businessDate" = :'business_date';
+
+-- More than one organization reported that day and no choice was made: show
+-- the candidates as hashes and stop, rather than silently mixing tenants.
+SELECT
+  CASE
+    WHEN :'report_org_hash' = ''
+     AND count(DISTINCT "organizationId") > 1
+    THEN 1 / 0  -- forces a stop; re-run with \set report_org_hash from section 0
+    ELSE count(DISTINCT "organizationId")
+  END AS organizations_reporting_this_day
+FROM "ExecutiveDailyReport"
+WHERE "businessDate" = :'business_date';
 
 -- ── 0 · the reports those notifications belong to ───────────────────────────
 -- Establishes which (organization, date, version) rows exist and which of them
@@ -50,7 +96,7 @@ SELECT
   r."notifiedAt"
 FROM "ExecutiveDailyReport" r
 WHERE r."businessDate" = :'business_date'
-  AND (:'report_org' = '' OR r."organizationId" = :'report_org')
+  AND (:'report_org_hash' = '' OR substr(md5(r."organizationId"), 1, 12) = :'report_org_hash')
 ORDER BY org_hash, r.version;
 
 -- ── 1 · exactly one notification per report ─────────────────────────────────
@@ -66,7 +112,7 @@ FROM "Notification" n
 JOIN "OrganizationMember" m ON m."userId" = n."userId"
 WHERE n.metadata ->> 'kind'         = 'executive.report'
   AND n.metadata ->> 'businessDate' = :'business_date'
-  AND (:'report_org' = '' OR m."organizationId" = :'report_org')
+  AND (:'report_org_hash' = '' OR substr(md5(m."organizationId"), 1, 12) = :'report_org_hash')
 GROUP BY 1
 ORDER BY 1;
 
@@ -89,7 +135,7 @@ FROM "Notification" n
 JOIN "OrganizationMember" m ON m."userId" = n."userId"
 WHERE n.metadata ->> 'kind'         = 'executive.report'
   AND n.metadata ->> 'businessDate' = :'business_date'
-  AND (:'report_org' = '' OR m."organizationId" = :'report_org')
+  AND (:'report_org_hash' = '' OR substr(md5(m."organizationId"), 1, 12) = :'report_org_hash')
 ORDER BY org_hash, user_hash;
 
 -- ── 5 · no duplicate notification for the same report and recipient ─────────
@@ -153,7 +199,7 @@ WHERE a."entityType" = 'OrganizationMember'
     WHERE n.metadata ->> 'kind'         = 'executive.report'
       AND n.metadata ->> 'businessDate' = :'business_date'
   )
-  AND (:'report_org' = '' OR a."organizationId" = :'report_org')
+  AND (:'report_org_hash' = '' OR substr(md5(a."organizationId"), 1, 12) = :'report_org_hash')
 ORDER BY a."createdAt";
 
 -- ── 8 · how much audit history exists at all ────────────────────────────────
@@ -193,6 +239,12 @@ WHERE a."entityType" = 'OrganizationMember'
 -- plus current state (§2-4, §6) plus an empty §7 over a window §8 shows is
 -- long enough is an INFERENCE that authorisation held at send time. It is a
 -- strong one. It is not a record, and this document does not call it one.
+--
+-- WHY THE PRECONDITIONS EXIST. The first production run of this file
+-- returned zero everywhere and read as "nothing to see". Zero rows from a
+-- query whose parameter never matched is not evidence of anything, and a
+-- report that presents it as "no duplicates, no unauthorized recipients"
+-- would be false. The checks at the top stop the file instead.
 --
 -- WHAT WOULD MAKE IT A RECORD. Writing the recipient's role and status into
 -- the notification's own metadata at send time, so the row carries the
