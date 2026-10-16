@@ -105,6 +105,84 @@ describe("DA-1 — the gate refuses a stale backup", () => {
   });
 });
 
+describe("DA-1 — backup evidence is required by EVERY production release", () => {
+  /** The whole deploy job, so step order can be read off it. */
+  const job = deploy;
+
+  it("carries a concept of its own, separate from the migration delta", () => {
+    // BACKUP_REQUIRED answers "does this release carry a migration" and must
+    // keep answering only that. Overloading it would have made the migration
+    // classification lie.
+    expect(job).toContain('RELEASE_BACKUP_EVIDENCE_REQUIRED: "true"');
+    expect(job).toContain("BACKUP_REQUIRED: ${{ steps.migration.outputs.pre_migration_backup_required }}");
+  });
+
+  it("sets it as a literal, not from a classification output or a dispatch input", () => {
+    // An expression could evaluate to false. A literal cannot.
+    const line = job.split(LF).find(l => l.includes("RELEASE_BACKUP_EVIDENCE_REQUIRED:")) ?? "";
+    expect(line).not.toContain("${{");
+    expect(line).not.toContain("inputs.");
+    expect(line).not.toContain("steps.");
+  });
+
+  it("refuses rather than skips when the flag is not exactly true", () => {
+    // The behaviour is proven against the executed gate in
+    // phase997-backup-evidence-sudo; what is pinned here is the SHAPE: a
+    // refusal, not a condition that silently does nothing.
+    expect(gate).toMatch(/case "\$\{RELEASE_BACKUP_EVIDENCE_REQUIRED:-\}" in/);
+    expect(gate).toContain("mandatory for every production release");
+    // The refusal is the FIRST thing in the gate, and what follows it is
+    // unconditional. `BACKUP_REQUIRED` still appears further down — it guards
+    // the adoption evidence — so what matters is that it no longer gates the
+    // artifact checks.
+    const head = gate.slice(0, gate.indexOf("BACKUP_DIR="));
+    expect(head).toContain("RELEASE_BACKUP_EVIDENCE_REQUIRED");
+    expect(head).toContain("if true; then");
+    expect(head).not.toContain("BACKUP_REQUIRED");
+  });
+
+  it("keeps documents_data adoption tied to the migration delta", () => {
+    // Adoption evidence is about a cutover. Demanding it from a release that
+    // cuts nothing over would invent a requirement rather than enforce one.
+    const adoption = gate.slice(gate.indexOf("ADOPTION_FOUND"));
+    expect(gate.slice(0, gate.indexOf("ADOPTION_FOUND"))).toContain('if [ "${BACKUP_REQUIRED}" = "true" ]; then');
+    expect(adoption).toContain("integrityVerified");
+  });
+
+  it("evaluates the evidence BEFORE anything on the host is changed", () => {
+    // The artifact lives on the production host, so the gate necessarily runs
+    // inside the deploy step's remote script — it cannot precede the SSH key
+    // that lets it read the host at all. What it CAN precede, and does, is
+    // every mutating command: the first of them is the previous-good tag.
+    // Scoped to the remote script: `up -d` also appears in a comment near the
+    // top of the file, and an index search over the whole workflow would be
+    // comparing against that instead.
+    const remote = job.slice(job.indexOf("<<'REMOTE'"));
+    const gateEnd = remote.indexOf("# <<< backup-evidence-gate");
+    expect(gateEnd).toBeGreaterThan(0);
+    for (const mutation of [
+      "docker image tag",
+      "Preserve the previous-good image",
+      "up -d",
+      "--profile migrate run",
+    ]) {
+      const at = remote.indexOf(mutation);
+      expect(at, `${mutation} must appear in the remote script`).toBeGreaterThan(-1);
+      expect(at, `${mutation} must come after the evidence gate`).toBeGreaterThan(gateEnd);
+    }
+  });
+
+  it("still refuses a migration-bearing release whose prerequisites are unset", () => {
+    // The pre-existing contract is untouched: this check runs on the runner,
+    // before the host is contacted at all.
+    const step = job.slice(job.indexOf("Require migration prerequisites"));
+    expect(step).toContain('if [ "$BACKUP_REQUIRED" != "true" ]; then');
+    expect(step).toContain("Refusing: this release carries migrations.");
+    expect(step).toContain("migration-prerequisites-verified");
+    expect(job.indexOf("Require migration prerequisites")).toBeLessThan(job.indexOf("Install SSH key"));
+  });
+});
+
 describe("DA-1 — a schedule exists to activate", () => {
   const unit = "ops/backup/hermes-pg-backup.service";
   const timer = "ops/backup/hermes-pg-backup.timer";

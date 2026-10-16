@@ -260,6 +260,14 @@ jobs:
           SERVER_IP: ${{ secrets.SERVER_IP }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
           BACKUP_REQUIRED: ${{ steps.migration.outputs.pre_migration_backup_required }}
+          # Independent of the migration delta ON PURPOSE. BACKUP_REQUIRED
+          # answers "does this release carry a migration" and must keep
+          # answering only that. This answers a different question: may a
+          # production release proceed at all without a usable restore
+          # point? For every production deploy the answer is no. It is a
+          # literal, not an expression, so no classification outcome and no
+          # dispatch input can turn it off.
+          RELEASE_BACKUP_EVIDENCE_REQUIRED: "true"
           TARGET_MIGRATION_COUNT: ${{ steps.migration.outputs.target_migration_count }}
         run: |
           # The expected applied-migration count comes from the runner's git-only
@@ -278,7 +286,7 @@ jobs:
               -o ConnectTimeout=20 \
               -o StrictHostKeyChecking=yes \
               "${SERVER_USER}@${SERVER_IP}" \
-              "TARGET_SHA=${TARGET_SHA} BACKUP_REQUIRED=${BACKUP_REQUIRED} TARGET_MIGRATION_COUNT=${TARGET_MIGRATION_COUNT} bash -s" <<'REMOTE'
+              "TARGET_SHA=${TARGET_SHA} BACKUP_REQUIRED=${BACKUP_REQUIRED} RELEASE_BACKUP_EVIDENCE_REQUIRED=${RELEASE_BACKUP_EVIDENCE_REQUIRED} TARGET_MIGRATION_COUNT=${TARGET_MIGRATION_COUNT} bash -s" <<'REMOTE'
           set -euo pipefail
           unset DOCKER_HOST
 
@@ -349,7 +357,25 @@ jobs:
           # nothing on this host is known to provide it and a gate that depends
           # on an absent tool would refuse every migration-bearing deploy.
           # >>> backup-evidence-gate
-          if [ "${BACKUP_REQUIRED}" = "true" ]; then
+          #
+          # EVERY production release, not only the migration-bearing ones.
+          # A release that ships no migration can still need to be rolled
+          # back, and a rollback is worth whatever the newest restore point
+          # is worth. On 2026-10-15 a release went out against an artifact
+          # five days old precisely because this gate only looked when a
+          # migration shipped.
+          #
+          # Written as a REFUSAL rather than a condition: an absent, empty
+          # or false flag stops the release instead of skipping the check,
+          # so there is no value anyone can set that turns it off.
+          case "${RELEASE_BACKUP_EVIDENCE_REQUIRED:-}" in
+            true) ;;
+            *)
+              echo "Refusing: backup evidence is mandatory for every production release; RELEASE_BACKUP_EVIDENCE_REQUIRED was not true." >&2
+              exit 1
+              ;;
+          esac
+          if true; then
             BACKUP_DIR="${BACKUP_DIR:-/backups/postgres}"
             ADOPTION_EVIDENCE="${BACKUP_DIR}/documents-adoption.json"
 
@@ -410,6 +436,10 @@ jobs:
             # documents_data adoption evidence (written by
             # scripts/dr/adopt-documents.mjs --manifest-out). Same directory,
             # same ownership, so the same privileged read.
+            # Adoption evidence is about a MIGRATION cutover, so it stays
+            # tied to the migration delta. Demanding it from a release that
+            # cuts nothing over would invent a requirement, not enforce one.
+            if [ "${BACKUP_REQUIRED}" = "true" ]; then
             ADOPTION_FOUND="$(backup_priv find "${ADOPTION_EVIDENCE}" -maxdepth 0 -type f -print 2>/dev/null)" || ADOPTION_FOUND=""
             if [ "${ADOPTION_FOUND}" != "${ADOPTION_EVIDENCE}" ]; then
               backup_refuse "no documents_data adoption evidence at ${ADOPTION_EVIDENCE}."
@@ -418,6 +448,7 @@ jobs:
               || backup_refuse "the adoption evidence ${ADOPTION_EVIDENCE} is unreadable through sudo -n."
             grep -q '"integrityVerified": *true' <<<"${ADOPTION_JSON}" \
               || backup_refuse "documents_data adoption evidence does not prove integrity."
+            fi
 
             # ── DA-1: freshness, and a record that describes THIS artifact ──
             #
@@ -445,7 +476,7 @@ jobs:
               backup_refuse "the newest backup did not pass the freshness and consistency check."
             fi
 
-            echo "Pre-migration evidence verified: ${NEWEST_NAME} complete, verified, hash-intact and recent."
+            echo "Release backup evidence verified: ${NEWEST_NAME} complete, verified, hash-intact and recent."
           fi
           # <<< backup-evidence-gate
 

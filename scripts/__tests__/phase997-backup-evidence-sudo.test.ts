@@ -204,6 +204,9 @@ function runGate(f: Fixture, env: Record<string, string> = {}) {
     env: {
       ...process.env,
       BACKUP_REQUIRED: "true",
+      // The release-wide flag the deploy step sets literally. A case that
+      // needs it absent or false overrides it through `env`.
+      RELEASE_BACKUP_EVIDENCE_REQUIRED: "true",
       SHIM_DIR: f.shim,
       BACKUP_DIR_NATIVE: f.dir,
       SUDO_LOG_NATIVE: f.log,
@@ -221,7 +224,7 @@ describe.skipIf(!BASH_AVAILABLE)("behaviour — the shipped gate, executed", () 
     const r = runGate(f);
     expect(r.stderr).toBe("");
     expect(r.code).toBe(0);
-    expect(r.stdout).toContain("Pre-migration evidence verified: hermes_postgres_20260924_135841.hbk complete, verified, hash-intact and recent.");
+    expect(r.stdout).toContain("Release backup evidence verified: hermes_postgres_20260924_135841.hbk complete, verified, hash-intact and recent.");
     // DA-1: the summary line gained a word, which on its own would prove
     // nothing. What is asserted is that the freshness judgement actually RAN
     // on this artifact and returned a verdict — a renamed sentence over a
@@ -294,7 +297,7 @@ describe.skipIf(!BASH_AVAILABLE)("behaviour — the shipped gate, executed", () 
       const r = runGate(f);
       expect(r.code, r.stderr).toBe(1);
       expect(r.stderr).toMatch(message);
-      expect(r.stdout).not.toContain("Pre-migration evidence verified");
+      expect(r.stdout).not.toContain("Release backup evidence verified");
     });
   }
 
@@ -348,11 +351,76 @@ describe.skipIf(!BASH_AVAILABLE)("behaviour — the shipped gate, executed", () 
     expect(r.stderr).toMatch(/no verification record beside/);
   });
 
-  it("with BACKUP_REQUIRED=false the gate is skipped entirely — no privileged call is made", () => {
-    const f = fixture();
-    const r = runGate(f, { BACKUP_REQUIRED: "false" });
-    expect(r.code).toBe(0);
-    expect(r.sudoCalls).toHaveLength(0);
+  /**
+   * A release that ships no migration still gets checked.
+   *
+   * This replaces a test that asserted the opposite — that BACKUP_REQUIRED=false
+   * skipped the gate entirely. That WAS the contract, and it is exactly how a
+   * release went out on 2026-10-15 against an artifact five days old: the
+   * delta carried no migration, so nothing looked at the restore point at all.
+   * A release with no migration can still need rolling back, and a rollback is
+   * worth whatever the newest backup is worth.
+   */
+  describe("NO_MIGRATION releases are checked too", () => {
+    it("runs the artifact checks with BACKUP_REQUIRED=false, and passes on a fresh backup", () => {
+      const f = fixture();
+      addBackup(f, "hermes_postgres_20260924_135841.hbk");
+      // No adoption evidence on purpose: that is a MIGRATION cutover artefact
+      // and demanding it here would invent a requirement.
+      const r = runGate(f, { BACKUP_REQUIRED: "false" });
+      expect(r.code).toBe(0);
+      expect(r.stdout).toContain("FRESHNESS result=FRESH");
+      expect(r.stdout).toContain("Release backup evidence verified");
+      // It really did read the host rather than short-circuiting.
+      expect(r.sudoCalls.length).toBeGreaterThan(0);
+      // And it did NOT ask for adoption evidence.
+      expect(r.sudoCalls.some(c => c.includes("documents-adoption.json"))).toBe(false);
+    });
+
+    it("REFUSES a NO_MIGRATION release when the newest backup is stale", () => {
+      const f = fixture();
+      const old = Math.floor(Date.now() / 1000) - 40 * 3600;
+      const body = randomBytes(4096);
+      addBackup(f, "old.hbk", { body, meta: metaFor("old.hbk", body, {}, old), mtime: old });
+      const r = runGate(f, { BACKUP_REQUIRED: "false" });
+      expect(r.code).toBe(1);
+      expect(r.stdout).toContain("FRESHNESS result=STALE");
+      expect(r.stdout).not.toContain("Release backup evidence verified");
+    });
+
+    it("REFUSES a NO_MIGRATION release when there is no backup at all", () => {
+      const f = fixture();
+      const r = runGate(f, { BACKUP_REQUIRED: "false" });
+      expect(r.code).toBe(1);
+      expect(r.stderr).toContain("no encrypted backup");
+    });
+
+    it("REFUSES a NO_MIGRATION release when the record does not match the artifact", () => {
+      const f = fixture();
+      const body = randomBytes(4096);
+      addBackup(f, "b.hbk", { body, meta: metaFor("b.hbk", body, { transportSha256: "0".repeat(64) }) });
+      const r = runGate(f, { BACKUP_REQUIRED: "false" });
+      expect(r.code).toBe(1);
+    });
+  });
+
+  describe("the check cannot be turned off", () => {
+    it.each([
+      ["absent", undefined],
+      ["false", "false"],
+      ["empty", ""],
+      ["TRUE in the wrong case", "TRUE"],
+      ["anything else", "yes"],
+    ])("REFUSES when the release flag is %s, rather than skipping", (_label, value) => {
+      const f = fixture();
+      addBackup(f, "hermes_postgres_20260924_135841.hbk");
+      addAdoption(f);
+      const r = runGate(f, { RELEASE_BACKUP_EVIDENCE_REQUIRED: value as string });
+      expect(r.code).toBe(1);
+      expect(r.stderr).toContain("mandatory for every production release");
+      // It refused BEFORE reading anything privileged.
+      expect(r.sudoCalls).toHaveLength(0);
+    });
   });
 });
 
@@ -406,7 +474,7 @@ describe.skipIf(!REAL_SUDO)("real permissions — the incident, reproduced and c
     const r = runRealGate(dir);
     expect(r.stderr).toBe("");
     expect(r.status).toBe(0);
-    expect(r.stdout).toContain(`Pre-migration evidence verified: ${name} complete, verified, hash-intact and recent.`);
+    expect(r.stdout).toContain(`Release backup evidence verified: ${name} complete, verified, hash-intact and recent.`);
     // DA-1, on a REAL root-owned 0600 artifact read through real sudo -n: the
     // freshness judgement is handed the record on stdin and must still reach
     // a verdict here, where nothing is faked. The renamed sentence alone
@@ -420,6 +488,6 @@ describe.skipIf(!REAL_SUDO)("real permissions — the incident, reproduced and c
     const r = runRealGate(dir);
     expect(r.status).toBe(1);
     expect(r.stderr).toMatch(/backup integrity check failed/);
-    expect(r.stdout).not.toContain("Pre-migration evidence verified");
+    expect(r.stdout).not.toContain("Release backup evidence verified");
   });
 });
