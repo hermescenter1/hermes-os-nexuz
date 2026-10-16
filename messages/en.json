@@ -198,6 +198,16 @@
       "sessionOps": "Session operations",
       "alertDelivery": "Alert delivery"
     },
+    "httpTelemetry": {
+      "scope": "Per-process counters since this process started; they reset on restart and are not durable time-series data. They count requests that reached the Hermes application and finished a response.",
+      "limits": "Not counted here: health and metrics probes, Nginx-generated 502/504, requests rejected at the edge, WebSocket upgrades and aborted responses. Use the Nginx structured access log for those.",
+      "cumulative": "Cumulative count since process start, not a rate.",
+      "empty": "No application requests recorded since this process started.",
+      "avg": "Average duration",
+      "samples": "Requests",
+      "method": "Method",
+      "badge": "In-process"
+    },
     "notInstrumented": {
       "badge": "Not instrumented",
       "httpRequestLatency": "HTTP request latency",
