@@ -149,27 +149,74 @@ describe("DA-1 — backup evidence is required by EVERY production release", () 
     expect(adoption).toContain("integrityVerified");
   });
 
-  it("evaluates the evidence BEFORE anything on the host is changed", () => {
-    // The artifact lives on the production host, so the gate necessarily runs
-    // inside the deploy step's remote script — it cannot precede the SSH key
-    // that lets it read the host at all. What it CAN precede, and does, is
-    // every mutating command: the first of them is the previous-good tag.
-    // Scoped to the remote script: `up -d` also appears in a comment near the
-    // top of the file, and an index search over the whole workflow would be
-    // comparing against that instead.
-    const remote = job.slice(job.indexOf("<<'REMOTE'"));
-    const gateEnd = remote.indexOf("# <<< backup-evidence-gate");
-    expect(gateEnd).toBeGreaterThan(0);
-    for (const mutation of [
-      "docker image tag",
-      "Preserve the previous-good image",
-      "up -d",
-      "--profile migrate run",
-    ]) {
-      const at = remote.indexOf(mutation);
-      expect(at, `${mutation} must appear in the remote script`).toBeGreaterThan(-1);
-      expect(at, `${mutation} must come after the evidence gate`).toBeGreaterThan(gateEnd);
+  /**
+   * ORDERING. The remote script is the only place that touches the host, so
+   * the whole question is what sits on each side of the gate's closing marker.
+   *
+   * An earlier version of this test said the gate precedes "anything on the
+   * host being changed". That was WRONG, and a full inventory of the remote
+   * script is what showed it: `git fetch --prune origin` runs BEFORE the gate.
+   * It is a persistent write — new objects, moved remote-tracking refs — even
+   * though it changes no service, no image and no data. The claim is narrowed
+   * to what is true, and the exception is pinned by name below rather than
+   * left for the next reader to discover.
+   */
+  const remote = job.slice(job.indexOf("<<'REMOTE'"));
+  const gateEnd = remote.indexOf("# <<< backup-evidence-gate");
+  const gateStart = remote.indexOf("# >>> backup-evidence-gate");
+
+  it("has a gate with both markers in the remote script", () => {
+    expect(gateStart).toBeGreaterThan(0);
+    expect(gateEnd).toBeGreaterThan(gateStart);
+  });
+
+  it.each([
+    ["the working tree is moved", "git checkout --detach"],
+    ["the previous-good image is tagged", "docker image tag"],
+    ["the previous-good image is preserved", "Preserve the previous-good image"],
+    ["the web image is built", "build hermes-web"],
+    ["the migrator image is built", "--profile migrate build"],
+    ["migrations are applied", "--profile migrate run"],
+    ["the service is replaced", "up -d"],
+  ])("%s only AFTER the gate has passed", (_label, needle) => {
+    const at = remote.indexOf(needle);
+    expect(at, `${needle} must appear in the remote script`).toBeGreaterThan(-1);
+    expect(at, `${needle} must come after the evidence gate`).toBeGreaterThan(gateEnd);
+  });
+
+  it("performs no history rewrite on the host at all", () => {
+    // `git reset` and `git switch` are not used anywhere in the remote script,
+    // so there is no third ordering case hiding behind a synonym.
+    expect(remote).not.toMatch(/\bgit reset\b/);
+    expect(remote).not.toMatch(/\bgit switch\b/);
+    expect(remote).not.toMatch(/\bgit clean\b/);
+    expect(remote).not.toMatch(/\bgit pull\b/);
+  });
+
+  it("writes no file on the host outside the gate", () => {
+    // No cp, mv, tee, install, chmod, chown, rm, ln, mkdir, touch or in-place
+    // sed anywhere in the remote script — so "mutation" really is only the
+    // git, docker and migrator operations enumerated above.
+    const lines = remote.split(LF).filter(l => !l.trimStart().startsWith("#"));
+    for (const verb of ["cp ", "mv ", "tee ", "install ", "chmod ", "chown ", "rm ", "ln ", "mkdir ", "touch ", "sed -i"]) {
+      const hit = lines.find(l => new RegExp(`(^|[;&|]\\s*|\\s)${verb.trim()}\\s`).test(l));
+      expect(hit, `unexpected host write via \`${verb.trim()}\`: ${hit}`).toBeUndefined();
     }
+  });
+
+  it("names the ONE persistent operation that precedes the gate, rather than hiding it", () => {
+    // `git fetch --prune origin` runs first so the target SHA can be proven to
+    // exist on origin/main before anything else is attempted. It writes to the
+    // host's object store and moves remote-tracking refs: persistent, but it
+    // changes no service, no image, no container and no data, and the working
+    // tree it leaves behind is the one already deployed.
+    //
+    // This test exists so that fact stays stated. If the fetch is ever moved
+    // after the gate, DELETE this test — do not weaken it.
+    const fetchAt = remote.indexOf("git fetch --prune origin");
+    expect(fetchAt).toBeGreaterThan(-1);
+    expect(fetchAt).toBeLessThan(gateStart);
+    expect(deploy).toContain("the ONE persistent host operation that precedes");
   });
 
   it("still refuses a migration-bearing release whose prerequisites are unset", () => {

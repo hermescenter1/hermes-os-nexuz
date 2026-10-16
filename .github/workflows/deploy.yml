@@ -305,6 +305,18 @@ jobs:
             exit 1
           fi
 
+          # This is the ONE persistent host operation that precedes the backup
+          # evidence gate, and it is here deliberately: the target SHA has to
+          # be proven to exist on origin/main before anything else is
+          # attempted. It writes to the object store and moves
+          # remote-tracking refs, so it is not read-only — but it changes no
+          # service, no image, no container and no data, and the working tree
+          # it leaves behind is the one already deployed.
+          #
+          # Everything that touches the running system — the working-tree
+          # move, the previous-good tag, both image builds, the migrator and
+          # the service replacement — happens after the gate. That ordering is
+          # pinned in scripts/__tests__/backup-freshness-gate.test.ts.
           git fetch --prune origin
           if ! git cat-file -e "${TARGET_SHA}^{commit}"; then
             echo "Refusing: ${TARGET_SHA} is unknown on the server after fetch." >&2
@@ -502,6 +514,7 @@ jobs:
             exit 1
           fi
           echo "Previous-good image preserved and verified: hermes-web:previous-good -> ${PREVIOUS_IMAGE_ID}"
+
 
           git checkout --detach "$TARGET_SHA"
 
