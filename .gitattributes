@@ -49,3 +49,47 @@ tools/figma/hermes-phase104-visual-system/** text eol=lf
 scripts/deploy/*.sh text eol=lf
 ops/backup/hermes-pg-backup.service text eol=lf
 ops/backup/hermes-pg-backup.timer text eol=lf
+
+# S0-B-05 — the deterministic Prisma failure-semantics inventory is verified by
+# sha256 over its rendered bytes, and the scanner that renders it is a shebang
+# .mjs run by `node --test`.
+#
+# The inventory's committed blob is LF and hashes to
+# 0fea9170b4db4f592defca15e0c3fb2cd81940c36f7159a45b9535218c48047e, which is the
+# value `check` compares against. With `core.autocrlf=true` a Windows checkout
+# rewrites every line ending, so the same, provably correct, file hashes to a
+# different value and the gate turns red on an unchanged artifact. The scanner
+# also reads its own fixtures and computes `sourceFingerprint` over raw bytes,
+# so a CRLF checkout would stale every one of the 187 manual adjudications, 268
+# edge traces and 69 residual screenings at once.
+#
+# Pinning to LF makes the checkout byte-exact on every platform; it is a no-op on
+# Linux and on CI, where nothing converted anything to begin with.
+/docs/security/GETPRISMA-FAILURE-CLASSIFICATION.md text eol=lf
+/docs/security/s0-getprisma-callsite-inventory.json text eol=lf
+/scripts/security/s0/** text eol=lf
+
+# S0-B-03 — the edge/origin evidence document is identified by the sha256 of its
+# bytes in the S0 closure report (0d44a6c2…). `core.autocrlf=true` would rewrite
+# every line ending on a fresh Windows checkout and change that hash without an
+# edit, so the evidence would stop reproducing. Same hazard, same remedy as the
+# B-05 artifacts above.
+/docs/security/EDGE-ORIGIN-AND-CLIENT-IP.md text eol=lf
+
+# S1 — the risk register is verified by the sha256 of its bytes, the report's
+# generated blocks are compared byte for byte against what the checker renders,
+# and the checker is a dependency-free .mjs run by `node --test`. With
+# `core.autocrlf=true` a Windows checkout would rewrite every line ending and
+# break all three comparisons on files nobody edited. Same hazard, same remedy as
+# the S0 artifacts above.
+/docs/security/THREAT-MODEL-AND-RISK-REGISTER.md text eol=lf
+/docs/security/s1-risk-register.json text eol=lf
+/scripts/security/s1/risk-register-check.mjs text eol=lf
+/scripts/security/s1/__tests__/risk-register.selftest.mjs text eol=lf
+/docs/security/S1-CURRENT-MAIN-DELTA-RELOCK.md text eol=lf
+/docs/security/s1-relock-delta.json text eol=lf
+/scripts/security/s1/relock-delta-check.mjs text eol=lf
+/scripts/security/s1/__tests__/relock-delta.selftest.mjs text eol=lf
+/scripts/security/s1/relock-mutation-campaign.mjs text eol=lf
+/scripts/security/s1/__tests__/relock-delta.e2e.mjs text eol=lf
+/docs/security/s1-relock-mutation-record.json text eol=lf

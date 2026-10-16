@@ -1,0 +1,2147 @@
+{
+  "schemaVersion": 2,
+  "phase": "S1-RELOCK",
+  "methodVersion": "s1-relock-2",
+  "note": "Provenance addendum for the current-main delta relock. It records the commit range, the call-site linkage and the review evidence behind the delta findings. It carries NO severity, production state, score or priority of its own: those live only in docs/security/s1-risk-register.json, and this document shows them as a read-only projection that the checker recomputes. Every derived section is recomputed from git, from the S0 inventory and from the canonical register by scripts/security/s1/relock-delta-check.mjs; nothing derived is trusted. Contains no secret, no request data, no absolute path and no timestamp.",
+  "sources": {
+    "frozenSourceSha": "bcf3be9aa51f8d9f8f75e5568a2e4efea5f8fbd2",
+    "securityHeadSha": "391fa2f2d3d1a3c714753ef5da8594da2e331658",
+    "targetMainSha": "b461ac9709d6e82973de2b05f15317381c2fcc73",
+    "integrationMergeSha": "e3da6f2e928420f78d5ae95d668d7e67ba4e2cb0"
+  },
+  "attribution": {
+    "historicalBaseline": "The S0/S1 audit was performed in full on the frozen source. Nothing in the historical documents was re-audited against the target; the historical snapshot in the canonical register is pinned and recomputed.",
+    "currentMainDelta": "Everything main gained between the frozen source and the target. Audited by the relock, on the integrated tree, for the surfaces named in the findings.",
+    "reconciledTree": "The result of merging the frozen security lane into the target, plus the unstaged assurance changes. The S0 inventory and the canonical register were regenerated on this tree."
+  },
+  "delta": {
+    "range": "bcf3be9aa51f8d9f8f75e5568a2e4efea5f8fbd2..b461ac9709d6e82973de2b05f15317381c2fcc73",
+    "commits": {
+      "total": 53,
+      "nonMerge": 32,
+      "nonMergeShortIds": [
+        "09c38516",
+        "0b4f1123",
+        "0beec154",
+        "10bc7a49",
+        "15894259",
+        "2f64d79a",
+        "2fd93229",
+        "31ad70a1",
+        "31c17d4c",
+        "33519b1c",
+        "454e6359",
+        "5245d529",
+        "555bc3b0",
+        "5ac7e4e6",
+        "5cfae32e",
+        "70a57f1f",
+        "764553cc",
+        "7bab3069",
+        "97338644",
+        "a856748c",
+        "af6d5ef0",
+        "b22101a9",
+        "b52d9ec2",
+        "b745326e",
+        "bcf26cac",
+        "bd2be521",
+        "ce015a2a",
+        "cf9ee18e",
+        "d4c9c61b",
+        "eb52572a",
+        "ef9c3030",
+        "fa3ac1ad"
+      ]
+    },
+    "paths": {
+      "total": 149,
+      "added": 113,
+      "modified": 36,
+      "deleted": 0
+    },
+    "strictProductPaths": {
+      "rule": "a changed path outside docs/, .github/ and scripts/ that is not a test file (a __tests__/ directory or a .test. or .spec. name) and is not .gitattributes",
+      "total": 68,
+      "list": [
+        ".dockerignore",
+        "Dockerfile",
+        "docker-compose.prod.yml",
+        "messages/de.json",
+        "messages/en.json",
+        "messages/fa.json",
+        "package.json",
+        "prisma/migrations/20261011090000_executive_daily_report/migration.sql",
+        "prisma/migrations/20261012120000_executive_settings/migration.sql",
+        "prisma/migrations/20261013090000_tenant_customers/migration.sql",
+        "prisma/schema.prisma",
+        "src/app/[locale]/about/page.tsx",
+        "src/app/[locale]/contact/page.tsx",
+        "src/app/[locale]/dashboard/clients/[id]/page.tsx",
+        "src/app/[locale]/dashboard/clients/loading.tsx",
+        "src/app/[locale]/dashboard/clients/new/page.tsx",
+        "src/app/[locale]/dashboard/clients/page.tsx",
+        "src/app/[locale]/dashboard/executive/oversight/page.tsx",
+        "src/app/[locale]/dashboard/executive/page.tsx",
+        "src/app/[locale]/dashboard/executive/priorities/page.tsx",
+        "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx",
+        "src/app/[locale]/dashboard/executive/reports/page.tsx",
+        "src/app/[locale]/dashboard/executive/settings/page.tsx",
+        "src/app/api/executive/reports/run/route.ts",
+        "src/app/api/executive/settings/route.ts",
+        "src/app/api/executive/summary/route.ts",
+        "src/app/api/tenant/customers/[id]/interactions/route.ts",
+        "src/app/api/tenant/customers/[id]/projects/route.ts",
+        "src/app/api/tenant/customers/[id]/route.ts",
+        "src/app/api/tenant/customers/route.ts",
+        "src/app/globals.css",
+        "src/components/corporate/CorporateBlocks.tsx",
+        "src/components/executive/ExecutiveScopeNotice.tsx",
+        "src/components/executive/ExecutiveSettingsForm.tsx",
+        "src/components/executive/ExecutiveSummaryView.tsx",
+        "src/components/executive/FinancialOversightView.tsx",
+        "src/components/executive/TomorrowsPrioritiesView.tsx",
+        "src/components/tenant-customers/ArchiveToggle.tsx",
+        "src/components/tenant-customers/CustomerForm.tsx",
+        "src/components/tenant-customers/InteractionForm.tsx",
+        "src/components/tenant-customers/ProjectLinker.tsx",
+        "src/components/tenant-customers/labels.ts",
+        "src/components/tenant-customers/request.ts",
+        "src/i18n/de-identical-allowlist.ts",
+        "src/i18n/fa-identical-allowlist.ts",
+        "src/lib/corporate/contact.ts",
+        "src/lib/customers/http.ts",
+        "src/lib/customers/page-scope.ts",
+        "src/lib/customers/schemas.ts",
+        "src/lib/customers/service.ts",
+        "src/lib/executive/config.ts",
+        "src/lib/executive/contract.ts",
+        "src/lib/executive/oversight.ts",
+        "src/lib/executive/period.ts",
+        "src/lib/executive/priorities.ts",
+        "src/lib/executive/report/auth.ts",
+        "src/lib/executive/report/contract.ts",
+        "src/lib/executive/report/generate.ts",
+        "src/lib/executive/report/read.ts",
+        "src/lib/executive/report/worker.ts",
+        "src/lib/executive/scope.ts",
+        "src/lib/executive/settings-auth.ts",
+        "src/lib/executive/settings.ts",
+        "src/lib/executive/summary.ts",
+        "src/lib/navigation/app-nav.ts",
+        "src/lib/org/rbac.ts",
+        "src/lib/seo/config.ts",
+        "src/lib/seo/schemas.ts"
+      ]
+    },
+    "broadRuntimeAffectingPaths": {
+      "rule": "a changed path outside docs/ that is not a test file and is not .gitattributes, so it adds the workflows and the scripts to the strict set",
+      "total": 78
+    },
+    "apiRoutes": [
+      "src/app/api/executive/reports/run/route.ts",
+      "src/app/api/executive/settings/route.ts",
+      "src/app/api/executive/summary/route.ts",
+      "src/app/api/tenant/customers/[id]/interactions/route.ts",
+      "src/app/api/tenant/customers/[id]/projects/route.ts",
+      "src/app/api/tenant/customers/[id]/route.ts",
+      "src/app/api/tenant/customers/route.ts"
+    ],
+    "pages": [
+      "src/app/[locale]/about/page.tsx",
+      "src/app/[locale]/contact/page.tsx",
+      "src/app/[locale]/dashboard/clients/[id]/page.tsx",
+      "src/app/[locale]/dashboard/clients/new/page.tsx",
+      "src/app/[locale]/dashboard/clients/page.tsx",
+      "src/app/[locale]/dashboard/executive/oversight/page.tsx",
+      "src/app/[locale]/dashboard/executive/page.tsx",
+      "src/app/[locale]/dashboard/executive/priorities/page.tsx",
+      "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx",
+      "src/app/[locale]/dashboard/executive/reports/page.tsx",
+      "src/app/[locale]/dashboard/executive/settings/page.tsx"
+    ],
+    "schema": {
+      "models": [
+        "ExecutiveDailyReport",
+        "ExecutiveSettings",
+        "Party",
+        "PartyInteraction"
+      ],
+      "enums": [
+        "PartyInteractionKind",
+        "PartyKind",
+        "PartyStatus"
+      ],
+      "migrations": [
+        "20261011090000_executive_daily_report",
+        "20261012120000_executive_settings",
+        "20261013090000_tenant_customers"
+      ]
+    },
+    "infrastructure": [
+      "A .github/workflows/executive-worker-image.yml",
+      "A scripts/ci/executive-worker-image-smoke.mjs",
+      "A scripts/executive/daily-report-worker.mjs",
+      "A scripts/executive/provision-report-worker-token.sh",
+      "M .dockerignore",
+      "M .github/workflows/deploy.yml",
+      "M .github/workflows/phase997-production-completion.yml",
+      "M Dockerfile",
+      "M docker-compose.prod.yml",
+      "M scripts/ci/phase102-applied-migration-check.mjs",
+      "M scripts/ci/phase997-candidate-gate.mjs"
+    ],
+    "authSessionNamedProductPaths": [
+      "src/lib/executive/report/auth.ts"
+    ]
+  },
+  "getPrisma": {
+    "before": {
+      "textualOccurrences": 835,
+      "realCallExpressions": 392,
+      "files": 228
+    },
+    "after": {
+      "textualOccurrences": 860,
+      "realCallExpressions": 404,
+      "files": 236
+    },
+    "decisions": {
+      "manualAdjudications": 10,
+      "ruleBased": 2,
+      "ruleBasedIds": [
+        "src/lib/customers/service.ts#L157C25 (R04-guard-503, EXACT)",
+        "src/lib/executive/settings.ts#L146C24 (R08-guard-null-undefined, HIGH)"
+      ]
+    },
+    "added": [
+      {
+        "id": "src/lib/customers/service.ts#L157C25",
+        "classification": "DB_UNAVAILABLE_RETURNS_503",
+        "confidence": "EXACT",
+        "ruleId": "R04-guard-503",
+        "decision": "RULE_BASED",
+        "position": {
+          "file": "src/lib/customers/service.ts",
+          "line": 157,
+          "column": 25,
+          "tokenFound": true
+        },
+        "enclosingFunction": "defaultDb",
+        "exportedRoots": [
+          "addInteraction",
+          "createCustomer",
+          "eligibleOwners",
+          "getCustomer",
+          "linkableProjects",
+          "linkedProjects",
+          "listCustomers",
+          "listInteractions",
+          "setProjectLink",
+          "updateCustomer"
+        ],
+        "staticImporters": [
+          "src/app/[locale]/dashboard/clients/[id]/page.tsx",
+          "src/app/[locale]/dashboard/clients/new/page.tsx",
+          "src/app/[locale]/dashboard/clients/page.tsx",
+          "src/app/api/tenant/customers/[id]/interactions/route.ts",
+          "src/app/api/tenant/customers/[id]/projects/route.ts",
+          "src/app/api/tenant/customers/[id]/route.ts",
+          "src/app/api/tenant/customers/route.ts"
+        ],
+        "outcomeFlags": [],
+        "reachability": "AUTHENTICATED_USER_VISIBLE"
+      },
+      {
+        "id": "src/lib/executive/oversight.ts#L232C24",
+        "classification": "EXPLICIT_DEGRADED_MODE",
+        "confidence": "MANUAL",
+        "ruleId": "R08-guard-null-undefined",
+        "decision": "MANUAL_ADJUDICATION",
+        "position": {
+          "file": "src/lib/executive/oversight.ts",
+          "line": 232,
+          "column": 24,
+          "tokenFound": true
+        },
+        "enclosingFunction": "db",
+        "exportedRoots": [
+          "buildFinancialOversight"
+        ],
+        "staticImporters": [
+          "src/app/[locale]/dashboard/executive/oversight/page.tsx"
+        ],
+        "outcomeFlags": [],
+        "reachability": "AUTHENTICATED_USER_VISIBLE"
+      },
+      {
+        "id": "src/lib/executive/priorities.ts#L273C24",
+        "classification": "EXPLICIT_DEGRADED_MODE",
+        "confidence": "MANUAL",
+        "ruleId": "R08-guard-null-undefined",
+        "decision": "MANUAL_ADJUDICATION",
+        "position": {
+          "file": "src/lib/executive/priorities.ts",
+          "line": 273,
+          "column": 24,
+          "tokenFound": true
+        },
+        "enclosingFunction": "db",
+        "exportedRoots": [
+          "buildTomorrowsPriorities"
+        ],
+        "staticImporters": [
+          "src/app/[locale]/dashboard/executive/priorities/page.tsx"
+        ],
+        "outcomeFlags": [],
+        "reachability": "AUTHENTICATED_USER_VISIBLE"
+      },
+      {
+        "id": "src/lib/executive/report/generate.ts#L112C24",
+        "classification": "DB_REQUIRED_FAIL_CLOSED",
+        "confidence": "MANUAL",
+        "ruleId": "R10-no-guard",
+        "decision": "MANUAL_ADJUDICATION",
+        "position": {
+          "file": "src/lib/executive/report/generate.ts",
+          "line": 112,
+          "column": 24,
+          "tokenFound": true
+        },
+        "enclosingFunction": "generateDailyReport",
+        "exportedRoots": [
+          "generateDailyReport"
+        ],
+        "staticImporters": [
+          "src/lib/executive/report/worker.ts"
+        ],
+        "outcomeFlags": [],
+        "reachability": "BACKGROUND_ONLY"
+      },
+      {
+        "id": "src/lib/executive/report/generate.ts#L248C24",
+        "classification": "DB_REQUIRED_FAIL_CLOSED",
+        "confidence": "MANUAL",
+        "ruleId": "R10-no-guard",
+        "decision": "MANUAL_ADJUDICATION",
+        "position": {
+          "file": "src/lib/executive/report/generate.ts",
+          "line": 248,
+          "column": 24,
+          "tokenFound": true
+        },
+        "enclosingFunction": "claimNotification",
+        "exportedRoots": [
+          "claimNotification"
+        ],
+        "staticImporters": [
+          "src/lib/executive/report/worker.ts"
+        ],
+        "outcomeFlags": [],
+        "reachability": "BACKGROUND_ONLY"
+      },
+      {
+        "id": "src/lib/executive/report/generate.ts#L281C24",
+        "classification": "DB_REQUIRED_FAIL_CLOSED",
+        "confidence": "MANUAL",
+        "ruleId": "R10-no-guard",
+        "decision": "MANUAL_ADJUDICATION",
+        "position": {
+          "file": "src/lib/executive/report/generate.ts",
+          "line": 281,
+          "column": 24,
+          "tokenFound": true
+        },
+        "enclosingFunction": "releaseNotificationClaim",
+        "exportedRoots": [
+          "releaseNotificationClaim"
+        ],
+        "staticImporters": [
+          "src/lib/executive/report/worker.ts"
+        ],
+        "outcomeFlags": [
+          "RETRY_SUPPRESSION"
+        ],
+        "reachability": "BACKGROUND_ONLY"
+      },
+      {
+        "id": "src/lib/executive/report/read.ts#L126C36",
+        "classification": "EMPTY_SUCCESS_FALLBACK",
+        "confidence": "MANUAL",
+        "ruleId": "R11-ambiguous",
+        "decision": "MANUAL_ADJUDICATION",
+        "position": {
+          "file": "src/lib/executive/report/read.ts",
+          "line": 126,
+          "column": 36,
+          "tokenFound": true
+        },
+        "enclosingFunction": "getReport",
+        "exportedRoots": [
+          "getReport"
+        ],
+        "staticImporters": [
+          "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx"
+        ],
+        "outcomeFlags": [],
+        "reachability": "AUTHENTICATED_USER_VISIBLE"
+      },
+      {
+        "id": "src/lib/executive/report/read.ts#L152C36",
+        "classification": "EXPLICIT_DEGRADED_MODE",
+        "confidence": "MANUAL",
+        "ruleId": "R11-ambiguous",
+        "decision": "MANUAL_ADJUDICATION",
+        "position": {
+          "file": "src/lib/executive/report/read.ts",
+          "line": 152,
+          "column": 36,
+          "tokenFound": true
+        },
+        "enclosingFunction": "countReports",
+        "exportedRoots": [
+          "countReports"
+        ],
+        "staticImporters": [
+          "src/app/[locale]/dashboard/executive/reports/page.tsx"
+        ],
+        "outcomeFlags": [],
+        "reachability": "AUTHENTICATED_USER_VISIBLE"
+      },
+      {
+        "id": "src/lib/executive/report/read.ts#L96C36",
+        "classification": "EMPTY_SUCCESS_FALLBACK",
+        "confidence": "MANUAL",
+        "ruleId": "R11-ambiguous",
+        "decision": "MANUAL_ADJUDICATION",
+        "position": {
+          "file": "src/lib/executive/report/read.ts",
+          "line": 96,
+          "column": 36,
+          "tokenFound": true
+        },
+        "enclosingFunction": "listReports",
+        "exportedRoots": [
+          "listReports"
+        ],
+        "staticImporters": [
+          "src/app/[locale]/dashboard/executive/reports/page.tsx"
+        ],
+        "outcomeFlags": [],
+        "reachability": "AUTHENTICATED_USER_VISIBLE"
+      },
+      {
+        "id": "src/lib/executive/report/worker.ts#L191C24",
+        "classification": "EMPTY_SUCCESS_FALLBACK",
+        "confidence": "MANUAL",
+        "ruleId": "R19-named-or-shaped-return",
+        "decision": "MANUAL_ADJUDICATION",
+        "position": {
+          "file": "src/lib/executive/report/worker.ts",
+          "line": 191,
+          "column": 24,
+          "tokenFound": true
+        },
+        "enclosingFunction": "runReportPass",
+        "exportedRoots": [
+          "runReportPass"
+        ],
+        "staticImporters": [
+          "src/app/api/executive/reports/run/route.ts"
+        ],
+        "outcomeFlags": [],
+        "reachability": "BACKGROUND_ONLY"
+      },
+      {
+        "id": "src/lib/executive/settings.ts#L146C24",
+        "classification": "EMPTY_SUCCESS_FALLBACK",
+        "confidence": "HIGH",
+        "ruleId": "R08-guard-null-undefined",
+        "decision": "RULE_BASED",
+        "position": {
+          "file": "src/lib/executive/settings.ts",
+          "line": 146,
+          "column": 24,
+          "tokenFound": true
+        },
+        "enclosingFunction": "db",
+        "exportedRoots": [
+          "loadExecutiveSettings",
+          "loadExecutiveSettingsMany",
+          "saveExecutiveSettings"
+        ],
+        "staticImporters": [
+          "src/app/[locale]/dashboard/clients/[id]/page.tsx",
+          "src/app/[locale]/dashboard/clients/page.tsx",
+          "src/app/[locale]/dashboard/executive/priorities/page.tsx",
+          "src/app/[locale]/dashboard/executive/settings/page.tsx",
+          "src/app/api/executive/settings/route.ts",
+          "src/lib/executive/report/worker.ts",
+          "src/lib/executive/scope.ts"
+        ],
+        "outcomeFlags": [],
+        "reachability": "AUTHENTICATED_USER_VISIBLE"
+      },
+      {
+        "id": "src/lib/executive/summary.ts#L181C24",
+        "classification": "EXPLICIT_DEGRADED_MODE",
+        "confidence": "MANUAL",
+        "ruleId": "R08-guard-null-undefined",
+        "decision": "MANUAL_ADJUDICATION",
+        "position": {
+          "file": "src/lib/executive/summary.ts",
+          "line": 181,
+          "column": 24,
+          "tokenFound": true
+        },
+        "enclosingFunction": "db",
+        "exportedRoots": [
+          "buildExecutiveSummary"
+        ],
+        "staticImporters": [
+          "src/app/[locale]/dashboard/executive/page.tsx",
+          "src/app/api/executive/summary/route.ts",
+          "src/lib/executive/report/generate.ts"
+        ],
+        "outcomeFlags": [],
+        "reachability": "AUTHENTICATED_USER_VISIBLE"
+      }
+    ],
+    "removed": [],
+    "moved": [],
+    "newFiles": [
+      "src/lib/customers/service.ts",
+      "src/lib/executive/oversight.ts",
+      "src/lib/executive/priorities.ts",
+      "src/lib/executive/report/generate.ts",
+      "src/lib/executive/report/read.ts",
+      "src/lib/executive/report/worker.ts",
+      "src/lib/executive/settings.ts",
+      "src/lib/executive/summary.ts"
+    ],
+    "changedExistingRecords": 92,
+    "staticConsumerEdgesOfAdded": 26,
+    "unresolved": 0,
+    "unresolvedEdges": 0,
+    "primaryPartition": {
+      "sum": 404,
+      "total": 404,
+      "missingPrimaryIds": 0,
+      "duplicatePrimaryIds": 0,
+      "outsideClosedSet": 0,
+      "counts": {
+        "DB_REQUIRED_FAIL_CLOSED": 74,
+        "DB_UNAVAILABLE_RETURNS_503": 77,
+        "AUTH_OR_SESSION_FAIL_CLOSED": 4,
+        "EMPTY_SUCCESS_FALLBACK": 167,
+        "IN_MEMORY_READ_FALLBACK": 2,
+        "IN_MEMORY_WRITE_FALLBACK": 1,
+        "SILENT_EXCEPTION_FALLBACK": 4,
+        "EXPLICIT_DEGRADED_MODE": 17,
+        "HEALTH_OR_DIAGNOSTIC_ONLY": 4,
+        "INITIALIZATION_OR_MAINTENANCE": 1,
+        "TEST_ONLY": 27,
+        "WRAPPER_OR_FACTORY": 26,
+        "UNRESOLVED_REQUIRES_MANUAL_REVIEW": 0
+      }
+    },
+    "outcomeTotals": {
+      "SUCCESS_WITHOUT_PERSISTENCE": 88,
+      "ACK_WITHOUT_DURABILITY": 9,
+      "AUDIT_LOSS": 146,
+      "RETRY_SUPPRESSION": 267
+    },
+    "frozenOutcomeTotals": {
+      "SUCCESS_WITHOUT_PERSISTENCE": 88,
+      "ACK_WITHOUT_DURABILITY": 9,
+      "AUDIT_LOSS": 146,
+      "RETRY_SUPPRESSION": 263
+    },
+    "rulesetVersion": "s0-b05.7",
+    "inventorySha256": "16e809fc9f5ab3c6339862440a6ca7c72301051d9e886b2a390bde7f402a2ac7",
+    "adjudicationsSha256": "1369568399b946a72d4f0589a13fe17c88cdc5a5ed0d82521880581a89d02f25"
+  },
+  "derivedFacts": {
+    "platformCapabilityGate": {
+      "expression": "can(user.role, \"admin\")",
+      "erpRoutes": {
+        "files": 27,
+        "withGate": 27,
+        "list": [
+          "src/app/api/erp/approvals/[id]/route.ts",
+          "src/app/api/erp/approvals/[id]/steps/route.ts",
+          "src/app/api/erp/approvals/route.ts",
+          "src/app/api/erp/inventory/[id]/movements/route.ts",
+          "src/app/api/erp/inventory/[id]/route.ts",
+          "src/app/api/erp/inventory/route.ts",
+          "src/app/api/erp/kpis/route.ts",
+          "src/app/api/erp/overview/route.ts",
+          "src/app/api/erp/projects/[id]/costs/route.ts",
+          "src/app/api/erp/projects/[id]/milestones/route.ts",
+          "src/app/api/erp/projects/[id]/route.ts",
+          "src/app/api/erp/projects/[id]/tasks/route.ts",
+          "src/app/api/erp/projects/[id]/work-orders/route.ts",
+          "src/app/api/erp/projects/route.ts",
+          "src/app/api/erp/resources/[id]/route.ts",
+          "src/app/api/erp/resources/route.ts",
+          "src/app/api/erp/tasks/[id]/comments/route.ts",
+          "src/app/api/erp/tasks/[id]/route.ts",
+          "src/app/api/erp/tasks/route.ts",
+          "src/app/api/erp/teams/[id]/member-candidates/route.ts",
+          "src/app/api/erp/teams/[id]/members/[userId]/route.ts",
+          "src/app/api/erp/teams/[id]/members/route.ts",
+          "src/app/api/erp/teams/[id]/route.ts",
+          "src/app/api/erp/teams/route.ts",
+          "src/app/api/erp/work-orders/[id]/activities/route.ts",
+          "src/app/api/erp/work-orders/[id]/route.ts",
+          "src/app/api/erp/work-orders/route.ts"
+        ],
+        "withGetCurrentUser": 27,
+        "withEquivalentGate": 27
+      },
+      "customerRoutes": {
+        "files": 4,
+        "withGate": 0,
+        "list": [
+          "src/app/api/tenant/customers/[id]/interactions/route.ts",
+          "src/app/api/tenant/customers/[id]/projects/route.ts",
+          "src/app/api/tenant/customers/[id]/route.ts",
+          "src/app/api/tenant/customers/route.ts"
+        ],
+        "withGetCurrentUser": 0,
+        "withEquivalentGate": 0
+      },
+      "partyIdWriters": [
+        "src/lib/customers/service.ts"
+      ]
+    },
+    "reportCorrectionCallers": {
+      "definition": "src/lib/executive/report/generate.ts",
+      "callers": [
+        "src/lib/executive/report/worker.ts"
+      ],
+      "withCorrection": []
+    },
+    "workerEnvironmentNames": [
+      "EXECUTIVE_REPORT_BATCH",
+      "EXECUTIVE_REPORT_INTERVAL_MS",
+      "EXECUTIVE_REPORT_WORKER_TOKEN",
+      "HERMES_WORKER_BASE_URL",
+      "METERING_WORKER_TOKEN",
+      "METRICS_TOKEN"
+    ],
+    "composeEnvFileServices": {
+      "frozenSource": [
+        "hermes-ats-review-worker",
+        "hermes-document-cleanup-worker",
+        "hermes-journal-import",
+        "hermes-metering-worker",
+        "hermes-migrate",
+        "hermes-web",
+        "postgres"
+      ],
+      "target": [
+        "hermes-ats-review-worker",
+        "hermes-document-cleanup-worker",
+        "hermes-executive-report-worker",
+        "hermes-journal-import",
+        "hermes-metering-worker",
+        "hermes-migrate",
+        "hermes-web",
+        "postgres"
+      ]
+    }
+  },
+  "historicalFiles": [
+    {
+      "path": "docs/security/s1-risk-register.json",
+      "role": "S1_ARTIFACT",
+      "frozenSha256": "8ef30aeeaa0d64a5a7b1e17d083c15d17dda3730f6c658d004304f6a9026774c",
+      "preservedByMerge": true
+    },
+    {
+      "path": "docs/security/THREAT-MODEL-AND-RISK-REGISTER.md",
+      "role": "S1_ARTIFACT",
+      "frozenSha256": "b2b9856d6ffd54fed71ea5d9d74dfcf67163787172db39d284674ab9eb252779",
+      "preservedByMerge": true
+    },
+    {
+      "path": "scripts/security/s1/risk-register-check.mjs",
+      "role": "S1_ARTIFACT",
+      "frozenSha256": "0041d004a29705815b2250501a42958833950200dd7426a3430829462e38fb24",
+      "preservedByMerge": true
+    },
+    {
+      "path": "scripts/security/s1/__tests__/risk-register.selftest.mjs",
+      "role": "S1_ARTIFACT",
+      "frozenSha256": "e3eb3a6793f2de87e0ab9f16d6f38414f3e8a64c52b271dbd52010fd8700bbfc",
+      "preservedByMerge": true
+    },
+    {
+      "path": "docs/security/EDGE-ORIGIN-AND-CLIENT-IP.md",
+      "role": "S0_EVIDENCE",
+      "frozenSha256": "0d44a6c2c99e7aed4066d5975d2d9326b34d417ee5ab462ec353b77f07be8d08",
+      "preservedByMerge": true
+    },
+    {
+      "path": ".gitattributes",
+      "role": "CONFIGURATION",
+      "frozenSha256": "e05dd762e7e366640523196e72e55ba12c49032408fac9fd7ef1c4a3b37df2da",
+      "preservedByMerge": false
+    }
+  ],
+  "canonicalProjection": [
+    {
+      "findingId": "RL-001",
+      "registerFindingId": "DELTA-RL-001",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK",
+      "ownerRiskId": "R-65",
+      "severity": "HIGH",
+      "score": 12,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RL-002",
+      "registerFindingId": "DELTA-RL-002",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK",
+      "ownerRiskId": "R-66",
+      "severity": "MEDIUM",
+      "score": 8,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RL-003",
+      "registerFindingId": "DELTA-RL-003",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK",
+      "ownerRiskId": "R-67",
+      "severity": "MEDIUM",
+      "score": 6,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RL-004",
+      "registerFindingId": "DELTA-RL-004",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_EXISTING_RISK",
+      "ownerRiskId": "R-53",
+      "severity": "MEDIUM",
+      "score": 10,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "HISTORICAL_S1_BASELINE"
+    },
+    {
+      "findingId": "RL-005",
+      "registerFindingId": "DELTA-RL-005",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK",
+      "ownerRiskId": "R-68",
+      "severity": "MEDIUM",
+      "score": 6,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RL-006",
+      "registerFindingId": "DELTA-RL-006",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK",
+      "ownerRiskId": "R-68",
+      "severity": "MEDIUM",
+      "score": 6,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RL-007",
+      "registerFindingId": "DELTA-RL-007",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK",
+      "ownerRiskId": "R-68",
+      "severity": "MEDIUM",
+      "score": 6,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RR-001",
+      "registerFindingId": "DELTA-RR-001",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK",
+      "ownerRiskId": "R-68",
+      "severity": "MEDIUM",
+      "score": 6,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RR-002",
+      "registerFindingId": "DELTA-RR-002",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK",
+      "ownerRiskId": "R-73",
+      "severity": "MEDIUM",
+      "score": 8,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RR-003",
+      "registerFindingId": "DELTA-RR-003",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK",
+      "ownerRiskId": "R-70",
+      "severity": "LOW",
+      "score": 4,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RR-004",
+      "registerFindingId": "DELTA-RR-004",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK",
+      "ownerRiskId": "R-71",
+      "severity": "LOW",
+      "score": 3,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RR-005",
+      "registerFindingId": "DELTA-RR-005",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_EXISTING_RISK",
+      "ownerRiskId": "R-09",
+      "severity": "HIGH",
+      "score": 15,
+      "productionState": "ACTIVE_CONFIRMED",
+      "ownerScope": "HISTORICAL_S1_BASELINE"
+    },
+    {
+      "findingId": "RR-006",
+      "registerFindingId": "DELTA-RR-006",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK",
+      "ownerRiskId": "R-67",
+      "severity": "MEDIUM",
+      "score": 6,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RR-007",
+      "registerFindingId": "DELTA-RR-007",
+      "status": "POLICY_QUESTION",
+      "deltaDisposition": "POLICY_AMBIGUITY",
+      "ownerRiskId": "R-72",
+      "severity": "MEDIUM",
+      "score": 6,
+      "productionState": "POLICY_AMBIGUITY",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RR-008",
+      "registerFindingId": "DELTA-RR-008",
+      "status": "ASSURANCE_GAP",
+      "deltaDisposition": "UNPROVEN",
+      "ownerRiskId": "R-72",
+      "severity": "MEDIUM",
+      "score": 6,
+      "productionState": "POLICY_AMBIGUITY",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RR-009",
+      "registerFindingId": "DELTA-RR-009",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK",
+      "ownerRiskId": "R-68",
+      "severity": "MEDIUM",
+      "score": 6,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RR-010",
+      "registerFindingId": "DELTA-RR-010",
+      "status": "MAPPED_TO_RISK",
+      "deltaDisposition": "OWNED_BY_NEW_RISK",
+      "ownerRiskId": "R-69",
+      "severity": "MEDIUM",
+      "score": 9,
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "ownerScope": "DELTA_RELOCK"
+    },
+    {
+      "findingId": "RR-011",
+      "registerFindingId": "DELTA-RR-011",
+      "status": "POLICY_QUESTION",
+      "deltaDisposition": "POLICY_AMBIGUITY",
+      "ownerRiskId": "R-72",
+      "severity": "MEDIUM",
+      "score": 6,
+      "productionState": "POLICY_AMBIGUITY",
+      "ownerScope": "DELTA_RELOCK"
+    }
+  ],
+  "topPriorities": [
+    {
+      "priority": 1,
+      "riskId": "R-01",
+      "severity": "HIGH",
+      "score": 20,
+      "scope": "HISTORICAL_S1_BASELINE"
+    },
+    {
+      "priority": 2,
+      "riskId": "R-02",
+      "severity": "HIGH",
+      "score": 20,
+      "scope": "HISTORICAL_S1_BASELINE"
+    },
+    {
+      "priority": 3,
+      "riskId": "R-04",
+      "severity": "HIGH",
+      "score": 15,
+      "scope": "HISTORICAL_S1_BASELINE"
+    },
+    {
+      "priority": 4,
+      "riskId": "R-08",
+      "severity": "HIGH",
+      "score": 15,
+      "scope": "HISTORICAL_S1_BASELINE"
+    },
+    {
+      "priority": 5,
+      "riskId": "R-13",
+      "severity": "HIGH",
+      "score": 15,
+      "scope": "HISTORICAL_S1_BASELINE"
+    },
+    {
+      "priority": 6,
+      "riskId": "R-16",
+      "severity": "HIGH",
+      "score": 16,
+      "scope": "HISTORICAL_S1_BASELINE"
+    },
+    {
+      "priority": 7,
+      "riskId": "R-24",
+      "severity": "HIGH",
+      "score": 16,
+      "scope": "HISTORICAL_S1_BASELINE"
+    },
+    {
+      "priority": 8,
+      "riskId": "R-26",
+      "severity": "HIGH",
+      "score": 16,
+      "scope": "HISTORICAL_S1_BASELINE"
+    },
+    {
+      "priority": 9,
+      "riskId": "R-32",
+      "severity": "HIGH",
+      "score": 15,
+      "scope": "HISTORICAL_S1_BASELINE"
+    },
+    {
+      "priority": 10,
+      "riskId": "R-33",
+      "severity": "HIGH",
+      "score": 15,
+      "scope": "HISTORICAL_S1_BASELINE"
+    }
+  ],
+  "reviewedCallsites": [
+    {
+      "id": "src/lib/customers/service.ts#L157C25",
+      "reachability": "AUTHENTICATED_USER_VISIBLE",
+      "note": "Every customer service function opens the client through this accessor; a missing delegate throws a controlled 503 to the route."
+    },
+    {
+      "id": "src/lib/executive/oversight.ts#L232C24",
+      "reachability": "AUTHENTICATED_USER_VISIBLE",
+      "note": "Local accessor with one consumer, the financial oversight builder behind the oversight page."
+    },
+    {
+      "id": "src/lib/executive/priorities.ts#L273C24",
+      "reachability": "AUTHENTICATED_USER_VISIBLE",
+      "note": "Local accessor with one consumer, the priorities builder behind the priorities page."
+    },
+    {
+      "id": "src/lib/executive/report/generate.ts#L112C24",
+      "reachability": "BACKGROUND_ONLY",
+      "note": "Report generation, reached only from the runner entrypoint."
+    },
+    {
+      "id": "src/lib/executive/report/generate.ts#L248C24",
+      "reachability": "BACKGROUND_ONLY",
+      "note": "Notification claim, reached only from the runner entrypoint."
+    },
+    {
+      "id": "src/lib/executive/report/generate.ts#L281C24",
+      "reachability": "BACKGROUND_ONLY",
+      "note": "Claim release, reached only from the runner entrypoint."
+    },
+    {
+      "id": "src/lib/executive/report/read.ts#L126C36",
+      "reachability": "AUTHENTICATED_USER_VISIBLE",
+      "note": "Report detail read behind the detail page."
+    },
+    {
+      "id": "src/lib/executive/report/read.ts#L152C36",
+      "reachability": "AUTHENTICATED_USER_VISIBLE",
+      "note": "Archive count behind the archive page."
+    },
+    {
+      "id": "src/lib/executive/report/read.ts#L96C36",
+      "reachability": "AUTHENTICATED_USER_VISIBLE",
+      "note": "Archive list behind the archive page."
+    },
+    {
+      "id": "src/lib/executive/report/worker.ts#L191C24",
+      "reachability": "BACKGROUND_ONLY",
+      "note": "The runner pass; the entrypoint behind it is internet-reachable but needs a token or a platform-administrator session."
+    },
+    {
+      "id": "src/lib/executive/settings.ts#L146C24",
+      "reachability": "AUTHENTICATED_USER_VISIBLE",
+      "note": "Settings accessor used by the scope resolver, the settings API and the settings page when no client is passed."
+    },
+    {
+      "id": "src/lib/executive/summary.ts#L181C24",
+      "reachability": "AUTHENTICATED_USER_VISIBLE",
+      "note": "Local accessor with one consumer, the summary builder behind the summary API and the dashboard; the report generator also calls the builder."
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "RL-001",
+      "registerFindingId": "DELTA-RL-001",
+      "origin": "REVIEWER",
+      "title": "The report detail page renders the stored snapshot without narrowing it to the reader",
+      "summary": "Only the detail view leaks: the archive list selects envelope fields and never the snapshot, and no download or export route exists (the only report route is the run entrypoint). The snapshot is produced by the worker under a synthetic OWNER scope holding the operations, financial and industrial axes and every active site, and the worker's own comment says the per-reader narrowing happens when somebody opens the report. The detail page does not do it: it passes the stored snapshot to the shared view and takes only the organization from the resolved scope. Opening a report needs the platform administrator capability and one executive axis, not the axis a stored section needs. An ADMIN of the organization therefore reads the financial section (OWNER-only elsewhere), and a platform administrator whose organization role is lower reads the operations, financial and customer aggregates and the plant data of every site. That a platform administrator is trusted to stay within an organization role is a design assumption that no run-time evidence in this programme confirms.",
+      "disposition": "OWNED_BY_NEW_RISK",
+      "canonicalRiskId": "R-65",
+      "callsiteBacked": true,
+      "relatedCallsiteIds": [
+        "src/lib/executive/report/read.ts#L126C36"
+      ],
+      "callsiteRelation": "getReport is the read that feeds the detail page; its null branch also decides what a reader sees when the archive cannot be read.",
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx",
+          "anchor": "summary={report.snapshot}",
+          "note": "The stored snapshot is handed to the view as is; nothing consults the reader's authority or site list."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/read.ts",
+          "anchor": "The envelope fields. Deliberately excludes the snapshot.",
+          "note": "The list is envelope-only: the leak is in the detail view, not the list."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "authority: { operations: true, financial: true, industrial: true },",
+          "note": "The report is produced under a synthetic OWNER scope with every axis."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "the PER-READER narrowing happens",
+          "note": "The documented design: narrowing at open time. No such code exists on the read path."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/org/rbac.ts",
+          "anchor": "view_erp_compensation:          [\"OWNER\"],",
+          "note": "Financial visibility is OWNER-only."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/scope.ts",
+          "anchor": "if (!platformCan(user.role, \"admin\")) return { ok: false, code: \"FORBIDDEN\", memberships: [] };",
+          "note": "The gate to open a report: the platform capability plus one executive axis."
+        }
+      ]
+    },
+    {
+      "findingId": "RL-002",
+      "registerFindingId": "DELTA-RL-002",
+      "origin": "REVIEWER",
+      "title": "The customer project panel returns summed project cost to ADMIN",
+      "summary": "recordedCost is the sum of ErpProjectCost.amount per currency for the projects linked to a customer. The route that returns it needs view_customers and view_erp, which OWNER and ADMIN both hold, and the customer page renders it. On every ERP surface the same money (actual cost, budget) is nulled for anyone without view_erp_compensation, which only OWNER holds. No authoritative document states that a customer-level aggregate is outside that gate, so this is a policy gap until the owner says otherwise. Linking and unlinking a project to a customer additionally lets a customer manager see which projects exist and attach them, which reveals project granularity to a role that has no project access of its own (the link needs manage_erp as well, so the exposure is limited to roles that already hold it).",
+      "disposition": "OWNED_BY_NEW_RISK",
+      "canonicalRiskId": "R-66",
+      "callsiteBacked": false,
+      "relatedCallsiteIds": [],
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "anchor": "recordedCost: sums.map(s => ({",
+          "note": "The cost aggregate is part of the response for any caller the route admits."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "anchor": "_sum: { amount: true },",
+          "note": "The figure comes from the cost ledger, ErpProjectCost.amount."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/api/tenant/customers/[id]/projects/route.ts",
+          "anchor": "if (!requirePermission(active.scope.role, \"view_erp\").ok) return forbidden();",
+          "note": "The route requires view_erp, not view_erp_compensation."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/[locale]/dashboard/clients/[id]/page.tsx",
+          "anchor": "projects.recordedCost.map(c => (",
+          "note": "The page renders the figure."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/org/rbac.ts",
+          "anchor": "view_erp:                       [\"OWNER\", \"ADMIN\"],",
+          "note": "ADMIN holds view_erp."
+        },
+        {
+          "scope": "CONTEXT",
+          "path": "src/lib/erp/operations.ts",
+          "anchor": "actualCost: canViewCompensation ? Number(row.actualCost) : null,",
+          "note": "The ERP layer's rule for the same money."
+        }
+      ]
+    },
+    {
+      "findingId": "RL-003",
+      "registerFindingId": "DELTA-RL-003",
+      "origin": "REVIEWER",
+      "title": "The nightly-report entrypoint accepts three bearer tokens and discloses organization ids",
+      "summary": "The guard compares the presented bearer with every configured token among EXECUTIVE_REPORT_WORKER_TOKEN, METERING_WORKER_TOKEN and METRICS_TOKEN and accepts any match. The comparison itself is timing-safe. The module comment says that setting the dedicated variable makes the other tokens stop opening the door; the code does not do that, and the registration test locks the accept-all chain by asserting that the source mentions all three. The route is an ordinary /api path behind a single catch-all proxy location with no rate limit or allow-list; it imports only the error helper (no origin check, no rate limit), so the credential is the only barrier on the token path. The response is the whole pass report, whose failures, undelivered entries and pagination cursor contain organization ids of tenants other than the caller's; paging with the returned cursor enumerates every organization id in the platform. The single claim 'only the report token opens it' is therefore false.",
+      "disposition": "OWNED_BY_NEW_RISK",
+      "canonicalRiskId": "R-67",
+      "callsiteBacked": true,
+      "relatedCallsiteIds": [
+        "src/lib/executive/report/worker.ts#L191C24"
+      ],
+      "callsiteRelation": "runReportPass is the function the entrypoint calls; its no-client branch is the response a token holder receives during an outage.",
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/auth.ts",
+          "anchor": "process.env.METRICS_TOKEN,",
+          "note": "The scrape token is in the accepted set."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/auth.ts",
+          "anchor": "for (const expected of configured) {",
+          "note": "Every configured token is compared; the dedicated one does not exclude the others."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/auth.ts",
+          "anchor": "other tokens stop opening this particular door.",
+          "note": "The comment claims an isolation the code does not provide."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/auth.ts",
+          "anchor": "return timingSafeEqual(a, b);",
+          "note": "The comparison is constant-time."
+        },
+        {
+          "scope": "DELTA",
+          "path": "scripts/__tests__/executive-guard-recognition.test.ts",
+          "anchor": "expect(src).toMatch(/METRICS_TOKEN/);",
+          "note": "The recognition test locks the accept-all chain by asserting the source names all three variables."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/api/executive/reports/run/route.ts",
+          "anchor": "import { securityError } from \"@/lib/security/request-guards\";",
+          "note": "Only the error helper is imported: no origin check and no rate limit on this route."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/api/executive/reports/run/route.ts",
+          "anchor": "return securityError(pass as unknown as Record<string, unknown>, 200);",
+          "note": "The whole pass report is returned to the caller."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "readonly failures: ReadonlyArray<{ organizationId: string; reasonKey: string }>;",
+          "note": "The report names organizations other than the caller's."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "readonly nextAfterOrganizationId: string | null;",
+          "note": "The cursor is an organization id."
+        },
+        {
+          "scope": "CONTEXT",
+          "path": "deploy/nginx/default.conf",
+          "anchor": "location / {",
+          "note": "A single catch-all location proxies every path; no allow-list or rate limit applies to this route."
+        }
+      ]
+    },
+    {
+      "findingId": "RL-004",
+      "registerFindingId": "DELTA-RL-004",
+      "origin": "REVIEWER",
+      "title": "Worker containers receive the whole production environment file",
+      "summary": "The runner's Dockerfile stage copies one dependency-free script and its comments say it holds no database credential. The compose service nevertheless declares env_file for the whole production environment file, which injects every variable in that file into the container at start, and the release gate registers that declaration as intended for the token. The script reads only a handful of variables, whose names are derived from the script itself (see the derived worker environment in this document); none of them is a database or signing credential. The three earlier workers declare the same env_file. Image cleanliness and run-time environment are two different properties, and the historical positive control R-53 measured the first. Only variable names were derived; the environment file was not read.",
+      "disposition": "OWNED_BY_EXISTING_RISK",
+      "canonicalRiskId": "R-53",
+      "callsiteBacked": false,
+      "relatedCallsiteIds": [],
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "docker-compose.prod.yml",
+          "anchor": "hermes-executive-report-worker:",
+          "note": "The new service."
+        },
+        {
+          "scope": "DELTA",
+          "path": "docker-compose.prod.yml",
+          "anchor": "env_file: .env.production",
+          "note": "Declared for the new service and for each earlier worker."
+        },
+        {
+          "scope": "DELTA",
+          "path": "Dockerfile",
+          "anchor": "dependency tree, no ORM, no application code, no database credential.",
+          "note": "The image-level claim."
+        },
+        {
+          "scope": "DELTA",
+          "path": "scripts/ci/phase997-candidate-gate.mjs",
+          "anchor": "\"hermes-executive-report-worker\",",
+          "note": "The release gate registers the env_file as intended, for the token."
+        },
+        {
+          "scope": "DELTA",
+          "path": "scripts/executive/daily-report-worker.mjs",
+          "anchor": "process.env.EXECUTIVE_REPORT_WORKER_TOKEN ??",
+          "note": "The runner's own variable reads: the names the container needs."
+        },
+        {
+          "scope": "CONTEXT",
+          "path": "docs/security/s1-risk-register.json",
+          "anchor": "The worker boundary is deliberately minimal and holds no database credential",
+          "note": "R-53, the historical positive control this finding revises."
+        }
+      ]
+    },
+    {
+      "findingId": "RL-005",
+      "registerFindingId": "DELTA-RL-005",
+      "origin": "REVIEWER",
+      "title": "A failed batched settings read makes the worker freeze a report for the default zone's night",
+      "summary": "The worker resolves every organization's zone and day cutoff with one batched settings read. Every id starts as the default and keeps it if the query throws, and the pass then generates and stores a report for the night that zone considers finished. A stored report is unique per organization and night, and nothing regenerates it, so an organization with its own zone keeps a report for the wrong window. The stored row names the zone it used, so the defect is discoverable, not corrected.",
+      "disposition": "OWNED_BY_NEW_RISK",
+      "canonicalRiskId": "R-68",
+      "callsiteBacked": true,
+      "relatedCallsiteIds": [
+        "src/lib/executive/settings.ts#L146C24"
+      ],
+      "callsiteRelation": "Same module, different path: the worker passes its own client to the batched loader, so it does not reach this accessor; its fallback is in the loader's catch block, which is not a getPrisma call site.",
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/settings.ts",
+          "anchor": "for (const id of organizationIds) out.set(id, resolveFromRow(null));",
+          "note": "Every id starts as the default and stays so if the query fails."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "const settingsByOrg = await loadExecutiveSettingsMany(",
+          "note": "The result feeds the target night for each organization; the worker passes its own client."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/generate.ts",
+          "anchor": "if (existing && !args.correction) {",
+          "note": "An existing night is never regenerated without a correction, and no caller supplies one."
+        }
+      ]
+    },
+    {
+      "findingId": "RL-006",
+      "registerFindingId": "DELTA-RL-006",
+      "origin": "REVIEWER",
+      "title": "A notification claim that cannot be released stays set",
+      "summary": "To avoid duplicate notices the worker claims the right to notify with a conditional update, then sends. When nobody could be told, it releases the claim so a later pass retries. The release result is discarded and a throw is swallowed. If the database is unreachable at that moment the claim stays, the row says the report was announced, and no later pass retries. The pass response lists the organization as undelivered for that one pass, which is the only trace.",
+      "disposition": "OWNED_BY_NEW_RISK",
+      "canonicalRiskId": "R-68",
+      "callsiteBacked": true,
+      "relatedCallsiteIds": [
+        "src/lib/executive/report/generate.ts#L281C24"
+      ],
+      "callsiteRelation": "This call site is the release of the notification claim; the expression returns false and the caller discards it.",
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "claimedAtMs: nowMs,",
+          "note": "The release call whose result is not inspected and whose failure is swallowed."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/generate.ts",
+          "anchor": "data: { notifiedAt: null },",
+          "note": "The release is the only thing that makes a later pass retry."
+        }
+      ]
+    },
+    {
+      "findingId": "RL-007",
+      "registerFindingId": "DELTA-RL-007",
+      "origin": "REVIEWER",
+      "title": "On the report path a database outage is reported as a normal state",
+      "summary": "Three places report an unreachable database as an ordinary answer: a pass with no database returns HTTP 200 with zero work, identical to a lost lease; a failed notification claim is reported as not claimed, the word used for losing a race, and that outcome is excluded from the undelivered list; and the detail page shows a missing report for an unreadable archive although the list page has an unavailable state. Nothing is lost because the next poll retries, but an alert keyed on pass failures or an operator reading the page cannot see the outage.",
+      "disposition": "OWNED_BY_NEW_RISK",
+      "canonicalRiskId": "R-68",
+      "callsiteBacked": true,
+      "relatedCallsiteIds": [
+        "src/lib/executive/report/generate.ts#L248C24",
+        "src/lib/executive/report/read.ts#L126C36",
+        "src/lib/executive/report/worker.ts#L191C24"
+      ],
+      "callsiteRelation": "Each of the three returns an ordinary-looking value for an absent client: false (not claimed), null (not found) and an empty pass (lease held).",
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "if (!client) return emptyPass(nowMs, false, after);",
+          "note": "No database is answered as an empty, successful pass."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "else if (result !== \"NOT_CLAIMED\") {",
+          "note": "A claim that failed for lack of a database is not listed as undelivered."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx",
+          "anchor": "body = report ? (",
+          "note": "A null report, including an unreadable archive, renders as not found."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/read.ts",
+          "anchor": "if (!reports) return null;",
+          "note": "getReport answers null for an absent client, a failed query and a missing row alike."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/generate.ts",
+          "anchor": "if (!reports) return false;",
+          "note": "claimNotification answers false for an absent client and for a lost race alike."
+        }
+      ]
+    },
+    {
+      "findingId": "RR-001",
+      "registerFindingId": "DELTA-RR-001",
+      "origin": "REVIEWER",
+      "title": "A transient failure of the site read freezes a report whose industrial section says FORBIDDEN",
+      "summary": "The worker lists an organization's active sites with one query in siteIdsOf and returns an empty list when that query throws (and when the delegate is missing). The empty list becomes the allowed-site list of the synthetic scope. The industrial section builder answers an empty list with a refusal whose status is FORBIDDEN and whose reason is noSites, before it touches the database, so a transient failure of that one read is stored as a permission refusal ('no plant has been granted to your account') instead of UNAVAILABLE. The worker's own comment records that an empty list 'would look like a permission refusal rather than what it is', and the code does it anyway on the error path. The stored coverage names FORBIDDEN, not a failure, and an organization that really has no active site produces the same section, so the two cases cannot be told apart afterwards. The report row is unique per organization and night: the next pass finds it already reported. generateDailyReport has a correction option that would write a new version, but it is only declared there: no worker, route, scheduler or page passes it, so the wrong section stays in the archive row and on the detail page. The effect is on integrity (a frozen statement with a false reason), on the availability of the industrial section for that night and on auditability (the stored reason is wrong).",
+      "disposition": "OWNED_BY_NEW_RISK",
+      "canonicalRiskId": "R-68",
+      "callsiteBacked": true,
+      "relatedCallsiteIds": [
+        "src/lib/executive/report/worker.ts#L191C24"
+      ],
+      "callsiteRelation": "runReportPass obtains the client that siteIdsOf then queries with; the site read that fails transiently runs on that client.",
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "async function siteIdsOf(client: unknown, organizationId: string): Promise<string[]> {",
+          "note": "The single read of the organization's active sites.",
+          "fact": "RR-001.SITE_IDS_FN"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "if (!sites) return [];",
+          "note": "A missing delegate also yields an empty list.",
+          "fact": "RR-001.MISSING_DELEGATE_EMPTY"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "siteIds: await siteIdsOf(client, organizationId),",
+          "note": "The result becomes the synthetic scope's site list.",
+          "fact": "RR-001.SCOPE_CONSUMES"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "// permission refusal rather than what it is.",
+          "note": "The worker's own comment names the risk of an empty list."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/summary.ts",
+          "anchor": "if (siteIds.length === 0) {",
+          "note": "An empty site list is answered before any query."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/summary.ts",
+          "anchor": "return refusedSection(\"FORBIDDEN\", REASON.noSites);",
+          "note": "The answer is FORBIDDEN with the no-sites reason, not UNAVAILABLE."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/contract.ts",
+          "anchor": "reasonKey: s.reasonKey,",
+          "note": "The stored coverage records the section's status and reason as the section reported them."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/generate.ts",
+          "anchor": "if (existing && !args.correction) {",
+          "note": "A stored night is never regenerated without a correction.",
+          "fact": "RR-001.ALREADY_REPORTED_GUARD"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/generate.ts",
+          "anchor": "correction?: { actorUserId: string; reason: string };",
+          "note": "The correction option exists on generateDailyReport.",
+          "fact": "RR-001.CORRECTION_OPTION"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "absent": "correction:",
+          "note": "The worker never passes a correction; no product caller does.",
+          "fact": "RR-001.WORKER_NEVER_PASSES"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "rule": "FN_BODY_REGEX",
+          "pattern": "catch\\s*(?:\\([^)]*\\))?\\s*\\{\\s*return \\[\\];\\s*\\}",
+          "symbol": "siteIdsOf",
+          "note": "The catch of siteIdsOf returns the empty list: a throwing read becomes no sites.",
+          "fact": "RR-001.CATCH_EMPTY"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/summary.ts",
+          "rule": "REGEX",
+          "pattern": "if \\(siteIds\\.length === 0\\) \\{\\s*return refusedSection\\(\"FORBIDDEN\", REASON\\.noSites\\);",
+          "note": "An empty site list is answered FORBIDDEN with the no-sites reason, before any query.",
+          "fact": "RR-001.EMPTY_TO_FORBIDDEN"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/generate.ts",
+          "rule": "CALLERS_LACK",
+          "pattern": "\\bgenerateDailyReport\\s*\\(",
+          "lacks": "\\bcorrection\\b",
+          "note": "Every non-test caller of generateDailyReport in src and scripts omits any correction; no product caller can activate it.",
+          "fact": "RR-001.NO_CORRECTION_CALLER"
+        }
+      ]
+    },
+    {
+      "findingId": "RR-002",
+      "registerFindingId": "DELTA-RR-002",
+      "origin": "REVIEWER",
+      "title": "The customer and project-link routes skip the platform-administrator gate that all ERP routes apply",
+      "summary": "Every one of the ERP route files under src/app/api/erp calls getCurrentUser() and answers 403 unless can(user.role, \"admin\") holds, which is the platform capability, and only then resolves the active organization and checks the organization permission (view_erp, manage_erp). The executive scope resolver applies the same two layers. The four customer route files (eight handlers) and the customer pages do not: they resolve the server-side active organization and check only the organization permissions view_customers, view_erp, manage_customers and manage_erp, and none of them calls getCurrentUser or the platform capability. An OWNER or ADMIN of an organization whose account is not a platform admin can therefore read the projects linked to a customer (name, status, dates and, through RL-002, the recorded cost), see the organization's linkable projects, and link or unlink a project by writing ErpProject.partyId through the project PUT. Cross-tenant protection is a separate layer and holds: the organization is server-derived, every query filters by it and the foreign keys are composite (with the null-organization caveat of RR-005). The finding is therefore an authorization bypass inside the tenant relative to the reference ERP policy, not a cross-tenant leak: the customer surface exposes ERP-derived data and an ERP column write that the ERP surface itself keeps behind the platform capability. Whether tenant owners should have that without the capability is a product decision; the reference policy in the repository answers it the other way, and the customer feature's own documentation says project data on a customer is ERP data.",
+      "disposition": "OWNED_BY_NEW_RISK",
+      "canonicalRiskId": "R-73",
+      "callsiteBacked": false,
+      "relatedCallsiteIds": [],
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/app/api/tenant/customers/[id]/projects/route.ts",
+          "anchor": "if (!requirePermission(active.scope.role, \"view_erp\").ok) return forbidden();",
+          "note": "Reading linked projects needs only an organization permission."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/api/tenant/customers/[id]/projects/route.ts",
+          "anchor": "if (!requirePermission(active.scope.role, \"manage_erp\").ok) return forbidden();",
+          "note": "Linking needs only organization permissions.",
+          "fact": "RR-002.PROJECTS_PERMISSION_ONLY"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/api/tenant/customers/[id]/projects/route.ts",
+          "anchor": "export async function PUT(req: NextRequest, { params }: Params) {",
+          "note": "The handler that changes a project's customer."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/api/tenant/customers/[id]/projects/route.ts",
+          "absent": "getCurrentUser",
+          "note": "The route never reads the platform identity.",
+          "fact": "RR-002.NO_GETCURRENTUSER_PROJECTS"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/api/tenant/customers/[id]/projects/route.ts",
+          "absent": "can(user.role",
+          "note": "The route never tests the platform capability.",
+          "fact": "RR-002.NO_ADMIN_GATE_PROJECTS"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/api/tenant/customers/route.ts",
+          "absent": "getCurrentUser",
+          "note": "The customer list and create route never reads the platform identity.",
+          "fact": "RR-002.NO_GETCURRENTUSER_LIST"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "anchor": "data: { partyId: next },",
+          "note": "The write that changes ErpProject.partyId.",
+          "fact": "RR-002.PARTY_WRITE"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "anchor": "export async function linkableProjects(",
+          "note": "The organization's ERP projects offered for linking."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/page-scope.ts",
+          "anchor": "canViewProjects: can(role, \"view_erp\"),",
+          "note": "The customer pages gate project data on the organization permission only.",
+          "fact": "RR-002.PAGES_ORG_PERMISSION_ONLY"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/scope.ts",
+          "anchor": "if (!platformCan(user.role, \"admin\")) return { ok: false, code: \"FORBIDDEN\", memberships: [] };",
+          "note": "The executive surface applies the platform capability."
+        },
+        {
+          "scope": "CONTEXT",
+          "path": "src/app/api/erp/projects/route.ts",
+          "anchor": "if (!can(user.role, \"admin\")) return erpFailure(new ErpError(403, \"FORBIDDEN\"));",
+          "note": "The reference: every ERP route applies this before the organization permission.",
+          "fact": "RR-002.ERP_REFERENCE_GATE"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/api/tenant/customers/",
+          "rule": "TREE_ABSENT_REGEX",
+          "pattern": "getCurrentUser|platformCan\\(|can\\(user\\.role",
+          "note": "No non-test file under the customer API prefix reads the platform identity or tests the platform capability.",
+          "fact": "RR-002.CUSTOMER_TREE_NO_GATE"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/page-scope.ts",
+          "rule": "ABSENT_REGEX",
+          "pattern": "getCurrentUser|platformCan\\(|can\\(user\\.role",
+          "note": "The customer page scope never reads the platform identity or tests the platform capability.",
+          "fact": "RR-002.PAGE_SCOPE_NO_GATE"
+        }
+      ]
+    },
+    {
+      "findingId": "RR-003",
+      "registerFindingId": "DELTA-RR-003",
+      "origin": "REVIEWER",
+      "title": "Linking a project to a customer is check-then-write and audits unconditionally",
+      "summary": "setProjectLink reads the project's current partyId inside a transaction and then updates the project by id and organization without the partyId it read as a precondition and without checking how many rows changed. At the default isolation level two concurrent requests can both pass the check and the later write wins; the update's filter does not exclude a project deleted in between; and the audit event naming the link is written unconditionally after the update, so the earlier request's audit row records a link that no longer exists.",
+      "disposition": "OWNED_BY_NEW_RISK",
+      "canonicalRiskId": "R-70",
+      "callsiteBacked": false,
+      "relatedCallsiteIds": [],
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "anchor": "where: { id: input.projectId, organizationId: ctx.organizationId, deletedAt: null },",
+          "note": "The check reads the project once."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "anchor": "where: { id: input.projectId, organizationId: ctx.organizationId },",
+          "note": "The update has no partyId precondition and does not repeat the deletedAt filter."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "anchor": "data: { partyId: next },",
+          "note": "The write replaces the link whatever it is now."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "anchor": "action: input.linked ? \"customer.project.link\" : \"customer.project.unlink\",",
+          "note": "The audit event is written regardless of the update's effect."
+        }
+      ]
+    },
+    {
+      "findingId": "RR-004",
+      "registerFindingId": "DELTA-RR-004",
+      "origin": "REVIEWER",
+      "title": "Customer name uniqueness is enforced only in application code",
+      "summary": "assertUniqueName reads for a case-insensitive clash inside the transaction and the insert follows. The migration's only unique index is on organization and id; no index covers the name. Two concurrent creates, or a double submit, can both pass the read and store two customers with the same name.",
+      "disposition": "OWNED_BY_NEW_RISK",
+      "canonicalRiskId": "R-71",
+      "callsiteBacked": false,
+      "relatedCallsiteIds": [],
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "anchor": "displayName: { equals: displayName, mode: \"insensitive\" },",
+          "note": "The only uniqueness enforcement is this read."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "anchor": "await assertUniqueName(tx, ctx, input.displayName);",
+          "note": "The read precedes the insert in the same transaction."
+        },
+        {
+          "scope": "DELTA",
+          "path": "prisma/migrations/20261013090000_tenant_customers/migration.sql",
+          "anchor": "CREATE UNIQUE INDEX \"Party_organizationId_id_key\" ON \"Party\"(\"organizationId\", \"id\");",
+          "note": "The only unique index; none covers the name."
+        }
+      ]
+    },
+    {
+      "findingId": "RR-005",
+      "registerFindingId": "DELTA-RR-005",
+      "origin": "REVIEWER",
+      "title": "The composite foreign key to a customer does not bind a project whose organization is null",
+      "summary": "The migration states that cross-tenant links are impossible in the database itself because both foreign keys into the customer table are composite. ErpProject.organizationId is nullable, and in PostgreSQL a composite foreign key with a null column is not checked, so a project row with no organization can carry a partyId pointing at any customer. The application filters by organization on every path, so no application path reaches such a row; the defect is that the stated database backstop is weaker than stated.",
+      "disposition": "OWNED_BY_EXISTING_RISK",
+      "canonicalRiskId": "R-09",
+      "callsiteBacked": false,
+      "relatedCallsiteIds": [],
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "prisma/schema.prisma",
+          "anchor": "party            Party?           @relation(fields: [organizationId, partyId], references: [organizationId, id], onDelete: Restrict)",
+          "note": "The relation uses the nullable organizationId."
+        },
+        {
+          "scope": "DELTA",
+          "path": "prisma/migrations/20261013090000_tenant_customers/migration.sql",
+          "anchor": "CROSS-TENANT LINKS ARE IMPOSSIBLE IN THE DATABASE",
+          "note": "The claim."
+        }
+      ]
+    },
+    {
+      "findingId": "RR-006",
+      "registerFindingId": "DELTA-RR-006",
+      "origin": "REVIEWER",
+      "title": "The runner entrypoint takes a session cookie with no origin check",
+      "summary": "The settings write guard and the customer write routes refuse an untrusted Origin before reading the session. The runner entrypoint accepts the same kind of cookie and runs a pass without that check. The session cookies are strict or lax, so a cross-site POST would not carry them, which is why this is a missing defence in depth and not an exploitable request forgery.",
+      "disposition": "OWNED_BY_NEW_RISK",
+      "canonicalRiskId": "R-67",
+      "callsiteBacked": false,
+      "relatedCallsiteIds": [],
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/settings-auth.ts",
+          "anchor": "if (!requireTrustedOrigin(req, \"jwt\").ok) {",
+          "note": "The sibling guard checks the origin first."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/api/executive/reports/run/route.ts",
+          "anchor": "const auth = await authorizeExecutiveReportWorker(req);",
+          "note": "The runner entrypoint goes straight to its guard."
+        },
+        {
+          "scope": "CONTEXT",
+          "path": "src/lib/auth/token-session.ts",
+          "anchor": "sameSite: \"strict\",",
+          "note": "The access cookie is strict."
+        },
+        {
+          "scope": "CONTEXT",
+          "path": "src/app/api/auth/route.ts",
+          "anchor": "sameSite: \"lax\",",
+          "note": "The legacy session cookie is lax, which still withholds it from a cross-site POST."
+        }
+      ]
+    },
+    {
+      "findingId": "RR-007",
+      "registerFindingId": "DELTA-RR-007",
+      "origin": "REVIEWER",
+      "title": "Frozen report snapshots have no retention or deletion rule and contain user names",
+      "summary": "The snapshot column is unbounded JSON holding the frozen summary exactly as rendered, which includes the names of users who recorded costs or decided approvals. No code deletes or expires a report, there is no retention setting, and the only removal is the cascade when the organization is deleted. Which retention the owner requires for management reports that contain personal names is undecided.",
+      "disposition": "POLICY_AMBIGUITY",
+      "canonicalRiskId": "R-72",
+      "callsiteBacked": false,
+      "relatedCallsiteIds": [],
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "prisma/schema.prisma",
+          "anchor": "/// The frozen summary, exactly as it was rendered.",
+          "note": "The snapshot is the whole rendered summary."
+        },
+        {
+          "scope": "DELTA",
+          "path": "prisma/schema.prisma",
+          "anchor": "organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)",
+          "note": "The only removal path is deletion of the organization."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/oversight.ts",
+          "anchor": "select: { id: true, name: true },",
+          "note": "User names are resolved into the sections that are frozen."
+        }
+      ]
+    },
+    {
+      "findingId": "RR-008",
+      "registerFindingId": "DELTA-RR-008",
+      "origin": "REVIEWER",
+      "title": "The nightly pass has no organization lifecycle filter, and whether one is needed is unproven",
+      "summary": "The pass selects organizations ordered by id with only the cursor as a filter. The Organization model carries no status, suspension or deletion marker, so the pass cannot skip an organization that is closed or dormant, and it generates reports and notifies owners for all of them. Whether that is a defect or the intended behaviour depends on a lifecycle concept the product does not have; the finding stays UNPROVEN.",
+      "disposition": "UNPROVEN",
+      "canonicalRiskId": "R-72",
+      "callsiteBacked": false,
+      "relatedCallsiteIds": [],
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "...(after ? { where: { id: { gt: after } } } : {}),",
+          "note": "The only filter is the cursor."
+        }
+      ]
+    },
+    {
+      "findingId": "RR-009",
+      "registerFindingId": "DELTA-RR-009",
+      "origin": "REVIEWER",
+      "title": "A reporting-zone change or a missed night can skip or collide with a business day",
+      "summary": "generateDailyReport finds an existing report by organization and business-date label without the zone and cutoff it was cut with. After an organization changes its zone or cutoff, the same label can denote a different window, the lookup answers already reported, and the hours the new window covers are never reported; a move that skips or repeats a calendar label has the same effect. Separately, every pass targets only the last completed business day, so a night that passes while no pass runs is not caught up by a later pass. The generator's own design note says a missed night is picked up by the next poll, which holds only within the same day.",
+      "disposition": "OWNED_BY_NEW_RISK",
+      "canonicalRiskId": "R-68",
+      "callsiteBacked": false,
+      "relatedCallsiteIds": [],
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/generate.ts",
+          "anchor": "where: { organizationId: scope.organizationId, businessDate: target },",
+          "note": "The lookup ignores the zone and cutoff."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "anchor": "const orgTarget = lastCompletedBusinessDay({",
+          "note": "Each pass targets one night only: the last completed day."
+        }
+      ]
+    },
+    {
+      "findingId": "RR-010",
+      "registerFindingId": "DELTA-RR-010",
+      "origin": "REMEDIATOR",
+      "title": "Creating a frozen financial snapshot and reading the archive leave no audit record",
+      "summary": "The generator audits a correction with its actor and reason and states that the ordinary nightly run is not audited per organization; its only audit write sits inside the correction branch and it calls the audit writer exactly once. Nothing issues a correction, so no report-related audit event is ever written. The worker, the run entrypoint, the archive read module and both archive pages contain no audit writer at all, and no migration defines a database trigger on the report table, so neither the creation of a frozen financial snapshot nor any read of the archive leaves a record by any route. Who opened a frozen report that contains financial figures and the names of the users who acted on approvals and costs is therefore not recorded. Settings changes, by contrast, are audited inside the same transaction.",
+      "disposition": "OWNED_BY_NEW_RISK",
+      "canonicalRiskId": "R-69",
+      "callsiteBacked": false,
+      "relatedCallsiteIds": [],
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/generate.ts",
+          "anchor": "The ordinary nightly run is not audited per organization: it is",
+          "note": "Creation is deliberately unaudited.",
+          "fact": "RR-010.CREATE_NOT_AUDITED"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/generate.ts",
+          "anchor": "if (args.correction) {",
+          "note": "Only a correction writes an audit event, and no caller supplies one."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/read.ts",
+          "absent": "recordAudit",
+          "note": "The read module imports and calls no audit writer."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx",
+          "absent": "recordAudit",
+          "note": "The detail page records nothing about who opened a report."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/[locale]/dashboard/executive/reports/page.tsx",
+          "absent": "recordAudit",
+          "note": "The archive list records nothing either."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/generate.ts",
+          "rule": "REGEX",
+          "pattern": "if \\(args\\.correction\\) \\{\\s*await recordAuditEvent\\(",
+          "note": "The only audit write in the generator sits inside the correction branch.",
+          "fact": "RR-010.AUDIT_ONLY_ON_CORRECTION"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/generate.ts",
+          "rule": "REGEX",
+          "pattern": "^(?:(?!recordAuditEvent\\()[\\s\\S])*recordAuditEvent\\((?:(?!recordAuditEvent\\()[\\s\\S])*$",
+          "note": "The generator calls the audit writer exactly once.",
+          "fact": "RR-010.SINGLE_AUDIT_CALL"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/worker.ts",
+          "rule": "ABSENT_REGEX",
+          "pattern": "[Aa]udit",
+          "note": "The worker writes no audit event for a created report.",
+          "fact": "RR-010.NO_WORKER_AUDIT"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/read.ts",
+          "rule": "ABSENT_REGEX",
+          "pattern": "[Aa]udit",
+          "note": "The archive read module writes no audit event.",
+          "fact": "RR-010.NO_READ_AUDIT"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/[locale]/dashboard/executive/reports/page.tsx",
+          "rule": "ABSENT_REGEX",
+          "pattern": "[Aa]udit",
+          "note": "The archive list page writes no audit event.",
+          "fact": "RR-010.NO_LIST_PAGE_AUDIT"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx",
+          "rule": "ABSENT_REGEX",
+          "pattern": "[Aa]udit",
+          "note": "The archive detail page writes no audit event.",
+          "fact": "RR-010.NO_DETAIL_PAGE_AUDIT"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/api/executive/reports/run/route.ts",
+          "rule": "ABSENT_REGEX",
+          "pattern": "[Aa]udit",
+          "note": "The run entrypoint writes no audit event.",
+          "fact": "RR-010.NO_RUN_ROUTE_AUDIT"
+        },
+        {
+          "scope": "DELTA",
+          "path": "prisma/migrations/20261011090000_executive_daily_report/",
+          "rule": "TREE_ABSENT_REGEX",
+          "pattern": "(?:TRIGGER|[Tt]rigger)",
+          "note": "The migration that creates the report table creates no trigger.",
+          "fact": "RR-010.NO_DB_TRIGGER_MIGRATION"
+        },
+        {
+          "scope": "DELTA",
+          "path": "prisma/migrations/",
+          "rule": "TREE_ABSENT_REGEX",
+          "pattern": "ExecutiveDailyReport.*(?:TRIGGER|[Tt]rigger)|(?:TRIGGER|[Tt]rigger).*ExecutiveDailyReport",
+          "note": "No migration line names both the report table and a trigger.",
+          "fact": "RR-010.NO_DB_TRIGGER_ANYWHERE"
+        }
+      ]
+    },
+    {
+      "findingId": "RR-011",
+      "registerFindingId": "DELTA-RR-011",
+      "origin": "REMEDIATOR",
+      "title": "Customer personal data has no erasure, export or retention path",
+      "summary": "A customer stores display and legal names, an e-mail address, a phone number, a city and free-text notes (Party) and a free-text contact summary (PartyInteraction). The service states that nothing is deleted: a customer is archived and interactions are append-only. The customer library and its API routes contain no delete, anonymisation or export operation, and the only removal is the cascade from deleting the whole organization. The platform keeps closed registries for erasure, export and processing, and Party and PartyInteraction are in none of them, while the candidate-data module has its own erasure path. This finding concerns the customer records only; the frozen report snapshots are the separate finding RR-007. Whether these records are personal data of natural persons in a given customer organization, and what retention the owner requires, is a policy question that the code cannot answer.",
+      "disposition": "POLICY_AMBIGUITY",
+      "canonicalRiskId": "R-72",
+      "callsiteBacked": false,
+      "relatedCallsiteIds": [],
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "anchor": "Nothing is deleted. A customer is archived; interactions are append-only.",
+          "note": "The stated design.",
+          "fact": "RR-011.NOTHING_DELETED_NOTE"
+        },
+        {
+          "scope": "DELTA",
+          "path": "prisma/schema.prisma",
+          "anchor": "String?      @db.VarChar(254)",
+          "note": "Contact e-mail is stored on the customer."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "absent": ".delete(",
+          "note": "The customer service contains no delete operation."
+        },
+        {
+          "scope": "DELTA",
+          "path": "prisma/schema.prisma",
+          "rule": "BLOCK_REGEX",
+          "pattern": "email\\s+String\\?[\\s\\S]*phone\\s+String\\?[\\s\\S]*notes\\s+String\\?",
+          "symbol": "model Party",
+          "note": "Party stores an e-mail address, a phone number and free-text notes.",
+          "fact": "RR-011.PARTY_PERSONAL_FIELDS"
+        },
+        {
+          "scope": "DELTA",
+          "path": "prisma/schema.prisma",
+          "rule": "BLOCK_REGEX",
+          "pattern": "summary\\s+String\\s+@db\\.VarChar\\(2000\\)",
+          "symbol": "model PartyInteraction",
+          "note": "PartyInteraction stores a free-text contact summary.",
+          "fact": "RR-011.INTERACTION_FREE_TEXT"
+        },
+        {
+          "scope": "CONTEXT",
+          "path": "src/lib/compliance/erasure-targets.ts",
+          "rule": "ABSENT_REGEX",
+          "pattern": "\\bParty(?:Interaction)?\\b",
+          "note": "The closed erasure registry does not enumerate Party or PartyInteraction.",
+          "fact": "RR-011.ERASURE_REGISTRY_LACKS_PARTY"
+        },
+        {
+          "scope": "CONTEXT",
+          "path": "src/lib/compliance/export-sources.ts",
+          "rule": "ABSENT_REGEX",
+          "pattern": "\\bParty(?:Interaction)?\\b",
+          "note": "The closed export registry does not enumerate Party or PartyInteraction.",
+          "fact": "RR-011.EXPORT_REGISTRY_LACKS_PARTY"
+        },
+        {
+          "scope": "CONTEXT",
+          "path": "src/lib/compliance/processing-inventory.ts",
+          "rule": "ABSENT_REGEX",
+          "pattern": "\\bParty(?:Interaction)?\\b",
+          "note": "The processing inventory does not list Party or PartyInteraction.",
+          "fact": "RR-011.INVENTORY_LACKS_PARTY"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/",
+          "rule": "TREE_ABSENT_REGEX",
+          "pattern": "\\.(?:delete|deleteMany)\\(",
+          "note": "No non-test customer library file deletes a row.",
+          "fact": "RR-011.NO_DELETE_IN_LIB"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/app/api/tenant/customers/",
+          "rule": "TREE_ABSENT_REGEX",
+          "pattern": "\\.(?:delete|deleteMany)\\(",
+          "note": "No customer API route deletes a row.",
+          "fact": "RR-011.NO_DELETE_IN_ROUTES"
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/",
+          "rule": "TREE_ABSENT_REGEX",
+          "pattern": "anonymi[sz]e|export(?:Customer|Party|Parties)\\w*",
+          "note": "The customer library has no anonymisation or export operation.",
+          "fact": "RR-011.NO_ANONYMISE_OR_EXPORT"
+        },
+        {
+          "scope": "DELTA",
+          "path": "prisma/schema.prisma",
+          "rule": "BLOCK_REGEX",
+          "pattern": "organization\\s+Organization\\s+@relation\\(fields: \\[organizationId\\], references: \\[id\\], onDelete: Cascade\\)",
+          "symbol": "model Party",
+          "note": "The only removal of a customer is the cascade from deleting the whole organization.",
+          "fact": "RR-011.ONLY_ORG_CASCADE"
+        }
+      ]
+    }
+  ],
+  "positiveControls": [
+    {
+      "id": "RL-P01",
+      "title": "The customer data layer keeps tenant isolation in the query and the schema, and writes its audit in the same transaction",
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "anchor": "A record of another organization is NOT FOUND",
+          "note": "Foreign ids resolve to not found, not forbidden."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/customers/service.ts",
+          "anchor": "a change whose audit fails is not committed",
+          "note": "Audit is written through the same transaction client."
+        },
+        {
+          "scope": "DELTA",
+          "path": "prisma/migrations/20261013090000_tenant_customers/migration.sql",
+          "anchor": "FOREIGN KEY (\"organizationId\", \"partyId\")",
+          "note": "Composite foreign keys (see RR-005 for the null-organization limit)."
+        }
+      ]
+    },
+    {
+      "id": "RL-P02",
+      "title": "The executive scope resolver and the settings write guard compose the established gate chain and read nothing tenant-bearing from the client",
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/scope.ts",
+          "anchor": "No organization, site, role or period is ever read from the client.",
+          "note": "Organization comes from the server-side active selection with membership re-read."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/settings-auth.ts",
+          "anchor": "if (!requireTrustedOrigin(req, \"jwt\").ok) {",
+          "note": "Origin, JSON content type, scope and update_org are checked in that order."
+        }
+      ]
+    },
+    {
+      "id": "RL-P03",
+      "title": "Report generation is idempotent by constraint and notifies at most once",
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/generate.ts",
+          "anchor": "IDEMPOTENT BY CONSTRAINT, not by check-then-write.",
+          "note": "The unique key decides a race, not a pre-read."
+        },
+        {
+          "scope": "DELTA",
+          "path": "src/lib/executive/report/generate.ts",
+          "anchor": "NEVER REPORTS AN UNFINISHED DAY.",
+          "note": "A day still in progress is skipped."
+        }
+      ]
+    },
+    {
+      "id": "RL-P04",
+      "title": "The production deploy gate fails closed on an unhealthy release and the new workflow is read-only and pinned",
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": ".github/workflows/deploy.yml",
+          "anchor": "# >>> post-deploy-health-gate",
+          "note": "Bounded wait for healthy, zero restarts, readiness with database true; changes nothing."
+        },
+        {
+          "scope": "DELTA",
+          "path": ".github/workflows/executive-worker-image.yml",
+          "anchor": "contents: read",
+          "note": "Read-only permissions and no secrets."
+        }
+      ]
+    },
+    {
+      "id": "RL-P05",
+      "title": "The three new migrations only add objects",
+      "evidence": [
+        {
+          "scope": "DELTA",
+          "path": "prisma/migrations/20261013090000_tenant_customers/migration.sql",
+          "anchor": "ALTER TABLE \"ErpProject\" ADD COLUMN     \"partyId\" TEXT;",
+          "note": "A nullable column; the destructive statements appear only in rollback comments."
+        }
+      ]
+    }
+  ],
+  "supersessions": [
+    {
+      "target": "R-53",
+      "kind": "REVISED_IN_REGISTER",
+      "statement": "R-53 is no longer a positive control. The image-level minimality it recorded is kept as an existing control of the revised risk, and the revision record in the register preserves the former state."
+    },
+    {
+      "target": "GETPRISMA-FAILURE-CLASSIFICATION.md and ARCHITECTURE-INVENTORY.md counts",
+      "kind": "SCOPED_TO_FROZEN_SOURCE",
+      "statement": "Every call-site count in those documents describes the frozen source. The counts for the integrated tree are in the getPrisma section of this document and in docs/security/s0-getprisma-callsite-inventory.json."
+    },
+    {
+      "target": "phase99-route-security-inventory.json",
+      "kind": "REGENERATED_BY_MAIN",
+      "statement": "Main regenerated this inventory itself after the delta added routes; the relock confirmed it matches the source tree and made no change to it."
+    },
+    {
+      "target": "docs/security/S1-CURRENT-MAIN-DELTA-RELOCK.md (first relock report)",
+      "kind": "SUPERSEDED_BY_REMEDIATION",
+      "statement": "The first relock report scored its findings in this addendum and kept the register unchanged. The remediation folded them into the canonical register and removed severity and state from this document."
+    }
+  ],
+  "openItems": [
+    {
+      "id": "OPEN-1",
+      "statement": "Every finding is code-confirmed on the target tree. None was exercised at run time and no production request was made."
+    },
+    {
+      "id": "OPEN-2",
+      "statement": "The contents of the production environment file were not read; only variable names were derived from code. The platform-administrator trust assumption behind R-65 is a design assumption."
+    },
+    {
+      "id": "OPEN-3",
+      "statement": "RR-001 and RR-002 describe the two findings as the relock brief states them. RR-010 and RR-011 are independent findings for two topics that were first filed, wrongly, under RR-001 and RR-002; they were re-derived from source and each is held by structured facts that the checker evaluates against the committed target. RR-003 to RR-009 follow the one-line descriptions in the brief and were re-derived from source."
+    },
+    {
+      "id": "OPEN-4",
+      "statement": "No product file was changed. Each finding records a remediation requirement and acceptance criteria in the canonical register instead."
+    },
+    {
+      "id": "OPEN-5",
+      "statement": "A contradiction among the historical token-lifecycle statements was named in an earlier brief and was not identified; the delta changes no token, session or storage-mode code."
+    },
+    {
+      "id": "OPEN-6",
+      "statement": "Three fresh independent reviews returned findings FR-01 to FR-08, POSTREV-F1 to POSTREV-F5 and PC-F2-01, PC-F2-02, PC-F5-01, PC-F5-02 and PC-ENV-01; the remediation closes them, and a remediation session does not issue an independent PASS. A further fresh independent review is required before any commit."
+    },
+    {
+      "id": "OPEN-7",
+      "statement": "Environment limit. Git cannot read a path that is too long for the host (\"Filename too long\"), so the tools are supported at the short, real path of a worktree and at no deeper one. When git cannot answer, the relock checker exits 3 and an internal failure exits 70; neither is a validation code, and neither is success. The scanner falls back to a filesystem walk when `git ls-files` fails and does not report that failure. No security rule or path check is relaxed to reach a deeper path."
+    }
+  ]
+}

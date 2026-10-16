@@ -1,0 +1,1647 @@
+{
+  "schemaVersion": 1,
+  "manifestVersion": "relock-mut-1",
+  "manifestSha256": "3b1a2bd24f9f28f23a41b6e5d4d90c36e86c7fbb5bee5db9f8cc03041a752c58",
+  "targetFile": "scripts/security/s1/relock-delta-check.mjs",
+  "targetFiles": {
+    "relock": "scripts/security/s1/relock-delta-check.mjs",
+    "s0": "scripts/security/s0/getprisma-callsite-inventory.mjs"
+  },
+  "files": {
+    "checkerSha256": "ce38f156bd08625ce5bc04ffd3e5f8e1201376a452f19bf2b789a9d68fb878fa",
+    "selftestSha256": "622e8eedd7a23de76efc45f1a17d7a0cc7f07a4923e7afb5410b06ee25e7e84b",
+    "e2eSha256": "ee811a6e6180c31228b86cd62a283224f9416f4b541c3b76ece78a3614211080",
+    "s0ScannerSha256": "3a4ec9c0a192c15188346717d4c6b7456cf1a3c268e7399355c72c04568a43b2",
+    "s0SelftestSha256": "e2e2d99b7706ea491fef9bbc606152aea725a8aef68a207e06a58e57323ab72c",
+    "s0AdjudicationsSha256": "1369568399b946a72d4f0589a13fe17c88cdc5a5ed0d82521880581a89d02f25"
+  },
+  "mutants": [
+    {
+      "id": "M01",
+      "gate": "schema: unknown key",
+      "test": "schema: an unknown key inside a finding is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M02",
+      "gate": "schema: missing key",
+      "test": "schema: a missing required key is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M03",
+      "gate": "schema: version",
+      "test": "schema: a wrong schema version is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M04",
+      "gate": "schema: derived section absent",
+      "test": "schema: a missing derived section is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M05",
+      "gate": "sources: merge parents",
+      "test": "sources: swapped merge parents are refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M06",
+      "gate": "sources: second parent",
+      "test": "sources: a security head that is not the merge's second parent is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M07",
+      "gate": "sources: merge base",
+      "test": "sources: a frozen source that is not the merge base is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M08",
+      "gate": "sources: git objects",
+      "test": "sources: a commit that is not in the repository is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M09",
+      "gate": "sources: ancestor",
+      "test": "sources: a frozen source that is not an ancestor of the target is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M10",
+      "gate": "derived: orphan adjudication",
+      "test": "derived: an orphan adjudication is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M11",
+      "gate": "derived: stale fingerprint",
+      "test": "derived: an adjudication pinned to a stale fingerprint is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M12",
+      "gate": "derived: stale inventory",
+      "test": "derived: a stale inventory is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M13",
+      "gate": "derived: section drift",
+      "test": "derived: a delta count the tree does not produce is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M14",
+      "gate": "derived: unresolved call sites",
+      "test": "derived: an unresolved call site is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M15",
+      "gate": "derived: unresolved edges",
+      "test": "derived: an unresolved consumer edge is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M16",
+      "gate": "derived: primary partition",
+      "test": "derived: a primary partition that does not cover every call site is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M17",
+      "gate": "derived: position",
+      "test": "derived: a call site position that holds no getPrisma token is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M18",
+      "gate": "derived: reviewed",
+      "test": "derived: a call site with no reachability review is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M19",
+      "gate": "derived: review of unknown call site",
+      "test": "derived: a review of a call site the delta did not add is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M20",
+      "gate": "derived: historical evidence merge",
+      "test": "derived: historical S0 evidence not preserved by the merge is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M21",
+      "gate": "derived: historical evidence edited",
+      "test": "derived: S0 evidence edited after the merge is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M22",
+      "gate": "derived: frozen register hash",
+      "test": "derived: a frozen register hash that differs from the pin is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M23",
+      "gate": "findings: register finding missing from delta",
+      "test": "findings: a register delta finding missing from the delta document is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M24",
+      "gate": "findings: id shape",
+      "test": "findings: a malformed delta finding id is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M25",
+      "gate": "findings: register id",
+      "test": "findings: a wrong register id is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M26",
+      "gate": "findings: duplicate",
+      "test": "findings: a duplicate delta finding is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M27",
+      "gate": "findings: not in register",
+      "test": "findings: a delta finding missing from the register is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M28",
+      "gate": "findings: owner",
+      "test": "findings: an owner that the register does not record is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M29",
+      "gate": "findings: disposition",
+      "test": "findings: a disposition that the register does not record is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M30",
+      "gate": "findings: status",
+      "test": "findings: a register status that the disposition does not map to is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M31",
+      "gate": "findings: duplicate ownership",
+      "test": "findings: a finding owned by two risks is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M32",
+      "gate": "findings: no owner",
+      "test": "findings: a finding no risk lists is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M33",
+      "gate": "findings: new-risk scope",
+      "test": "findings: a new-risk disposition on a historical owner is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M34",
+      "gate": "findings: existing-risk scope",
+      "test": "findings: an existing-risk disposition on a delta owner is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M35",
+      "gate": "findings: call-site backed without link",
+      "test": "findings: a call-site-backed finding with no linked call site is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M36",
+      "gate": "findings: link without call-site backed",
+      "test": "findings: linked call sites on a finding that is not call-site-backed are refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M37",
+      "gate": "findings: link relation",
+      "test": "findings: a link with no stated relation is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M38",
+      "gate": "findings: link target",
+      "test": "findings: a link to a call site the delta did not add is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M39",
+      "gate": "findings: link anchored",
+      "test": "findings: a link no evidence anchors is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M40",
+      "gate": "findings: delta evidence",
+      "test": "findings: a finding with no delta-scope evidence is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M41",
+      "gate": "findings: evidence path",
+      "test": "findings: an evidence path that does not exist is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M42",
+      "gate": "findings: evidence anchor",
+      "test": "findings: an evidence anchor that no longer exists is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M43",
+      "gate": "findings: evidence absence",
+      "test": "findings: an evidence absence that no longer holds is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M44",
+      "gate": "findings: evidence form",
+      "test": "findings: evidence with neither an anchor nor an absence is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M45",
+      "gate": "paths: outside delta",
+      "test": "paths: delta evidence on a file the delta did not change is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M46",
+      "gate": "findings: projection present",
+      "test": "findings: a projection entry that is missing is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M47",
+      "gate": "report: block drift",
+      "test": "report: a stale generated block is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M48",
+      "gate": "report: block absent",
+      "test": "report: an absent generated block is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M49",
+      "gate": "report: narrative number",
+      "test": "report: a digit-led count in the narrative is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M50",
+      "gate": "report: finding named",
+      "test": "report: a delta finding missing from the report is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M51",
+      "gate": "report: independent pass claim",
+      "test": "report: a claim of an independent pass is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M52",
+      "gate": "report: missing report",
+      "test": "report: a missing report is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M53",
+      "gate": "record: consistency",
+      "test": "record: a surviving mutant is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M54",
+      "gate": "record: all killed",
+      "test": "record: a recorded survivor with consistent totals is still refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M55",
+      "gate": "record: placebo",
+      "test": "record: a placebo that is not green is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M56",
+      "gate": "record: cleanup",
+      "test": "record: a cleanup that did not remove the copies is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M57",
+      "gate": "record: controls",
+      "test": "record: a control that did not behave as expected is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M58",
+      "gate": "content: secret",
+      "test": "content: a secret-shaped string is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M59",
+      "gate": "content: absolute path",
+      "test": "content: an absolute local path is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M60",
+      "gate": "content: clock time",
+      "test": "content: a clock time is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M61",
+      "gate": "exit: order",
+      "test": "exit: the lowest-order failing class sets the code",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M62",
+      "gate": "exit: distinct codes",
+      "test": "exit: the validation codes are distinct from usage and from a crash",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M63",
+      "gate": "rule: strict product path",
+      "test": "rule: the strict product-path rule excludes docs, workflows, scripts, tests and the attributes file",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M64",
+      "gate": "rule: broad runtime path",
+      "test": "rule: the broad runtime-affecting rule keeps workflows and scripts and drops docs, tests and the attributes file",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M65",
+      "gate": "trace: importer detection",
+      "test": "trace: only a file that imports the defining module is a static importer",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M66",
+      "gate": "trace: enclosing function",
+      "test": "trace: the enclosing function of a call site is the nearest definition above it",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M67",
+      "gate": "trace: local helper walk",
+      "test": "trace: a local helper is followed to the exported function that calls it",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M68",
+      "gate": "derive: decision split",
+      "test": "clean: the committed provenance has no violation",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M69",
+      "gate": "derive: strict rule applied",
+      "test": "clean: the committed provenance has no violation",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M70",
+      "gate": "derive: compose services",
+      "test": "clean: the committed provenance has no violation",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M71",
+      "gate": "derive: worker variable names",
+      "test": "clean: the committed provenance has no violation",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M72",
+      "gate": "derive: projection",
+      "test": "clean: the committed provenance has no violation",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M73",
+      "gate": "trace: a handler is its own consumer",
+      "test": "trace: a route handler is its own consumer",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M74",
+      "gate": "render: scopes block",
+      "test": "clean: the committed provenance has no violation",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M75",
+      "gate": "render: delta block",
+      "test": "clean: the committed provenance has no violation",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M76",
+      "gate": "cli: crash is not a validation code",
+      "test": "e2e crash: an input that parses but breaks the checker is exit 70, never a validation code",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M77",
+      "gate": "cli: canonical form",
+      "test": "e2e canonical: a document that is correct but not canonical is exit 12",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M78",
+      "gate": "cli: malformed json exit",
+      "test": "e2e malformed json: unreadable JSON is exit 4",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M79",
+      "gate": "cli: generate refreshes blocks",
+      "test": "e2e generate is idempotent: regenerating the committed inputs changes no byte",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M80",
+      "gate": "cli: usage exit",
+      "test": "e2e usage: an unknown mode is a usage error",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M81",
+      "gate": "cli: missing record is a record failure",
+      "test": "e2e record: a missing mutation record is exit 13",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M82",
+      "gate": "cli: exit follows the first class",
+      "test": "e2e path outside delta: delta evidence on an unchanged file is exit 11",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M83",
+      "gate": "derive: priorities order",
+      "test": "priorities: the report lists the register's first ten risks in the register's order",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M84",
+      "gate": "identity: title",
+      "test": "identity: RR-001 carrying the audit-snapshot topic is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M85",
+      "gate": "identity: swapped ids",
+      "test": "identity: swapping the contents of RR-001 and RR-002 is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M86",
+      "gate": "identity: delta owner",
+      "test": "identity: moving the delta owner of RR-001 is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M87",
+      "gate": "identity: register owner",
+      "test": "identity: moving the register owner of RR-002 is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M88",
+      "gate": "identity: source reference RR-001",
+      "test": "identity: dropping the main source reference of RR-001 is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M89",
+      "gate": "identity: source reference RR-002",
+      "test": "identity: dropping the main source reference of RR-002 is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M90",
+      "gate": "identity: mechanism",
+      "test": "identity: a fixed title over a different mechanism is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M91",
+      "gate": "identity: register mechanism",
+      "test": "identity: a register summary that no longer states the mechanism is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M92",
+      "gate": "identity: assets",
+      "test": "identity: an owner risk that drops an affected asset is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M93",
+      "gate": "identity: verification",
+      "test": "identity: an owner risk with another verification method is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M94",
+      "gate": "identity: acceptance",
+      "test": "identity: an owner risk without the pinned acceptance criterion is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M95",
+      "gate": "identity: missing finding",
+      "test": "identity: an authoritative finding that is not declared is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M96",
+      "gate": "identity: gate fact",
+      "test": "identity: the platform-capability gate is read from the tree, and its pin must still hold",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M97",
+      "gate": "identity: derive gate count",
+      "test": "identity: the ERP gate facts are derived from the target tree, never typed",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M98",
+      "gate": "duplicate: title",
+      "test": "identity: a new finding that duplicates an existing finding's title is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M99",
+      "gate": "duplicate: evidence",
+      "test": "identity: a new finding that cites exactly an existing finding's evidence is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M100",
+      "gate": "duplicate: declared duplicate allowed",
+      "test": "identity: a declared duplicate is allowed to repeat its original",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M101",
+      "gate": "render: authzgate",
+      "test": "clean: the committed provenance has no violation",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M102",
+      "gate": "pin: RR-001.SITE_IDS_FN",
+      "test": "identity fact: dropping RR-001.SITE_IDS_FN is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M103",
+      "gate": "pin: RR-001.MISSING_DELEGATE_EMPTY",
+      "test": "identity fact: dropping RR-001.MISSING_DELEGATE_EMPTY is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M104",
+      "gate": "pin: RR-001.CATCH_EMPTY",
+      "test": "identity fact: dropping RR-001.CATCH_EMPTY is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M105",
+      "gate": "pin: RR-001.SCOPE_CONSUMES",
+      "test": "identity fact: dropping RR-001.SCOPE_CONSUMES is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M106",
+      "gate": "pin: RR-001.EMPTY_TO_FORBIDDEN",
+      "test": "identity fact: dropping RR-001.EMPTY_TO_FORBIDDEN is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M107",
+      "gate": "pin: RR-001.CORRECTION_OPTION",
+      "test": "identity fact: dropping RR-001.CORRECTION_OPTION is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M108",
+      "gate": "pin: RR-001.ALREADY_REPORTED_GUARD",
+      "test": "identity fact: dropping RR-001.ALREADY_REPORTED_GUARD is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M109",
+      "gate": "pin: RR-001.WORKER_NEVER_PASSES",
+      "test": "identity fact: dropping RR-001.WORKER_NEVER_PASSES is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M110",
+      "gate": "pin: RR-001.NO_CORRECTION_CALLER",
+      "test": "identity fact: dropping RR-001.NO_CORRECTION_CALLER is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M111",
+      "gate": "pin: RR-002.PROJECTS_PERMISSION_ONLY",
+      "test": "identity fact: dropping RR-002.PROJECTS_PERMISSION_ONLY is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M112",
+      "gate": "pin: RR-002.ERP_REFERENCE_GATE",
+      "test": "identity fact: dropping RR-002.ERP_REFERENCE_GATE is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M113",
+      "gate": "pin: RR-002.PARTY_WRITE",
+      "test": "identity fact: dropping RR-002.PARTY_WRITE is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M114",
+      "gate": "pin: RR-002.NO_GETCURRENTUSER_PROJECTS",
+      "test": "identity fact: dropping RR-002.NO_GETCURRENTUSER_PROJECTS is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M115",
+      "gate": "pin: RR-002.NO_ADMIN_GATE_PROJECTS",
+      "test": "identity fact: dropping RR-002.NO_ADMIN_GATE_PROJECTS is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M116",
+      "gate": "pin: RR-002.NO_GETCURRENTUSER_LIST",
+      "test": "identity fact: dropping RR-002.NO_GETCURRENTUSER_LIST is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M117",
+      "gate": "pin: RR-002.CUSTOMER_TREE_NO_GATE",
+      "test": "identity fact: dropping RR-002.CUSTOMER_TREE_NO_GATE is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M118",
+      "gate": "pin: RR-002.PAGE_SCOPE_NO_GATE",
+      "test": "identity fact: dropping RR-002.PAGE_SCOPE_NO_GATE is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M119",
+      "gate": "pin: RR-002.PAGES_ORG_PERMISSION_ONLY",
+      "test": "identity fact: dropping RR-002.PAGES_ORG_PERMISSION_ONLY is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M120",
+      "gate": "pin: RR-010.AUDIT_ONLY_ON_CORRECTION",
+      "test": "identity fact: dropping RR-010.AUDIT_ONLY_ON_CORRECTION is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M121",
+      "gate": "pin: RR-010.SINGLE_AUDIT_CALL",
+      "test": "identity fact: dropping RR-010.SINGLE_AUDIT_CALL is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M122",
+      "gate": "pin: RR-010.CREATE_NOT_AUDITED",
+      "test": "identity fact: dropping RR-010.CREATE_NOT_AUDITED is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M123",
+      "gate": "pin: RR-010.NO_WORKER_AUDIT",
+      "test": "identity fact: dropping RR-010.NO_WORKER_AUDIT is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M124",
+      "gate": "pin: RR-010.NO_READ_AUDIT",
+      "test": "identity fact: dropping RR-010.NO_READ_AUDIT is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M125",
+      "gate": "pin: RR-010.NO_LIST_PAGE_AUDIT",
+      "test": "identity fact: dropping RR-010.NO_LIST_PAGE_AUDIT is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M126",
+      "gate": "pin: RR-010.NO_DETAIL_PAGE_AUDIT",
+      "test": "identity fact: dropping RR-010.NO_DETAIL_PAGE_AUDIT is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M127",
+      "gate": "pin: RR-010.NO_RUN_ROUTE_AUDIT",
+      "test": "identity fact: dropping RR-010.NO_RUN_ROUTE_AUDIT is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M128",
+      "gate": "pin: RR-010.NO_DB_TRIGGER_MIGRATION",
+      "test": "identity fact: dropping RR-010.NO_DB_TRIGGER_MIGRATION is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M129",
+      "gate": "pin: RR-010.NO_DB_TRIGGER_ANYWHERE",
+      "test": "identity fact: dropping RR-010.NO_DB_TRIGGER_ANYWHERE is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M130",
+      "gate": "pin: RR-011.PARTY_PERSONAL_FIELDS",
+      "test": "identity fact: dropping RR-011.PARTY_PERSONAL_FIELDS is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M131",
+      "gate": "pin: RR-011.INTERACTION_FREE_TEXT",
+      "test": "identity fact: dropping RR-011.INTERACTION_FREE_TEXT is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M132",
+      "gate": "pin: RR-011.ERASURE_REGISTRY_LACKS_PARTY",
+      "test": "identity fact: dropping RR-011.ERASURE_REGISTRY_LACKS_PARTY is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M133",
+      "gate": "pin: RR-011.EXPORT_REGISTRY_LACKS_PARTY",
+      "test": "identity fact: dropping RR-011.EXPORT_REGISTRY_LACKS_PARTY is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M134",
+      "gate": "pin: RR-011.INVENTORY_LACKS_PARTY",
+      "test": "identity fact: dropping RR-011.INVENTORY_LACKS_PARTY is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M135",
+      "gate": "pin: RR-011.NO_DELETE_IN_LIB",
+      "test": "identity fact: dropping RR-011.NO_DELETE_IN_LIB is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M136",
+      "gate": "pin: RR-011.NO_DELETE_IN_ROUTES",
+      "test": "identity fact: dropping RR-011.NO_DELETE_IN_ROUTES is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M137",
+      "gate": "pin: RR-011.NO_ANONYMISE_OR_EXPORT",
+      "test": "identity fact: dropping RR-011.NO_ANONYMISE_OR_EXPORT is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M138",
+      "gate": "pin: RR-011.ONLY_ORG_CASCADE",
+      "test": "identity fact: dropping RR-011.ONLY_ORG_CASCADE is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M139",
+      "gate": "pin: RR-011.NOTHING_DELETED_NOTE",
+      "test": "identity fact: dropping RR-011.NOTHING_DELETED_NOTE is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M140",
+      "gate": "evidence: committed blob",
+      "test": "evidence: a PRESENT fact is read from the committed blob, not from the working tree",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M141",
+      "gate": "evidence: committed blob (absence)",
+      "test": "evidence: an ABSENT fact is read from the committed blob, not from the working tree",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M142",
+      "gate": "evidence: committed tree grep",
+      "test": "evidence: every rule holds and fails on a fixture tree",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M143",
+      "gate": "worktree: allowlist enforced",
+      "test": "worktree: a modified product file is refused (WORKTREE_MODIFIED_OUTSIDE_ALLOWLIST)",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M144",
+      "gate": "worktree: untracked kind",
+      "test": "worktree: an untracked product file is refused (WORKTREE_UNTRACKED_OUTSIDE_ALLOWLIST)",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M145",
+      "gate": "worktree: product dirty path accepted",
+      "test": "worktree: a modified product file is refused (WORKTREE_MODIFIED_OUTSIDE_ALLOWLIST)",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M146",
+      "gate": "worktree: untracked files listed",
+      "test": "worktree: the live status of a real repository is read the same way",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M147",
+      "gate": "head: moved outside the allowlist",
+      "test": "head: a descendant that changed only the allowlist is accepted, one that changed a product file is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M148",
+      "gate": "wiring: head gate",
+      "test": "wiring: checkRelock applies the head gate",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M149",
+      "gate": "wiring: worktree gate",
+      "test": "wiring: checkRelock applies the worktree gate",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M150",
+      "gate": "wiring: evidence context",
+      "test": "wiring: checkRelock evaluates every evidence item against the committed integration merge",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M151",
+      "gate": "mechanism: negation flip",
+      "test": "mechanism: a negation flip that keeps every keyword is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M152",
+      "gate": "mechanism: subject and object swap",
+      "test": "mechanism: a subject and object swap that keeps every keyword is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M153",
+      "gate": "mechanism: success and failure inversion",
+      "test": "mechanism: a success and failure inversion that keeps every keyword is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M154",
+      "gate": "mechanism: owner swap",
+      "test": "mechanism: an owner swap inside the sentence is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M155",
+      "gate": "mechanism: inversion that keeps every source reference",
+      "test": "mechanism: a semantic inversion that keeps every pinned source reference is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M156",
+      "gate": "mechanism: register sentence",
+      "test": "mechanism: a changed sentence of RR-002, RR-010 or RR-011 in the register is refused as well",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M157",
+      "gate": "identity: unknown fact",
+      "test": "identity fact: a fact name that no pin carries is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M158",
+      "gate": "identity: repeated fact",
+      "test": "identity fact: a fact carried twice is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M159",
+      "gate": "identity: edited fact",
+      "test": "identity fact: an edited fact item is refused as not the pinned one",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M160",
+      "gate": "identity: domain separation",
+      "test": "domain: RR-011 evidence under the report module, and RR-007 evidence under the customer library, are refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M161",
+      "gate": "identity: derived route sets",
+      "test": "gate sets: the derived route sets, counts and the partyId writer are pinned",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M162",
+      "gate": "identity: correction callers",
+      "test": "correction callers: the derived callers of generateDailyReport must exist and must not pass a correction",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M164",
+      "gate": "policy: branch count",
+      "test": "policy: R-73 must keep both branches and the remediation must not choose one",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M165",
+      "gate": "policy: second acceptance branch",
+      "test": "policy: R-73 must keep both branches and the remediation must not choose one",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M166",
+      "gate": "rule: REGEX",
+      "test": "evidence: every rule holds and fails on a fixture tree",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M167",
+      "gate": "rule: ABSENT_REGEX",
+      "test": "evidence: every rule holds and fails on a fixture tree",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M168",
+      "gate": "rule: FN_BODY_REGEX",
+      "test": "evidence: every rule holds and fails on a fixture tree",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M169",
+      "gate": "rule: BLOCK_REGEX",
+      "test": "evidence: every rule holds and fails on a fixture tree",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M170",
+      "gate": "rule: TREE_ABSENT_REGEX",
+      "test": "evidence: every rule holds and fails on a fixture tree",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M171",
+      "gate": "rule: CALLERS_LACK",
+      "test": "evidence: every rule holds and fails on a fixture tree",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M172",
+      "gate": "rule: CALLERS_LACK needs a caller",
+      "test": "evidence: every rule holds and fails on a fixture tree",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M173",
+      "gate": "rule: missing symbol",
+      "test": "evidence: every rule holds and fails on a fixture tree",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M174",
+      "gate": "s0 eol: normalisation removed",
+      "test": "eol: LF, CRLF and CR-only checkouts give identical call sites, classifications, outcome flags and bytes",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M175",
+      "gate": "s0 eol: normaliser unit",
+      "test": "eol: normalizeSourceText turns CRLF and a lone CR into LF and leaves LF alone",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M176",
+      "gate": "s0 eol: normalisation missing on the inventory path",
+      "test": "eol: every analyser read of a source file goes through readSourceText",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M177",
+      "gate": "s0 eol: normalisation missing on the inventory path (bytes)",
+      "test": "eol: LF, CRLF and CR-only checkouts give identical call sites, classifications, outcome flags and bytes",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M178",
+      "gate": "s0 eol: normalisation missing on the reconcile path",
+      "test": "eol: every analyser read of a source file goes through readSourceText",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M179",
+      "gate": "s0 retry: durable state",
+      "test": "retry: durable state that blocks a later run is suppression",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M180",
+      "gate": "s0 retry: flip of the independent next run",
+      "test": "retry: an independent next run of the same operation is not suppression",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M181",
+      "gate": "s0 retry: a different operation",
+      "test": "retry: a later run of a different operation, or no later run, is suppression",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M182",
+      "gate": "s0 retry: requester not told",
+      "test": "retry: a requester that is not given a signal it can act on cannot retry, one that is can",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M183",
+      "gate": "s0 retry: a flag that disagrees with its trace",
+      "test": "retry: a flag or a prose verdict that disagrees with its trace is a violation, for a call site and for an edge",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M184",
+      "gate": "s0 retry: an untraced retry statement",
+      "test": "retry: a call site or an edge that talks about a retry, or declares the outcome, without a trace is a violation",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M185",
+      "gate": "s0 retry: trace shape",
+      "test": "retry: a trace with a missing key, an unknown key, a bad enum, a timing that disagrees or a bad reference is a violation",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M186",
+      "gate": "s0 retry: edge flag is derived from the trace",
+      "test": "retry: the outcome sets derive RETRY_SUPPRESSION from the trace, for an edge and for a call site, and never from a typed flag",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M187",
+      "gate": "s0 retry: call site flag is derived from the trace",
+      "test": "retry: the outcome sets derive RETRY_SUPPRESSION from the trace, for an edge and for a call site, and never from a typed flag",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M188",
+      "gate": "s0 retry: the completeness gate is computed",
+      "test": "retry: the completeness gate is computed from the committed data and stops the command line with exit 10",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M189",
+      "gate": "s0 retry: the completeness gate stops the command",
+      "test": "retry: the completeness gate is computed from the committed data and stops the command line with exit 10",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M190",
+      "gate": "s0 scope: git ls-files path",
+      "test": "scope: tracked files in scripts/security/s0 and scripts/security/s1 are not scanned, look-alikes and other scripts are, on both file-list paths",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M191",
+      "gate": "s0 scope: filesystem walk path",
+      "test": "scope: tracked files in scripts/security/s0 and scripts/security/s1 are not scanned, look-alikes and other scripts are, on both file-list paths",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M192",
+      "gate": "s0 scope: the s1 prefix is dropped",
+      "test": "scope: isExcludedPath uses exact repository-relative prefixes for scripts/security/s0 and scripts/security/s1",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M193",
+      "gate": "s0 scope: the s0 prefix is dropped",
+      "test": "scope: isExcludedPath uses exact repository-relative prefixes for scripts/security/s0 and scripts/security/s1",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M194",
+      "gate": "s0 scope: a look-alike prefix is excluded",
+      "test": "scope: isExcludedPath uses exact repository-relative prefixes for scripts/security/s0 and scripts/security/s1",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M195",
+      "gate": "index flags: skip-worktree",
+      "test": "index flags: the ls-files tags are parsed as assume-unchanged (lowercase), skip-worktree (S) and plain",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M196",
+      "gate": "index flags: assume-unchanged",
+      "test": "index flags: the ls-files tags are parsed as assume-unchanged (lowercase), skip-worktree (S) and plain",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M197",
+      "gate": "index flags: only one lowercase tag",
+      "test": "index flags: the ls-files tags are parsed as assume-unchanged (lowercase), skip-worktree (S) and plain",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M198",
+      "gate": "index flags: the verbose listing",
+      "test": "index flags: assume-unchanged and skip-worktree hide a product edit from status and are refused, modified or not",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M199",
+      "gate": "wiring: index flag gate",
+      "test": "wiring: checkRelock applies the index-flag gate",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M200",
+      "gate": "eol: a lone CR in a committed blob",
+      "test": "eol: the blob reader turns LF, CRLF and CR-only into the same text",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M205",
+      "gate": "stale text: the gate is wired",
+      "test": "stale text: process wording in the delta document or the report is refused, a defining open-item id is not, a quotation marker exempts",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M206",
+      "gate": "stale text: the report is scanned",
+      "test": "stale text: process wording in the delta document or the report is refused, a defining open-item id is not, a quotation marker exempts",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M207",
+      "gate": "stale text: the delta document is scanned",
+      "test": "stale text: process wording in the delta document or the report is refused, a defining open-item id is not, a quotation marker exempts",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M208",
+      "gate": "stale text: a defining open-item id is exempt",
+      "test": "stale text: process wording in the delta document or the report is refused, a defining open-item id is not, a quotation marker exempts",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M209",
+      "gate": "s0 retry: a typed flag is not trusted",
+      "test": "retry: the outcome sets derive RETRY_SUPPRESSION from the trace, for an edge and for a call site, and never from a typed flag",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M210",
+      "gate": "partyId writer: the property must be the payload key",
+      "test": "partyId writer: a lookalike key, another place, a comment, a string or another model is not a write",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M211",
+      "gate": "partyId writer: only the payload's own properties",
+      "test": "partyId writer: a lookalike key, another place, a comment, a string or another model is not a write",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M212",
+      "gate": "partyId writer: comments and strings are blanked",
+      "test": "partyId writer: a lookalike key, another place, a comment, a string or another model is not a write",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M213",
+      "gate": "partyId writer: a line comment is blanked",
+      "test": "partyId writer: a lookalike key, another place, a comment, a string or another model is not a write",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M214",
+      "gate": "partyId writer: a block comment is blanked",
+      "test": "partyId writer: a lookalike key, another place, a comment, a string or another model is not a write",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M215",
+      "gate": "partyId writer: a string is blanked",
+      "test": "partyId writer: a lookalike key, another place, a comment, a string or another model is not a write",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M216",
+      "gate": "partyId writer: a template is blanked",
+      "test": "partyId writer: a lookalike key, another place, a comment, a string or another model is not a write",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M217",
+      "gate": "partyId writer: a regular-expression literal is read",
+      "test": "partyId writer: a partyId property of the data of a project write is found, in any property order and layout",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M218",
+      "gate": "partyId writer: a quoted key is a key",
+      "test": "partyId writer: a partyId property of the data of a project write is found, in any property order and layout",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M219",
+      "gate": "partyId writer: a shorthand property is a property",
+      "test": "partyId writer: a partyId property of the data of a project write is found, in any property order and layout",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M220",
+      "gate": "partyId writer: any property position",
+      "test": "partyId writer: a partyId property of the data of a project write is found, in any property order and layout",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M221",
+      "gate": "partyId writer: a spread is not a property",
+      "test": "partyId writer: a lookalike key, another place, a comment, a string or another model is not a write",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M222",
+      "gate": "partyId writer: a createMany array is a payload",
+      "test": "partyId writer: a partyId property of the data of a project write is found, in any property order and layout",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M223",
+      "gate": "partyId writer: the create and update payloads of an upsert",
+      "test": "partyId writer: a partyId property of the data of a project write is found, in any property order and layout",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M224",
+      "gate": "partyId writer: only the project model",
+      "test": "partyId writer: a lookalike key, another place, a comment, a string or another model is not a write",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M225",
+      "gate": "partyId writer: optional chaining on the model",
+      "test": "partyId writer: a partyId property of the data of a project write is found, in any property order and layout",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M226",
+      "gate": "partyId writer: a generic call",
+      "test": "partyId writer: a partyId property of the data of a project write is found, in any property order and layout",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M227",
+      "gate": "partyId writer: a writer file is one with a write site",
+      "test": "partyId writer: only a file with a real project write is a writer, a file that merely names the column is not",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M228",
+      "gate": "partyId writer: the customer service is read from the committed blob",
+      "test": "partyId writer: the committed tree has exactly one project write of the customer, found through the structural reader",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M229",
+      "gate": "policy pin: a decided policy without the owner's evidence",
+      "test": "policy: R-73 must keep both branches and the remediation must not choose one",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M230",
+      "gate": "policy pin: a decided policy is refused whatever its evidence",
+      "test": "policy: R-73 must keep both branches and the remediation must not choose one",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M231",
+      "gate": "policy pin: evidence that is a deliverable is not the owner's",
+      "test": "policy: R-73 must keep both branches and the remediation must not choose one",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M232",
+      "gate": "environment: no repository is a missing prerequisite",
+      "test": "e2e environment: when git cannot answer the checker exits 3 (a missing prerequisite), never 0 and never a validation code",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    }
+  ],
+  "controls": [
+    {
+      "id": "C1",
+      "kind": "IDENTITY_REWRITE_IS_GREEN",
+      "expected": "GREEN",
+      "observed": "GREEN"
+    },
+    {
+      "id": "C2",
+      "kind": "COMMENT_IS_GREEN",
+      "expected": "GREEN",
+      "observed": "GREEN"
+    },
+    {
+      "id": "C3",
+      "kind": "SYNTAX_BREAK_IS_NOT_A_KILL",
+      "expected": "NOT_A_KILL",
+      "observed": "NOT_A_KILL"
+    },
+    {
+      "id": "C4",
+      "kind": "WRONG_FINGERPRINT_IS_NOT_A_TARGETED_KILL",
+      "expected": "ONLY_INCIDENTAL",
+      "observed": "ONLY_INCIDENTAL"
+    }
+  ],
+  "totals": {
+    "mutants": 227,
+    "targetedKill": 227,
+    "incidental": 0,
+    "survived": 0,
+    "invalid": 0,
+    "placebosGreen": 227,
+    "controls": 4,
+    "controlsAsExpected": 4,
+    "deviations": 0
+  },
+  "cleanup": "REMOVED"
+}

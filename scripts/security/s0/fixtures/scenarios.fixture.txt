@@ -1,0 +1,325 @@
+// S0-B-05 scanner fixture. Deliberately stored as .txt, NOT .ts:
+//   * tsconfig.json includes **/*.ts, so a .ts fixture would be type-checked by
+//     `next build` and this file does not type-check by design;
+//   * vitest's default include globs *.test.* / *.spec.*, so the selftest beside
+//     it is named .selftest.mjs for the same reason.
+// The scanner's core is a pure function over a source STRING, which is what makes
+// plain-text fixtures possible.
+
+import { getPrisma } from "@/lib/db/prisma";   // import only, no call
+
+// A comment mentioning getPrisma() must not be counted.
+const note = "getPrisma() inside a string literal must not be counted";
+const tpl  = `and getPrisma() inside a template literal must not be counted`;
+
+export async function throwsWhenAbsent() {
+  const db = await getPrisma();
+  if (!db) throw new Error("database required");
+  return db;
+}
+
+export async function returns503() {
+  const db = await getPrisma();
+  if (!db) {
+    return NextResponse.json({ error: "unavailable" }, { status: 503 });
+  }
+  return db.thing.findMany({ where: { organizationId: "x" } });
+}
+
+export async function deniesActor() {
+  const db = await getPrisma();
+  if (!db) return NextResponse.json({ error: "Unauthenticated." }, { status: 401 });
+  return db;
+}
+
+export async function emptyArray() {
+  const db = await getPrisma();
+  if (!db) return [];
+  return db.alert.findMany({ where: { organizationId: "x" } });
+}
+
+export async function returnsNull() {
+  const db = await getPrisma();
+  if (!db) return null;
+  return db.row.findUnique({ where: { id: "1" } });
+}
+
+export async function returnsFalse() {
+  const db = await getPrisma();
+  if (!db) return false;
+  return true;
+}
+
+export async function sessionFallback() {
+  const db = await getPrisma();
+  if (!db) return sessionStore;
+  return databaseStore(db);
+}
+
+export async function writeFallbackInSilentCatch() {
+  const fallback = createSessionCaseRepo(owner);
+  const db = await getPrisma();
+  if (!db) return fallback.create(input);
+  try {
+    return await db.engineeringCase.create({ data: input });
+  } catch {
+    return fallback.create(input);
+  }
+}
+
+export async function catchWithLog() {
+  const db = await getPrisma();
+  if (!db) throw new Error("x");
+  try {
+    return await db.row.findMany();
+  } catch (err) {
+    logger.error("failed", err);
+    return [];
+  }
+}
+
+export async function twoCallsOneFile() {
+  const a = await getPrisma();
+  if (!a) throw new Error("first");
+  const b = await getPrisma();
+  if (!b) return [];
+  return [a, b];
+}
+
+export async function multilineCall() {
+  const db = await getPrisma(
+  );
+  if (!db) throw new Error("multiline");
+  return db;
+}
+
+export async function noGuardAtAll() {
+  const db = await getPrisma();
+  return db.row.findMany();
+}
+
+export function unboundCall() {
+  return getPrisma();
+}
+
+// ─────────────────── v3 scenarios (ruleset s0-b05.3) ────────────────────────
+
+export async function positiveGuardWithElse() {
+  const db = await getPrisma();
+  if (db) {
+    return db.row.findMany({ where: { organizationId: "x" } });
+  } else {
+    return NextResponse.json({ error: "unavailable" }, { status: 503 });
+  }
+}
+
+export async function positiveGuardNoElse() {
+  const db = await getPrisma();
+  if (db) {
+    await db.loginMeta.update({ where: { id: "1" }, data: { failures: 1 } });
+  }
+  return { ok: true };
+}
+
+export async function negativeDelegateGuard() {
+  const db = await getPrisma();
+  if (!db?.engineeringCase) return [];
+  return db.engineeringCase.findMany({ where: { organizationId: "x" } });
+}
+
+export async function positiveDelegateGuardWithElse() {
+  const db = await getPrisma();
+  if (db?.alert) {
+    return db.alert.findMany();
+  } else {
+    return [];
+  }
+}
+
+export async function optionalChainNoGuard() {
+  const db = await getPrisma();
+  return db?.row?.findMany({ where: { organizationId: "x" } });
+}
+
+export async function derivedBindingGuard() {
+  const db = await getPrisma();
+  const repo = db?.engineeringCase;
+  if (!repo) throw new Error("delegate required");
+  return repo.findMany();
+}
+
+export async function derivedTernaryGuard() {
+  const db = await getPrisma();
+  const m = db ? db.engineeringCase : undefined;
+  if (!m) {
+    const g = globalThis;
+    return (g.__hermesCaseDrafts ?? []).filter((c) => c.status === "published");
+  }
+  return m.findMany();
+}
+
+export async function nullishCoalescedClient(opts) {
+  const client = opts?.client ?? (await getPrisma());
+  if (!client) return { claimed: 0, delivered: 0 };
+  return client.outbox.findMany();
+}
+
+export async function emptyCatchSwallow() {
+  const db = await getPrisma();
+  let userName = "Unknown";
+  if (db) {
+    try {
+      const u = await db.user.findUnique({ where: { id: "1" } });
+      userName = u.name;
+    } catch {
+    }
+  }
+  return NextResponse.json({ valid: true, userName });
+}
+
+export async function catchWithReadFallback() {
+  const fallback = createSessionCaseRepo(owner);
+  const db = await getPrisma();
+  if (!db) return fallback.list();
+  try {
+    return await db.engineeringCase.findMany();
+  } catch {
+    return fallback.list();
+  }
+}
+
+export async function resultObjectMappedTo503() {
+  const db = await getPrisma();
+  if (!db) return { ok: false, error: "db-unavailable" };
+  return { ok: true, row: await db.row.create({ data: {} }) };
+}
+
+export async function resultObjectMappedTo200() {
+  const db = await getPrisma();
+  if (!db) return { applied: false, reason: "NO_DB" };
+  return { applied: true };
+}
+
+export async function resultObjectWithNoProvableCaller() {
+  const db = await getPrisma();
+  if (!db) return { ok: false, code: "OWNER_SIGNAL_MISSING" };
+  return { ok: true };
+}
+
+export async function nestedFunctionGuard() {
+  async function inner() {
+    const db = await getPrisma();
+    if (!db) return [];
+    return db.row.findMany();
+  }
+  return inner();
+}
+
+export async function nestedTryCatch() {
+  const db = await getPrisma();
+  if (!db) return [];
+  try {
+    try {
+      return await db.row.findMany();
+    } catch {
+      return await db.row.findFirst();
+    }
+  } catch (err) {
+    logger.error("both reads failed", err);
+    return [];
+  }
+}
+
+export async function transactionCallback() {
+  const db = await getPrisma();
+  if (!db) return { ok: false, reason: "UNAVAILABLE" };
+  return db.$transaction(async (tx) => {
+    await tx.incident.update({ where: { id: "1" }, data: { lifecycle: "CLOSED" } });
+    return { ok: true };
+  });
+}
+
+export async function similarButUnrelatedIdentifier() {
+  const getPrismaLikeThing = () => null;
+  const notThePrisma = getPrismaLikeThing();
+  if (!notThePrisma) return [];
+  return notThePrisma;
+}
+
+export async function literalContainingRefusalCode() {
+  const db = await getPrisma();
+  if (!db) return [];
+  const message = "SERVICE_UNAVAILABLE 503 throw sessionStore globalThis fallback.create(";
+  return db.row.findMany({ where: { message } });
+}
+
+export async function commentContainingFakeGuard() {
+  const db = await getPrisma();
+  // if (!db) throw new Error("this guard is a COMMENT and must not be read");
+  /* if (!db) return NextResponse.json({ error: "x" }, { status: 503 }); */
+  return db.row.findMany();
+}
+
+// ──────────── v3.1 consumer-edge scenarios (ruleset s0-b05.4) ───────────────
+// One factory, one local accessor, four consumers with FOUR DIFFERENT
+// behaviours, plus a fifth that is unreadable from its span. The edge model
+// must publish all five separately and must not collapse them to one verdict.
+
+function createMixedRepo(owner: Owner | null): MixedRepo {
+  const fallback = createSessionMixedRepo(owner);
+  async function model(): Promise<MixedModel | null> {
+    const db = await getPrisma();
+    return db ? ((db as Record<string, unknown>).mixedThing as MixedModel) : null;
+  }
+  return {
+    async list() {
+      const m = await model();
+      if (!m) return fallback.list();
+      try {
+        return await m.findMany({ where: { organizationId: owner?.organizationId } });
+      } catch {
+        return fallback.list();
+      }
+    },
+    async create(input) {
+      const m = await model();
+      if (!m) return fallback.create(input);
+      try {
+        return await m.create({ data: input });
+      } catch {
+        return fallback.create(input);
+      }
+    },
+    async publish(id) {
+      const m = await model();
+      if (!m) throw new Error("mixed store required");
+      return m.update({ where: { id }, data: { status: "published" } });
+    },
+    async reconcile(id) {
+      const m = await model();
+      if (!m) return { ok: false, code: "MIXED_STORE_NOT_READY" };
+      return { ok: true, row: await m.findUnique({ where: { id } }) };
+    },
+    async purge(id) {
+      return fallback.delete(id);
+    },
+  };
+}
+
+// A SECOND accessor in the SAME FILE, also called `model`, inside a different
+// factory. Consumer discovery must not hand this factory's consumers to the one
+// above — that double-counting was the v3.0 defect.
+function createOtherRepo(): OtherRepo {
+  const fallback = createSessionOtherRepo();
+  async function model(): Promise<OtherModel | null> {
+    const db = await getPrisma();
+    return db ? ((db as Record<string, unknown>).otherThing as OtherModel) : null;
+  }
+  return {
+    async count() {
+      const m = await model();
+      if (!m) return fallback.count();
+      return m.count({});
+    },
+  };
+}
