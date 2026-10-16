@@ -333,7 +333,8 @@ describe.skipIf(!BASH_AVAILABLE)("behaviour — the shipped gate, executed", { t
     it("retries a failed probe within the bound, then PASSES", () => {
       const r = runGate({ states: [HEALTHY, HEALTHY], probes: ["8|", READY] });
       expect(r.code, r.stderr).toBe(0);
-      expect(count(r, "exec")).toBe(2);
+      // Two readiness attempts, then one probe for each declared public route.
+      expect(count(r, "exec")).toBe(15);
       expect(r.sleeps).toEqual(["5"]);
     });
 
