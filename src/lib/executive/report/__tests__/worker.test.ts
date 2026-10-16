@@ -80,21 +80,49 @@ vi.mock("@/lib/db/prisma", () => ({
               return (h.siteIds[where.organizationId] ?? []).map(id => ({ id }));
             },
           },
+          /**
+           * Row 10 — the notification and the ledger row are written in ONE
+           * transaction, so the harness has to be transactional too: a
+           * callback that throws must discard everything it wrote. A fake
+           * that kept partial writes could not fail the tests that matter.
+           */
+          async $transaction(fn: (tx: unknown) => Promise<unknown>) {
+            const staged = { deliveries: [] as Array<Record<string, unknown>>, notifications: [] as Array<Record<string, unknown>> };
+            const key = (d: Record<string, unknown>) =>
+              [d.organizationId, d.businessDate, d.reportVersion, d.userId].join("\u0000");
+            const tx = {
+              notification: {
+                async create(args: unknown) {
+                  if (h.notifyMode === "throw") throw new Error("notification insert failed");
+                  if (h.notifyMode === "null") return null;
+                  const data = (args as { data: Record<string, unknown> }).data;
+                  const row = { id: `ntf-${h.notifications.length + staged.notifications.length + 1}`, ...data };
+                  staged.notifications.push(row);
+                  return row;
+                },
+              },
+              executiveReportDelivery: {
+                async create(args: unknown) {
+                  if (h.deliveryMode === "throw") throw new Error("ledger unavailable");
+                  const data = (args as { data: Record<string, unknown> }).data;
+                  if ([...(h.deliveries ?? []), ...staged.deliveries].some(r => key(r) === key(data))) {
+                    throw Object.assign(new Error("Unique constraint failed"), { code: "P2002" });
+                  }
+                  staged.deliveries.push({ ...data });
+                  return data;
+                },
+              },
+            };
+            const result = await fn(tx);
+            // Commit only on success — a throw above never reaches here.
+            (h.deliveries ?? []).push(...staged.deliveries);
+            h.notifications.push(...staged.notifications);
+            return result;
+          },
           ...(h.deliveries === null
             ? {}
             : {
                 executiveReportDelivery: {
-                  async create(args: unknown) {
-                    if (h.deliveryMode === "throw") throw new Error("ledger unavailable");
-                    const data = (args as { data: Record<string, unknown> }).data;
-                    const key = (d: Record<string, unknown>) =>
-                      [d.organizationId, d.businessDate, d.reportVersion, d.userId].join("\u0000");
-                    if ((h.deliveries ?? []).some(r => key(r) === key(data))) {
-                      throw Object.assign(new Error("Unique constraint failed"), { code: "P2002" });
-                    }
-                    (h.deliveries ?? []).push({ ...data });
-                    return data;
-                  },
                   async findMany(args: unknown) {
                     const where = (args as { where: Record<string, unknown> }).where;
                     h.deliveryQueries.push(where);
@@ -444,7 +472,11 @@ describe("nobody is told twice", () => {
 
   it("notifies the organization OWNER, scoped to that organization", async () => {
     await run();
-    expect(h.notifications[0]).toMatchObject({ userId: "owner-1", organizationId: "org-a" });
+    // The Notification table has no organizationId column — the old service
+    // took one only to meter usage. Tenant scoping is recorded where it can
+    // actually be read back: the ledger row.
+    expect(h.notifications[0]).toMatchObject({ userId: "owner-1" });
+    expect(h.deliveries?.[0]).toMatchObject({ userId: "owner-1", organizationId: "org-a" });
   });
 });
 
@@ -681,15 +713,21 @@ describe("row 10 — who was told, and on what authority", () => {
     ]);
   });
 
-  it("still notifies where the ledger model is absent, rather than stopping the release", async () => {
-    // Before the migration lands, the delegate does not exist. The worker
-    // must keep working; what it loses is the record, not the report.
+  it("sends NOTHING where the ledger model is absent, and says so", async () => {
+    // FAIL CLOSED. An earlier version of this let the send through when the
+    // table was missing, "so the release is not blocked". That recreates the
+    // exact gap row 10 exists to close: an announcement nobody can account
+    // for. The report is unaffected and no claim is taken, so the next pass
+    // delivers once the migration has landed.
     h.orgIds = ["org-a"];
     h.members = { "org-a": [{ userId: "owner-1" }] };
     h.deliveries = null;
     const pass = await run();
-    expect(pass.notified).toBe(1);
-    expect(h.notifications).toHaveLength(1);
+    expect(pass.notified).toBe(0);
+    expect(h.notifications).toHaveLength(0);
+    expect(pass.undelivered).toEqual([
+      { organizationId: "org-a", businessDate: "2026-10-10", reason: "DELIVERY_LEDGER_UNAVAILABLE" },
+    ]);
   });
 });
 
@@ -699,7 +737,9 @@ describe("nobody is told they were told when they were not (slice F)", () => {
     h.members = { "org-a": [{ userId: "owner-1" }, { userId: "admin-2" }, { userId: "owner-1" }] };
     const pass = await run();
     expect(h.notifications.map(n => n.userId)).toEqual(["owner-1", "admin-2"]);
-    expect(h.notifications.every(n => n.organizationId === "org-a")).toBe(true);
+    // Scoping lives on the ledger row, which is the record that can be read
+    // back; the Notification table carries no organization at all.
+    expect((h.deliveries ?? []).every(d => d.organizationId === "org-a")).toBe(true);
     expect(pass.notified).toBe(1); // one REPORT announced, to two people
     expect(h.memberQueries[0]).toMatchObject({
       where: { organizationId: "org-a", status: "ACTIVE", role: { in: ["OWNER", "ADMIN"] } },

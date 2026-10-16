@@ -34,12 +34,11 @@
 
 import { getPrisma } from "@/lib/db/prisma";
 import { acquireLease, releaseLease, renewLease, type LeaseHandle } from "@/lib/industrial/metering-worker";
-import { getNotificationService } from "@/lib/notifications/service";
 import { defaultSettings, loadExecutiveSettingsMany, type SettingsDb } from "../settings";
 import { lastCompletedBusinessDay } from "../period";
 import type { ExecutiveScope } from "../contract";
 import { claimNotification, generateDailyReport, releaseNotificationClaim } from "./generate";
-import { recordDelivery, recordedRecipients, type DeliveryDelegate } from "./delivery";
+import { deliverOnce, recordedRecipients, type DeliveryClient } from "./delivery";
 import type { GenerationOutcome } from "./contract";
 
 /** One job, one lease row. */
@@ -58,7 +57,19 @@ export const NOTIFY_ROLES = ["OWNER", "ADMIN"] as const;
 export const MAX_NOTIFY_RECIPIENTS = 25;
 
 /** Why a report that exists could not be announced. Operator-facing codes. */
-export type UndeliveredReason = "NO_RECIPIENT" | "DELIVERY_FAILED";
+export type UndeliveredReason =
+  | "NO_RECIPIENT"
+  | "DELIVERY_FAILED"
+  /**
+   * The ledger is not available, so nobody can be told.
+   *
+   * Sending without recording the authority it was sent under is what
+   * produced the gap this table exists to close — an announcement nobody can
+   * later account for. A release that cannot write the record does not send:
+   * the report still exists and the next pass retries, because the claim was
+   * never taken.
+   */
+  | "DELIVERY_LEDGER_UNAVAILABLE";
 
 export interface PassReport {
   readonly ranAt: string;
@@ -400,6 +411,7 @@ async function announce(
     version: report.version,
     claimedAtMs: nowMs,
   }).catch(() => false);
+  if (!delivery.ledgerAvailable) return "DELIVERY_LEDGER_UNAVAILABLE";
   return delivery.recipients === 0 ? "NO_RECIPIENT" : "DELIVERY_FAILED";
 }
 
@@ -418,9 +430,9 @@ async function notifyRecipients(
   client: unknown,
   organizationId: string,
   report: { businessDate: string; version: number },
-): Promise<{ recipients: number; sent: number }> {
+): Promise<{ recipients: number; sent: number; ledgerAvailable: boolean }> {
   const members = (client as { organizationMember?: MemberDelegate }).organizationMember;
-  if (!members) return { recipients: 0, sent: 0 };
+  if (!members) return { recipients: 0, sent: 0, ledgerAvailable: true };
   const { businessDate, version } = report;
 
   // The authority is SELECTED, not assumed. `role` and `status` come back
@@ -448,49 +460,59 @@ async function notifyRecipients(
       });
     }
   } catch {
-    return { recipients: 0, sent: 0 };
+    return { recipients: 0, sent: 0, ledgerAvailable: true };
   }
 
-  const deliveries = (client as { executiveReportDelivery?: DeliveryDelegate }).executiveReportDelivery;
+  const ledgerClient = client as DeliveryClient;
+  const deliveries = ledgerClient.executiveReportDelivery;
 
-  // Already-recorded recipients are skipped before any work is done. This is
-  // an optimisation, not the guarantee: the unique constraint inside
-  // recordDelivery is what actually prevents a second notification, because
-  // two replicas can read this set at the same time.
-  const already = deliveries
-    ? await recordedRecipients(deliveries, { organizationId, businessDate, reportVersion: version })
-    : new Set<string>();
+  // FAIL CLOSED. Without the ledger there is no way to record the authority a
+  // send was made under, and an announcement nobody can account for is the
+  // gap this whole table exists to close. So nothing is sent. The report is
+  // unaffected, the notification claim is never taken, and the next pass
+  // tries again once the ledger is there.
+  if (!deliveries || typeof ledgerClient.$transaction !== "function") {
+    return { recipients: recipients.length, sent: 0, ledgerAvailable: false };
+  }
+
+  // Already-recorded recipients are skipped before any work is done. An
+  // optimisation, not the guarantee: the unique constraint inside
+  // deliverOnce is what actually prevents a second notification, because two
+  // replicas can read this set at the same moment.
+  const already = await recordedRecipients(deliveries, {
+    organizationId,
+    businessDate,
+    reportVersion: version,
+  });
 
   let sent = 0;
   for (const recipient of recipients) {
     if (already.has(recipient.userId)) continue;
     try {
-      // The ledger row is claimed FIRST. Losing the claim means another pass
-      // or another replica already told this person, and the notification is
-      // not sent — the record is what decides, not a prior read.
-      if (deliveries) {
-        const claim = await recordDelivery(deliveries, {
+      // ONE transaction: the notification and the record of who was told, on
+      // what authority, either both exist or neither does. A crash between
+      // them cannot leave a claim that silences every later pass.
+      const outcome = await deliverOnce(
+        ledgerClient,
+        {
           organizationId,
           businessDate,
           reportVersion: version,
           recipient,
           allowedRoles: NOTIFY_ROLES,
           notificationId: null,
-        });
-        if (claim !== "RECORDED") continue;
-      }
-      const created = await getNotificationService().create({
-        userId: recipient.userId,
-        organizationId,
-        type: "info",
-        title: "Executive daily report",
-        message: `The management report for ${businessDate} is ready.`,
-        metadata: { kind: "executive.report", businessDate },
-      });
-      if (created !== null) sent += 1;
+        },
+        {
+          type: "info",
+          title: "Executive daily report",
+          message: `The management report for ${businessDate} is ready.`,
+          metadata: { kind: "executive.report", businessDate },
+        },
+      );
+      if (outcome.kind === "SENT") sent += 1;
     } catch {
       // One recipient's failure must not stop the others.
     }
   }
-  return { recipients: recipients.length, sent };
+  return { recipients: recipients.length, sent, ledgerAvailable: true };
 }

@@ -190,6 +190,119 @@ describe.skipIf(!dockerAvailable)("the delivery ledger, as the database enforces
     expect(psql(db2, ROW({ businessDate: "2026-10-144" })).status).not.toBe(0);
   }, 180_000);
 
+  /**
+   * ATOMICITY, proven by the server rather than by a fake.
+   *
+   * The failure this guards against is silent and permanent: if the ledger
+   * row were claimed first and the worker died before creating the
+   * notification, every later pass would read the claim, skip the recipient,
+   * and the announcement would be lost for ever. One transaction makes that
+   * state unreachable.
+   *
+   * A minimal "Notification" table is created alongside, because this is
+   * about transaction semantics, not about Prisma's schema.
+   */
+  function withNotificationTable(): string {
+    const db = freshDb();
+    const made = psql(
+      db,
+      `CREATE TABLE "Notification" (
+         "id" TEXT PRIMARY KEY,
+         "userId" TEXT NOT NULL,
+         "metadata" JSONB NOT NULL DEFAULT '{}'
+       );`,
+    );
+    if (made.status !== 0) throw new Error(made.stderr);
+    return db;
+  }
+
+  it("commits the notification and the record together", () => {
+    const db = withNotificationTable();
+    const r = psql(
+      db,
+      `BEGIN;
+       INSERT INTO "Notification" ("id","userId") VALUES ('ntf-1','user-owner');
+       ${ROW({ notificationId: "ntf-1" } as Record<string, string | number>).replace(
+         '"allowedRoles")',
+         '"allowedRoles","notificationId")',
+       ).replace("'ADMIN,OWNER');", "'ADMIN,OWNER','ntf-1');")}
+       COMMIT;`,
+    );
+    expect(r.status).toBe(0);
+    expect(psql(db, `SELECT count(*) FROM "Notification";`).stdout).toContain("1");
+    const joined = psql(
+      db,
+      `SELECT d."notificationId" FROM "ExecutiveReportDelivery" d WHERE d."id" = 'del-1';`,
+    );
+    expect(joined.stdout).toContain("ntf-1");
+  }, 180_000);
+
+  it("rolls BOTH back when the record loses the unique constraint", () => {
+    // The losing replica. Its notification must not survive its rolled-back
+    // claim, or the recipient is told twice.
+    const db = withNotificationTable();
+    expect(psql(db, ROW()).status).toBe(0);
+    const second = psql(
+      db,
+      `BEGIN;
+       INSERT INTO "Notification" ("id","userId") VALUES ('ntf-2','user-owner');
+       ${ROW({ id: "del-2" })}
+       COMMIT;`,
+    );
+    expect(second.status).not.toBe(0);
+    expect(second.stderr).toMatch(/duplicate key|unique constraint/i);
+    // Neither the second delivery nor its notification exists.
+    expect(psql(db, `SELECT count(*) FROM "ExecutiveReportDelivery";`).stdout).toContain("1");
+    expect(psql(db, `SELECT count(*) FROM "Notification";`).stdout).toContain("0");
+  }, 180_000);
+
+  it("rolls BOTH back when the notification fails, leaving the recipient retryable", () => {
+    // The crash case, made deterministic: the notification insert violates
+    // its primary key, the transaction aborts, and NOTHING is left behind —
+    // so a later pass sees no claim and tries again.
+    const db = withNotificationTable();
+    expect(psql(db, `INSERT INTO "Notification" ("id","userId") VALUES ('ntf-1','someone');`).status).toBe(0);
+    const attempt = psql(
+      db,
+      `BEGIN;
+       INSERT INTO "Notification" ("id","userId") VALUES ('ntf-1','user-owner');
+       ${ROW()}
+       COMMIT;`,
+    );
+    expect(attempt.status).not.toBe(0);
+    // No claim survived, so the recipient is still deliverable.
+    expect(psql(db, `SELECT count(*) FROM "ExecutiveReportDelivery";`).stdout).toContain("0");
+    // And a healthy retry succeeds.
+    const retry = psql(
+      db,
+      `BEGIN;
+       INSERT INTO "Notification" ("id","userId") VALUES ('ntf-2','user-owner');
+       ${ROW({ notificationId: "ntf-2" } as Record<string, string | number>)}
+       COMMIT;`,
+    );
+    expect(retry.status).toBe(0);
+    expect(psql(db, `SELECT count(*) FROM "ExecutiveReportDelivery";`).stdout).toContain("1");
+  }, 180_000);
+
+  it("a crash AFTER commit leaves both rows, so the next pass correctly skips", () => {
+    // Nothing to roll back: the transaction committed, both rows are
+    // durable, and a second attempt loses the constraint — which is the
+    // right answer, because the person really was told.
+    const db = withNotificationTable();
+    expect(
+      psql(
+        db,
+        `BEGIN;
+         INSERT INTO "Notification" ("id","userId") VALUES ('ntf-1','user-owner');
+         ${ROW()}
+         COMMIT;`,
+      ).status,
+    ).toBe(0);
+    const again = psql(db, ROW({ id: "del-2" }));
+    expect(again.status).not.toBe(0);
+    expect(psql(db, `SELECT count(*) FROM "Notification";`).stdout).toContain("1");
+  }, 180_000);
+
   it("has no foreign key, so the record outlives what it describes", () => {
     // Following AuditLog: an audit trail a cascade can delete is not a trail.
     // It is also why the append-only trigger never has to tell a cascade
