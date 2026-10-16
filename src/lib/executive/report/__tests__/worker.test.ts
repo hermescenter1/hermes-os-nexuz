@@ -40,6 +40,16 @@ const h = vi.hoisted(() => ({
    */
   members: {} as Record<string, Array<{ userId: string; role?: string; status?: string }>>,
   memberQueries: [] as Array<Record<string, unknown>>,
+  /**
+   * Row 10 — the delivery ledger. The fake enforces the REAL unique
+   * constraint, because a fake that accepts duplicates could not fail the
+   * test that matters. `null` makes the delegate absent, which is how an
+   * older deployment behaves before the migration lands.
+   */
+  deliveries: [] as Array<Record<string, unknown>> | null,
+  deliveryQueries: [] as Array<Record<string, unknown>>,
+  /** "ok" | "throw" — a ledger whose write fails outright. */
+  deliveryMode: "ok" as "ok" | "throw",
   /** "ok" | "null" (service refused) | "throw". */
   notifyMode: "ok" as "ok" | "null" | "throw",
   notifications: [] as Array<Record<string, unknown>>,
@@ -70,6 +80,33 @@ vi.mock("@/lib/db/prisma", () => ({
               return (h.siteIds[where.organizationId] ?? []).map(id => ({ id }));
             },
           },
+          ...(h.deliveries === null
+            ? {}
+            : {
+                executiveReportDelivery: {
+                  async create(args: unknown) {
+                    if (h.deliveryMode === "throw") throw new Error("ledger unavailable");
+                    const data = (args as { data: Record<string, unknown> }).data;
+                    const key = (d: Record<string, unknown>) =>
+                      [d.organizationId, d.businessDate, d.reportVersion, d.userId].join("\u0000");
+                    if ((h.deliveries ?? []).some(r => key(r) === key(data))) {
+                      throw Object.assign(new Error("Unique constraint failed"), { code: "P2002" });
+                    }
+                    (h.deliveries ?? []).push({ ...data });
+                    return data;
+                  },
+                  async findMany(args: unknown) {
+                    const where = (args as { where: Record<string, unknown> }).where;
+                    h.deliveryQueries.push(where);
+                    return (h.deliveries ?? []).filter(
+                      r =>
+                        r.organizationId === where.organizationId &&
+                        r.businessDate === where.businessDate &&
+                        r.reportVersion === where.reportVersion,
+                    );
+                  },
+                },
+              }),
           organizationMember: {
             async findMany(args: unknown) {
               h.memberQueries.push(args as Record<string, unknown>);
@@ -193,6 +230,9 @@ beforeEach(() => {
   h.memberQueries = [];
   h.notifyMode = "ok";
   h.notifications = [];
+  h.deliveries = [];
+  h.deliveryQueries = [];
+  h.deliveryMode = "ok";
   h.zone = { timeZone: "Asia/Tehran", dayCutoffMinutes: 0, configuredValid: true };
   h.settingsRows = null;
   h.settingsQueries = [];
@@ -496,6 +536,160 @@ describe("the lease is renewed while a batch runs and released when it ends (sli
   it("does not renew a fast batch at all", async () => {
     await run();
     expect(h.renewCalls).toHaveLength(0);
+  });
+});
+
+/**
+ * ROW 10 — the delivery ledger, through the worker.
+ *
+ * Production could show that exactly one report and one notification were
+ * produced, and that no duplicate followed. It could NOT show who received
+ * that notification or on what authority, because OrganizationMember
+ * overwrites role and status in place and Notification records neither.
+ * These tests are about the record that closes that gap.
+ */
+describe("row 10 — who was told, and on what authority", () => {
+  it("records the role and status each recipient held AT THAT MOMENT", async () => {
+    h.orgIds = ["org-a"];
+    h.members = {
+      "org-a": [
+        { userId: "owner-1", role: "OWNER", status: "ACTIVE" },
+        { userId: "admin-2", role: "ADMIN", status: "ACTIVE" },
+      ],
+    };
+    await run();
+    expect(h.deliveries).toHaveLength(2);
+    expect(h.deliveries).toEqual([
+      expect.objectContaining({
+        organizationId: "org-a",
+        businessDate: "2026-10-10",
+        reportVersion: 1,
+        userId: "owner-1",
+        roleAtSend: "OWNER",
+        statusAtSend: "ACTIVE",
+        rulesVersion: "notify-roles-1",
+        allowedRoles: "ADMIN,OWNER",
+      }),
+      expect.objectContaining({ userId: "admin-2", roleAtSend: "ADMIN", statusAtSend: "ACTIVE" }),
+    ]);
+  });
+
+  it("asks the database for the authority, instead of assuming it", () => {
+    // The row must carry what the database returned, so the query has to
+    // SELECT it. Assuming "they matched the filter, so they were an active
+    // owner" would record a conclusion, not an observation.
+    return run().then(() => {
+      expect(h.memberQueries[0]).toMatchObject({ select: { userId: true, role: true, status: true } });
+    });
+  });
+
+  it("writes no delivery for anyone outside the allowlist", async () => {
+    h.orgIds = ["org-a"];
+    h.members = {
+      "org-a": [
+        { userId: "owner-1", role: "OWNER", status: "ACTIVE" },
+        { userId: "manager-2", role: "MANAGER", status: "ACTIVE" },
+        { userId: "admin-gone", role: "ADMIN", status: "SUSPENDED" },
+      ],
+    };
+    await run();
+    expect((h.deliveries ?? []).map(d => d.userId)).toEqual(["owner-1"]);
+  });
+
+  it("records one delivery per recipient per report, and no notification twice", async () => {
+    // The second pass is the real test: the report already exists, the
+    // ledger already holds the claim, and nobody may be told again.
+    h.orgIds = ["org-a"];
+    h.members = { "org-a": [{ userId: "owner-1" }] };
+    const first = await run();
+    expect(first.notified).toBe(1);
+    expect(h.notifications).toHaveLength(1);
+
+    // The night is already reported AND already announced: the harness keys
+    // outcomes and notifiedAt by organization id.
+    h.outcomes = { "org-a": { kind: "ALREADY_REPORTED" } };
+    h.notifiedAt = { "org-a": new Date(NOW).toISOString() };
+    const second = await run();
+    expect(second.created).toBe(0);
+    expect(second.alreadyReported).toBe(1);
+    expect(second.notified).toBe(0);
+    expect(h.notifications).toHaveLength(1);
+    expect(h.deliveries).toHaveLength(1);
+  });
+
+  it("does not tell a recipient twice even when the report is announced again", async () => {
+    // A report whose announcement reached nobody has its claim given back and
+    // is retried. A recipient already in the ledger must still be skipped.
+    h.orgIds = ["org-a"];
+    h.members = { "org-a": [{ userId: "owner-1" }, { userId: "admin-2" }] };
+    await run();
+    expect(h.deliveries).toHaveLength(2);
+
+    // Same night, announced again: nothing new is written or sent.
+    h.notifications = [];
+    await run();
+    expect(h.notifications).toHaveLength(0);
+    expect(h.deliveries).toHaveLength(2);
+  });
+
+  it("treats a correction as its own delivery, not an edit of the first", async () => {
+    h.orgIds = ["org-a"];
+    h.members = { "org-a": [{ userId: "owner-1" }] };
+    await run();
+    // Version 2 is a restatement of the night; telling someone about it is a
+    // NEW delivery, with its own authority, beside the first.
+    (h.deliveries ?? []).push({
+      organizationId: "org-a",
+      businessDate: "2026-10-10",
+      reportVersion: 2,
+      userId: "owner-1",
+      roleAtSend: "OWNER",
+      statusAtSend: "ACTIVE",
+    });
+    expect((h.deliveries ?? []).map(d => d.reportVersion)).toEqual([1, 2]);
+  });
+
+  it("keeps one tenant's ledger out of another's", async () => {
+    // The same person can hold a seat in two organizations, and each
+    // organization's report is its own delivery.
+    h.orgIds = ["org-a", "org-b"];
+    h.members = { "org-a": [{ userId: "shared-owner" }], "org-b": [{ userId: "shared-owner" }] };
+    await run();
+    expect(h.deliveries).toHaveLength(2);
+    expect(new Set((h.deliveries ?? []).map(d => d.organizationId))).toEqual(new Set(["org-a", "org-b"]));
+    // And every read was scoped to one organization.
+    for (const where of h.deliveryQueries) {
+      expect(Object.keys(where)).toContain("organizationId");
+      expect(["org-a", "org-b"]).toContain(where.organizationId);
+    }
+  });
+
+  it("sends nothing when the ledger claim cannot be written", async () => {
+    // "Could not record" must never become "told but unrecorded": the record
+    // is the thing row 10 needs, so a send without one is worse than no send.
+    h.orgIds = ["org-a"];
+    h.members = { "org-a": [{ userId: "owner-1" }] };
+    h.deliveryMode = "throw";
+    const pass = await run();
+    expect(h.notifications).toHaveLength(0);
+    expect(pass.notified).toBe(0);
+    // DELIVERY_FAILED, not NO_RECIPIENT: there WAS someone to tell. The two
+    // must stay distinguishable — one is an empty organization, the other is
+    // a broken record, and only the second needs a human.
+    expect(pass.undelivered).toEqual([
+      { organizationId: "org-a", businessDate: "2026-10-10", reason: "DELIVERY_FAILED" },
+    ]);
+  });
+
+  it("still notifies where the ledger model is absent, rather than stopping the release", async () => {
+    // Before the migration lands, the delegate does not exist. The worker
+    // must keep working; what it loses is the record, not the report.
+    h.orgIds = ["org-a"];
+    h.members = { "org-a": [{ userId: "owner-1" }] };
+    h.deliveries = null;
+    const pass = await run();
+    expect(pass.notified).toBe(1);
+    expect(h.notifications).toHaveLength(1);
   });
 });
 

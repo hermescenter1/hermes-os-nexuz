@@ -39,6 +39,7 @@ import { defaultSettings, loadExecutiveSettingsMany, type SettingsDb } from "../
 import { lastCompletedBusinessDay } from "../period";
 import type { ExecutiveScope } from "../contract";
 import { claimNotification, generateDailyReport, releaseNotificationClaim } from "./generate";
+import { recordDelivery, recordedRecipients, type DeliveryDelegate } from "./delivery";
 import type { GenerationOutcome } from "./contract";
 
 /** One job, one lease row. */
@@ -97,6 +98,13 @@ interface OrgDelegate {
 }
 interface MemberDelegate {
   findMany(args: unknown): Promise<Row[]>;
+}
+
+/** A member row as the notification query selects it, authority included. */
+interface MemberAuthorityRow {
+  userId?: unknown;
+  role?: unknown;
+  status?: unknown;
 }
 
 const emptyPass = (nowMs: number, leaseHeld: boolean, after: string | null = null): PassReport => ({
@@ -383,7 +391,7 @@ async function announce(
   }).catch(() => false);
   if (!claimed) return "NOT_CLAIMED";
 
-  const delivery = await notifyRecipients(client, organizationId, report.businessDate);
+  const delivery = await notifyRecipients(client, organizationId, report);
   if (delivery.sent > 0) return "SENT";
 
   await releaseNotificationClaim({
@@ -409,29 +417,70 @@ async function announce(
 async function notifyRecipients(
   client: unknown,
   organizationId: string,
-  businessDate: string,
+  report: { businessDate: string; version: number },
 ): Promise<{ recipients: number; sent: number }> {
   const members = (client as { organizationMember?: MemberDelegate }).organizationMember;
   if (!members) return { recipients: 0, sent: 0 };
+  const { businessDate, version } = report;
 
-  let userIds: string[];
+  // The authority is SELECTED, not assumed. `role` and `status` come back
+  // with the recipient and are frozen into the ledger exactly as the database
+  // returned them at this moment — which is the whole point of the row:
+  // OrganizationMember overwrites both in place and keeps no history.
+  let recipients: Array<{ userId: string; role: string; status: string }>;
   try {
-    const rows = await members.findMany({
+    const rows = (await members.findMany({
       where: { organizationId, status: "ACTIVE", role: { in: [...NOTIFY_ROLES] } },
-      select: { userId: true },
+      select: { userId: true, role: true, status: true },
       orderBy: { userId: "asc" },
       take: MAX_NOTIFY_RECIPIENTS,
-    });
-    userIds = [...new Set(rows.map(r => r.userId).filter((u): u is string => typeof u === "string" && u !== ""))];
+    })) as MemberAuthorityRow[];
+    const seen = new Set<string>();
+    recipients = [];
+    for (const r of rows) {
+      const userId = typeof r.userId === "string" ? r.userId : "";
+      if (userId === "" || seen.has(userId)) continue;
+      seen.add(userId);
+      recipients.push({
+        userId,
+        role: typeof r.role === "string" ? r.role : String(r.role ?? ""),
+        status: typeof r.status === "string" ? r.status : String(r.status ?? ""),
+      });
+    }
   } catch {
     return { recipients: 0, sent: 0 };
   }
 
+  const deliveries = (client as { executiveReportDelivery?: DeliveryDelegate }).executiveReportDelivery;
+
+  // Already-recorded recipients are skipped before any work is done. This is
+  // an optimisation, not the guarantee: the unique constraint inside
+  // recordDelivery is what actually prevents a second notification, because
+  // two replicas can read this set at the same time.
+  const already = deliveries
+    ? await recordedRecipients(deliveries, { organizationId, businessDate, reportVersion: version })
+    : new Set<string>();
+
   let sent = 0;
-  for (const userId of userIds) {
+  for (const recipient of recipients) {
+    if (already.has(recipient.userId)) continue;
     try {
+      // The ledger row is claimed FIRST. Losing the claim means another pass
+      // or another replica already told this person, and the notification is
+      // not sent — the record is what decides, not a prior read.
+      if (deliveries) {
+        const claim = await recordDelivery(deliveries, {
+          organizationId,
+          businessDate,
+          reportVersion: version,
+          recipient,
+          allowedRoles: NOTIFY_ROLES,
+          notificationId: null,
+        });
+        if (claim !== "RECORDED") continue;
+      }
       const created = await getNotificationService().create({
-        userId,
+        userId: recipient.userId,
         organizationId,
         type: "info",
         title: "Executive daily report",
@@ -443,5 +492,5 @@ async function notifyRecipients(
       // One recipient's failure must not stop the others.
     }
   }
-  return { recipients: userIds.length, sent };
+  return { recipients: recipients.length, sent };
 }
