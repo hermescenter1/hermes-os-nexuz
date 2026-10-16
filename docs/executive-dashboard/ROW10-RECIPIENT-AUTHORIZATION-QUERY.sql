@@ -45,45 +45,68 @@
 
 -- ── PRECONDITIONS · a zero result must never look like a success ───────────
 --
--- The first production run of this file returned zero in every section while
+-- The first production run of this file returned zero in EVERY section while
 -- the worker's log said a report and a notification existed. Zero rows is an
 -- ANSWER to a question, and it is indistinguishable from the question never
--- having been asked properly. These checks make the difference visible before
--- any section runs.
+-- having been asked properly. Nothing in the file separated the two, so §5
+-- and §6 read as "no duplicates" and "no unauthorised recipients" — two of
+-- the five things row 10 exists to prove.
 --
--- `businessDate` is VARCHAR(10) and compared as text, so a stray byte in the
--- parameter — a carriage return from a CRLF checkout is the obvious one —
--- silently matches nothing. ON_ERROR_STOP turns each failure below into a
--- stop, not a zero.
-SELECT
-  CASE
-    WHEN length(:'business_date') <> 10
-      OR :'business_date' !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
-    THEN
-      1 / 0  -- forces a stop under ON_ERROR_STOP=1
-    ELSE 0
-  END AS business_date_parameter_is_a_plain_yyyy_mm_dd;
+-- WHAT IS NOT KNOWN. Why that run selected nothing is still open. A CRLF
+-- parameter was ruled out by the execution evidence: the SQL was piped
+-- straight from the git blob 0a896b55…, sha256 b86d6636…, so no carriage
+-- return reached psql. CRLF remains a real hazard for anyone who runs the
+-- file from a Windows working tree, which is why the first check below still
+-- exists — but it is NOT the explanation for what was observed.
+-- ROW10-DIAGNOSTIC.sql is the file that looks for the explanation.
+--
+-- HOW THESE STOP. Each denominator is a COUNT from a real query, never a
+-- constant: `1 / (count(*) > 0)::int` divides by zero only at run time, on a
+-- value the planner cannot fold away, and the result is in the SELECT list so
+-- it must be produced. Under ON_ERROR_STOP=1 a division by zero ends the
+-- session before any result section runs. They are top-level statements, not
+-- CTEs: an unreferenced CTE can be skipped entirely.
 
--- No report for that day means the premise of every later section is false.
+-- 1 · the business-date parameter is a plain YYYY-MM-DD.
+--     `businessDate` is VARCHAR(10) compared as TEXT, so one stray byte
+--     matches nothing, silently, in every section below.
 SELECT
-  CASE
-    WHEN count(*) = 0 THEN 1 / 0  -- forces a stop under ON_ERROR_STOP=1
-    ELSE count(*)
-  END AS reports_found_for_this_business_date
+  1 / (count(*) > 0)::int AS business_date_parameter_is_a_plain_yyyy_mm_dd
+FROM (
+  SELECT 1
+  WHERE length(:'business_date') = 10
+    AND :'business_date' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+) AS parameter_is_well_formed;
+
+-- 2 · at least one report exists for that day. Without it the premise of
+--     every later section is false, and their emptiness means nothing.
+SELECT
+  1 / (count(*) > 0)::int AS reports_exist_for_this_business_date,
+  count(*)                AS reports_found
 FROM "ExecutiveDailyReport"
 WHERE "businessDate" = :'business_date';
 
--- More than one organization reported that day and no choice was made: show
--- the candidates as hashes and stop, rather than silently mixing tenants.
+-- 3 · the organization is unambiguous.
+--     Empty selector with exactly one reporting organization is fine. Empty
+--     with several is NOT: it would silently mix tenants in one answer. A
+--     non-empty selector must resolve to exactly one organization — a hash
+--     prefix is a SELECTOR, and its uniqueness is proven here at run time
+--     rather than assumed. Zero matches (an unknown or stale prefix) and more
+--     than one match (a collision) both stop.
 SELECT
-  CASE
-    WHEN :'report_org_hash' = ''
-     AND count(DISTINCT "organizationId") > 1
-    THEN 1 / 0  -- forces a stop; re-run with \set report_org_hash from section 0
-    ELSE count(DISTINCT "organizationId")
-  END AS organizations_reporting_this_day
-FROM "ExecutiveDailyReport"
-WHERE "businessDate" = :'business_date';
+  1 / (
+    CASE
+      WHEN :'report_org_hash' = '' THEN (count(*) = 1)
+      ELSE (count(*) FILTER (WHERE org_hash = :'report_org_hash') = 1)
+    END
+  )::int                        AS organization_selection_is_unambiguous,
+  count(*)                      AS organizations_reporting_this_day,
+  count(*) FILTER (WHERE org_hash = :'report_org_hash') AS organizations_matching_the_selector
+FROM (
+  SELECT DISTINCT substr(md5("organizationId"), 1, 12) AS org_hash
+  FROM "ExecutiveDailyReport"
+  WHERE "businessDate" = :'business_date'
+) AS reporting_organizations;
 
 -- ── 0 · the reports those notifications belong to ───────────────────────────
 -- Establishes which (organization, date, version) rows exist and which of them
@@ -242,9 +265,11 @@ WHERE a."entityType" = 'OrganizationMember'
 --
 -- WHY THE PRECONDITIONS EXIST. The first production run of this file
 -- returned zero everywhere and read as "nothing to see". Zero rows from a
--- query whose parameter never matched is not evidence of anything, and a
--- report that presents it as "no duplicates, no unauthorized recipients"
--- would be false. The checks at the top stop the file instead.
+-- query that never selected the intended rows is not evidence of anything,
+-- and a report presenting it as "no duplicates, no unauthorized recipients"
+-- would be false. The checks at the top stop the file instead. Why that run
+-- selected nothing is still OPEN: the CRLF hypothesis was ruled out by the
+-- execution evidence, and ROW10-DIAGNOSTIC.sql is what looks for the cause.
 --
 -- WHAT WOULD MAKE IT A RECORD. Writing the recipient's role and status into
 -- the notification's own metadata at send time, so the row carries the

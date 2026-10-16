@@ -24,17 +24,41 @@
 \pset pager off
 \timing off
 
--- ── A · the most likely cause, checked first ────────────────────────────────
--- The authorization query is parameterised with `\set business_date`. If the
--- file reached psql with CRLF line endings — which is what a checkout on
--- Windows produces — the variable carries a trailing carriage return, and
--- `"businessDate" = '2026-10-14' || CHR(13)` matches nothing, in every
--- section, silently.
+-- ── A · WHICH DATABASE IS THIS, AND WHERE DO THE TABLES LIVE ───────────────
 --
--- EXPECTED: value_length = 10. Anything else is the answer.
+-- Checked first because it is the only explanation left that produces zero
+-- rows WITHOUT an error. If the session reads a schema that holds an empty
+-- copy of these tables while the application writes to another, every
+-- section returns nothing and nothing complains.
+--
+-- A CRLF parameter was ruled out by the execution evidence: the SQL was piped
+-- straight from the git blob, so no carriage return reached psql. Section A2
+-- still measures the parameter, because the next operator may run the file
+-- from a Windows working tree — but it is a hazard to exclude, not a lead.
+SELECT
+  current_database()        AS database,
+  current_user              AS session_user_name,
+  current_schema()          AS default_schema,
+  current_setting('search_path') AS search_path,
+  version()                 AS server_version;
+
+-- A1 · every schema that holds these tables, and how many rows each copy has.
+--      More than one row here is the answer on its own.
+SELECT
+  n.nspname                                   AS schema,
+  c.relname                                   AS table_name,
+  pg_catalog.pg_table_size(c.oid)             AS size_bytes,
+  (SELECT reltuples::bigint FROM pg_class x WHERE x.oid = c.oid) AS planner_row_estimate
+FROM pg_catalog.pg_class c
+JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+WHERE c.relkind = 'r'
+  AND c.relname IN ('ExecutiveDailyReport', 'Notification', 'OrganizationMember', 'AuditLog', '_prisma_migrations')
+ORDER BY c.relname, n.nspname;
+
+-- A2 · the parameter, byte for byte. Excluded as the cause of the observed
+--      run; kept because it costs nothing and the next run may differ.
 \set business_date '2026-10-14'
 SELECT
-  :'business_date'                       AS value_as_psql_sees_it,
   length(:'business_date')               AS value_length,
   (length(:'business_date') = 10)        AS length_is_sane,
   (:'business_date' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$') AS matches_a_plain_date,
@@ -148,9 +172,18 @@ FROM "AuditLog";
 -- ============================================================================
 -- HOW TO READ THE RESULT
 --
---   A shows value_length <> 10
---       -> the file reached psql with CRLF endings. The query is fine; the
---          transport was not. Re-run from the git blob, which is LF.
+--   A1 lists these tables in more than one schema
+--       -> the session is almost certainly reading an empty copy while the
+--          application writes to another. Compare `search_path` in A with the
+--          schema the application's DATABASE_URL selects. This is the only
+--          remaining explanation that yields zero rows WITHOUT an error.
+--
+--   A shows a database name the application does not use
+--       -> the same conclusion, one level up.
+--
+--   A2 shows value_length <> 10
+--       -> that run reached psql with CRLF endings. It did NOT happen in the
+--          run being investigated, which was piped from the blob.
 --
 --   B shows reports_all_time = 0
 --       -> this database has no nightly reports at all, and the worker is
