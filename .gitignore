@@ -23,10 +23,6 @@ scripts/backups/
 *.sql.gz
 # Prisma migration files must be committed so deployments can run migrate deploy
 !prisma/migrations/**/*.sql
-# Read-only evidence and diagnostic queries under docs/ are documentation, not
-# database dumps. The `*.sql` rule above exists to keep dumps out; a SELECT an
-# operator is meant to run and review belongs in the repository.
-!docs/**/*.sql
 
 # SSL certificates — managed by Certbot on the VPS
 deploy/ssl/certs/
