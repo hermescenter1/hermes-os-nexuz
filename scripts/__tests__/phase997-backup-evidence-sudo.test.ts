@@ -457,7 +457,13 @@ describe.skipIf(!REAL_SUDO)("real permissions — the incident, reproduced and c
 
   function runRealGate(dir: string) {
     const script = ["set -euo pipefail", GATE].join("\n");
-    return spawnSync("bash", ["-c", script], { encoding: "utf8", env: { ...process.env, BACKUP_REQUIRED: "true", BACKUP_DIR: dir } });
+    return spawnSync("bash", ["-c", script], {
+      encoding: "utf8",
+      // The release-wide flag the deploy step sets literally. This harness
+      // does not go through runGate, so it has to set it too — and that is
+      // the point: the gate refuses without it rather than running anyway.
+      env: { ...process.env, BACKUP_REQUIRED: "true", RELEASE_BACKUP_EVIDENCE_REQUIRED: "true", BACKUP_DIR: dir },
+    });
   }
 
   it("the fixture reproduces the incident: an unprivileged read is denied", () => {
