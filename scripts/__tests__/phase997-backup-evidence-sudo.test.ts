@@ -40,12 +40,17 @@ import { join } from "node:path";
 const REPO = process.cwd();
 const deploy = readFileSync(join(REPO, ".github", "workflows", "deploy.yml"), "utf8").replace(/\r\n/g, "\n");
 
+const COLLECTOR = "scripts/deploy/collect-backup-evidence.sh";
+const EVALUATOR = "scripts/deploy/evaluate-backup-evidence.sh";
+
+/**
+ * The gate is no longer a block inside deploy.yml. It is two scripts: a
+ * collector that MEASURES on the host, and an evaluator that DECIDES on the
+ * runner out of the target SHA's checkout. Both are read here so the static
+ * rules below still apply to the code that actually runs.
+ */
 function extractGate(): string {
-  const start = deploy.indexOf("# >>> backup-evidence-gate");
-  const end = deploy.indexOf("# <<< backup-evidence-gate");
-  expect(start, "gate start marker").toBeGreaterThan(-1);
-  expect(end, "gate end marker").toBeGreaterThan(start);
-  return deploy.slice(start, end);
+  return [readFileSync(COLLECTOR, "utf8"), readFileSync(EVALUATOR, "utf8")].join("\n");
 }
 const GATE = extractGate();
 /** The gate without its comments — assertions about CODE must not match prose. */
@@ -62,7 +67,10 @@ afterAll(() => {
 
 describe("static — every read of the backup directory is privileged, and only reads are", () => {
   it("defines the privileged reader as non-interactive sudo, nothing else", () => {
-    expect(GATE_CODE).toContain('backup_priv() { sudo -n -- "$@"; }');
+    expect(GATE_CODE).toContain('priv() { sudo -n -- "$@"; }');
+    // Never `sudo bash`: that would need a NOPASSWD rule for a shell, which is
+    // a far larger grant than this finding.
+    expect(GATE_CODE).not.toMatch(/sudo[^\n]*\bbash\b/);
     // No other sudo INVOCATION exists in the gate. Quoted strings are removed
     // first: the refusal messages name "sudo -n" for the operator, and a
     // word in a message is not a command.
@@ -71,11 +79,11 @@ describe("static — every read of the backup directory is privileged, and only 
   });
 
   it("routes the listing, both record reads and the hash through backup_priv", () => {
-    expect(GATE_CODE).toMatch(/backup_priv find "\$\{BACKUP_DIR\}" -maxdepth 1 -type f -name '\*\.hbk'/);
-    expect(GATE_CODE).toMatch(/backup_priv find "\$\{BACKUP_DIR\}" -maxdepth 1 -name "\$\{NEWEST_NAME\}\.partial"/);
-    expect(GATE_CODE).toContain('backup_priv cat -- "${META}"');
-    expect(GATE_CODE).toContain('backup_priv cat -- "${ADOPTION_EVIDENCE}"');
-    expect(GATE_CODE).toContain('backup_priv sha256sum -- "${NEWEST_BACKUP}"');
+    expect(GATE_CODE).toMatch(/priv find "\$\{BACKUP_DIR\}" -maxdepth 1 -type f -name '\*\.hbk'/);
+    expect(GATE_CODE).toMatch(/priv find "\$\{BACKUP_DIR\}" -maxdepth 1 -name "\$\{NEWEST_NAME\}\.partial"/);
+    expect(GATE_CODE).toContain('priv cat -- "${META_PATH}"');
+    expect(GATE_CODE).toContain('priv cat -- "${ADOPTION_PATH}"');
+    expect(GATE_CODE).toContain('priv sha256sum -- "${NEWEST_PATH}"');
   });
 
   it("no UNPRIVILEGED read of any backup path survives", () => {
@@ -101,7 +109,9 @@ describe("static — every read of the backup directory is privileged, and only 
     for (const claim of ['"verified":true', '"partial":false', '"encrypted":true', "transportSha256", '"integrityVerified": *true']) {
       expect(GATE_CODE).toContain(claim);
     }
-    expect(GATE_CODE).toContain('grep -qF "\\"file\\":\\"${NEWEST_NAME}\\""');
+    // The file-identity check moved to the evaluator with the rest of the
+    // judgement, where the measured name is `${NAME}`.
+    expect(GATE_CODE).toContain('grep -qF "\\"file\\":\\"${NAME}\\""');
   });
 });
 
@@ -189,15 +199,23 @@ function addAdoption(f: Fixture, verified = true) {
 }
 
 function runGate(f: Fixture, env: Record<string, string> = {}) {
+  // The two halves, run exactly as the workflow runs them: the collector
+  // MEASURES against the fixture through the sudo shim, and its framed output
+  // is piped into the evaluator, which DECIDES. `pipefail` is deliberately
+  // NOT set across the pipe — the evaluator must reach its own verdict about
+  // a collector that died, rather than inheriting its exit code.
   const script = [
-    "set -euo pipefail",
+    "set -uo pipefail",
     // Tool order: the shim first, then the POSIX toolset. On Windows (Git Bash)
     // /usr/bin is Git's GNU coreutils, which must win over C:\\Windows\\System32.
     'to_posix() { if command -v cygpath >/dev/null 2>&1; then cygpath -u "$1"; else printf "%s" "$1"; fi; }',
     'export PATH="$(to_posix "$SHIM_DIR"):/usr/bin:/bin:$PATH"',
     'export BACKUP_DIR="$(to_posix "$BACKUP_DIR_NATIVE")"',
     'export SUDO_LOG="$(to_posix "$SUDO_LOG_NATIVE")"',
-    GATE,
+    'export COLLECT_ADOPTION="${BACKUP_REQUIRED}"',
+    'export REQUIRE_ADOPTION="${BACKUP_REQUIRED}"',
+    `EVIDENCE="$(bash ${COLLECTOR})" || true`,
+    `printf '%s' "\${EVIDENCE}" | bash ${EVALUATOR}`,
   ].join("\n");
   const r = spawnSync("bash", ["-c", script], {
     encoding: "utf8",
@@ -233,7 +251,11 @@ describe.skipIf(!BASH_AVAILABLE)("behaviour — the shipped gate, executed", () 
     expect(r.stdout).toContain("FRESHNESS result=FRESH");
     expect(r.stdout).toMatch(/FRESHNESS max_age_hours=30\b/);
     const verbs = r.sudoCalls.map((c) => c.split(" ")[0]);
-    expect(verbs).toEqual(["find", "find", "find", "cat", "sha256sum", "find", "cat"]);
+    // One more `find` than before DA-1's split: the collector also MEASURES
+    // the artifact's ownership and mode, which the evaluator reports. Still
+    // only find / cat / sha256sum — no new binary, so the host's sudoers
+    // rules are unchanged.
+    expect(verbs).toEqual(["find", "find", "find", "find", "cat", "sha256sum", "find", "cat"]);
     expect(r.sudoCalls.some((c) => c.startsWith("cat -- ") && c.endsWith(".hbk.meta.json"))).toBe(true);
     expect(r.sudoCalls.some((c) => c.startsWith("sha256sum -- ") && c.endsWith(".hbk"))).toBe(true);
   });
@@ -418,8 +440,21 @@ describe.skipIf(!BASH_AVAILABLE)("behaviour — the shipped gate, executed", () 
       const r = runGate(f, { RELEASE_BACKUP_EVIDENCE_REQUIRED: value as string });
       expect(r.code).toBe(1);
       expect(r.stderr).toContain("mandatory for every production release");
-      // It refused BEFORE reading anything privileged.
-      expect(r.sudoCalls).toHaveLength(0);
+      expect(r.stdout).toContain("EVIDENCE result=EVIDENCE_NOT_REQUIRED");
+    });
+
+    it("the workflow refuses BEFORE it collects anything", () => {
+      // Two places check the flag, and they are not redundant. This harness
+      // runs collector|evaluator directly, so it can only prove the evaluator
+      // half; the half that matters operationally — refusing before a
+      // privileged read ever happens — lives in the workflow step and is
+      // asserted on its source.
+      const step = deploy.slice(
+        deploy.indexOf("Evaluate the production backup evidence"),
+        deploy.indexOf("Deploy the pinned commit"),
+      );
+      expect(step).toContain('case "${RELEASE_BACKUP_EVIDENCE_REQUIRED:-}" in');
+      expect(step.indexOf("mandatory for every production release")).toBeLessThan(step.indexOf("ssh -i ~/.ssh/id_deploy"));
     });
   });
 });
@@ -456,7 +491,13 @@ describe.skipIf(!REAL_SUDO)("real permissions — the incident, reproduced and c
   }
 
   function runRealGate(dir: string) {
-    const script = ["set -euo pipefail", GATE].join("\n");
+    const script = [
+      "set -uo pipefail",
+      'export COLLECT_ADOPTION="${BACKUP_REQUIRED}"',
+      'export REQUIRE_ADOPTION="${BACKUP_REQUIRED}"',
+      `EVIDENCE="$(bash ${COLLECTOR})" || true`,
+      `printf '%s' "\${EVIDENCE}" | bash ${EVALUATOR}`,
+    ].join("\n");
     return spawnSync("bash", ["-c", script], {
       encoding: "utf8",
       // The release-wide flag the deploy step sets literally. This harness
