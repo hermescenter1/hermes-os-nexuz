@@ -58,14 +58,14 @@ Which files mention the two variables — **paths only**, `-l` suppresses every
 matching line:
 
 ```bash
-sudo -n grep -rslE 'HERMES_BACKUP_KEY_(FILE|ID)' /etc/systemd/system /etc/default /etc/hermes /etc/cron.d 2>/dev/null
+sudo -n grep -rslE 'HERMES_BACKUP_KEY_(FILE|ID)' /etc/systemd/system /etc/default /etc/hermes-backup /etc/cron.d 2>/dev/null
 ```
 
 Which of the two each file binds — **variable names only**, `-o` without a
 value pattern:
 
 ```bash
-sudo -n grep -rhoE 'HERMES_BACKUP_KEY_(FILE|ID)\b' /etc/systemd/system /etc/default /etc/hermes /etc/cron.d 2>/dev/null | sort | uniq -c
+sudo -n grep -rhoE 'HERMES_BACKUP_KEY_(FILE|ID)\b' /etc/systemd/system /etc/default /etc/hermes-backup /etc/cron.d 2>/dev/null | sort | uniq -c
 ```
 
 The key **file path** and the **key id** are configuration, not secrets — the
@@ -73,14 +73,14 @@ id is already written in plaintext into every `.meta.json` the gate reads, and
 the path is a filename. Both are needed to write a matching drop-in:
 
 ```bash
-sudo -n grep -rhoE 'HERMES_BACKUP_KEY_(FILE|ID)=[^[:space:]"'"'"']+' /etc/systemd/system /etc/default /etc/hermes 2>/dev/null | sort -u
+sudo -n grep -rhoE 'HERMES_BACKUP_KEY_(FILE|ID)=[^[:space:]"'"'"']+' /etc/systemd/system /etc/default /etc/hermes-backup 2>/dev/null | sort -u
 ```
 
 Confirm the key file itself exists and is owner-only — **metadata only, never
 contents**:
 
 ```bash
-sudo -n stat -c '%n owner=%U:%G mode=%a size=%s' /etc/hermes/backup.key
+sudo -n stat -c '%n owner=%U:%G mode=%a size=%s' /etc/hermes-backup/hermes-backup.key
 ```
 
 Any unit that already carries the variables, with **values redacted**:
@@ -98,6 +98,16 @@ systemctl list-timers --all --no-pager | grep -iE 'hermes|backup' ; sudo -n ls -
 If Step 0 finds an existing binding, reuse those exact values in the drop-in
 below. If it finds none, the key id and path must come from the owner — do not
 invent either.
+
+> **Run on 2026-10-15.** Step 0 was carried out on the production host and the
+> key file it reports is `/etc/hermes-backup/hermes-backup.key`, which is the
+> path used throughout this document from here on. An earlier draft guessed
+> `/etc/hermes/backup.key`; that guess was wrong and is gone.
+>
+> The **key id** is deliberately not written here. It is not a secret — it is
+> recorded in plaintext in every `.meta.json` the gate reads — but it belongs
+> in the host's drop-in, not in the repository, where it would only ever be a
+> stale copy of what the host already knows.
 
 ## Install
 
@@ -126,7 +136,7 @@ correct outcome for a misconfigured host:
 sudo mkdir -p /etc/systemd/system/hermes-pg-backup.service.d
 sudo install -m 0600 /dev/stdin /etc/systemd/system/hermes-pg-backup.service.d/key.conf <<'EOF'
 [Service]
-Environment=HERMES_BACKUP_KEY_FILE=/etc/hermes/backup.key
+Environment=HERMES_BACKUP_KEY_FILE=/etc/hermes-backup/hermes-backup.key
 Environment=HERMES_BACKUP_KEY_ID=REPLACE_WITH_THE_NON_SECRET_KEY_ID
 EOF
 ```
@@ -195,7 +205,7 @@ node scripts/dr/hbk.mjs header --in "${NEWEST}"
 ```
 
 ```bash
-node scripts/dr/hbk.mjs verify --in "${NEWEST}" --key-file /etc/hermes/backup.key
+node scripts/dr/hbk.mjs verify --in "${NEWEST}" --key-file /etc/hermes-backup/hermes-backup.key
 ```
 
 `verify` authenticates the AES-256-GCM envelope without decrypting to disk and
