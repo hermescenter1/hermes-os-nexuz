@@ -99,14 +99,16 @@ describe("static — where the gate sits and what it is allowed to do", () => {
 
   it("inspects and probes only the container id the pinned compose call resolved", () => {
     const targets = [...GATE_CODE.matchAll(/docker (?:inspect|exec)[^\n]*/g)].map((m) => m[0]);
-    expect(targets.length).toBe(2);
+    expect(targets.length).toBeGreaterThan(2);
     for (const t of targets) expect(t).toContain('"${HG_CID}"');
     expect(GATE_CODE).toContain("http://127.0.0.1:3000/api/health/ready");
+    expect(GATE_CODE).toContain("HG_PUBLIC_ROUTES");
+    expect(GATE_CODE).toContain("wget -q -T 8 -O /dev/null");
   });
 
   it("detaches every child process from the script's stdin (it arrives over `bash -s`)", () => {
     const children = GATE_CODE.split("\n").filter((l) => /docker (inspect|exec|compose)\b|^\s*sleep "/.test(l));
-    expect(children).toHaveLength(5);
+    expect(children.length).toBeGreaterThan(5);
     for (const l of children) expect(l, l.trim()).toContain("</dev/null");
   });
 
@@ -154,7 +156,7 @@ interface Run {
   sleeps: string[];
 }
 
-function runGate(opts: { states: string[]; probes?: string[]; env?: Record<string, string>; noCid?: boolean }): Run {
+function runGate(opts: { states: string[]; probes?: string[]; env?: Record<string, string>; noCid?: boolean; publicRouteExit?: number }): Run {
   const root = mkdtempSync(join(tmpdir(), "post-deploy-health-"));
   roots.push(root);
   const shim = join(root, "shim");
@@ -187,6 +189,7 @@ function runGate(opts: { states: string[]; probes?: string[]; env?: Record<strin
       '    if [ "$line" = "FAIL" ]; then exit 1; fi',
       '    printf "%s\\n" "$line"; exit 0 ;;',
       "  exec)",
+      '    case " $* " in *" wget -q -T 8 -O /dev/null http://127.0.0.1:3000/"*) exit "${PUBLIC_ROUTE_EXIT:-0}" ;; esac',
       pop("PROBES", "PROBE_CURSOR"),
       '    rc="${line%%|*}"; body="${line#*|}"',
       '    printf "%b" "$body"; exit "$rc" ;;',
@@ -215,6 +218,7 @@ function runGate(opts: { states: string[]; probes?: string[]; env?: Record<strin
       ROOT_NATIVE: root,
       DOCKER_CID: CID,
       ...(opts.noCid ? { DOCKER_NO_CID: "1" } : {}),
+      ...(opts.publicRouteExit !== undefined ? { PUBLIC_ROUTE_EXIT: String(opts.publicRouteExit) } : {}),
       ...opts.env,
     },
   });
@@ -243,7 +247,10 @@ describe.skipIf(!BASH_AVAILABLE)("behaviour — the shipped gate, executed", { t
     expect(r.stderr).toBe("");
     expect(r.code).toBe(0);
     expect(r.stdout).toContain("Post-deploy health gate passed: hermes-web healthy after 0s, restart_count=0");
-    expect(verbs(r)).toEqual(["compose", "inspect", "exec", "inspect"]);
+    expect(verbs(r).slice(0, 2)).toEqual(["compose", "inspect"]);
+    expect(verbs(r).at(-1)).toBe("inspect");
+    // One readiness probe plus every declared public crawl route.
+    expect(count(r, "exec")).toBe(14);
     expect(r.sleeps).toEqual([]);
   });
 
@@ -378,6 +385,14 @@ describe.skipIf(!BASH_AVAILABLE)("behaviour — the shipped gate, executed", { t
       const r = runGate({ states: [HEALTHY], probes: [probe] });
       expect(r.code, r.stderr).toBe(0);
     });
+  });
+
+  it("FAILS closed when a core public crawl route does not render", () => {
+    const r = runGate({ states: [HEALTHY], publicRouteExit: 8 });
+    expect(r.code).toBe(1);
+    expect(r.stderr).toMatch(/public route probe failed for \/fa/);
+    // The readiness probe ran, but failure stops the remaining public probes.
+    expect(count(r, "exec")).toBe(2);
   });
 
   it("FAILS when the container restarts AFTER the readiness answer", () => {
