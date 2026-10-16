@@ -685,6 +685,29 @@ jobs:
             hg_fail "/api/health/ready did not report ready after ${hg_try} attempt(s): ${HG_PROBE_CLASS}."
           fi
 
+          # A healthy process and a ready database do not prove that the public
+          # pages search engines crawl actually render. Probe the core public
+          # entry points from inside hermes-web, with no response bodies or
+          # credentials ever printed. wget fails on 4xx/5xx, so a failure makes
+          # the deployment fail closed without changing, restarting or rolling
+          # back anything. This is an application-route gate, not a CDN/edge
+          # availability monitor; external monitoring remains required for that.
+          HG_PUBLIC_ROUTES="
+            /fa /en /de
+            /fa/platform /en/services/plc /fa/services/scada-hmi
+            /en/industrial-brain /fa/brain /en/articles /fa/library /en/careers
+            /robots.txt /sitemap.xml
+          "
+          for HG_ROUTE in ${HG_PUBLIC_ROUTES}; do
+            case "${HG_ROUTE}" in
+              /fa|/en|/de|/fa/platform|/en/services/plc|/fa/services/scada-hmi|/en/industrial-brain|/fa/brain|/en/articles|/fa/library|/en/careers|/robots.txt|/sitemap.xml) ;;
+              *) hg_refuse "public route probe list contains an unexpected path." ;;
+            esac
+            if ! docker exec "${HG_CID}" wget -q -T 8 -O /dev/null "http://127.0.0.1:3000${HG_ROUTE}" </dev/null 2>/dev/null; then
+              hg_fail "public route probe failed for ${HG_ROUTE}."
+            fi
+          done
+
           # A restart that happens AFTER the readiness answer is still a failure.
           hg_state || hg_refuse "could not re-read the hermes-web container state."
           if [ "${HG_STATUS}" != "running" ] || [ "${HG_HEALTH}" != "healthy" ] || [ "${HG_RESTARTING}" != "false" ] || [ "${HG_RESTARTS}" != "0" ]; then
