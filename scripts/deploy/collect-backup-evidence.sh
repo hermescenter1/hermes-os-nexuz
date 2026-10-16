@@ -10,12 +10,20 @@
 # checkout of the target SHA. Duplicating selection or freshness logic here
 # would create a second implementation that drifts.
 #
-# WHY IT IS NOT RUN UNDER `sudo bash`. The host's sudoers rules are scoped to
-# a handful of read-only binaries. Running this whole script as root would
-# need a NOPASSWD rule for `bash`, which is a far larger grant than the
-# finding it serves. Instead each read goes through `sudo -n -- <binary>`
-# exactly as the previous inline gate did, so the existing least-privilege
-# rules are unchanged.
+# WHY IT IS NOT RUN UNDER `sudo bash`. Running this whole script as root
+# would ASK for a shell through sudo, which is the largest grant there is.
+# Each read goes through `sudo -n -- <binary>` instead, exactly as the
+# previous inline gate did, and this script adds no sudoers rule of its own.
+#
+# THAT IS A STATEMENT ABOUT THIS SCRIPT, NOT ABOUT THE HOST. Checked on the
+# production host on 2026-10-16, the deploy account holds NOPASSWD:ALL
+# (finding DEPLOY_USER_NOPASSWD_ALL, docs/security/deploy-privilege-findings
+# -2026-10.md). So the narrow form below is a property of the CALLER, not a
+# limit the system imposes: today it could have run anything. Writing it
+# narrowly is still worth doing — it is what makes a restricted wrapper
+# possible later, and it keeps the audit trail honest about what the release
+# path actually needs — but nothing here may be described as least-privileged
+# until that finding is closed.
 #
 # WHAT LEAVES THE HOST. Measurements, and the verification record — which is
 # metadata about the artifact (`verified`, `partial`, `encrypted`, a key

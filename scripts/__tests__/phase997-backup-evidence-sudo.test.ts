@@ -253,8 +253,11 @@ describe.skipIf(!BASH_AVAILABLE)("behaviour — the shipped gate, executed", () 
     const verbs = r.sudoCalls.map((c) => c.split(" ")[0]);
     // One more `find` than before DA-1's split: the collector also MEASURES
     // the artifact's ownership and mode, which the evaluator reports. Still
-    // only find / cat / sha256sum — no new binary, so the host's sudoers
-    // rules are unchanged.
+    // only find / cat / sha256sum, and no sudoers rule is added by this
+    // change. That is a statement about what the release path ASKS FOR, not
+    // about what the host permits: the deploy account was found to hold
+    // NOPASSWD:ALL on 2026-10-16 (DEPLOY_USER_NOPASSWD_ALL). Pinning the
+    // list here is what will make a restricted wrapper possible.
     expect(verbs).toEqual(["find", "find", "find", "find", "cat", "sha256sum", "find", "cat"]);
     expect(r.sudoCalls.some((c) => c.startsWith("cat -- ") && c.endsWith(".hbk.meta.json"))).toBe(true);
     expect(r.sudoCalls.some((c) => c.startsWith("sha256sum -- ") && c.endsWith(".hbk"))).toBe(true);

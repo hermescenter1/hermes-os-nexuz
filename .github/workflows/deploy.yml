@@ -302,7 +302,10 @@ jobs:
           PORT="${SSH_PORT:-22}"
           # READ-ONLY. The collector is streamed in on stdin, so nothing is
           # written to the host, and it is NOT run under `sudo bash` — each
-          # read goes through the existing narrow `sudo -n -- <binary>` rules.
+          # read goes through a narrow `sudo -n -- <binary>` form. NOTE: the
+          # deploy account currently holds NOPASSWD:ALL on the host
+          # (DEPLOY_USER_NOPASSWD_ALL, 2026-10-16), so that narrowness is
+          # this caller's discipline, not a limit the system enforces.
           # Its stdout is captured; its stderr is left on the terminal so a
           # refusal is visible without being mistaken for evidence.
           set +e
