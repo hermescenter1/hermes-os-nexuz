@@ -34,10 +34,79 @@
 -- ============================================================================
 
 \set business_date '2026-10-14'
-\set report_org ''   -- leave empty to cover every organization
+-- A HASH PREFIX, never a raw organization id: section 0 prints the candidates
+-- as hashes, and that is what gets pasted back here. An operator running this
+-- never has to handle a raw tenant identifier, and none is ever printed.
+-- Empty means "every organization that reported that day".
+\set report_org_hash ''
 
 \pset pager off
 \timing off
+
+-- ── PRECONDITIONS · a zero result must never look like a success ───────────
+--
+-- The first production run of this file returned zero in EVERY section while
+-- the worker's log said a report and a notification existed. Zero rows is an
+-- ANSWER to a question, and it is indistinguishable from the question never
+-- having been asked properly. Nothing in the file separated the two, so §5
+-- and §6 read as "no duplicates" and "no unauthorised recipients" — two of
+-- the five things row 10 exists to prove.
+--
+-- WHAT IS NOT KNOWN. Why that run selected nothing is still open. A CRLF
+-- parameter was ruled out by the execution evidence: the SQL was piped
+-- straight from the git blob 0a896b55…, sha256 b86d6636…, so no carriage
+-- return reached psql. CRLF remains a real hazard for anyone who runs the
+-- file from a Windows working tree, which is why the first check below still
+-- exists — but it is NOT the explanation for what was observed.
+-- ROW10-DIAGNOSTIC.sql is the file that looks for the explanation.
+--
+-- HOW THESE STOP. Each denominator is a COUNT from a real query, never a
+-- constant: `1 / (count(*) > 0)::int` divides by zero only at run time, on a
+-- value the planner cannot fold away, and the result is in the SELECT list so
+-- it must be produced. Under ON_ERROR_STOP=1 a division by zero ends the
+-- session before any result section runs. They are top-level statements, not
+-- CTEs: an unreferenced CTE can be skipped entirely.
+
+-- 1 · the business-date parameter is a plain YYYY-MM-DD.
+--     `businessDate` is VARCHAR(10) compared as TEXT, so one stray byte
+--     matches nothing, silently, in every section below.
+SELECT
+  1 / (count(*) > 0)::int AS business_date_parameter_is_a_plain_yyyy_mm_dd
+FROM (
+  SELECT 1
+  WHERE length(:'business_date') = 10
+    AND :'business_date' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+) AS parameter_is_well_formed;
+
+-- 2 · at least one report exists for that day. Without it the premise of
+--     every later section is false, and their emptiness means nothing.
+SELECT
+  1 / (count(*) > 0)::int AS reports_exist_for_this_business_date,
+  count(*)                AS reports_found
+FROM "ExecutiveDailyReport"
+WHERE "businessDate" = :'business_date';
+
+-- 3 · the organization is unambiguous.
+--     Empty selector with exactly one reporting organization is fine. Empty
+--     with several is NOT: it would silently mix tenants in one answer. A
+--     non-empty selector must resolve to exactly one organization — a hash
+--     prefix is a SELECTOR, and its uniqueness is proven here at run time
+--     rather than assumed. Zero matches (an unknown or stale prefix) and more
+--     than one match (a collision) both stop.
+SELECT
+  1 / (
+    CASE
+      WHEN :'report_org_hash' = '' THEN (count(*) = 1)
+      ELSE (count(*) FILTER (WHERE org_hash = :'report_org_hash') = 1)
+    END
+  )::int                        AS organization_selection_is_unambiguous,
+  count(*)                      AS organizations_reporting_this_day,
+  count(*) FILTER (WHERE org_hash = :'report_org_hash') AS organizations_matching_the_selector
+FROM (
+  SELECT DISTINCT substr(md5("organizationId"), 1, 12) AS org_hash
+  FROM "ExecutiveDailyReport"
+  WHERE "businessDate" = :'business_date'
+) AS reporting_organizations;
 
 -- ── 0 · the reports those notifications belong to ───────────────────────────
 -- Establishes which (organization, date, version) rows exist and which of them
@@ -50,7 +119,7 @@ SELECT
   r."notifiedAt"
 FROM "ExecutiveDailyReport" r
 WHERE r."businessDate" = :'business_date'
-  AND (:'report_org' = '' OR r."organizationId" = :'report_org')
+  AND (:'report_org_hash' = '' OR substr(md5(r."organizationId"), 1, 12) = :'report_org_hash')
 ORDER BY org_hash, r.version;
 
 -- ── 1 · exactly one notification per report ─────────────────────────────────
@@ -66,7 +135,7 @@ FROM "Notification" n
 JOIN "OrganizationMember" m ON m."userId" = n."userId"
 WHERE n.metadata ->> 'kind'         = 'executive.report'
   AND n.metadata ->> 'businessDate' = :'business_date'
-  AND (:'report_org' = '' OR m."organizationId" = :'report_org')
+  AND (:'report_org_hash' = '' OR substr(md5(m."organizationId"), 1, 12) = :'report_org_hash')
 GROUP BY 1
 ORDER BY 1;
 
@@ -89,7 +158,7 @@ FROM "Notification" n
 JOIN "OrganizationMember" m ON m."userId" = n."userId"
 WHERE n.metadata ->> 'kind'         = 'executive.report'
   AND n.metadata ->> 'businessDate' = :'business_date'
-  AND (:'report_org' = '' OR m."organizationId" = :'report_org')
+  AND (:'report_org_hash' = '' OR substr(md5(m."organizationId"), 1, 12) = :'report_org_hash')
 ORDER BY org_hash, user_hash;
 
 -- ── 5 · no duplicate notification for the same report and recipient ─────────
@@ -153,7 +222,7 @@ WHERE a."entityType" = 'OrganizationMember'
     WHERE n.metadata ->> 'kind'         = 'executive.report'
       AND n.metadata ->> 'businessDate' = :'business_date'
   )
-  AND (:'report_org' = '' OR a."organizationId" = :'report_org')
+  AND (:'report_org_hash' = '' OR substr(md5(a."organizationId"), 1, 12) = :'report_org_hash')
 ORDER BY a."createdAt";
 
 -- ── 8 · how much audit history exists at all ────────────────────────────────
@@ -193,6 +262,14 @@ WHERE a."entityType" = 'OrganizationMember'
 -- plus current state (§2-4, §6) plus an empty §7 over a window §8 shows is
 -- long enough is an INFERENCE that authorisation held at send time. It is a
 -- strong one. It is not a record, and this document does not call it one.
+--
+-- WHY THE PRECONDITIONS EXIST. The first production run of this file
+-- returned zero everywhere and read as "nothing to see". Zero rows from a
+-- query that never selected the intended rows is not evidence of anything,
+-- and a report presenting it as "no duplicates, no unauthorized recipients"
+-- would be false. The checks at the top stop the file instead. Why that run
+-- selected nothing is still OPEN: the CRLF hypothesis was ruled out by the
+-- execution evidence, and ROW10-DIAGNOSTIC.sql is what looks for the cause.
 --
 -- WHAT WOULD MAKE IT A RECORD. Writing the recipient's role and status into
 -- the notification's own metadata at send time, so the row carries the
