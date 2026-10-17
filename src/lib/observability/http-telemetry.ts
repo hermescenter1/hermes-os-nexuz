@@ -10,7 +10,12 @@
  * listener:
  *
  *   - `http.server.request.start`   (request headers parsed)
- *   - `http.server.response.finish` (the response has been fully handed to the OS)
+ *   - `http.server.response.finish` (the Node server has sent/finished the response)
+ *
+ * STABILITY: these built-in channels are marked experimental in Node. They are
+ * additive and read-only, so a change in a future Node release can at worst stop
+ * events from arriving (counters stay empty); it cannot affect request handling.
+ * Re-verify after a Node major upgrade.
  *
  * Subscribing to them observes the FINAL status code and the end-to-end
  * application duration without patching any Node/Next internals and without
@@ -26,8 +31,8 @@
  * a response. NOT observed (Nginx / Cloudflare evidence only): Nginx-generated
  * 502/504, requests rejected at the edge, requests the HTTP parser refused,
  * WebSocket upgrades, and responses aborted by the client before finishing.
- * Duration runs from "request headers parsed" to "response flushed to the OS";
- * it is not client-perceived latency.
+ * Duration runs from "request headers parsed" to "the Node server sent/finished the
+ * response"; it is not client-perceived latency.
  *
  * PRIVACY / CARDINALITY
  * ---------------------

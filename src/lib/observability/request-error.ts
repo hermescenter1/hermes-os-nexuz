@@ -14,7 +14,7 @@ import { isSafeRequestId, REQUEST_ID_HEADER } from "@/lib/logger/correlation";
 
 const CLASS_RE = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
 const ROUTE_TEMPLATE_RE = /^\/[A-Za-z0-9/_[\]().@-]{0,119}$/;
-const ROUTE_TYPES = ["render", "route", "action", "middleware"] as const;
+const ROUTE_TYPES = ["render", "route", "action", "proxy", "middleware"] as const;
 
 function headerValue(headers: unknown, name: string): string | undefined {
   if (!headers || typeof headers !== "object") return undefined;

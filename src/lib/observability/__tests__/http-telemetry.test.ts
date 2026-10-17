@@ -251,6 +251,12 @@ describe("unhandled request error evidence", () => {
     for (const s of ["hunter2", "alice@example.com", "token=abc", "COOKIEVAL", "Bearer"]) expect(dump).not.toContain(s);
   });
 
+  it.each(["render", "route", "action", "proxy", "middleware"])("accepts the Next routeType %s", (routeType) => {
+    recordUnhandledRequestError(new Error("x"), { headers: {} }, { routeType });
+    const [e] = getErrorFingerprints();
+    expect(e.operation).toBe(`http.${routeType}`);
+  });
+
   it("rejects hostile request ids, class names and route templates", () => {
     recordUnhandledRequestError(
       Object.assign(new Error("x"), { name: "Evil\nClass" }),
