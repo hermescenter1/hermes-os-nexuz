@@ -221,7 +221,8 @@ services:
   # PENDING_HUMAN_APPROVAL, and only through that endpoint. It cannot advance,
   # reject or hire anyone: only a recorded human decision leaves the gate.
   # Logs are pass COUNTS only; no candidate field is ever in its output.
-  #  # SCALING. Safe with `--scale hermes-ats-review-worker=N`: the pass takes the
+  #
+  # SCALING. Safe with `--scale hermes-ats-review-worker=N`: the pass takes the
   # platform's WorkerLease under its own job name ("ats.review.outbox"), and the
   # conditional per-row outbox claim means no application is reviewed twice even
   # if the lease is lost.
@@ -440,7 +441,8 @@ services:
     image: louislam/uptime-kuma:1
     profiles: ["monitoring"]
     restart: unless-stopped
-    ports:      - "3001:3001"
+    ports:
+      - "3001:3001"
     volumes:
       - uptime_kuma_data:/app/data
     networks:
