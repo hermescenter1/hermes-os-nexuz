@@ -8888,3 +8888,70 @@ model PartyInteraction {
   /// range that is not scoped to one customer.
   @@index([organizationId, occurredAt])
 }
+
+/// EXECUTIVE DASHBOARD row 10 — WHO was told a nightly report exists, and on
+/// WHAT AUTHORITY, recorded at the moment of sending.
+///
+/// WHY THIS TABLE EXISTS. Authorisation could be reconstructed only from
+/// CURRENT state: `OrganizationMember` overwrites `role` and `status` in
+/// place, keeps no history, and `Notification` records neither. So the
+/// question "was this recipient entitled to be told, when they were told?"
+/// had no answer in the data — only an inference from today's membership plus
+/// the code that filtered it. A strong inference is not a record.
+///
+/// NOTHING IS BACKFILLED. Rows exist only for deliveries made after this
+/// table shipped. The absence of a row for an older report means "not
+/// recorded", never "nobody was told" — reconstructing history from current
+/// membership is exactly the fabrication this table exists to replace.
+///
+/// APPEND-ONLY, enforced by the database. A BEFORE UPDATE OR DELETE trigger
+/// raises, so the record cannot be edited after the fact by the application,
+/// by a migration, or by hand. A correction is a new report version with its
+/// own deliveries, never an edit.
+///
+/// NO PII. A recipient is a `userId`. No name, e-mail or telephone is copied
+/// here, and the authority fields are the role and status strings only.
+model ExecutiveReportDelivery {
+  id                String   @id @default(cuid())
+  organizationId    String
+  /// The reported business day, as the report itself stores it: a label in a
+  /// zone, matching ExecutiveDailyReport.businessDate exactly.
+  businessDate      String   @db.VarChar(10)
+  /// Which VERSION of that night's report this delivery announced. A
+  /// correction is version + 1 and gets its own deliveries.
+  reportVersion     Int
+  /// The recipient. Not a foreign key to User on purpose: deleting a user
+  /// must not erase the record that they were told.
+  userId            String
+
+  /// The authority the send was made under, frozen as TEXT rather than as the
+  /// OrgRole / MemberStatus enums. An enum can gain or lose a member in a
+  /// later release; a record of what was true in October must not change
+  /// meaning — or become unreadable — because a later migration edited a type.
+  roleAtSend        String   @db.VarChar(32)
+  statusAtSend      String   @db.VarChar(32)
+  /// The rule that was applied, and the exact allowlist it used, sorted. Both
+  /// are frozen so a later widening of NOTIFY_ROLES cannot be read backwards
+  /// onto a delivery decided under the narrower rule.
+  rulesVersion      String   @db.VarChar(32)
+  allowedRoles      String   @db.VarChar(128)
+
+  /// The Notification row this delivery created, when one was created. Not a
+  /// foreign key: a notification may be deleted by its recipient, and that
+  /// must not remove the evidence that it was sent.
+  notificationId    String?
+  deliveredAt       DateTime @default(now()) @db.Timestamptz(6)
+
+  /// NO foreign key and NO relation field, following AuditLog: an audit trail
+  /// that a cascade can delete is not a trail. `organizationId` is a plain
+  /// column so the record survives the deletion of the organization it
+  /// describes — and so the append-only trigger below is never asked to
+  /// refuse a cascade it cannot distinguish from tampering.
+
+  /// The idempotency mechanism AND the no-duplicate guarantee, in one
+  /// constraint: a second attempt for the same recipient, report and version
+  /// loses here rather than producing a second notification.
+  @@unique([organizationId, businessDate, reportVersion, userId])
+  @@index([organizationId, businessDate])
+  @@index([deliveredAt])
+}

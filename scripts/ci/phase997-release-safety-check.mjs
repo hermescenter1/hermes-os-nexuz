@@ -25,7 +25,19 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+
+/**
+ * Read a repository file, or "" when it does not exist. An absent script then
+ * reads as a REMOVED check rather than crashing the gate — fail closed.
+ */
+function readIf(rel) {
+  const abs = join(REPO, rel);
+  return existsSync(abs) ? readFileSync(abs, "utf8") : "";
+}
 const DEPLOY_WF = ".github/workflows/deploy.yml";
+/** DA-1: the backup evidence gate, split out of the workflow into two scripts. */
+const BACKUP_COLLECTOR = "scripts/deploy/collect-backup-evidence.sh";
+const BACKUP_EVALUATOR = "scripts/deploy/evaluate-backup-evidence.sh";
 const PHASE997_WF = ".github/workflows/phase997-production-completion.yml";
 
 /** Files this phase owns. Keeping the scope explicit keeps the gate honest. */
@@ -36,6 +48,9 @@ const PHASE997_FILES = new Set([
   "scripts/dr/adopt-documents.mjs",
   "scripts/dr/sharp-runtime-gate.mjs",
   "scripts/dr/deploy-migration-gate.mjs",
+  "scripts/deploy/collect-backup-evidence.sh",
+  "scripts/deploy/evaluate-backup-evidence.sh",
+  "scripts/deploy/check-backup-freshness.sh",
   DEPLOY_WF,
   PHASE997_WF,
 ]);
@@ -144,11 +159,34 @@ if (!deploy) {
   if (!/pre_migration_backup_required/.test(deploy)) {
     flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the deploy no longer consumes the backup requirement");
   }
-  if (!/transportSha256/.test(deploy)) {
+  // DA-1 split the backup evidence out of this workflow: a collector that
+  // MEASURES on the host, and an evaluator that DECIDES on the runner out of
+  // the target SHA's checkout, as a step of its own before anything can be
+  // changed. The rule is unchanged — the check must exist, and the release
+  // path must reach it. Only where it lives moved, so this looks in both
+  // places and fails if EITHER the check is gone or the wiring is.
+  const collector = readIf(BACKUP_COLLECTOR);
+  const evaluator = readIf(BACKUP_EVALUATOR);
+  if (!/transportSha256/.test(deploy) && !/transportSha256/.test(evaluator)) {
     flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the host-side backup integrity check was removed");
   }
-  if (!/documents-adoption\.json/.test(deploy)) {
+  if (!/documents-adoption\.json/.test(deploy) && !/documents-adoption\.json/.test(collector)) {
     flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the documents_data adoption evidence check was removed");
+  }
+  // Wiring: a check that exists in a script nothing runs is not a gate.
+  if (/transportSha256/.test(evaluator) && !deploy.includes(BACKUP_EVALUATOR)) {
+    flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the backup evidence evaluator is no longer called by the deploy");
+  }
+  if (/documents-adoption\.json/.test(collector) && !deploy.includes(BACKUP_COLLECTOR)) {
+    flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the backup evidence collector is no longer called by the deploy");
+  }
+  // And it must still be reached BEFORE the release can change anything.
+  if (deploy.includes(BACKUP_EVALUATOR)) {
+    const gateAt = deploy.indexOf("- name: Evaluate the production backup evidence");
+    const deployAt = deploy.indexOf("- name: Deploy the pinned commit");
+    if (gateAt < 0 || deployAt < 0 || gateAt > deployAt) {
+      flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the backup evidence step no longer precedes the deploy step");
+    }
   }
   if (!/hermes-web:previous-good/.test(deploy)) {
     flag("UNGATED_MIGRATION_DEPLOY", DEPLOY_WF, "the previous-good image is no longer preserved");

@@ -254,12 +254,94 @@ jobs:
           # runtime scanning. Use "[host]:port" entries for a non-default port.
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
 
+      # ── DA-1 · the release backup evidence gate, as its own step ──────────
+      #
+      # It is a SEPARATE STEP, not a block at the top of the deploy script,
+      # because line order inside one step is not a guarantee anyone can read
+      # off the workflow. A failure here fails the job, and every step after
+      # it — the deploy, every git write, every build, the migrator and the
+      # service replacement — is skipped by Actions' own semantics.
+      #
+      # It is also the reason the judgement moved to the runner. At this
+      # point the host's working tree is still the PREVIOUSLY deployed
+      # commit, so a helper read from there would be the previous release's
+      # helper, or missing. The one that runs comes from this checkout.
+      - name: Evaluate the production backup evidence (read-only)
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          # Whether this release carries a migration. It decides only whether
+          # documents_data CUTOVER evidence is also required; it does not and
+          # must not decide whether backup evidence is required.
+          BACKUP_REQUIRED: ${{ steps.migration.outputs.pre_migration_backup_required }}
+          # Independent of the migration delta, and a LITERAL: no
+          # classification output and no dispatch input can evaluate it away.
+          # Every production release needs a usable restore point, because
+          # every production release might have to be rolled back.
+          RELEASE_BACKUP_EVIDENCE_REQUIRED: "true"
+        run: |
+          case "${RELEASE_BACKUP_EVIDENCE_REQUIRED:-}" in
+            true) ;;
+            *)
+              echo "Refusing: backup evidence is mandatory for every production release; RELEASE_BACKUP_EVIDENCE_REQUIRED was not true." >&2
+              exit 1
+              ;;
+          esac
+
+          # The runner must be judging the commit being released, not
+          # whatever main happened to be when the job started.
+          if [ "$(git rev-parse HEAD)" != "${TARGET_SHA}" ]; then
+            git checkout --detach "${TARGET_SHA}"
+          fi
+          if [ "$(git rev-parse HEAD)" != "${TARGET_SHA}" ]; then
+            echo "Refusing: the runner checkout is not ${TARGET_SHA}; the evidence would be judged by the wrong rules." >&2
+            exit 1
+          fi
+
+          PORT="${SSH_PORT:-22}"
+          # READ-ONLY. The collector is streamed in on stdin, so nothing is
+          # written to the host, and it is NOT run under `sudo bash` — each
+          # read goes through a narrow `sudo -n -- <binary>` form. NOTE: the
+          # deploy account currently holds NOPASSWD:ALL on the host
+          # (DEPLOY_USER_NOPASSWD_ALL, 2026-10-16), so that narrowness is
+          # this caller's discipline, not a limit the system enforces.
+          # Its stdout is captured; its stderr is left on the terminal so a
+          # refusal is visible without being mistaken for evidence.
+          set +e
+          EVIDENCE="$(ssh -i ~/.ssh/id_deploy \
+              -p "$PORT" \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              -o ConnectTimeout=20 \
+              -o StrictHostKeyChecking=yes \
+              "${SERVER_USER}@${SERVER_IP}" \
+              "COLLECT_ADOPTION=${BACKUP_REQUIRED} bash -s" < scripts/deploy/collect-backup-evidence.sh)"
+          SSH_STATUS=$?
+          set -e
+          if [ "${SSH_STATUS}" -ne 0 ]; then
+            echo "Refusing: the read-only evidence collection failed (ssh exit ${SSH_STATUS})." >&2
+            echo "No evidence means no release: nothing has been changed on the host." >&2
+            exit 1
+          fi
+
+          # One implementation of the verdict, from THIS checkout.
+          printf '%s' "${EVIDENCE}" \
+            | REQUIRE_ADOPTION="${BACKUP_REQUIRED}" bash scripts/deploy/evaluate-backup-evidence.sh
+
       - name: Deploy the pinned commit (migrate, then targeted hermes-web rebuild)
         env:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
           BACKUP_REQUIRED: ${{ steps.migration.outputs.pre_migration_backup_required }}
+          # Independent of the migration delta ON PURPOSE. BACKUP_REQUIRED
+          # answers "does this release carry a migration" and must keep
+          # answering only that. This answers a different question: may a
+          # production release proceed at all without a usable restore
+          # point? For every production deploy the answer is no. It is a
+          # literal, not an expression, so no classification outcome and no
+          # dispatch input can turn it off.
           TARGET_MIGRATION_COUNT: ${{ steps.migration.outputs.target_migration_count }}
         run: |
           # The expected applied-migration count comes from the runner's git-only
@@ -297,6 +379,18 @@ jobs:
             exit 1
           fi
 
+          # This is the ONE persistent host operation that precedes the backup
+          # evidence gate, and it is here deliberately: the target SHA has to
+          # be proven to exist on origin/main before anything else is
+          # attempted. It writes to the object store and moves
+          # remote-tracking refs, so it is not read-only — but it changes no
+          # service, no image, no container and no data, and the working tree
+          # it leaves behind is the one already deployed.
+          #
+          # Everything that touches the running system — the working-tree
+          # move, the previous-good tag, both image builds, the migrator and
+          # the service replacement — happens after the gate. That ordering is
+          # pinned in scripts/__tests__/backup-freshness-gate.test.ts.
           git fetch --prune origin
           if ! git cat-file -e "${TARGET_SHA}^{commit}"; then
             echo "Refusing: ${TARGET_SHA} is unknown on the server after fetch." >&2
@@ -348,106 +442,10 @@ jobs:
           # POSIX shell and coreutils/findutils only: `jq` is NOT used, because
           # nothing on this host is known to provide it and a gate that depends
           # on an absent tool would refuse every migration-bearing deploy.
-          # >>> backup-evidence-gate
-          if [ "${BACKUP_REQUIRED}" = "true" ]; then
-            BACKUP_DIR="${BACKUP_DIR:-/backups/postgres}"
-            ADOPTION_EVIDENCE="${BACKUP_DIR}/documents-adoption.json"
-
-            backup_refuse() { echo "Refusing: $*" >&2; exit 1; }
-            backup_priv() { sudo -n -- "$@"; }
-
-            # Newest regular .hbk by modification time. `-type f` excludes
-            # symlinks, so the file hashed below is the file that was listed.
-            # This is also the first privileged call, so a denied or missing
-            # sudoers rule stops the gate HERE (no separate `sudo -n true`
-            # probe: a least-privilege rule that grants only the reads below
-            # would refuse `true` and block every deploy).
-            LISTING="$(backup_priv find "${BACKUP_DIR}" -maxdepth 1 -type f -name '*.hbk' -printf '%T@ %p\n')" \
-              || backup_refuse "cannot list ${BACKUP_DIR} through 'sudo -n' (missing directory, or no NOPASSWD rule for the read-only checks; no TTY is available)."
-            NEWEST_LINE="$(sort -n <<<"${LISTING}" | tail -n 1)"
-            NEWEST_BACKUP="$(cut -d' ' -f2- <<<"${NEWEST_LINE}")"
-            if [ -z "${NEWEST_BACKUP}" ]; then
-              backup_refuse "no encrypted backup (.hbk) found in ${BACKUP_DIR}."
-            fi
-            NEWEST_NAME="$(basename "${NEWEST_BACKUP}")"
-
-            # A .partial sibling means the atomic publish never completed. Asked
-            # as a LISTING, so a denied sudo fails here instead of reading as
-            # "absent".
-            PARTIAL="$(backup_priv find "${BACKUP_DIR}" -maxdepth 1 -name "${NEWEST_NAME}.partial" -print)" \
-              || backup_refuse "cannot check ${BACKUP_DIR} for a .partial sibling through sudo -n."
-            if [ -n "${PARTIAL}" ]; then
-              backup_refuse "${NEWEST_BACKUP} has a .partial sibling — the atomic publish never completed."
-            fi
-
-            META="${NEWEST_BACKUP}.meta.json"
-            META_FOUND="$(backup_priv find "${META}" -maxdepth 0 -type f -print 2>/dev/null)" || META_FOUND=""
-            if [ "${META_FOUND}" != "${META}" ]; then
-              backup_refuse "no verification record beside ${NEWEST_BACKUP}."
-            fi
-            META_JSON="$(backup_priv cat -- "${META}")" \
-              || backup_refuse "the verification record ${META} is unreadable through sudo -n."
-
-            # The record is a single-line JSON document written by
-            # scripts/backup-postgres.sh; match the exact literal fields.
-            grep -qF "\"file\":\"${NEWEST_NAME}\"" <<<"${META_JSON}" \
-              || backup_refuse "the verification record does not name ${NEWEST_NAME}."
-            grep -q '"verified":true'  <<<"${META_JSON}" || backup_refuse "newest backup is not marked verified."
-            grep -q '"partial":false'  <<<"${META_JSON}" || backup_refuse "newest backup is not marked complete."
-            grep -q '"encrypted":true' <<<"${META_JSON}" || backup_refuse "newest backup is not marked encrypted."
-
-            RECORDED_SHA="$(sed -n 's/.*"transportSha256":"\([0-9a-f]\{64\}\)".*/\1/p' <<<"${META_JSON}")"
-            if [ -z "${RECORDED_SHA}" ]; then
-              backup_refuse "verification record carries no transport SHA-256."
-            fi
-            HASH_LINE="$(backup_priv sha256sum -- "${NEWEST_BACKUP}")" \
-              || backup_refuse "cannot hash ${NEWEST_BACKUP} through sudo -n."
-            ACTUAL_SHA="${HASH_LINE%% *}"
-            if ! [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{64}$ ]] || [ "${ACTUAL_SHA}" != "${RECORDED_SHA}" ]; then
-              backup_refuse "backup integrity check failed for ${NEWEST_BACKUP}."
-            fi
-
-            # documents_data adoption evidence (written by
-            # scripts/dr/adopt-documents.mjs --manifest-out). Same directory,
-            # same ownership, so the same privileged read.
-            ADOPTION_FOUND="$(backup_priv find "${ADOPTION_EVIDENCE}" -maxdepth 0 -type f -print 2>/dev/null)" || ADOPTION_FOUND=""
-            if [ "${ADOPTION_FOUND}" != "${ADOPTION_EVIDENCE}" ]; then
-              backup_refuse "no documents_data adoption evidence at ${ADOPTION_EVIDENCE}."
-            fi
-            ADOPTION_JSON="$(backup_priv cat -- "${ADOPTION_EVIDENCE}")" \
-              || backup_refuse "the adoption evidence ${ADOPTION_EVIDENCE} is unreadable through sudo -n."
-            grep -q '"integrityVerified": *true' <<<"${ADOPTION_JSON}" \
-              || backup_refuse "documents_data adoption evidence does not prove integrity."
-
-            # ── DA-1: freshness, and a record that describes THIS artifact ──
-            #
-            # Every check above is about integrity. None looks at time, which
-            # is how a release went out on 2026-10-14 against an artifact 89.8
-            # hours old, against a documented 24 h RPO.
-            #
-            # The judgement lives in scripts/deploy/check-backup-freshness.sh
-            # because its cases — the boundary, a future mtime, a record
-            # naming another file, a createdAtMs that disagrees with the file,
-            # every bad limit — can only be exercised against real files, and
-            # that script has a test that does exactly that. The privileged
-            # reads stay here under the existing sudo rules; the script is
-            # handed the values and needs no privilege of its own.
-            #
-            # The record goes in on STDIN rather than through a temp file:
-            # this gate is forbidden from creating, copying or deleting
-            # anything (phase997-backup-evidence-sudo), and a temporary copy
-            # plus a delete would have broken that invariant to save one pipe.
-            NEWEST_MTIME="$(cut -d' ' -f1 <<<"${NEWEST_LINE}" | cut -d. -f1)"
-            if ! printf '%s' "${META_JSON}" \
-                 | bash scripts/deploy/check-backup-freshness.sh \
-                   "${NEWEST_NAME}" "${NEWEST_MTIME}" "${ACTUAL_SHA}" - \
-                   "${BACKUP_MAX_AGE_HOURS:-30}"; then
-              backup_refuse "the newest backup did not pass the freshness and consistency check."
-            fi
-
-            echo "Pre-migration evidence verified: ${NEWEST_NAME} complete, verified, hash-intact and recent."
-          fi
-          # <<< backup-evidence-gate
+          # The backup evidence gate is NOT here any more. It runs as its
+          # own step, before this one, so a release with an unusable
+          # restore point never reaches a step that can change anything.
+          # See "Evaluate the production backup evidence" above.
 
           # ── Preserve the previous-good image BEFORE rebuilding (HARD gate) ───
           # A rollback target must exist before the thing being rolled back from
@@ -471,6 +469,7 @@ jobs:
             exit 1
           fi
           echo "Previous-good image preserved and verified: hermes-web:previous-good -> ${PREVIOUS_IMAGE_ID}"
+
 
           git checkout --detach "$TARGET_SHA"
 
