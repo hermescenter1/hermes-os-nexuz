@@ -317,6 +317,61 @@ describe.skipIf(!dockerAvailable)("the delivery ledger, as the database enforces
     expect(fks.stdout.split(LF).map(l => l.trim())).toContain("0");
   }, 120_000);
 
+  /**
+   * THE PREMISE THE CLASSIFIER RESTS ON.
+   *
+   * `deliverOnce` treats a unique violation as "already delivered" only when
+   * it names THIS table's idempotency key, and treats every other unique
+   * violation — above all one raised by the `Notification` insert — as a
+   * retryable failure. That distinction is only meaningful if PostgreSQL
+   * actually reports the two conflicts under different, stable names.
+   *
+   * So this asks the server directly, rather than trusting a fake: it
+   * provokes both violations and reads back the constraint each one names.
+   * If a later migration renamed the index, this goes red — and so would the
+   * classifier's assumption, silently, without it.
+   */
+  it("names the ledger key and a Notification conflict DIFFERENTLY", () => {
+    const db = withNotificationTable();
+    expect(psql(db, ROW()).status).toBe(0);
+    expect(
+      psql(db, `INSERT INTO "Notification" ("id","userId") VALUES ('ntf-1','someone');`).status,
+    ).toBe(0);
+
+    // The ledger's idempotency key, which MUST be read as "already delivered".
+    const ledger = psql(db, ROW({ id: "del-2" }));
+    expect(ledger.status).not.toBe(0);
+    expect(ledger.stderr).toContain("ExecutiveReportDelivery_org_date_version_user_key");
+
+    // A conflict on the other table, which must NOT be.
+    const notification = psql(
+      db,
+      `INSERT INTO "Notification" ("id","userId") VALUES ('ntf-1','user-owner');`,
+    );
+    expect(notification.status).not.toBe(0);
+    expect(notification.stderr).not.toContain("ExecutiveReportDelivery_org_date_version_user_key");
+
+    // Both are SQLSTATE 23505 — which is exactly why the code alone cannot
+    // tell them apart, and the constraint name has to be read.
+    for (const r of [ledger, notification]) {
+      expect(r.stderr).toMatch(/duplicate key value violates unique constraint/i);
+    }
+  }, 180_000);
+
+  it("carries the idempotency key under the name the classifier looks for", () => {
+    // Read from the catalogue rather than from an error message, so a
+    // rename cannot pass by changing only how the failure is phrased.
+    const db = freshDb();
+    const idx = psql(
+      db,
+      `SELECT indexname FROM pg_indexes
+         WHERE tablename = 'ExecutiveReportDelivery' AND indexdef LIKE '%UNIQUE%'
+         ORDER BY indexname;`,
+    );
+    expect(idx.status).toBe(0);
+    expect(idx.stdout).toContain("ExecutiveReportDelivery_org_date_version_user_key");
+  }, 120_000);
+
   it("stores the authority as TEXT, so a later enum change cannot rewrite history", () => {
     const db = freshDb();
     const types = psql(

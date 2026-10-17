@@ -106,7 +106,16 @@ vi.mock("@/lib/db/prisma", () => ({
                   if (h.deliveryMode === "throw") throw new Error("ledger unavailable");
                   const data = (args as { data: Record<string, unknown> }).data;
                   if ([...(h.deliveries ?? []), ...staged.deliveries].some(r => key(r) === key(data))) {
-                    throw Object.assign(new Error("Unique constraint failed"), { code: "P2002" });
+                    throw Object.assign(new Error("Unique constraint failed"), {
+                      code: "P2002",
+                      // Carries the constraint the real index would name. A bare
+                      // P2002 is no longer read as "already delivered", so a fake
+                      // without this would be testing a conflict that cannot occur.
+                      meta: {
+                        modelName: "ExecutiveReportDelivery",
+                        target: "ExecutiveReportDelivery_org_date_version_user_key",
+                      },
+                    });
                   }
                   staged.deliveries.push({ ...data });
                   return data;

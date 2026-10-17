@@ -69,16 +69,98 @@ export interface NotificationContent {
   readonly metadata: Record<string, unknown>;
 }
 
-/** A unique-constraint violation — someone else recorded this delivery. */
-function isAlreadyRecorded(err: unknown): boolean {
-  const code = (err as { code?: unknown } | null)?.code;
-  return code === "P2002";
+/**
+ * The ledger's idempotency key, named in the migration that creates it.
+ *
+ * Prisma reports a unique violation differently depending on how it reaches
+ * PostgreSQL: through the pg driver adapter `meta.target` is the CONSTRAINT
+ * NAME, and through the binary engine it is the list of FIELD NAMES. Both
+ * forms are recognised, and nothing else is.
+ */
+const LEDGER_MODEL = "ExecutiveReportDelivery";
+const LEDGER_UNIQUE_INDEX = "ExecutiveReportDelivery_org_date_version_user_key";
+/** Sorted, so the comparison does not depend on the order Prisma lists them. */
+const LEDGER_UNIQUE_FIELDS = ["businessDate", "organizationId", "reportVersion", "userId"];
+
+/** Whatever Prisma said the conflict was about, as one printable token. */
+function describeConflict(meta: Record<string, unknown> | null): string {
+  if (!meta) return "unknown";
+  const target = meta.target;
+  if (typeof target === "string") return target;
+  if (Array.isArray(target)) return target.join("+");
+  if (typeof meta.constraint === "string") return meta.constraint;
+  return "unknown";
+}
+
+/**
+ * Is this unique violation the one that means "already delivered"?
+ *
+ * ONLY this table's (organization, business date, version, recipient) key
+ * means that. Treating EVERY P2002 as "already delivered" was wrong and
+ * silently harmful: a unique violation raised by the `Notification` insert —
+ * a primary-key collision, or any constraint a later release adds there —
+ * would be read as "this person was already told", the recipient would be
+ * skipped for ever, and nothing would be recorded. That is the same
+ * permanent, silent loss the single transaction exists to prevent, arriving
+ * through the error path instead.
+ *
+ * FAIL CLOSED. A conflict this function cannot positively identify is NOT
+ * "already delivered"; the caller treats it as a retryable failure. The cost
+ * of being wrong in that direction is a repeated attempt that the unique
+ * index rejects anyway — never a duplicate notification, and never a
+ * recipient dropped in silence.
+ */
+function isLedgerIdempotencyConflict(err: unknown): boolean {
+  const e = err as { code?: unknown; meta?: unknown } | null;
+  if (!e || e.code !== "P2002") return false;
+  const meta = (e.meta ?? null) as Record<string, unknown> | null;
+  if (!meta) return false;
+  // When Prisma names the model, it has to be this one.
+  if (typeof meta.modelName === "string" && meta.modelName !== LEDGER_MODEL) return false;
+  for (const candidate of [meta.target, meta.constraint]) {
+    if (typeof candidate === "string" && candidate === LEDGER_UNIQUE_INDEX) return true;
+    if (!Array.isArray(candidate)) continue;
+    const names = candidate.filter((x): x is string => typeof x === "string");
+    if (names.length !== candidate.length) continue;
+    if (names.length === 1 && names[0] === LEDGER_UNIQUE_INDEX) return true;
+    const sorted = [...names].sort();
+    if (
+      sorted.length === LEDGER_UNIQUE_FIELDS.length &&
+      sorted.every((n, i) => n === LEDGER_UNIQUE_FIELDS[i])
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Why a delivery failed, as a short machine token for the log.
+ *
+ * Schema identifiers and Prisma error codes only — never a recipient, an
+ * organization or a message.
+ */
+function failureReason(err: unknown): string {
+  const e = err as { code?: unknown; meta?: unknown; message?: unknown } | null;
+  if (e?.code === "P2002") {
+    return `UNIQUE_CONFLICT_ELSEWHERE:${describeConflict((e.meta ?? null) as Record<string, unknown> | null)}`;
+  }
+  if (typeof e?.code === "string" && e.code !== "") return `ERROR:${e.code}`;
+  return "ERROR";
 }
 
 export type DeliveryOutcome =
-  | { kind: "SENT"; notificationId: string | null }
+  /**
+   * Durable. `sideEffectFailed` says the logger line, the real-time push or
+   * the usage record did not get through — reported separately BECAUSE the
+   * delivery itself still happened. Downgrading it to FAILED would make a
+   * later pass retry a recipient who was already told, and the only thing
+   * standing between that and a duplicate announcement would be the unique
+   * index refusing the retry.
+   */
+  | { kind: "SENT"; notificationId: string | null; sideEffectFailed: boolean }
   | { kind: "ALREADY" }
-  | { kind: "FAILED" };
+  | { kind: "FAILED"; reason: string };
 
 /**
  * What the notification SERVICE does after a successful create, done here
@@ -91,11 +173,17 @@ export type DeliveryOutcome =
  * mapper so a consumer sees exactly the same shape.
  *
  * AFTER COMMIT, deliberately: a broadcast for a transaction that then rolled
- * back would tell a client about a notification that does not exist. Every
- * step is best-effort and swallows its own failure — a push that cannot be
- * delivered must not undo a delivery that was.
+ * back would tell a client about a notification that does not exist.
+ *
+ * It never throws, and it is called from OUTSIDE the try that decides the
+ * outcome, so there is no path by which a failed push can turn a delivery
+ * that is already on disk into FAILED. The failure is not swallowed either:
+ * it is logged on its own line and returned, so the caller can report it
+ * separately from the delivery's own verdict.
+ *
+ * @returns the error, or null when every side effect got through.
  */
-function afterCommit(row: Record<string, unknown>, organizationId: string): void {
+function afterCommit(row: Record<string, unknown>, organizationId: string): Error | null {
   try {
     const notification = rowToNotification(row);
     logger.info("[notifications] created.", {
@@ -108,9 +196,25 @@ function afterCommit(row: Record<string, unknown>, organizationId: string): void
       type: "notification.created",
       notification,
     });
-    void recordUsage(organizationId, "notifications_created", 1, notification.userId);
-  } catch {
-    // Never let a side effect fail a delivery that is already durable.
+    // Resolved explicitly: an unhandled rejection from a metering call must
+    // not reach the worker's process, and must not escape this report either.
+    void Promise.resolve(
+      recordUsage(organizationId, "notifications_created", 1, notification.userId),
+    ).catch((err: unknown) => {
+      logger.error("[executive.delivery] usage metering failed AFTER a durable delivery.", {
+        organizationId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+    return null;
+  } catch (err) {
+    // Reported, never fatal: the delivery is already on disk.
+    const error = err instanceof Error ? err : new Error(String(err));
+    logger.error("[executive.delivery] a side effect failed AFTER a durable delivery.", {
+      organizationId,
+      error: error.message,
+    });
+    return error;
   }
 }
 
@@ -144,9 +248,14 @@ export async function deliverOnce(
   // Sorted and joined so the stored value does not depend on the order the
   // allowlist happened to be written in.
   const allowedRoles = [...record.allowedRoles].sort().join(",");
-  let createdRow: Record<string, unknown> | null = null;
+  /**
+   * The committed result, or null if the transaction never got there. It is
+   * assigned INSIDE the try and used OUTSIDE it, so the side effects run on
+   * a path where nothing they do can change the outcome.
+   */
+  let committed: { notificationId: string; row: Record<string, unknown> } | null = null;
   try {
-    const notificationId = await client.$transaction(async tx => {
+    committed = await client.$transaction(async tx => {
       const notification = await tx.notification.create({
         data: {
           userId: record.recipient.userId,
@@ -164,7 +273,6 @@ export async function deliverOnce(
         throw new Error("the notification was not created");
       }
       const id = notification.id;
-      createdRow = notification as Record<string, unknown>;
       await tx.executiveReportDelivery.create({
         data: {
           organizationId: record.organizationId,
@@ -178,14 +286,26 @@ export async function deliverOnce(
           notificationId: id,
         },
       });
-      return id;
+      return { notificationId: id, row: notification as Record<string, unknown> };
     });
-    // Only now, with both rows durable.
-    if (createdRow) afterCommit(createdRow, record.organizationId);
-    return { kind: "SENT", notificationId };
   } catch (err) {
-    return isAlreadyRecorded(err) ? { kind: "ALREADY" } : { kind: "FAILED" };
+    // ONLY this table's idempotency key means "already delivered". Every
+    // other conflict — including a unique violation raised by the
+    // `Notification` insert — is a retryable failure, because nothing was
+    // recorded and nobody was told.
+    if (isLedgerIdempotencyConflict(err)) return { kind: "ALREADY" };
+    return { kind: "FAILED", reason: failureReason(err) };
   }
+
+  // OUTSIDE the try, deliberately. Both rows are on disk; from here on the
+  // only question is whether the side effects got through, and the answer to
+  // that can never turn this into FAILED.
+  const sideEffect = afterCommit(committed.row, record.organizationId);
+  return {
+    kind: "SENT",
+    notificationId: committed.notificationId,
+    sideEffectFailed: sideEffect !== null,
+  };
 }
 
 /**

@@ -28,16 +28,39 @@ import {
   type NotificationContent,
 } from "../delivery";
 
-vi.mock("@/lib/logger", () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
-vi.mock("@/lib/realtime/sse-manager", () => ({ getSseManager: () => ({ broadcastToUser: vi.fn() }) }));
-vi.mock("@/lib/billing/usage", () => ({ recordUsage: vi.fn(async () => undefined) }));
+/**
+ * The three side effects the notification service used to perform, held
+ * where a test can make one of them fail. They run AFTER the transaction
+ * commits, so their failure must never change the delivery's verdict.
+ */
+const sideEffects = vi.hoisted(() => ({
+  broadcastToUser: vi.fn(),
+  recordUsage: vi.fn(async () => undefined),
+  error: vi.fn(),
+}));
+vi.mock("@/lib/logger", () => ({
+  logger: { info: vi.fn(), warn: vi.fn(), error: sideEffects.error },
+}));
+vi.mock("@/lib/realtime/sse-manager", () => ({
+  getSseManager: () => ({ broadcastToUser: sideEffects.broadcastToUser }),
+}));
+vi.mock("@/lib/billing/usage", () => ({ recordUsage: sideEffects.recordUsage }));
+
+/** The name the shipped migration gives this table's idempotency key. */
+const LEDGER_INDEX = "ExecutiveReportDelivery_org_date_version_user_key";
 
 /**
  * A client whose `$transaction` is real enough to matter: writes land in a
  * staging buffer and are committed only if the callback returns. If it
  * throws, they are discarded.
  */
-function fakeClient(opts: { notificationFails?: boolean } = {}) {
+function fakeClient(
+  opts: {
+    notificationFails?: boolean;
+    /** A unique violation raised by the NOTIFICATION insert, not by the ledger. */
+    notificationConflict?: boolean;
+  } = {},
+) {
   const committed = { deliveries: [] as Array<Record<string, unknown>>, notifications: [] as Array<Record<string, unknown>> };
   /**
    * Rows written by transactions that have not committed yet. A real unique
@@ -59,6 +82,14 @@ function fakeClient(opts: { notificationFails?: boolean } = {}) {
         notification: {
           async create(args: unknown) {
             if (opts.notificationFails) throw new Error("notification insert failed");
+            if (opts.notificationConflict) {
+              // A different table's constraint. Reading this as "already
+              // delivered" would drop the recipient permanently.
+              throw Object.assign(new Error("Unique constraint failed"), {
+                code: "P2002",
+                meta: { modelName: "Notification", target: "Notification_pkey" },
+              });
+            }
             const data = (args as { data: Record<string, unknown> }).data;
             const row = { id: `ntf-${(seq += 1)}`, createdAt: new Date().toISOString(), ...data };
             staged.notifications.push(row);
@@ -69,7 +100,11 @@ function fakeClient(opts: { notificationFails?: boolean } = {}) {
           async create(args: unknown) {
             const data = (args as { data: Record<string, unknown> }).data;
             const clash = [...committed.deliveries, ...inFlight.flat()].some(r => keyOf(r) === keyOf(data));
-            if (clash) throw Object.assign(new Error("Unique constraint failed"), { code: "P2002" });
+            if (clash) throw Object.assign(new Error("Unique constraint failed"), {
+                code: "P2002",
+                // As the pg driver adapter reports it: the constraint NAME.
+                meta: { modelName: "ExecutiveReportDelivery", target: LEDGER_INDEX },
+              });
             staged.deliveries.push({ ...data });
             return data;
           },
@@ -122,6 +157,10 @@ const CONTENT: NotificationContent = {
 let fake: ReturnType<typeof fakeClient>;
 beforeEach(() => {
   fake = fakeClient();
+  sideEffects.broadcastToUser.mockReset();
+  sideEffects.recordUsage.mockReset();
+  sideEffects.recordUsage.mockResolvedValue(undefined);
+  sideEffects.error.mockReset();
 });
 
 describe("the authority is recorded as it was at the moment of sending", () => {
@@ -167,7 +206,7 @@ describe("the authority is recorded as it was at the moment of sending", () => {
 describe("the notification and the record are one transaction", () => {
   it("writes both, and freezes the notification's id into the record", async () => {
     const outcome = await deliverOnce(fake.client, RECORD, CONTENT);
-    expect(outcome).toEqual({ kind: "SENT", notificationId: "ntf-1" });
+    expect(outcome).toEqual({ kind: "SENT", notificationId: "ntf-1", sideEffectFailed: false });
     expect(fake.committed.notifications).toHaveLength(1);
     expect(fake.committed.deliveries).toHaveLength(1);
     expect(fake.committed.deliveries[0].notificationId).toBe("ntf-1");
@@ -230,6 +269,171 @@ describe("the notification and the record are one transaction", () => {
     expect((await deliverOnce(broken.client, RECORD, CONTENT)).kind).toBe("FAILED");
     await deliverOnce(fake.client, RECORD, CONTENT);
     expect((await deliverOnce(fake.client, RECORD, CONTENT)).kind).toBe("ALREADY");
+  });
+});
+
+/**
+ * WHICH unique violation was it?
+ *
+ * Reading every P2002 as "already delivered" was wrong in a way that is
+ * silent and permanent. A unique violation raised by the NOTIFICATION insert
+ * — a primary-key collision, or any constraint a later release adds to that
+ * table — would be reported as ALREADY, the recipient would be skipped by
+ * every later pass, and no ledger row would exist to show it. The recipient
+ * is simply never told, and nothing anywhere records that.
+ *
+ * So only THIS table's idempotency key means "already delivered", and
+ * anything the classifier cannot positively identify is a retryable failure.
+ * Failing in that direction costs a repeated attempt the unique index
+ * refuses anyway; failing in the other direction costs the announcement.
+ */
+describe("only this table's idempotency key means ALREADY", () => {
+  /** Drives deliverOnce against a client whose ledger insert throws `err`. */
+  async function withLedgerError(err: unknown) {
+    const seen = { deliveries: 0, notifications: 0 };
+    const client: DeliveryClient = {
+      async $transaction(fn) {
+        return fn({
+          notification: {
+            async create() {
+              seen.notifications += 1;
+              return { id: "ntf-1", userId: RECIPIENT.userId, createdAt: new Date().toISOString() };
+            },
+          },
+          executiveReportDelivery: {
+            async create() {
+              seen.deliveries += 1;
+              throw err;
+            },
+          },
+        });
+      },
+    };
+    return { outcome: await deliverOnce(client, RECORD, CONTENT), seen };
+  }
+
+  it("reads the CONSTRAINT NAME form the pg driver adapter reports", async () => {
+    const { outcome } = await withLedgerError(
+      Object.assign(new Error("Unique constraint failed"), {
+        code: "P2002",
+        meta: { modelName: "ExecutiveReportDelivery", target: LEDGER_INDEX },
+      }),
+    );
+    expect(outcome.kind).toBe("ALREADY");
+  });
+
+  it("reads the FIELD NAME form the binary engine reports, in any order", async () => {
+    const { outcome } = await withLedgerError(
+      Object.assign(new Error("Unique constraint failed"), {
+        code: "P2002",
+        meta: {
+          modelName: "ExecutiveReportDelivery",
+          target: ["reportVersion", "organizationId", "userId", "businessDate"],
+        },
+      }),
+    );
+    expect(outcome.kind).toBe("ALREADY");
+  });
+
+  it("does NOT read a Notification conflict as ALREADY", async () => {
+    // The whole point: this recipient was never told and nothing was
+    // recorded, so the next pass must try again.
+    const conflicted = fakeClient({ notificationConflict: true });
+    const outcome = await deliverOnce(conflicted.client, RECORD, CONTENT);
+    expect(outcome.kind).toBe("FAILED");
+    expect(outcome.kind === "FAILED" && outcome.reason).toContain("Notification_pkey");
+    // Neither row exists.
+    expect(conflicted.committed.deliveries).toHaveLength(0);
+    expect(conflicted.committed.notifications).toHaveLength(0);
+    // And the recipient is still deliverable.
+    const retry = fakeClient();
+    expect((await deliverOnce(retry.client, RECORD, CONTENT)).kind).toBe("SENT");
+    expect(retry.committed.deliveries).toHaveLength(1);
+  });
+
+  it("does NOT read a conflict on another MODEL as ALREADY", async () => {
+    const { outcome } = await withLedgerError(
+      Object.assign(new Error("Unique constraint failed"), {
+        code: "P2002",
+        meta: { modelName: "ExecutiveDailyReport", target: LEDGER_INDEX },
+      }),
+    );
+    expect(outcome.kind).toBe("FAILED");
+  });
+
+  it("does NOT read an UNIDENTIFIED conflict as ALREADY", async () => {
+    // Fail closed: a P2002 that names nothing could be any constraint, and
+    // guessing "already delivered" is the one guess that loses a recipient.
+    for (const meta of [undefined, {}, { target: "SomeOtherTable_key" }, { target: [] }]) {
+      const { outcome } = await withLedgerError(
+        Object.assign(new Error("Unique constraint failed"), { code: "P2002", meta }),
+      );
+      expect(outcome.kind).toBe("FAILED");
+    }
+  });
+
+  it("still reads a genuine ledger conflict as ALREADY, through the full client", async () => {
+    await deliverOnce(fake.client, RECORD, CONTENT);
+    expect((await deliverOnce(fake.client, RECORD, CONTENT)).kind).toBe("ALREADY");
+  });
+});
+
+/**
+ * A SIDE EFFECT THAT FAILS AFTER THE COMMIT.
+ *
+ * The logger line, the real-time push and the usage record all happen once
+ * both rows are on disk. If one of them fails, the delivery has still
+ * happened: the person has a notification and the ledger says so. Calling
+ * that FAILED would make the next pass retry a recipient who was already
+ * told, and the only thing standing between that and a duplicate
+ * announcement would be the unique index refusing the retry.
+ */
+describe("a failed side effect does not undo a durable delivery", () => {
+  it("still reports SENT, keeps both rows, and flags the side effect", async () => {
+    sideEffects.broadcastToUser.mockImplementationOnce(() => {
+      throw new Error("sse transport is down");
+    });
+    const outcome = await deliverOnce(fake.client, RECORD, CONTENT);
+    expect(outcome.kind).toBe("SENT");
+    expect(outcome.kind === "SENT" && outcome.sideEffectFailed).toBe(true);
+    expect(fake.committed.deliveries).toHaveLength(1);
+    expect(fake.committed.notifications).toHaveLength(1);
+  });
+
+  it("reports the side-effect failure separately, on its own log line", async () => {
+    sideEffects.broadcastToUser.mockImplementationOnce(() => {
+      throw new Error("sse transport is down");
+    });
+    await deliverOnce(fake.client, RECORD, CONTENT);
+    expect(sideEffects.error).toHaveBeenCalledTimes(1);
+    expect(String(sideEffects.error.mock.calls[0]?.[0])).toContain("side effect failed");
+  });
+
+  it("does not produce a SECOND notification when the pass runs again", async () => {
+    sideEffects.broadcastToUser.mockImplementationOnce(() => {
+      throw new Error("sse transport is down");
+    });
+    expect((await deliverOnce(fake.client, RECORD, CONTENT)).kind).toBe("SENT");
+    // The retry a worker would make. It must lose.
+    expect((await deliverOnce(fake.client, RECORD, CONTENT)).kind).toBe("ALREADY");
+    expect(fake.committed.notifications).toHaveLength(1);
+    expect(fake.committed.deliveries).toHaveLength(1);
+  });
+
+  it("survives a rejected usage-metering call without an unhandled rejection", async () => {
+    sideEffects.recordUsage.mockRejectedValueOnce(new Error("metering is down"));
+    const outcome = await deliverOnce(fake.client, RECORD, CONTENT);
+    expect(outcome.kind).toBe("SENT");
+    expect(fake.committed.deliveries).toHaveLength(1);
+    // Let the rejection settle; it must have been handled, not thrown.
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(sideEffects.error).toHaveBeenCalled();
+  });
+
+  it("reports no side-effect failure when everything gets through", async () => {
+    const outcome = await deliverOnce(fake.client, RECORD, CONTENT);
+    expect(outcome.kind === "SENT" && outcome.sideEffectFailed).toBe(false);
+    expect(sideEffects.error).not.toHaveBeenCalled();
   });
 });
 
