@@ -45,7 +45,7 @@ export const METRICS = {
   http_requests_total: {
     type: "counter",
     help: "Total HTTP requests handled, by method and status class.",
-    labels: ["method", "status_class"], // status_class ∈ 2xx|3xx|4xx|5xx
+    labels: ["method", "status_class"], // status_class ∈ 1xx|2xx|3xx|4xx|5xx
     maxSeries: 64,
   },
   http_request_duration_ms: {

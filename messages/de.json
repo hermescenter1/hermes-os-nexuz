@@ -198,6 +198,16 @@
       "sessionOps": "Sitzungsvorgänge",
       "alertDelivery": "Warnungszustellung"
     },
+    "httpTelemetry": {
+      "scope": "Zähler pro Prozess seit dem Start dieses Prozesses; sie werden bei einem Neustart zurückgesetzt und sind keine dauerhaften Zeitreihen. Gezählt werden Anfragen, die die Hermes-Anwendung erreicht und mit einer Antwort abgeschlossen haben.",
+      "limits": "Nicht enthalten: Health- und Metrik-Probes, von Nginx erzeugte 502/504, am Edge abgewiesene Anfragen, WebSocket-Upgrades und abgebrochene Antworten. Dafür das strukturierte Nginx-Zugriffsprotokoll verwenden.",
+      "cumulative": "Kumulierte Anzahl seit Prozessstart, keine Rate.",
+      "empty": "Seit dem Start dieses Prozesses wurden keine Anwendungsanfragen erfasst.",
+      "avg": "Durchschnittsdauer",
+      "samples": "Anfragen",
+      "method": "Methode",
+      "badge": "Im Prozess"
+    },
     "notInstrumented": {
       "badge": "Nicht instrumentiert",
       "httpRequestLatency": "HTTP-Anfragelatenz",

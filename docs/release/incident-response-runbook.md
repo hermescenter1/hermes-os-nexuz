@@ -113,6 +113,8 @@ user agent, bodies, user/org ids.
    proxy correlation; the admin surface contributes only application
    errors/events that recorded the same ID.
 
+**Application-side counters.** Separately from the Nginx log, the Hermes process counts the requests it finished answering (`http_requests_total{method,status_class}`, `http_request_duration_ms{method}`, via a read-only Node `diagnostics_channel` subscription; shown on the observability console and on `/api/metrics`). They are per-process, reset on restart, are not a time series, exclude `/api/metrics` and `/api/health*`, and never see Nginx-generated 502/504, edge-rejected requests, WebSocket upgrades or aborted responses. A rise in `5xx` here means the application answered with an error; a 502/504 seen only in the Nginx log means the application did not answer. The Node channels it relies on are experimental in Node; re-verify after a Node major upgrade (worst case the counters stay empty). Unhandled Next.js render/route errors also create an error fingerprint correlated by the same request id.
+
 **Limits.** This is bounded host/container log evidence. It is not a durable
 metrics backend, it does not survive log rotation or container re-creation, and
 it is not a replacement for external uptime monitoring or Cloudflare logs

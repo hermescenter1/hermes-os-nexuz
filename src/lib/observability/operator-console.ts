@@ -6,9 +6,11 @@
  * live PostgreSQL / Redis probe and the on-disk backup state. It creates NO new
  * observability system, changes NO backend behaviour, and fabricates NO data:
  * every field is either a live measurement, an existing in-process counter, or an
- * explicit "not measured" descriptor. HTTP request-rate and request-latency are
- * deliberately reported as NOT_INSTRUMENTED (there is no recording call-site and
- * no durable time-series store) — never as a misleading zero.
+ * explicit "not measured" descriptor. HTTP request counts and durations come from
+ * the in-process registry fed by `http-telemetry.ts` (per-process, reset on
+ * restart, application-side only — Nginx-only failures are NOT in it); a signal
+ * with no recording call-site would still be listed in `notInstrumented`,
+ * never shown as a misleading zero.
  *
  * DISCLOSURE: identical to /api/admin/observability — every value is redacted at
  * its source (security ring keeps safe fields, error samples scrubbed, incident
@@ -246,10 +248,10 @@ export async function assembleOperatorConsole(
     audit,
     metrics: snapshotMetrics(),
     incident,
-    notInstrumented: [
-      { key: "httpRequestRate", metric: "http_requests_total", source: "prometheus", observedAt: now },
-      { key: "httpRequestLatency", metric: "http_request_duration_ms", source: "prometheus", observedAt: now },
-    ],
+    // HTTP request rate/latency are now recorded in-process (see
+    // http-telemetry.ts) and rendered from `metrics`; nothing is left here that
+    // is deliberately unmeasured.
+    notInstrumented: [],
     degraded: { audit: auditDegraded },
   };
 }

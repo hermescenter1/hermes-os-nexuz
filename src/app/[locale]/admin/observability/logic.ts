@@ -124,6 +124,41 @@ export function histogramStat(
   return { count: match.count, sum: match.sum, avgMs: match.avgMs };
 }
 
+const HTTP_STATUS_CLASS_ORDER = ["1xx", "2xx", "3xx", "4xx", "5xx"] as const;
+
+/**
+ * Application-side HTTP requests by status class, summed across methods. Empty
+ * when nothing was recorded (the caller renders an empty state, never zeros).
+ * Cumulative since process start — this is a count, not a rate.
+ */
+export function httpStatusClassSeries(snapshot: Snapshot): SeriesPoint[] {
+  const totals = new Map<string, number>();
+  for (const s of asScalarSamples(snapshot["http_requests_total"])) {
+    const cls = s.labels["status_class"] ?? "—";
+    totals.set(cls, (totals.get(cls) ?? 0) + s.value);
+  }
+  const ordered: string[] = [
+    ...HTTP_STATUS_CLASS_ORDER.filter((c) => totals.has(c)),
+    ...[...totals.keys()].filter((c) => !(HTTP_STATUS_CLASS_ORDER as readonly string[]).includes(c)),
+  ];
+  return ordered.map((label) => {
+    const point: SeriesPoint = { label, value: totals.get(label) ?? 0 };
+    if (label === "5xx") point.tone = "danger";
+    else if (label === "4xx") point.tone = "warning";
+    else if (label === "2xx" || label === "3xx") point.tone = "success";
+    return point;
+  });
+}
+
+/** Request count and average duration across all methods, or null when unrecorded. */
+export function httpLatencyOverall(snapshot: Snapshot): { count: number; avgMs: number } | null {
+  const samples = asHistogramSamples(snapshot["http_request_duration_ms"]);
+  const count = samples.reduce((n, s) => n + s.count, 0);
+  if (count <= 0) return null;
+  const sum = samples.reduce((n, s) => n + s.sum, 0);
+  return { count, avgMs: Math.round((sum / count) * 100) / 100 };
+}
+
 /** Largest value in a series (for bar scaling); 0 for an empty series. */
 export function seriesMax(points: SeriesPoint[]): number {
   return points.reduce((m, p) => Math.max(m, p.value), 0);
