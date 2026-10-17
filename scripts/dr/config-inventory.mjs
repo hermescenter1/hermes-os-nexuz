@@ -93,6 +93,7 @@ export const CONFIG_SURFACES = [
   { item: "Git revision", sourceClass: "REPOSITORY_MANAGED", recoverySource: "Git (origin/main pinned SHA)", ownerRole: "Application/release owner" },
   { item: "docker-compose.prod.yml", sourceClass: "REPOSITORY_MANAGED", recoverySource: "Git", ownerRole: "Platform/SRE" },
   { item: "deploy/nginx/default.conf", sourceClass: "REPOSITORY_MANAGED", recoverySource: "Git", ownerRole: "DNS/TLS recovery owner" },
+  { item: "deploy/nginx/00-observability.conf", sourceClass: "REPOSITORY_MANAGED", recoverySource: "Git", ownerRole: "DNS/TLS recovery owner" },
   { item: "TLS certificates (/etc/letsencrypt)", sourceClass: "REGENERATED", recoverySource: "Certbot re-issue (ACME) — deploy/ssl/README.md", ownerRole: "DNS/TLS recovery owner" },
   { item: "Certbot renew cron (/etc/cron.d/certbot-renew)", sourceClass: "HOST_MANAGED", recoverySource: "Host cron re-install per deploy/ssl/README.md", ownerRole: "Platform/SRE" },
   { item: "OpenBao client config (OPENBAO_* / OT_SECRET_BACKEND)", sourceClass: "OWNER_CONFIGURATION", recoverySource: "OpenBao DR contract (Phase 94/95 runbooks) + secret store", ownerRole: "OpenBao recovery owner" },

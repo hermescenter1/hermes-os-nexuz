@@ -404,6 +404,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
+      # http-context log_format/map fragment; sorts before default.conf.
+      - ./deploy/nginx/00-observability.conf:/etc/nginx/conf.d/00-observability.conf:ro
       - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       # Dedicated HTTPS vhost for Stalwart mail/account UI.
       - ./deploy/nginx/mail.conf:/etc/nginx/conf.d/mail.conf:ro

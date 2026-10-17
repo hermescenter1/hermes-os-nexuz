@@ -85,20 +85,40 @@ describe("PHASE997_DEPLOY_WORKFLOW", () => {
     expect(deploy).toContain("migration-prerequisites-verified");
   });
 
+  /**
+   * DA-1 moved the backup evidence out of this workflow and into two scripts:
+   * a collector that measures on the host and an evaluator that decides on
+   * the runner, as a STEP of its own before the deploy step. These two
+   * guarantees are re-pointed at their new home rather than dropped — where
+   * the code lives changed, what it must guarantee did not.
+   */
+  const evaluator = readFileSync("scripts/deploy/evaluate-backup-evidence.sh", "utf8");
+
   it("proves the backup on the host before building anything", () => {
-    const evidenceAt = deploy.indexOf("transportSha256");
-    const buildAt = deploy.indexOf("build hermes-web");
-    expect(evidenceAt).toBeGreaterThan(-1);
-    expect(buildAt).toBeGreaterThan(-1);
-    expect(evidenceAt).toBeLessThan(buildAt);
+    // The ordering is now between STEPS, which is a stronger statement than
+    // line order inside one script: a failure in the evidence step means
+    // Actions never starts the step that builds.
+    const evidenceStepAt = deploy.indexOf("- name: Evaluate the production backup evidence");
+    const deployStepAt = deploy.indexOf("- name: Deploy the pinned commit");
+    expect(evidenceStepAt).toBeGreaterThan(-1);
+    expect(deployStepAt).toBeGreaterThan(evidenceStepAt);
+    expect(deploy.slice(deployStepAt)).toContain("build hermes-web");
+
+    expect(evaluator).toContain("transportSha256");
     for (const claim of ['"verified":true', '"partial":false', '"encrypted":true']) {
-      expect(deploy).toContain(claim);
+      expect(evaluator).toContain(claim);
     }
   });
 
   it("requires documents_data adoption evidence for a migration-bearing release", () => {
-    expect(deploy).toContain("documents-adoption.json");
-    expect(deploy).toContain('"integrityVerified": *true');
+    // Measured by the collector only when asked, required by the evaluator
+    // only when the release carries a migration — and the workflow ties both
+    // switches to the same classification output.
+    expect(readFileSync("scripts/deploy/collect-backup-evidence.sh", "utf8")).toContain("documents-adoption.json");
+    expect(evaluator).toContain('"integrityVerified": *true');
+    expect(evaluator).toContain('"${REQUIRE_ADOPTION:-false}" = "true"');
+    expect(deploy).toContain("COLLECT_ADOPTION=${BACKUP_REQUIRED}");
+    expect(deploy).toContain('REQUIRE_ADOPTION="${BACKUP_REQUIRED}"');
   });
 
   it("fails closed on a dirty server worktree BEFORE checkout", () => {
