@@ -43,6 +43,14 @@ function runnerStage(): string {
   return next === -1 ? dockerfile.slice(start) : dockerfile.slice(start, next);
 }
 
+/** The independently deployed executive worker stage only. */
+function executiveWorkerStage(): string {
+  const start = dockerfile.indexOf("FROM node:20-alpine AS executive-report-worker");
+  expect(start, "the executive worker stage must exist").toBeGreaterThan(-1);
+  const next = dockerfile.indexOf("\nFROM ", start + 1);
+  return next === -1 ? dockerfile.slice(start) : dockerfile.slice(start, next);
+}
+
 describe("DA-3 — link 1: the image records its own revision", () => {
   it("declares the build argument in the RUNNER stage", () => {
     expect(runnerStage()).toMatch(/^ARG GIT_REVISION=/m);
@@ -55,10 +63,31 @@ describe("DA-3 — link 1: the image records its own revision", () => {
   });
 });
 
+describe("DA-3 — the executive worker image records its revision", () => {
+  it("declares the build argument in the executive worker stage", () => {
+    expect(executiveWorkerStage()).toMatch(/^ARG GIT_REVISION=unknown$/m);
+  });
+
+  it("uses the standard OCI revision label in the executive worker stage", () => {
+    expect(executiveWorkerStage()).toMatch(
+      /^LABEL org\.opencontainers\.image\.revision=\$GIT_REVISION$/m,
+    );
+  });
+});
+
 describe("DA-3 — link 2: compose passes the revision to the build", () => {
   it("passes GIT_REVISION as a build argument for hermes-web", () => {
     const web = compose.slice(compose.indexOf("hermes-web:"), compose.indexOf("hermes-executive-report-worker:"));
     expect(web).toMatch(/GIT_REVISION:\s*\$\{GIT_REVISION:-unknown\}/);
+  });
+
+  it("passes GIT_REVISION to the independently built executive worker", () => {
+    const start = compose.indexOf("hermes-executive-report-worker:");
+    const end = compose.indexOf("hermes-document-cleanup-worker:", start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const worker = compose.slice(start, end);
+    expect(worker).toMatch(/GIT_REVISION:\s*\$\{GIT_REVISION:-unknown\}/);
   });
 
   it("defaults to `unknown` rather than to something that looks like a commit", () => {
