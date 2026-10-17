@@ -467,6 +467,12 @@ describe("102 — migration ordering", () => {
     // default, so PostgreSQL does not rewrite the table; touches no Phase 102
     // table (asserted below).
     "20261014160000_executive_report_priorities",
+    // Executive Management Center row 10 — one NEW table,
+    // ExecutiveReportDelivery, recording who was told a nightly report
+    // existed and on what authority, plus an append-only trigger on it.
+    // Creates no column on an existing table, rewrites no row, backfills
+    // nothing, and touches no Phase 102 table (asserted below).
+    "20261016120000_executive_report_delivery_ledger",
   ];
 
   it("the Phase 102 migration exists, and only sanctioned migrations follow it", () => {

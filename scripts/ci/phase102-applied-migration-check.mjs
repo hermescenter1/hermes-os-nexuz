@@ -151,6 +151,10 @@ export const POST_PHASE102_MIGRATIONS = [
   // Executive Management Center — one nullable Json column for the frozen
   // priority list. Declared for the same reason as the lines above.
   "20261014160000_executive_report_priorities",
+  // Executive Management Center row 10 — one new table recording report
+  // deliveries, append-only. Declared for the same reason as the lines
+  // above: an undeclared row would fail the era-count equality.
+  "20261016120000_executive_report_delivery_ledger",
 ];
 
 /**
