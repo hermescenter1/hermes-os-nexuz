@@ -160,6 +160,12 @@ CMD ["node", "scripts/journal/import-articles.mjs"]
 FROM node:20-alpine AS executive-report-worker
 WORKDIR /app
 
+# The worker is deployed independently from hermes-web. Stamp the same standard
+# OCI revision label so the running worker can be tied to the checkout it was
+# built from; hand-built images remain visibly unattested as `unknown`.
+ARG GIT_REVISION=unknown
+LABEL org.opencontainers.image.revision=$GIT_REVISION
+
 RUN addgroup -g 1001 -S nodejs && adduser -S worker -u 1001
 
 COPY scripts/executive/daily-report-worker.mjs ./scripts/executive/daily-report-worker.mjs
