@@ -127,6 +127,10 @@ services:
       context: .
       dockerfile: Dockerfile
       target: executive-report-worker
+      args:
+        # Same provenance contract as hermes-web. Operators pass GIT_REVISION
+        # when rebuilding this independently deployed worker.
+        GIT_REVISION: ${GIT_REVISION:-unknown}
     restart: unless-stopped
     env_file: .env.production
     environment:
