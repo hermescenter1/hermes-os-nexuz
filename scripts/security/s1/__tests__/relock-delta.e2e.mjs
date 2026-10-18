@@ -30,6 +30,7 @@ const E = R.EXIT;
 const lf = (s) => s.replace(/\r\n/g, "\n");
 const DATA = JSON.parse(readFileSync(PATHS.data, "utf8"));
 const MD = lf(readFileSync(PATHS.report, "utf8"));
+const DATA2_FINDINGS = JSON.parse(readFileSync(R.defaultPaths(ROOT, "SECOND").data, "utf8")).findings.length;
 const REGISTER = JSON.parse(readFileSync(PATHS.register, "utf8"));
 const INVENTORY = JSON.parse(readFileSync(PATHS.inventory, "utf8"));
 const ADJ = JSON.parse(readFileSync(PATHS.adjudications, "utf8"));
@@ -48,7 +49,7 @@ const finding = (d, id) => d.findings.find((f) => f.findingId === id);
 /** Run the command line with overrides for any input and return its exit status. */
 function cli(mode, over = {}) {
   const args = [CLI, mode, `--root=${ROOT}`];
-  const map = { data: over.data, report: over.report, register: over.register, inventory: over.inventory, adjudications: over.adjudications, record: over.record };
+  const map = { layer: over.layer, data: over.data, report: over.report, register: over.register, inventory: over.inventory, adjudications: over.adjudications, record: over.record };
   for (const [k, v] of Object.entries(map)) if (v !== undefined) args.push(`--${k}=${v}`);
   const env = { ...process.env };
   delete env.NODE_TEST_CONTEXT;
@@ -303,6 +304,7 @@ test("e2e committed state: committing exactly the artifacts keeps the scanner, t
       ["S0 coverage", [S0, "coverage"]],
       ["S1 check", ["scripts/security/s1/risk-register-check.mjs", "check"]],
       ["relock check", ["scripts/security/s1/relock-delta-check.mjs", "check"]],
+      ["relock check, second layer", ["scripts/security/s1/relock-delta-check.mjs", "check", "--layer=2"]],
       ["relock summary", ["scripts/security/s1/relock-delta-check.mjs", "summary"]],
     ]) {
       const r = node(f, ...args);
@@ -311,6 +313,18 @@ test("e2e committed state: committing exactly the artifacts keeps the scanner, t
     const summary = JSON.parse(node(f, S0, "summary").out);
     assert.equal(summary.textualOccurrences, JSON.parse(inventoryBefore).summary.textualOccurrences, "COMMITTED_TEXTUAL: the committed tools add no textual occurrence");
     assert.equal(dirty(), "", "COMMITTED_CLEAN: the gates change no file");
+
+    // 4 — HEAD here is a CHILD of the integration merge, not the merge itself, and both layers accepted it above.
+    //     The negative control: one more commit, which changes a product file. Both layers must refuse it, from the process.
+    const target = join(f, "src/lib/seo/retired-identity.ts");
+    writeFileSync(target, `${readFileSync(target, "utf8")}\nexport const NOT_AN_ASSURANCE_FILE = true;\n`);
+    git(f, "add", "--", "src/lib/seo/retired-identity.ts");
+    git(f, "commit", "--quiet", "-m", "a product change after the integration merge");
+    for (const args of [["check", "--layer=2"], ["check", "--layer=1"], ["check"]]) {
+      const bad = node(f, "scripts/security/s1/relock-delta-check.mjs", ...args);
+      assert.equal(bad.status, E.SOURCES, `COMMITTED_PRODUCT_COMMIT: ${args.join(" ")} must exit ${E.SOURCES}, got ${bad.status}: ${(bad.err || bad.out).split("\n").slice(0, 3).join(" | ").slice(0, 300)}`);
+      assert.match(bad.err, /HEAD_COMMIT_OUTSIDE_ALLOWLIST/, `COMMITTED_PRODUCT_COMMIT: ${args.join(" ")} must name the commit gate`);
+    }
   } finally {
     rmSync(work, { recursive: true, force: true });
   }
@@ -330,4 +344,68 @@ test("e2e environment: when git cannot answer the checker exits 3 (a missing pre
   } finally {
     rmSync(empty, { recursive: true, force: true });
   }
+});
+
+test("e2e layer: --layer=2 checks the second-layer document and its report and exits 0 on the committed files", () => {
+  const r = cli("check", { layer: "2" });
+  expectExit("layer 2 clean", r.status, E.OK);
+  assert.match(r.out, /relock provenance consistent/, "LAYER_CLI: the second layer reports a consistent provenance");
+  const s = cli("summary", { layer: "2" });
+  expectExit("layer 2 summary", s.status, E.OK);
+  assert.equal(JSON.parse(s.out).deltaFindings, DATA2_FINDINGS, "layer 2 clean: the summary is the second layer's, not the first layer's");
+});
+
+test("e2e layer: the second-layer paths are not the first layer's", () => {
+  const first = R.defaultPaths(ROOT, "FIRST");
+  const second = R.defaultPaths(ROOT, "SECOND");
+  assert.notEqual(first.data, second.data, "LAYER_PATHS: the documents differ");
+  assert.notEqual(first.report, second.report, "LAYER_PATHS: the reports differ");
+  assert.equal(first.record, second.record, "LAYER_PATHS: the checker has one mutation record");
+});
+
+// ───────────── F-03: the command line is one strict parser, from the process boundary ─────────────
+
+const rawCli = (...args) => {
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT;
+  const r = spawnSync(process.execPath, [CLI, ...args], { cwd: ROOT, encoding: "utf8", env });
+  return { status: r.status, out: r.stdout, err: r.stderr };
+};
+
+test("e2e layer parser: an invalid layer is a usage error for every mode and never falls back to the first layer", () => {
+  for (const bad of ["--layer=3", "--layer=", "--layer", "--layer=02", "--layer=two", "--layer=2 ", "--Layer=2"]) {
+    for (const mode of ["check", "summary", "generate"]) {
+      const r = rawCli(mode, `--root=${ROOT}`, bad);
+      expectExit(`${mode} ${JSON.stringify(bad)}`, r.status, E.USAGE);
+      assert.match(r.err, /^\[s1-relock\] usage: /m, `LAYER_PARSER: ${mode} ${JSON.stringify(bad)} must print a usage line`);
+      assert.equal(r.out, "", `LAYER_PARSER: ${mode} ${JSON.stringify(bad)} must print nothing to stdout`);
+    }
+  }
+  expectExit("duplicate", rawCli("check", "--layer=1", "--layer=2").status, E.USAGE);
+  expectExit("space form", rawCli("check", "--layer", "2").status, E.USAGE);
+  expectExit("unknown option", rawCli("check", "--bogus=1").status, E.USAGE);
+});
+
+test("e2e layer parser: generate with an invalid layer writes no file", () => {
+  const compact = put(JSON.stringify(DATA));
+  const report = put(MD);
+  const before = [readFileSync(compact, "utf8"), readFileSync(report, "utf8")];
+  for (const bad of ["--layer=3", "--layer=", "--layer=02"]) {
+    const r = rawCli("generate", `--root=${ROOT}`, bad, `--data=${compact}`, `--report=${report}`);
+    expectExit(`generate ${bad}`, r.status, E.USAGE);
+  }
+  assert.deepEqual([readFileSync(compact, "utf8"), readFileSync(report, "utf8")], before, "LAYER_PARSER: expected no file to change, but generate wrote one");
+  const ok = rawCli("generate", `--root=${ROOT}`, "--layer=1", `--data=${compact}`, `--report=${report}`);
+  expectExit("generate --layer=1", ok.status, E.OK);
+  assert.notEqual(readFileSync(compact, "utf8"), before[0], "LAYER_PARSER: a valid layer does write, so the check above is not vacuous");
+});
+
+test("e2e layer parser: the two valid layers give different answers and no layer gives the first", () => {
+  const none = rawCli("summary", `--root=${ROOT}`);
+  const one = rawCli("summary", `--root=${ROOT}`, "--layer=1");
+  const two = rawCli("summary", `--root=${ROOT}`, "--layer=2");
+  assert.equal(none.status, E.OK, "LAYER_PARSER: no layer is accepted");
+  assert.equal(none.out, one.out, "LAYER_PARSER: no layer is the first layer, as documented");
+  assert.notEqual(one.out, two.out, "LAYER_PARSER: the second layer is a different document");
+  assert.equal(JSON.parse(two.out).deltaFindings, DATA2_FINDINGS, "LAYER_PARSER: --layer=2 reads the second-layer document");
 });

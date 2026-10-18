@@ -221,6 +221,7 @@ const RISK_KEY_ORDER = Object.freeze([
   "relatedRiskIds",
   "originScope",
   "revision",
+  "secondLayerRevision",
   "policy",
 ]);
 
@@ -678,7 +679,7 @@ export const RISK_REQUIRED_KEYS = Object.freeze([
   "confidence", "remediationPriority", "remediationPhase", "remediationOwnership", "acceptanceCriteria",
   "verificationMethod", "residualRisk", "dependencies", "relatedRiskIds",
 ]);
-export const RISK_OPTIONAL_KEYS = Object.freeze(["guardEvidence", "runtimeEvidence", "evidenceReconciliation", "originScope", "revision", "policy"]);
+export const RISK_OPTIONAL_KEYS = Object.freeze(["guardEvidence", "runtimeEvidence", "evidenceReconciliation", "originScope", "revision", "secondLayerRevision", "policy"]);
 export const FINDING_REQUIRED_KEYS = Object.freeze(["findingId", "family", "source", "summary", "status"]);
 export const FINDING_OPTIONAL_KEYS = Object.freeze(["ownerRiskId", "duplicateOf", "reason", "relatedRiskIds", "originScope", "deltaDisposition", "revision"]);
 export const RUNTIME_EVIDENCE_KEYS = Object.freeze(["statement", "variables", "source", "activeInCurrentContainer", "proves", "doesNotProve"]);
@@ -799,6 +800,7 @@ export function schemaKeyViolations(reg) {
     }
     if ("guardEvidence" in r) stringList(r.guardEvidence, `${w} guardEvidence`, out, 1);
     if ("revision" in r) closedKeys(r.revision, `${w} revision`, REVISION_KEYS, [], out);
+    if ("secondLayerRevision" in r) closedKeys(r.secondLayerRevision, `${w} secondLayerRevision`, SECOND_REVISION_KEYS, [], out);
     if ("evidenceReconciliation" in r && (typeof r.evidenceReconciliation !== "string" || !r.evidenceReconciliation.trim())) {
       out.push({ where: `${w} evidenceReconciliation`, why: "NOT_A_NON_EMPTY_STRING" });
     }
@@ -1536,7 +1538,7 @@ export function extractSourceUniverse(root = REPO_ROOT) {
   // the delta provenance document declares the delta findings, as Phase 99 does for its own
   const deltaDoc = deltaDocumentIds(root);
   if (deltaDoc.error) return { error: deltaDoc.error, ids };
-  for (const id of deltaDoc.ids) add(id, DELTA_SOURCE_DOCUMENT);
+  for (const id of deltaDoc.ids) add(id, deltaSourceOfId(id));
   return { error: null, ids };
 }
 
@@ -1595,6 +1597,14 @@ export function findingUniverseViolations(reg, root = REPO_ROOT) {
   if (deltaIds.length !== DELTA_UNIVERSE_COUNT) {
     out.push({ why: "DELTA_COUNT_CHANGED", expected: DELTA_UNIVERSE_COUNT, actual: deltaIds.length });
   }
+  const firstIds = deltaIds.filter((id) => deltaLayerOfId(id) === "FIRST");
+  const secondIds = deltaIds.filter((id) => deltaLayerOfId(id) === "SECOND");
+  if (firstIds.length !== FIRST_DELTA_UNIVERSE_COUNT || sha256Hex(universeString(firstIds)) !== FIRST_DELTA_UNIVERSE_SHA256) {
+    out.push({ why: "FIRST_LAYER_DELTA_UNIVERSE_CHANGED", expected: FIRST_DELTA_UNIVERSE_COUNT, actual: firstIds.length });
+  }
+  if (secondIds.length !== SECOND_DELTA_UNIVERSE_COUNT || sha256Hex(universeString(secondIds)) !== SECOND_DELTA_UNIVERSE_SHA256) {
+    out.push({ why: "SECOND_LAYER_DELTA_UNIVERSE_CHANGED", expected: SECOND_DELTA_UNIVERSE_COUNT, actual: secondIds.length });
+  }
   const deltaHash = sha256Hex(universeString(deltaIds));
   if (deltaHash !== DELTA_UNIVERSE_SHA256) {
     out.push({ why: "DELTA_HASH_CHANGED", expected: DELTA_UNIVERSE_SHA256, actual: deltaHash });
@@ -1630,10 +1640,19 @@ export function findingUniverseViolations(reg, root = REPO_ROOT) {
 // severity or a state is written.
 
 export const RECONCILIATION_VERSION = "s1-reconcile-1";
-export const ORIGIN_SCOPES = Object.freeze(["HISTORICAL_S1_BASELINE", "DELTA_RELOCK"]);
+export const ORIGIN_SCOPES = Object.freeze(["HISTORICAL_S1_BASELINE", "DELTA_RELOCK", "DELTA_RELOCK_2"]);
+/** The scope of an entry the SECOND layer opened, and of the revision it may append to an existing risk. */
+export const SECOND_SCOPE = "DELTA_RELOCK_2";
 export const DELTA_FAMILY = "DELTA";
 export const DELTA_SOURCE_DOCUMENT = "docs/security/s1-relock-delta.json";
+/** The supplementary relock keeps its own provenance document; the first-layer document is never rewritten by it. */
+export const SECOND_DELTA_SOURCE_DOCUMENT = "docs/security/s1-second-relock-delta.json";
+export const DELTA_SOURCE_DOCUMENTS = Object.freeze([DELTA_SOURCE_DOCUMENT, SECOND_DELTA_SOURCE_DOCUMENT]);
 export const DELTA_FINDING_PREFIX = "DELTA-";
+/** A second-layer finding identifier is DELTA-RS-nnn; every other delta finding belongs to the first layer. */
+export const SECOND_LAYER_FINDING_PREFIX = "DELTA-RS-";
+export const deltaLayerOfId = (id) => (String(id).startsWith(SECOND_LAYER_FINDING_PREFIX) ? "SECOND" : "FIRST");
+export const deltaSourceOfId = (id) => (deltaLayerOfId(id) === "SECOND" ? SECOND_DELTA_SOURCE_DOCUMENT : DELTA_SOURCE_DOCUMENT);
 
 /** The closed dispositions a delta finding can receive, and the register status each one maps to. */
 export const DELTA_DISPOSITIONS = Object.freeze([
@@ -1691,12 +1710,55 @@ export const HISTORICAL_SNAPSHOT_PIN = Object.freeze({
 
 /** The delta and reconciled universes, pinned by count and by the hash of their sorted members. */
 export const UNIVERSE_VERSION = "s1-universe-2";
-export const DELTA_UNIVERSE_COUNT = 18;
-export const DELTA_UNIVERSE_SHA256 = "9f7cc023d6b1b5fa71530f51176a819907cad9db8ef996fc13eb76f19b939d76";
-export const RECONCILED_UNIVERSE_COUNT = 128;
-export const RECONCILED_UNIVERSE_SHA256 = "06e796b75c8f5f05d1ce464c4eae9db73e52b3ce1e38b3869f528b5971f0d046";
+export const DELTA_UNIVERSE_COUNT = 21;
+export const DELTA_UNIVERSE_SHA256 = "75ca445d75e223198cdc8234840ec15c31704377b95fe2972540234c3acf7bfa";
+export const RECONCILED_UNIVERSE_COUNT = 131;
+export const RECONCILED_UNIVERSE_SHA256 = "e33509bdeb51428b8b77f1aaf94a8b936c99d221a5e2af8e5f61a92ac7a5dcb6";
 
-export const RECONCILIATION_KEYS = Object.freeze(["version", "historicalSnapshot", "deltaReview", "reconciledTree"]);
+/**
+ * The layers inside the delta universe, each pinned on its own. The first-layer pin is the universe the first relock
+ * closed with; it must keep reproducing after the second layer is added, so a second-layer edit cannot move it.
+ */
+export const FIRST_DELTA_UNIVERSE_COUNT = 18;
+export const FIRST_DELTA_UNIVERSE_SHA256 = "9f7cc023d6b1b5fa71530f51176a819907cad9db8ef996fc13eb76f19b939d76";
+export const SECOND_DELTA_UNIVERSE_COUNT = 3;
+export const SECOND_DELTA_UNIVERSE_SHA256 = "b5a8ac75f883cea582da040f844400eb2d2379d160eb81b770f880f628c54643";
+
+/**
+ * The register as the FIRST relock left it, pinned. The second layer adds findings and links them to existing risks; it
+ * changes no value of the first layer, and this snapshot — recomputed with the second layer's findings set aside — must
+ * keep equal to the pin. The first-layer integration merge is part of the pin, so the snapshot names the tree it describes.
+ */
+export const FIRST_RELOCK_SNAPSHOT_PIN = Object.freeze({
+  integrationMergeSha: "e3da6f2e928420f78d5ae95d668d7e67ba4e2cb0",
+  risks: 73,
+  findings: 179,
+  severity: Object.freeze({ CRITICAL: 0, HIGH: 36, MEDIUM: 24, LOW: 3, INFORMATIONAL: 10 }),
+  productionState: Object.freeze({
+    ACTIVE_CONFIRMED: 24,
+    LATENT_CONFIG_GUARDED: 4,
+    CODE_CONFIRMED_RUNTIME_UNPROVEN: 21,
+    ASSURANCE_GAP: 10,
+    POLICY_AMBIGUITY: 4,
+    POSITIVE_CONTROL: 10,
+  }),
+  findingStatus: Object.freeze({
+    MAPPED_TO_RISK: 99,
+    DUPLICATE_OF: 2,
+    POLICY_QUESTION: 9,
+    ASSURANCE_GAP: 50,
+    POSITIVE_CONTROL: 11,
+    NOT_A_SECURITY_RISK_WITH_REASON: 8,
+  }),
+  severityClamps: 2,
+  topPriorityRiskId: "R-01",
+  deltaUniverseCount: 18,
+  deltaUniverseSha256: "9f7cc023d6b1b5fa71530f51176a819907cad9db8ef996fc13eb76f19b939d76",
+  sourceUniverseCount: 128,
+  sourceUniverseSha256: "06e796b75c8f5f05d1ce464c4eae9db73e52b3ce1e38b3869f528b5971f0d046",
+});
+
+export const RECONCILIATION_KEYS = Object.freeze(["version", "historicalSnapshot", "firstRelockSnapshot", "deltaReview", "secondDeltaReview", "reconciledTree"]);
 export const HISTORICAL_SNAPSHOT_KEYS = Object.freeze(Object.keys(HISTORICAL_SNAPSHOT_PIN));
 export const DELTA_REVIEW_KEYS = Object.freeze([
   "range",
@@ -1709,10 +1771,27 @@ export const DELTA_REVIEW_KEYS = Object.freeze([
   "deltaUniverseSha256",
   "existingRisksTouched",
 ]);
+export const FIRST_RELOCK_SNAPSHOT_KEYS = Object.freeze(Object.keys(FIRST_RELOCK_SNAPSHOT_PIN));
+export const SECOND_DELTA_REVIEW_KEYS = Object.freeze([
+  "range",
+  "originalFrozenSourceSha",
+  "frozenSourceSha",
+  "securityHeadSha",
+  "targetMainSha",
+  "integrationMergeSha",
+  "provenance",
+  "deltaUniverseCount",
+  "deltaUniverseSha256",
+  "existingRisksTouched",
+  "risksOpened",
+  "risksRevised",
+]);
 export const RECONCILED_TREE_KEYS = Object.freeze(["base", "assuranceChanges", "universeVersion", "sourceUniverseCount", "sourceUniverseSha256"]);
 
 export const scopeOf = (entry) => entry.originScope ?? "HISTORICAL_S1_BASELINE";
-const isDelta = (entry) => scopeOf(entry) === "DELTA_RELOCK";
+const isDelta = (entry) => scopeOf(entry) === "DELTA_RELOCK" || scopeOf(entry) === SECOND_SCOPE;
+const isFirstDelta = (entry) => scopeOf(entry) === "DELTA_RELOCK";
+const isSecondDelta = (entry) => scopeOf(entry) === SECOND_SCOPE;
 
 /** The value an entry had before the relock revised it; the entry's own value when it was not revised. */
 function historicalView(entry) {
@@ -1742,23 +1821,182 @@ export function historicalSnapshot(reg) {
   };
 }
 
+/**
+ * The register as the first relock left it, recomputed by setting the second layer's findings aside. A second-layer
+ * finding changes no first-layer value, so every field must still equal FIRST_RELOCK_SNAPSHOT_PIN.
+ */
+/** The value a risk had before the SECOND layer appended to it; the risk's own value when it was not revised. */
+export function firstLayerView(entry) {
+  return entry.secondLayerRevision && entry.secondLayerRevision.scope === SECOND_SCOPE ? { ...entry, ...entry.secondLayerRevision.supersedes } : entry;
+}
+
+export function firstRelockSnapshot(reg, sourceUniverse = null) {
+  const findings = reg.findings.filter((f) => deltaLayerOfId(f.findingId) === "FIRST");
+  const risksThen = reg.risks.filter((r) => !isSecondDelta(r)).map(firstLayerView);
+  const top = [...risksThen].sort((a, b) => a.remediationPriority - b.remediationPriority)[0];
+  const deltaIds = findings.filter((f) => f.family === DELTA_FAMILY).map((f) => f.findingId);
+  const out = {
+    integrationMergeSha: FIRST_RELOCK_SNAPSHOT_PIN.integrationMergeSha,
+    risks: risksThen.length,
+    findings: findings.length,
+    severity: tally(risksThen.map((r) => r.severity), SEVERITIES),
+    productionState: tally(risksThen.map((r) => r.productionState), PRODUCTION_STATES),
+    findingStatus: tally(findings.map((f) => f.status), FINDING_STATUSES),
+    severityClamps: risksThen.filter((r) => r.severityClamp != null).length,
+    topPriorityRiskId: top ? top.riskId : null,
+    deltaUniverseCount: deltaIds.length,
+    deltaUniverseSha256: sha256Hex(universeString(deltaIds)),
+    sourceUniverseCount: sourceUniverse ? sourceUniverse.filter((id) => deltaLayerOfId(id) === "FIRST").length : null,
+    sourceUniverseSha256: sourceUniverse ? sha256Hex(universeString(sourceUniverse.filter((id) => deltaLayerOfId(id) === "FIRST"))) : null,
+  };
+  return out;
+}
+
 /** Sorted, newline-joined identifiers: the string a universe pin hashes. */
 export const universeString = (ids) => [...ids].sort().join("\n");
 
 /** The delta finding identifiers the provenance document declares, prefixed as the register carries them. */
 export function deltaDocumentIds(root = REPO_ROOT) {
-  const abs = join(root, ...DELTA_SOURCE_DOCUMENT.split("/"));
-  if (!existsSync(abs)) return { error: `MISSING_SOURCE_DOCUMENT:${DELTA_SOURCE_DOCUMENT}`, ids: [] };
-  let doc;
-  try {
-    doc = JSON.parse(readFileSync(abs, "utf8"));
-  } catch {
-    return { error: `UNPARSEABLE_SOURCE_DOCUMENT:${DELTA_SOURCE_DOCUMENT}`, ids: [] };
+  const ids = [];
+  for (const rel of DELTA_SOURCE_DOCUMENTS) {
+    const abs = join(root, ...rel.split("/"));
+    if (!existsSync(abs)) return { error: `MISSING_SOURCE_DOCUMENT:${rel}`, ids: [] };
+    let doc;
+    try {
+      doc = JSON.parse(readFileSync(abs, "utf8"));
+    } catch {
+      return { error: `UNPARSEABLE_SOURCE_DOCUMENT:${rel}`, ids: [] };
+    }
+    for (const f of doc.findings ?? []) {
+      const id = `${DELTA_FINDING_PREFIX}${f.findingId}`;
+      // a document may declare only the identifiers of its own layer
+      if (deltaSourceOfId(id) !== rel) return { error: `FOREIGN_LAYER_IDENTIFIER:${rel}:${id}`, ids: [] };
+      ids.push(id);
+    }
   }
-  return { error: null, ids: (doc.findings ?? []).map((f) => `${DELTA_FINDING_PREFIX}${f.findingId}`) };
+  return { error: null, ids };
 }
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * THE SECOND LAYER'S REVISION OF AN EXISTING RISK. Append-only, structured, and derived against the pinned first relock.
+ *
+ * A second-layer finding may widen what an existing risk covers (RS-001 widened R-65 with the frozen priority list and
+ * the customers axis). The risk's body must then SAY so, or its acceptance criteria could be met while the new surface
+ * stayed open. The revision records, in one place:
+ *
+ *   findingIds    the second-layer findings that motivated it (each one is owned by this risk);
+ *   supersedes    every value the risk had BEFORE the revision: the factors and the score, the state, and the arrays
+ *                 the revision may extend. The first relock's snapshot is recomputed from these values, so the pinned
+ *                 73/179 snapshot cannot be moved by the second layer;
+ *   factorReview  all nine factors, one by one: the value before, the value now, and why. A factor that did not
+ *                 move says why it did not;
+ *   reason        what changed in plain words.
+ *
+ * What it forbids: a revision with no second-layer finding, with a finding of the wrong layer or of another risk, one
+ * that removes or rewrites an earlier evidence item, gap, criterion or precondition, one whose recorded "before" is
+ * not the risk's pinned past, one whose factor review disagrees with the factors, one that changes no body at all,
+ * and one on a risk the second layer itself opened. The score is never typed: the arithmetic gates recompute it from
+ * the factors, and a changed factor moves the pinned snapshot only through "supersedes".
+ */
+export const SECOND_REVISION_KEYS = Object.freeze(["scope", "findingIds", "supersedes", "factorReview", "reason"]);
+export const SECOND_REVISION_SUPERSEDES_KEYS = Object.freeze([
+  "productionState",
+  "confidence",
+  "likelihoodFactors",
+  "impactFactors",
+  "likelihood",
+  "impact",
+  "score",
+  "severity",
+  "preconditions",
+  "evidence",
+  "existingControls",
+  "controlGaps",
+  "acceptanceCriteria",
+  "residualRisk",
+]);
+export const SECOND_REVISION_FACTOR_KEYS = Object.freeze(["before", "after", "reason"]);
+
+const evidenceKey = (e) => `${e.path}|${e.locator}|${e.note}`;
+
+export function secondLayerRevisionViolations(reg) {
+  const out = [];
+  const push = (why, extra = {}) => out.push({ why, ...extra });
+  const findings = new Map(reg.findings.map((f) => [f.findingId, f]));
+  for (const r of reg.risks) {
+    const rv = r.secondLayerRevision;
+    if (rv === undefined) continue;
+    const id = r.riskId;
+    if (!isPlainObject(rv)) {
+      push("SECOND_REVISION_NOT_AN_OBJECT", { id });
+      continue;
+    }
+    for (const k of Object.keys(rv)) if (!SECOND_REVISION_KEYS.includes(k)) push("UNKNOWN_KEY", { where: `secondLayerRevision of ${id}`, key: k });
+    for (const k of SECOND_REVISION_KEYS) if (!(k in rv)) push("MISSING_KEY", { where: `secondLayerRevision of ${id}`, key: k });
+    if (rv.scope !== SECOND_SCOPE) push("SECOND_REVISION_SCOPE", { id, found: rv.scope ?? null });
+    if (r.revision) push("SECOND_REVISION_WITH_CLASSIC_REVISION", { id });
+    if (isSecondDelta(r)) push("SECOND_REVISION_ON_SECOND_LAYER_RISK", { id });
+    if (typeof rv.reason !== "string" || rv.reason.trim().length < 30) push("SECOND_REVISION_WITHOUT_REASON", { id });
+    const ids = Array.isArray(rv.findingIds) ? rv.findingIds : [];
+    if (ids.length === 0) push("SECOND_REVISION_WITHOUT_FINDING", { id });
+    for (const fid of ids) {
+      const f = findings.get(fid);
+      if (!f) push("SECOND_REVISION_UNKNOWN_FINDING", { id, findingId: fid });
+      else if (deltaLayerOfId(fid) !== "SECOND") push("SECOND_REVISION_WRONG_LAYER", { id, findingId: fid });
+      else if (f.ownerRiskId !== id || !r.sourceFindingIds.includes(fid)) push("SECOND_REVISION_FINDING_NOT_OWNED", { id, findingId: fid });
+    }
+    const sup = rv.supersedes;
+    if (!isPlainObject(sup) || Object.keys(sup).length === 0) {
+      push("SECOND_REVISION_WITHOUT_SUPERSEDED_VALUES", { id });
+      continue;
+    }
+    for (const k of Object.keys(sup)) if (!SECOND_REVISION_SUPERSEDES_KEYS.includes(k)) push("UNKNOWN_KEY", { where: `secondLayerRevision.supersedes of ${id}`, key: k });
+    for (const k of SECOND_REVISION_SUPERSEDES_KEYS) if (!(k in sup)) push("MISSING_KEY", { where: `secondLayerRevision.supersedes of ${id}`, key: k });
+    if (!isPlainObject(sup.likelihoodFactors) || !isPlainObject(sup.impactFactors)) continue;
+
+    // the recorded past is itself arithmetic: its score is what its own factors compute
+    const past = derive({ productionState: sup.productionState, likelihoodFactors: sup.likelihoodFactors, impactFactors: sup.impactFactors });
+    if (sup.likelihood !== past.likelihood || sup.impact !== past.impact || sup.score !== past.score || sup.severity !== past.severity) push("SECOND_REVISION_SUPERSEDED_ARITHMETIC", { id });
+
+    // the factor review: all nine, one by one, and consistent with both ends
+    const review = rv.factorReview;
+    if (!isPlainObject(review)) push("SECOND_REVISION_FACTOR_REVIEW_ABSENT", { id });
+    else {
+      const all = [...LIKELIHOOD_FACTOR_KEYS.map((k) => ["likelihoodFactors", k]), ...IMPACT_FACTOR_KEYS.map((k) => ["impactFactors", k])];
+      for (const k of Object.keys(review)) if (!all.some(([, f]) => f === k)) push("UNKNOWN_KEY", { where: `secondLayerRevision.factorReview of ${id}`, key: k });
+      for (const [group, k] of all) {
+        const e = review[k];
+        if (!isPlainObject(e)) {
+          push("SECOND_REVISION_FACTOR_NOT_REVIEWED", { id, factor: k });
+          continue;
+        }
+        for (const key of Object.keys(e)) if (!SECOND_REVISION_FACTOR_KEYS.includes(key)) push("UNKNOWN_KEY", { where: `factorReview.${k} of ${id}`, key });
+        if (e.before !== sup[group][k]) push("SECOND_REVISION_FACTOR_BEFORE_DIFFERS", { id, factor: k, review: e.before ?? null, recorded: sup[group][k] });
+        if (e.after !== r[group][k]) push("SECOND_REVISION_FACTOR_AFTER_DIFFERS", { id, factor: k, review: e.after ?? null, current: r[group][k] });
+        if (typeof e.reason !== "string" || e.reason.trim().length < 30) push("SECOND_REVISION_FACTOR_WITHOUT_REASON", { id, factor: k });
+      }
+    }
+
+    // append-only: nothing earlier is removed, reordered or reworded
+    const prefixOf = (field) => {
+      const before = Array.isArray(sup[field]) ? sup[field] : [];
+      const now = Array.isArray(r[field]) ? r[field] : [];
+      return before.length <= now.length && before.every((x, i) => x === now[i]);
+    };
+    for (const field of ["preconditions", "existingControls", "controlGaps", "acceptanceCriteria"]) {
+      if (!prefixOf(field)) push("SECOND_REVISION_NOT_APPEND_ONLY", { id, field });
+    }
+    const nowEvidence = new Set((r.evidence ?? []).map(evidenceKey));
+    if (!Array.isArray(sup.evidence) || !sup.evidence.every((e) => nowEvidence.has(evidenceKey(e)))) push("SECOND_REVISION_NOT_APPEND_ONLY", { id, field: "evidence" });
+    if (typeof sup.residualRisk !== "string" || !String(r.residualRisk).startsWith(sup.residualRisk)) push("SECOND_REVISION_NOT_APPEND_ONLY", { id, field: "residualRisk" });
+    // and it must DO something: at least one body list grew
+    const grew = ["evidence", "controlGaps", "acceptanceCriteria", "preconditions", "existingControls"].some((f) => (r[f] ?? []).length > (sup[f] ?? []).length);
+    if (!grew) push("SECOND_REVISION_EMPTY", { id });
+  }
+  return out;
+}
 
 /**
  * The reconciliation gates: scope, snapshot, delta ownership and the revision
@@ -1798,6 +2036,9 @@ export function reconciliationViolations(reg, root = REPO_ROOT) {
   for (const r of reg.risks) {
     if (r.originScope !== undefined && !ORIGIN_SCOPES.includes(r.originScope)) push("UNKNOWN_ORIGIN_SCOPE", { id: r.riskId, scope: r.originScope });
   }
+  for (const r of reg.risks) {
+    if (isSecondDelta(r) && r.revision) push("SECOND_LAYER_RISK_REVISED_CLASSICALLY", { id: r.riskId });
+  }
   for (const f of reg.findings) {
     if (f.originScope !== undefined && !ORIGIN_SCOPES.includes(f.originScope)) push("UNKNOWN_ORIGIN_SCOPE", { id: f.findingId, scope: f.originScope });
   }
@@ -1809,28 +2050,37 @@ export function reconciliationViolations(reg, root = REPO_ROOT) {
   for (const f of reg.findings) {
     const inDeltaFamily = f.family === DELTA_FAMILY;
     if (inDeltaFamily !== isDelta(f)) push("DELTA_FAMILY_SCOPE_MISMATCH", { id: f.findingId });
+    if (inDeltaFamily && isDelta(f) && scopeOf(f) !== (deltaLayerOfId(f.findingId) === "SECOND" ? SECOND_SCOPE : "DELTA_RELOCK")) push("DELTA_FINDING_SCOPE_LAYER", { id: f.findingId, scope: scopeOf(f) });
     if (inDeltaFamily !== f.findingId.startsWith(DELTA_FINDING_PREFIX)) push("DELTA_ID_PREFIX", { id: f.findingId });
   }
   for (const f of deltaFindings) {
-    if (f.source !== DELTA_SOURCE_DOCUMENT) push("DELTA_SOURCE", { id: f.findingId, source: f.source });
+    if (f.source !== deltaSourceOfId(f.findingId)) push("DELTA_SOURCE", { id: f.findingId, source: f.source });
     if (!DELTA_DISPOSITIONS.includes(f.deltaDisposition)) push("DELTA_DISPOSITION_UNKNOWN", { id: f.findingId, found: f.deltaDisposition ?? null });
     else if (DISPOSITION_STATUS[f.deltaDisposition] !== f.status) {
       push("DELTA_DISPOSITION_STATUS", { id: f.findingId, disposition: f.deltaDisposition, status: f.status });
     }
     const owner = riskById.get(f.ownerRiskId);
+    const layer = deltaLayerOfId(f.findingId);
     if (!owner) push("DELTA_FINDING_WITHOUT_OWNER", { id: f.findingId });
-    else if (f.deltaDisposition === "OWNED_BY_NEW_RISK" && !isDelta(owner)) {
-      push("NEW_RISK_DISPOSITION_ON_HISTORICAL_OWNER", { id: f.findingId, owner: owner.riskId });
-    } else if (f.deltaDisposition === "OWNED_BY_EXISTING_RISK" && isDelta(owner)) {
-      push("EXISTING_RISK_DISPOSITION_ON_DELTA_OWNER", { id: f.findingId, owner: owner.riskId });
+    else if (layer === "FIRST") {
+      if (f.deltaDisposition === "OWNED_BY_NEW_RISK" && !isFirstDelta(owner)) push("NEW_RISK_DISPOSITION_ON_HISTORICAL_OWNER", { id: f.findingId, owner: owner.riskId });
+      else if (f.deltaDisposition === "OWNED_BY_EXISTING_RISK" && isDelta(owner)) push("EXISTING_RISK_DISPOSITION_ON_DELTA_OWNER", { id: f.findingId, owner: owner.riskId });
+    } else if (f.deltaDisposition === "OWNED_BY_NEW_RISK" && !isSecondDelta(owner)) {
+      // the second layer may open a risk of its own, and only a risk of its own scope is "new" for it
+      push("NEW_RISK_DISPOSITION_ON_EXISTING_OWNER", { id: f.findingId, owner: owner.riskId });
+    } else if (f.deltaDisposition === "OWNED_BY_EXISTING_RISK" && isSecondDelta(owner)) {
+      push("EXISTING_RISK_DISPOSITION_ON_SECOND_LAYER_OWNER", { id: f.findingId, owner: owner.riskId });
     }
-    if (owner && !isDelta(owner)) touched.add(owner.riskId);
+    if (owner && !isDelta(owner) && layer === "FIRST") touched.add(owner.riskId);
   }
   // a delta risk may own delta findings only; a historical finding keeps its historical owner
   for (const r of reg.risks.filter(isDelta)) {
     for (const id of r.sourceFindingIds) {
       const f = reg.findings.find((x) => x.findingId === id);
       if (f && f.family !== DELTA_FAMILY) push("DELTA_RISK_OWNS_HISTORICAL_FINDING", { riskId: r.riskId, findingId: id });
+      // a risk the SECOND layer opened owns second-layer findings only; a risk of the first layer may also own the second
+      // layer's findings (it is an existing risk for them), which is what an extension of it records
+      if (f && f.family === DELTA_FAMILY && isSecondDelta(r) && deltaLayerOfId(id) !== "SECOND") push("DELTA_RISK_OWNS_OTHER_LAYER_FINDING", { riskId: r.riskId, findingId: id });
     }
     if (!r.sourceFindingIds.some((id) => id.startsWith(DELTA_FINDING_PREFIX))) push("DELTA_RISK_WITHOUT_DELTA_FINDING", { riskId: r.riskId });
   }
@@ -1870,9 +2120,52 @@ export function reconciliationViolations(reg, root = REPO_ROOT) {
     if (!same([...(dr.existingRisksTouched ?? [])].sort(), expectTouched)) {
       push("EXISTING_RISKS_TOUCHED_DIFFERS", { stored: dr.existingRisksTouched ?? null, derived: expectTouched });
     }
-    const deltaIds = deltaFindings.map((f) => f.findingId);
+    const deltaIds = deltaFindings.filter((f) => deltaLayerOfId(f.findingId) === "FIRST").map((f) => f.findingId);
     if (dr.deltaUniverseCount !== deltaIds.length) push("DELTA_UNIVERSE_COUNT_STORED", { stored: dr.deltaUniverseCount, derived: deltaIds.length });
     if (dr.deltaUniverseSha256 !== sha256Hex(universeString(deltaIds))) push("DELTA_UNIVERSE_HASH_STORED");
+  }
+
+  // 5b — the first relock, preserved: stored = pin, and recomputed with the second layer set aside = pin
+  const frs = rec.firstRelockSnapshot;
+  const u2 = extractSourceUniverse(root);
+  if (!frs || typeof frs !== "object") push("FIRST_RELOCK_SNAPSHOT_ABSENT");
+  else {
+    keyCheck(frs, FIRST_RELOCK_SNAPSHOT_KEYS, "firstRelockSnapshot");
+    if (!same(frs, FIRST_RELOCK_SNAPSHOT_PIN)) push("FIRST_RELOCK_SNAPSHOT_DIFFERS_FROM_PIN");
+  }
+  const frRecomputed = firstRelockSnapshot(reg, u2.error ? null : [...u2.ids.keys()]);
+  for (const k of FIRST_RELOCK_SNAPSHOT_KEYS) {
+    if (!same(frRecomputed[k], FIRST_RELOCK_SNAPSHOT_PIN[k])) push("FIRST_RELOCK_SNAPSHOT_NOT_REPRODUCED", { field: k, recomputed: frRecomputed[k], pinned: FIRST_RELOCK_SNAPSHOT_PIN[k] });
+  }
+  if (dr && dr.integrationMergeSha !== FIRST_RELOCK_SNAPSHOT_PIN.integrationMergeSha) push("FIRST_RELOCK_MERGE_CHANGED", { found: dr.integrationMergeSha ?? null });
+
+  // 5c — the second delta review block
+  const sdr = rec.secondDeltaReview;
+  if (!sdr || typeof sdr !== "object") push("SECOND_DELTA_REVIEW_ABSENT");
+  else {
+    keyCheck(sdr, SECOND_DELTA_REVIEW_KEYS, "secondDeltaReview");
+    for (const k of ["originalFrozenSourceSha", "frozenSourceSha", "securityHeadSha", "targetMainSha", "integrationMergeSha"]) {
+      if (!/^[0-9a-f]{40}$/.test(sdr[k] ?? "")) push("SECOND_DELTA_REVIEW_SHA", { key: k });
+    }
+    if (sdr.originalFrozenSourceSha !== HISTORICAL_SNAPSHOT_PIN.sourceSha) push("SECOND_DELTA_REVIEW_ORIGINAL_SOURCE_DRIFT");
+    if (dr && sdr.frozenSourceSha !== dr.targetMainSha) push("SECOND_DELTA_REVIEW_BASE_IS_NOT_THE_FIRST_TARGET", { found: sdr.frozenSourceSha ?? null });
+    if (sdr.range !== `${sdr.frozenSourceSha}..${sdr.targetMainSha}`) push("SECOND_DELTA_REVIEW_RANGE", { found: sdr.range ?? null });
+    if (sdr.provenance !== SECOND_DELTA_SOURCE_DOCUMENT) push("SECOND_DELTA_REVIEW_PROVENANCE", { found: sdr.provenance ?? null });
+    const secondFindings = deltaFindings.filter((f) => deltaLayerOfId(f.findingId) === "SECOND");
+    const secondIds = secondFindings.map((f) => f.findingId);
+    if (sdr.deltaUniverseCount !== secondIds.length) push("SECOND_DELTA_UNIVERSE_COUNT_STORED", { stored: sdr.deltaUniverseCount, derived: secondIds.length });
+    if (sdr.deltaUniverseSha256 !== sha256Hex(universeString(secondIds))) push("SECOND_DELTA_UNIVERSE_HASH_STORED");
+    // The second layer may OPEN a risk (scope DELTA_RELOCK_2) and may APPEND to an existing one (secondLayerRevision);
+    // both are recorded here, derived from the register, and neither moves a value of the first relock's snapshot.
+    const existingOwners = [...new Set(secondFindings.map((f) => f.ownerRiskId).filter((id) => riskById.get(id) && !isSecondDelta(riskById.get(id))))].sort();
+    if (!same([...(sdr.existingRisksTouched ?? [])].sort(), existingOwners)) push("SECOND_DELTA_RISKS_TOUCHED_DIFFERS", { stored: sdr.existingRisksTouched ?? null, derived: existingOwners });
+    const opened = reg.risks.filter(isSecondDelta).map((r) => r.riskId).sort();
+    if (!same([...(sdr.risksOpened ?? [])].sort(), opened)) push("SECOND_DELTA_RISKS_OPENED_DIFFERS", { stored: sdr.risksOpened ?? null, derived: opened });
+    const revised = reg.risks.filter((r) => r.secondLayerRevision).map((r) => r.riskId).sort();
+    if (!same([...(sdr.risksRevised ?? [])].sort(), revised)) push("SECOND_DELTA_RISKS_REVISED_DIFFERS", { stored: sdr.risksRevised ?? null, derived: revised });
+    // a classic (first-layer) revision never rides on a risk that owns a second-layer finding
+    for (const r of reg.risks) if (r.sourceFindingIds.some((id) => deltaLayerOfId(id) === "SECOND") && r.revision) push("SECOND_LAYER_REVISES_AN_ENTRY", { id: r.riskId });
+    for (const v of secondLayerRevisionViolations(reg)) out.push(v);
   }
 
   // 6 — the reconciled tree block
@@ -1881,7 +2174,7 @@ export function reconciliationViolations(reg, root = REPO_ROOT) {
   else {
     keyCheck(rt, RECONCILED_TREE_KEYS, "reconciledTree");
     if (rt.universeVersion !== UNIVERSE_VERSION) push("UNIVERSE_VERSION", { found: rt.universeVersion ?? null });
-    if (dr && rt.base !== dr.integrationMergeSha) push("RECONCILED_TREE_BASE_IS_NOT_THE_MERGE", { found: rt.base ?? null });
+    if (sdr && rt.base !== sdr.integrationMergeSha) push("RECONCILED_TREE_BASE_IS_NOT_THE_MERGE", { found: rt.base ?? null });
     const u = extractSourceUniverse(root);
     if (!u.error) {
       const ids = [...u.ids.keys()];
@@ -2969,6 +3262,12 @@ export const REVIEW_CLOSURE = Object.freeze([
   ["S1-RLK-SURVIVORS", "SURVIVOR", "FIXED", "relock checker and its end-to-end tests", "relock mutation campaign, verified by the campaign tool"],
   ["S1-RLK-TEXT", "PRECISION", "FIXED", "register risks R-65 to R-73, R-53 and the relock report", "register arithmetic, ownership and universe gates"],
   ["S1-RLK-SCOPE", "PRECISION", "FIXED", "product-path definitions and the historical-file statement", "relock checker: strict and broad path counts, historical-file gate"],
+  ["S1-RLK2-F01", "HIGH", "FIXED", "relock checker: where HEAD may be; campaign tool: the position guard and the reproduction in verify", "position tests on throw-away repositories and the committed-state end-to-end test with a product commit after the merge"],
+  ["S1-RLK2-F02", "MEDIUM", "FIXED", "S0 adjudications and scanner: the identity and references of a retry trace", "retry identity selftests, the moved ledger and the old-identifier gates"],
+  ["S1-RLK2-F03", "MEDIUM", "FIXED", "relock checker: one strict command-line parser", "parser unit tests and the process-level usage tests"],
+  ["S1-RLK2-F04", "MEDIUM", "FIXED", "register: the second layer's structured, append-only revision of R-65 and R-72", "second-layer revision gates and the pinned-snapshot test"],
+  ["S1-RLK2-F05", "LOW", "FIXED", "relock delta document: the ledger of every changed path", "ledger gates and the throw-away repository test of added, modified, deleted and renamed paths"],
+  ["S1-RLK2-F06", "LOW", "FIXED", "register: DELTA-RS-003 opens R-74, with the conditions the guard must meet", "register arithmetic, ownership, universe and second-layer scope gates"],
 ]);
 
 /** S1-R5 I-02 — the statuses that close a review finding. Anything else is OPEN. */
@@ -3010,14 +3309,20 @@ export function renderReconciliation(reg) {
   const rec = reg.reconciliation ?? {};
   const hs = historicalSnapshot(reg);
   const dr = rec.deltaReview ?? {};
+  const sdr = rec.secondDeltaReview ?? {};
+  const frs = rec.firstRelockSnapshot ?? {};
   const rt = rec.reconciledTree ?? {};
   const short = (sha) => String(sha ?? "").slice(0, 8);
   const L = [];
   L.push("| Scope | Reference | Risks | Findings |");
   L.push("|---|---|---|---|");
   L.push(`| Historical S1 baseline (snapshot) | source state \`${short(HISTORICAL_SNAPSHOT_PIN.sourceSha)}\` | ${hs.risks} | ${hs.findings} |`);
-  L.push(`| Delta review | \`${short(dr.frozenSourceSha)}..${short(dr.targetMainSha)}\` | ${c.DELTA_RISKS_TOTAL} new, ${c.REVISED_HISTORICAL_RISKS} revised | ${c.DELTA_FINDINGS_TOTAL} |`);
-  L.push(`| Reconciled register | integrated tree \`${short(dr.integrationMergeSha)}\` plus ${mdCell(rt.assuranceChanges ?? "")} | ${c.S1_RISKS_TOTAL} | ${c.S1_FINDINGS_TOTAL} |`);
+  L.push(`| First relock (snapshot) | integrated tree \`${short(frs.integrationMergeSha)}\` | ${frs.risks ?? 0} | ${frs.findings ?? 0} |`);
+  const openedSecond = reg.risks.filter(isSecondDelta).length;
+  const revisedSecond = reg.risks.filter((r) => r.secondLayerRevision).length;
+  L.push(`| Delta review, first layer | \`${short(dr.frozenSourceSha)}..${short(dr.targetMainSha)}\` | ${reg.risks.filter(isFirstDelta).length} new, ${c.REVISED_HISTORICAL_RISKS} revised | ${dr.deltaUniverseCount ?? 0} |`);
+  L.push(`| Delta review, second layer | \`${short(sdr.frozenSourceSha)}..${short(sdr.targetMainSha)}\` | ${openedSecond} new, ${revisedSecond} revised | ${sdr.deltaUniverseCount ?? 0} |`);
+  L.push(`| Reconciled register | integrated tree \`${short(sdr.integrationMergeSha)}\` plus ${mdCell(rt.assuranceChanges ?? "")} | ${c.S1_RISKS_TOTAL} | ${c.S1_FINDINGS_TOTAL} |`);
   L.push("");
   L.push("| Severity | Historical snapshot | Reconciled | Change |");
   L.push("|---|---|---|---|");
@@ -3036,6 +3341,7 @@ export function renderReconciliation(reg) {
   for (const s of FINDING_STATUSES) L.push(`| ${s} | ${hs.findingStatus[s]} | ${curStatus[s]} | ${signed(curStatus[s] - hs.findingStatus[s])} |`);
   L.push("");
   const topNow = [...reg.risks].sort((a, b) => a.remediationPriority - b.remediationPriority)[0];
+  const rowsRevisedBySecond = reg.risks.filter((r) => r.secondLayerRevision).sort((a, b) => a.riskId.localeCompare(b.riskId));
   L.push(
     `Severity clamps: ${hs.severityClamps} historical, ${c.SEVERITY_CLAMPS_APPLIED} reconciled. ` +
       `Top remediation priority: \`${hs.topPriorityRiskId}\` historical, \`${topNow.riskId}\` reconciled` +
@@ -3051,7 +3357,7 @@ export function renderReconciliation(reg) {
   const lockCount = reg.findings.filter((f) => f.family === "LOCK").length;
   L.push(
     `Source universe (\`${rt.universeVersion ?? ""}\`): historical ${HISTORICAL_SNAPSHOT_PIN.sourceUniverseCount} identifiers + ${HISTORICAL_SNAPSHOT_PIN.lockUniverseCount} bookkeeping = ${hs.findings}; ` +
-      `delta ${dr.deltaUniverseCount ?? 0}; reconciled ${rt.sourceUniverseCount ?? 0} identifiers + ${lockCount} bookkeeping = ${reg.findings.length}. ` +
+      `delta ${dr.deltaUniverseCount ?? 0} first layer + ${sdr.deltaUniverseCount ?? 0} second layer; reconciled ${rt.sourceUniverseCount ?? 0} identifiers + ${lockCount} bookkeeping = ${reg.findings.length}. ` +
       `Reconciled universe hash \`${rt.sourceUniverseSha256 ?? ""}\`.`,
   );
   L.push("");
@@ -3080,6 +3386,17 @@ export function renderReconciliation(reg) {
   }
   for (const f of reg.findings.filter((x) => !isDelta(x) && x.revision).sort((a, b) => a.findingId.localeCompare(b.findingId))) {
     L.push(`| \`${f.findingId}\` | status ${f.revision.supersedes.status} | status ${f.status} | ${mdCell(f.revision.reason)} |`);
+  }
+  if (rowsRevisedBySecond.length > 0) {
+    L.push("");
+    L.push("| Existing risk extended by the second layer | Evidence, gaps and criteria before | Now | Score before and now | Why |");
+    L.push("|---|---|---|---|---|");
+    for (const r of rowsRevisedBySecond) {
+      const was = r.secondLayerRevision.supersedes;
+      L.push(
+        `| \`${r.riskId}\` (\`${r.secondLayerRevision.findingIds.join("\`, \`")}\`) | ${was.evidence.length} / ${was.controlGaps.length} / ${was.acceptanceCriteria.length} | ${r.evidence.length} / ${r.controlGaps.length} / ${r.acceptanceCriteria.length} | ${was.score} then ${r.score} (${r.severity}) | ${mdCell(r.secondLayerRevision.reason)} |`,
+      );
+    }
   }
   return L.join("\n");
 }
@@ -4747,9 +5064,9 @@ export const MUTATION_MANIFEST = Object.freeze([
     detector: "S1-RLK: a delta finding without the delta id prefix is refused",
     fingerprint: "RECON_DELTA_ID_PREFIX:expected DELTA_ID_PREFIX" }),
   Object.freeze({ id: "RL-11", target: "reconciliation: provenance source", description: "a delta finding that names another source passes",
-    find: "if (f.source !== DELTA_SOURCE_DOCUMENT) push(\"DELTA_SOURCE\"",
+    find: "if (f.source !== deltaSourceOfId(f.findingId)) push(\"DELTA_SOURCE\"",
     replace: "if (false) push(\"DELTA_SOURCE\"",
-    placebo: "if (!(f.source === DELTA_SOURCE_DOCUMENT)) push(\"DELTA_SOURCE\"",
+    placebo: "if (!(f.source === deltaSourceOfId(f.findingId))) push(\"DELTA_SOURCE\"",
     detector: "S1-RLK: a delta finding that does not name the provenance document is refused",
     fingerprint: "RECON_DELTA_SOURCE:expected DELTA_SOURCE" }),
   Object.freeze({ id: "RL-12", target: "reconciliation: disposition vocabulary", description: "an unknown disposition passes",
@@ -4771,15 +5088,15 @@ export const MUTATION_MANIFEST = Object.freeze([
     detector: "S1-RLK: a delta finding without an owning risk is refused",
     fingerprint: "RECON_DELTA_FINDING_WITHOUT_OWNER:expected DELTA_FINDING_WITHOUT_OWNER|Cannot read properties of undefined" }),
   Object.freeze({ id: "RL-15", target: "reconciliation: new-risk owner", description: "a new-risk disposition on a historical owner passes",
-    find: "else if (f.deltaDisposition === \"OWNED_BY_NEW_RISK\" && !isDelta(owner)) {",
-    replace: "else if (false) {",
-    placebo: "else if (f.deltaDisposition === \"OWNED_BY_NEW_RISK\" && isDelta(owner) === false) {",
+    find: "if (f.deltaDisposition === \"OWNED_BY_NEW_RISK\" && !isFirstDelta(owner)) push(\"NEW_RISK_DISPOSITION_ON_HISTORICAL_OWNER\"",
+    replace: "if (false) push(\"NEW_RISK_DISPOSITION_ON_HISTORICAL_OWNER\"",
+    placebo: "if (f.deltaDisposition === \"OWNED_BY_NEW_RISK\" && isFirstDelta(owner) === false) push(\"NEW_RISK_DISPOSITION_ON_HISTORICAL_OWNER\"",
     detector: "S1-RLK: a new-risk disposition owned by a historical risk is refused",
     fingerprint: "RECON_NEW_RISK_DISPOSITION_ON_HISTORICAL_OWNER:expected NEW_RISK_DISPOSITION_ON_HISTORICAL_OWNER" }),
   Object.freeze({ id: "RL-16", target: "reconciliation: existing-risk owner", description: "an existing-risk disposition on a delta owner passes",
-    find: "} else if (f.deltaDisposition === \"OWNED_BY_EXISTING_RISK\" && isDelta(owner)) {",
-    replace: "} else if (false) {",
-    placebo: "} else if (f.deltaDisposition === \"OWNED_BY_EXISTING_RISK\" && isDelta(owner) === true) {",
+    find: "else if (f.deltaDisposition === \"OWNED_BY_EXISTING_RISK\" && isDelta(owner)) push(\"EXISTING_RISK_DISPOSITION_ON_DELTA_OWNER\"",
+    replace: "else if (false) push(\"EXISTING_RISK_DISPOSITION_ON_DELTA_OWNER\"",
+    placebo: "else if (f.deltaDisposition === \"OWNED_BY_EXISTING_RISK\" && isDelta(owner) === true) push(\"EXISTING_RISK_DISPOSITION_ON_DELTA_OWNER\"",
     detector: "S1-RLK: an existing-risk disposition owned by a delta risk is refused",
     fingerprint: "RECON_EXISTING_RISK_DISPOSITION_ON_DELTA_OWNER:expected EXISTING_RISK_DISPOSITION_ON_DELTA_OWNER" }),
   Object.freeze({ id: "RL-17", target: "reconciliation: delta risk owns historical finding", description: "a delta risk that owns a historical finding passes",
@@ -4879,9 +5196,9 @@ export const MUTATION_MANIFEST = Object.freeze([
     detector: "S1-RLK: the reconciled tree block is held to its shape, its version and the merge",
     fingerprint: "RECON_UNIVERSE_VERSION:expected UNIVERSE_VERSION" }),
   Object.freeze({ id: "RL-33", target: "reconciliation: tree base", description: "a tree base that is not the merge passes",
-    find: "if (dr && rt.base !== dr.integrationMergeSha) push(",
+    find: "if (sdr && rt.base !== sdr.integrationMergeSha) push(",
     replace: "if (false) push(",
-    placebo: "if (dr && !(rt.base === dr.integrationMergeSha)) push(",
+    placebo: "if (sdr && !(rt.base === sdr.integrationMergeSha)) push(",
     detector: "S1-RLK: the reconciled tree block is held to its shape, its version and the merge",
     fingerprint: "RECON_RECONCILED_TREE_BASE_IS_NOT_THE_MERGE:expected RECONCILED_TREE_BASE_IS_NOT_THE_MERGE" }),
   Object.freeze({ id: "RL-34", target: "reconciliation: stored reconciled count", description: "a stored reconciled universe count that is wrong passes",
@@ -4933,9 +5250,9 @@ export const MUTATION_MANIFEST = Object.freeze([
     detector: "S1-RLK: a changed reconciled universe, by count or by hash, is refused",
     fingerprint: "UNIVERSE_RECONCILED_HASH:expected RECONCILED_HASH_CHANGED" }),
   Object.freeze({ id: "RL-42", target: "universe: delta ids are extracted", description: "the delta document's identifiers are not part of the source universe",
-    find: "for (const id of deltaDoc.ids) add(id, DELTA_SOURCE_DOCUMENT);",
+    find: "for (const id of deltaDoc.ids) add(id, deltaSourceOfId(id));",
     replace: "void deltaDoc;",
-    placebo: "for (const id of deltaDoc.ids.slice()) add(id, DELTA_SOURCE_DOCUMENT);",
+    placebo: "for (const id of deltaDoc.ids.slice()) add(id, deltaSourceOfId(id));",
     detector: "S1-RLK: the delta and reconciled universes are pinned by count and hash",
     fingerprint: "UNIVERSE_PIN" }),
   Object.freeze({ id: "RL-43", target: "universe: delta family is a source family", description: "the delta family is not a known family",
@@ -5526,6 +5843,312 @@ export const MUTATION_MANIFEST = Object.freeze([
     placebo: "  /\\bTODO\\b[^.;|\"]{0,60}\\breviewer/i, // pinned\n",
     detector: "POSTREV-F5 stale text: process wording that describes a finished step is refused on every line of both deliverables",
     fingerprint: "STALE_HIT: P4_TODO_REVIEWER" }),
+  Object.freeze({ id: "RL2-01", target: "layers: the layer is read from the identifier", description: "a second-layer identifier is read as a first-layer one",
+    find: "export const deltaLayerOfId = (id) => (String(id).startsWith(SECOND_LAYER_FINDING_PREFIX) ? \"SECOND\" : \"FIRST\");",
+    replace: "export const deltaLayerOfId = (id) => (String(id).startsWith(SECOND_LAYER_FINDING_PREFIX) ? \"FIRST\" : \"FIRST\");",
+    placebo: "export const deltaLayerOfId = (id) => (`${id}`.startsWith(SECOND_LAYER_FINDING_PREFIX) ? \"SECOND\" : \"FIRST\");",
+    detector: "S1-RLK2: a layer is read from the identifier, and each layer has its own document",
+    fingerprint: "LAYER_OF_ID:a second-layer finding" }),
+  Object.freeze({ id: "RL2-02", target: "layers: each layer has its own document", description: "a second-layer finding is attributed to the first document",
+    find: "export const deltaSourceOfId = (id) => (deltaLayerOfId(id) === \"SECOND\" ? SECOND_DELTA_SOURCE_DOCUMENT : DELTA_SOURCE_DOCUMENT);",
+    replace: "export const deltaSourceOfId = (id) => (deltaLayerOfId(id) === \"SECOND\" ? DELTA_SOURCE_DOCUMENT : DELTA_SOURCE_DOCUMENT);",
+    placebo: "export const deltaSourceOfId = (id) => (deltaLayerOfId(id) !== \"FIRST\" ? SECOND_DELTA_SOURCE_DOCUMENT : DELTA_SOURCE_DOCUMENT);",
+    detector: "S1-RLK2: a layer is read from the identifier, and each layer has its own document",
+    fingerprint: "LAYER_OF_ID:the second layer's document" }),
+  Object.freeze({ id: "RL2-03", target: "layers: a document declares only its own identifiers", description: "a foreign-layer identifier in a delta document passes",
+    find: "if (deltaSourceOfId(id) !== rel) return {",
+    replace: "if (false) return {",
+    placebo: "if (!(deltaSourceOfId(id) === rel)) return {",
+    detector: "S1-RLK2: a layer's document may declare only the identifiers of its own layer",
+    fingerprint: "FOREIGN_LAYER_IDENTIFIER:expected a foreign-layer identifier to be refused" }),
+  Object.freeze({ id: "RL2-04", target: "first relock: snapshot absent", description: "an absent first-relock snapshot passes",
+    find: "push(\"FIRST_RELOCK_SNAPSHOT_ABSENT\");",
+    replace: "void 0;",
+    placebo: "push(\"FIRST_RELOCK_SNAPSHOT_ABSENT\" + \"\");",
+    detector: "S1-RLK2: a first-relock snapshot that is absent, stored differently or not reproduced is refused",
+    fingerprint: "RECON_FIRST_RELOCK_SNAPSHOT_ABSENT:expected FIRST_RELOCK_SNAPSHOT_ABSENT" }),
+  Object.freeze({ id: "RL2-05", target: "first relock: snapshot stored differently", description: "a stored first-relock snapshot that is not the pin passes",
+    find: "if (!same(frs, FIRST_RELOCK_SNAPSHOT_PIN)) push(\"FIRST_RELOCK_SNAPSHOT_DIFFERS_FROM_PIN\");",
+    replace: "if (false) push(\"FIRST_RELOCK_SNAPSHOT_DIFFERS_FROM_PIN\");",
+    placebo: "if (!(same(frs, FIRST_RELOCK_SNAPSHOT_PIN))) push(\"FIRST_RELOCK_SNAPSHOT_DIFFERS_FROM_PIN\");",
+    detector: "S1-RLK2: a first-relock snapshot that is absent, stored differently or not reproduced is refused",
+    fingerprint: "RECON_FIRST_RELOCK_SNAPSHOT_DIFFERS_FROM_PIN:expected FIRST_RELOCK_SNAPSHOT_DIFFERS_FROM_PIN" }),
+  Object.freeze({ id: "RL2-06", target: "first relock: snapshot not reproduced", description: "a first-layer value moved by an edit passes",
+    find: "if (!same(frRecomputed[k], FIRST_RELOCK_SNAPSHOT_PIN[k])) push(\"FIRST_RELOCK_SNAPSHOT_NOT_REPRODUCED\"",
+    replace: "if (false) push(\"FIRST_RELOCK_SNAPSHOT_NOT_REPRODUCED\"",
+    placebo: "if (!(same(frRecomputed[k], FIRST_RELOCK_SNAPSHOT_PIN[k]))) push(\"FIRST_RELOCK_SNAPSHOT_NOT_REPRODUCED\"",
+    detector: "S1-RLK2: a first-relock snapshot that is absent, stored differently or not reproduced is refused",
+    fingerprint: "RECON_FIRST_RELOCK_SNAPSHOT_NOT_REPRODUCED:expected FIRST_RELOCK_SNAPSHOT_NOT_REPRODUCED" }),
+  Object.freeze({ id: "RL2-07", target: "first relock: merge changed", description: "the first-layer integration merge can change",
+    find: "if (dr && dr.integrationMergeSha !== FIRST_RELOCK_SNAPSHOT_PIN.integrationMergeSha) push(",
+    replace: "if (false) push(",
+    placebo: "if (dr && !(dr.integrationMergeSha === FIRST_RELOCK_SNAPSHOT_PIN.integrationMergeSha)) push(",
+    detector: "S1-RLK2: a first-relock snapshot that is absent, stored differently or not reproduced is refused",
+    fingerprint: "RECON_FIRST_RELOCK_MERGE_CHANGED:expected FIRST_RELOCK_MERGE_CHANGED" }),
+  Object.freeze({ id: "RL2-08", target: "first relock: layered recomputation", description: "the first-relock snapshot is recomputed with the second layer included",
+    find: "const findings = reg.findings.filter((f) => deltaLayerOfId(f.findingId) === \"FIRST\");",
+    replace: "const findings = reg.findings;",
+    placebo: "const findings = reg.findings.filter((f) => deltaLayerOfId(f.findingId) !== \"SECOND\");",
+    detector: "S1-RLK2: the first relock is a pinned snapshot, and setting the second layer aside reproduces it",
+    fingerprint: "FIRST_SNAPSHOT_PIN:the recomputed first-relock snapshot is the pin" }),
+  Object.freeze({ id: "RL2-09", target: "second review: block absent", description: "an absent second delta review passes",
+    find: "push(\"SECOND_DELTA_REVIEW_ABSENT\");",
+    replace: "void 0;",
+    placebo: "push(\"SECOND_DELTA_REVIEW_ABSENT\" + \"\");",
+    detector: "S1-RLK2: the second delta review block is held to its shape, its range and its universe",
+    fingerprint: "RECON_SECOND_DELTA_REVIEW_ABSENT:expected SECOND_DELTA_REVIEW_ABSENT" }),
+  Object.freeze({ id: "RL2-10", target: "second review: commit ids", description: "a malformed commit id in the second delta review passes",
+    find: "if (!/^[0-9a-f]{40}$/.test(sdr[k] ?? \"\")) push(\"SECOND_DELTA_REVIEW_SHA\"",
+    replace: "if (false) push(\"SECOND_DELTA_REVIEW_SHA\"",
+    placebo: "if (!/^[0-9a-f]{40}$/.test(`${sdr[k] ?? \"\"}`)) push(\"SECOND_DELTA_REVIEW_SHA\"",
+    detector: "S1-RLK2: the second delta review block is held to its shape, its range and its universe",
+    fingerprint: "RECON_SECOND_DELTA_REVIEW_SHA:expected SECOND_DELTA_REVIEW_SHA" }),
+  Object.freeze({ id: "RL2-11", target: "second review: original source", description: "the original frozen source of the second review can drift",
+    find: "if (sdr.originalFrozenSourceSha !== HISTORICAL_SNAPSHOT_PIN.sourceSha) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(sdr.originalFrozenSourceSha === HISTORICAL_SNAPSHOT_PIN.sourceSha)) push(",
+    detector: "S1-RLK2: the second delta review block is held to its shape, its range and its universe",
+    fingerprint: "RECON_SECOND_DELTA_REVIEW_ORIGINAL_SOURCE_DRIFT:expected SECOND_DELTA_REVIEW_ORIGINAL_SOURCE_DRIFT" }),
+  Object.freeze({ id: "RL2-12", target: "second review: base is the first target", description: "the second range may start anywhere but the first target",
+    find: "if (dr && sdr.frozenSourceSha !== dr.targetMainSha) push(",
+    replace: "if (false) push(",
+    placebo: "if (dr && !(sdr.frozenSourceSha === dr.targetMainSha)) push(",
+    detector: "S1-RLK2: the second delta review block is held to its shape, its range and its universe",
+    fingerprint: "RECON_SECOND_DELTA_REVIEW_BASE_IS_NOT_THE_FIRST_TARGET:expected SECOND_DELTA_REVIEW_BASE_IS_NOT_THE_FIRST_TARGET" }),
+  Object.freeze({ id: "RL2-13", target: "second review: range", description: "a second-review range that is not base..target passes",
+    find: "if (sdr.range !== `${sdr.frozenSourceSha}..${sdr.targetMainSha}`) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(sdr.range === `${sdr.frozenSourceSha}..${sdr.targetMainSha}`)) push(",
+    detector: "S1-RLK2: the second delta review block is held to its shape, its range and its universe",
+    fingerprint: "RECON_SECOND_DELTA_REVIEW_RANGE:expected SECOND_DELTA_REVIEW_RANGE" }),
+  Object.freeze({ id: "RL2-14", target: "second review: provenance", description: "the second review may point at another document",
+    find: "if (sdr.provenance !== SECOND_DELTA_SOURCE_DOCUMENT) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(sdr.provenance === SECOND_DELTA_SOURCE_DOCUMENT)) push(",
+    detector: "S1-RLK2: the second delta review block is held to its shape, its range and its universe",
+    fingerprint: "RECON_SECOND_DELTA_REVIEW_PROVENANCE:expected SECOND_DELTA_REVIEW_PROVENANCE" }),
+  Object.freeze({ id: "RL2-15", target: "second review: stored count", description: "a wrong stored second-layer count passes",
+    find: "if (sdr.deltaUniverseCount !== secondIds.length) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(sdr.deltaUniverseCount === secondIds.length)) push(",
+    detector: "S1-RLK2: the second delta review block is held to its shape, its range and its universe",
+    fingerprint: "RECON_SECOND_DELTA_UNIVERSE_COUNT_STORED:expected SECOND_DELTA_UNIVERSE_COUNT_STORED" }),
+  Object.freeze({ id: "RL2-16", target: "second review: stored hash", description: "a wrong stored second-layer hash passes",
+    find: "if (sdr.deltaUniverseSha256 !== sha256Hex(universeString(secondIds))) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(sdr.deltaUniverseSha256 === sha256Hex(universeString(secondIds)))) push(",
+    detector: "S1-RLK2: the second delta review block is held to its shape, its range and its universe",
+    fingerprint: "RECON_SECOND_DELTA_UNIVERSE_HASH_STORED:expected SECOND_DELTA_UNIVERSE_HASH_STORED" }),
+  Object.freeze({ id: "RL2-17", target: "second review: touched risks", description: "a list of touched risks that is not the derived one passes",
+    find: "if (!same([...(sdr.existingRisksTouched ?? [])].sort(), existingOwners)) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(same([...(sdr.existingRisksTouched ?? [])].sort(), existingOwners))) push(",
+    detector: "S1-RLK2: the second delta review block is held to its shape, its range and its universe",
+    fingerprint: "RECON_SECOND_DELTA_RISKS_TOUCHED_DIFFERS:expected SECOND_DELTA_RISKS_TOUCHED_DIFFERS" }),
+  Object.freeze({ id: "RL2-19", target: "second layer: revises no entry", description: "a risk the second layer owns for may carry a revision",
+    find: "if (r.sourceFindingIds.some((id) => deltaLayerOfId(id) === \"SECOND\") && r.revision) push(",
+    replace: "if (false) push(",
+    placebo: "if (r.sourceFindingIds.some((id) => deltaLayerOfId(id) === \"SECOND\") && r.revision !== undefined) push(",
+    detector: "S1-RLK2: a classic revision never rides on a risk that owns a second-layer finding",
+    fingerprint: "RECON_SECOND_LAYER_REVISES_AN_ENTRY:expected SECOND_LAYER_REVISES_AN_ENTRY" }),
+  Object.freeze({ id: "RL2-20", target: "second layer: an existing-risk disposition may name a first-layer risk", description: "a risk the first relock opened is refused as an existing owner of a second-layer finding",
+    find: "} else if (f.deltaDisposition === \"OWNED_BY_EXISTING_RISK\" && isSecondDelta(owner)) {",
+    replace: "} else if (f.deltaDisposition === \"OWNED_BY_EXISTING_RISK\" && isDelta(owner)) {",
+    placebo: "} else if (f.deltaDisposition === \"OWNED_BY_EXISTING_RISK\" && isSecondDelta(owner) === true) {",
+    detector: "S1-RLK: the committed register passes every reconciliation gate",
+    fingerprint: "RECON_CLEAN" }),
+  Object.freeze({ id: "RL2-21", target: "universe: the first layer is pinned", description: "a first-layer finding can be deleted",
+    find: "if (firstIds.length !== FIRST_DELTA_UNIVERSE_COUNT || sha256Hex(universeString(firstIds)) !== FIRST_DELTA_UNIVERSE_SHA256) {",
+    replace: "if (false) {",
+    placebo: "if (firstIds.length !== FIRST_DELTA_UNIVERSE_COUNT || !(sha256Hex(universeString(firstIds)) === FIRST_DELTA_UNIVERSE_SHA256)) {",
+    detector: "S1-RLK2: the first and the second layer are pinned by count and hash on their own",
+    fingerprint: "FIRST_LAYER_DELTA_UNIVERSE_CHANGED:expected FIRST_LAYER_DELTA_UNIVERSE_CHANGED" }),
+  Object.freeze({ id: "RL2-22", target: "universe: the second layer is pinned", description: "a second-layer finding can be deleted",
+    find: "if (secondIds.length !== SECOND_DELTA_UNIVERSE_COUNT || sha256Hex(universeString(secondIds)) !== SECOND_DELTA_UNIVERSE_SHA256) {",
+    replace: "if (false) {",
+    placebo: "if (secondIds.length !== SECOND_DELTA_UNIVERSE_COUNT || !(sha256Hex(universeString(secondIds)) === SECOND_DELTA_UNIVERSE_SHA256)) {",
+    detector: "S1-RLK2: the first and the second layer are pinned by count and hash on their own",
+    fingerprint: "SECOND_LAYER_DELTA_UNIVERSE_CHANGED:expected SECOND_LAYER_DELTA_UNIVERSE_CHANGED" }),
+  Object.freeze({ id: "RL2-23", target: "first review: stores the first layer only", description: "the stored first-layer universe includes the second layer",
+    find: "const deltaIds = deltaFindings.filter((f) => deltaLayerOfId(f.findingId) === \"FIRST\").map((f) => f.findingId);",
+    replace: "const deltaIds = deltaFindings.map((f) => f.findingId);",
+    placebo: "const deltaIds = deltaFindings.filter((f) => deltaLayerOfId(f.findingId) !== \"SECOND\").map((f) => f.findingId);",
+    detector: "S1-RLK: the committed register passes every reconciliation gate",
+    fingerprint: "RECON_CLEAN" }),
+  Object.freeze({ id: "RL2-24", target: "second review: owners are derived", description: "the touched risks of the second review are not derived from the findings",
+    find: "const existingOwners = [...new Set(secondFindings.map((f) => f.ownerRiskId).filter((id) => riskById.get(id) && !isSecondDelta(riskById.get(id))))].sort();",
+    replace: "const existingOwners = [...(sdr.existingRisksTouched ?? [])].sort();",
+    placebo: "const existingOwners = [...new Set(secondFindings.map((f) => f.ownerRiskId).filter((id) => riskById.get(id) && !isSecondDelta(riskById.get(id))))].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));",
+    detector: "S1-RLK2: the second delta review block is held to its shape, its range and its universe",
+    fingerprint: "RECON_SECOND_DELTA_RISKS_TOUCHED_DIFFERS:expected SECOND_DELTA_RISKS_TOUCHED_DIFFERS" }),
+  Object.freeze({ id: "RL3-01", target: "scope: a delta finding carries its layer's scope", description: "a second-layer finding may carry the first layer's scope",
+    find: "if (inDeltaFamily && isDelta(f) && scopeOf(f) !== (deltaLayerOfId(f.findingId) === \"SECOND\" ? SECOND_SCOPE : \"DELTA_RELOCK\")) push(\"DELTA_FINDING_SCOPE_LAYER\"",
+    replace: "if (false) push(\"DELTA_FINDING_SCOPE_LAYER\"",
+    placebo: "if (inDeltaFamily && isDelta(f) && !(scopeOf(f) === (deltaLayerOfId(f.findingId) === \"SECOND\" ? SECOND_SCOPE : \"DELTA_RELOCK\"))) push(\"DELTA_FINDING_SCOPE_LAYER\"",
+    detector: "S1-RLK3: a second-layer finding carries the second scope, and a risk of the second layer owns second-layer findings only",
+    fingerprint: "RECON_DELTA_FINDING_SCOPE_LAYER:expected DELTA_FINDING_SCOPE_LAYER" }),
+  Object.freeze({ id: "RL3-02", target: "scope: a second-layer risk owns second-layer findings only", description: "a risk the second layer opened may own a first-layer finding",
+    find: "if (f && f.family === DELTA_FAMILY && isSecondDelta(r) && deltaLayerOfId(id) !== \"SECOND\") push(",
+    replace: "if (false) push(",
+    placebo: "if (f && f.family === DELTA_FAMILY && isSecondDelta(r) && !(deltaLayerOfId(id) === \"SECOND\")) push(",
+    detector: "S1-RLK3: a second-layer finding carries the second scope, and a risk of the second layer owns second-layer findings only",
+    fingerprint: "RECON_DELTA_RISK_OWNS_OTHER_LAYER_FINDING:expected DELTA_RISK_OWNS_OTHER_LAYER_FINDING" }),
+  Object.freeze({ id: "RL3-03", target: "scope: a second-layer risk is never revised classically", description: "a risk the second layer opened may carry a classic revision",
+    find: "if (isSecondDelta(r) && r.revision) push(\"SECOND_LAYER_RISK_REVISED_CLASSICALLY\"",
+    replace: "if (false) push(\"SECOND_LAYER_RISK_REVISED_CLASSICALLY\"",
+    placebo: "if (isSecondDelta(r) && r.revision !== undefined) push(\"SECOND_LAYER_RISK_REVISED_CLASSICALLY\"",
+    detector: "S1-RLK3: a second-layer finding carries the second scope, and a risk of the second layer owns second-layer findings only",
+    fingerprint: "RECON_SECOND_LAYER_RISK_REVISED_CLASSICALLY:expected SECOND_LAYER_RISK_REVISED_CLASSICALLY" }),
+  Object.freeze({ id: "RL3-04", target: "second layer: a new-risk disposition needs a risk of its own scope", description: "a second-layer finding may claim a new risk that the first relock already owned",
+    find: "} else if (f.deltaDisposition === \"OWNED_BY_NEW_RISK\" && !isSecondDelta(owner)) {",
+    replace: "} else if (false) {",
+    placebo: "} else if (f.deltaDisposition === \"OWNED_BY_NEW_RISK\" && isSecondDelta(owner) === false) {",
+    detector: "S1-RLK3: the second layer may open a risk of its own, and only a risk of its own scope is new for it",
+    fingerprint: "RECON_NEW_RISK_DISPOSITION_ON_EXISTING_OWNER:expected NEW_RISK_DISPOSITION_ON_EXISTING_OWNER" }),
+  Object.freeze({ id: "RL3-05", target: "second layer: an existing-risk disposition may not name a second-layer risk", description: "a second-layer finding may call the risk it opened existing",
+    find: "} else if (f.deltaDisposition === \"OWNED_BY_EXISTING_RISK\" && isSecondDelta(owner)) {",
+    replace: "} else if (false) {",
+    placebo: "} else if (f.deltaDisposition === \"OWNED_BY_EXISTING_RISK\" && isSecondDelta(owner) === true) {",
+    detector: "S1-RLK3: the second layer may open a risk of its own, and only a risk of its own scope is new for it",
+    fingerprint: "RECON_EXISTING_RISK_DISPOSITION_ON_SECOND_LAYER_OWNER:expected EXISTING_RISK_DISPOSITION_ON_SECOND_LAYER_OWNER" }),
+  Object.freeze({ id: "RL3-06", target: "second review: opened risks are derived", description: "a list of opened risks that is not the derived one passes",
+    find: "if (!same([...(sdr.risksOpened ?? [])].sort(), opened)) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(same([...(sdr.risksOpened ?? [])].sort(), opened))) push(",
+    detector: "S1-RLK3: the second layer may open a risk of its own, and only a risk of its own scope is new for it",
+    fingerprint: "RECON_SECOND_DELTA_RISKS_OPENED_DIFFERS:expected SECOND_DELTA_RISKS_OPENED_DIFFERS" }),
+  Object.freeze({ id: "RL3-07", target: "second review: revised risks are derived", description: "a list of revised risks that is not the derived one passes",
+    find: "if (!same([...(sdr.risksRevised ?? [])].sort(), revised)) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(same([...(sdr.risksRevised ?? [])].sort(), revised))) push(",
+    detector: "S1-RLK3: the second layer may open a risk of its own, and only a risk of its own scope is new for it",
+    fingerprint: "RECON_SECOND_DELTA_RISKS_REVISED_DIFFERS:expected SECOND_DELTA_RISKS_REVISED_DIFFERS" }),
+  Object.freeze({ id: "RL3-08", target: "first relock: a revised risk is read as it was", description: "the first relock's snapshot reads a revised risk at its revised values",
+    find: "return entry.secondLayerRevision && entry.secondLayerRevision.scope === SECOND_SCOPE ? { ...entry, ...entry.secondLayerRevision.supersedes } : entry;",
+    replace: "return entry;",
+    placebo: "return entry.secondLayerRevision !== undefined && entry.secondLayerRevision.scope === SECOND_SCOPE ? { ...entry, ...entry.secondLayerRevision.supersedes } : entry;",
+    detector: "S1-RLK3: a risk the second layer revised is read as it was in the first relock's snapshot",
+    fingerprint: "SNAPSHOT_READ_AS_BEFORE:" }),
+  Object.freeze({ id: "RL3-09", target: "first relock: a risk of the second layer is absent", description: "the first relock's snapshot counts a risk the second layer opened",
+    find: "const risksThen = reg.risks.filter((r) => !isSecondDelta(r)).map(firstLayerView);",
+    replace: "const risksThen = reg.risks.map(firstLayerView);",
+    placebo: "const risksThen = reg.risks.filter((r) => isSecondDelta(r) === false).map(firstLayerView);",
+    detector: "S1-RLK2: the first relock is a pinned snapshot, and setting the second layer aside reproduces it",
+    fingerprint: "FIRST_SNAPSHOT_PIN:" }),
+  Object.freeze({ id: "RL3-10", target: "revision: scope", description: "a revision of another scope passes",
+    find: "if (rv.scope !== SECOND_SCOPE) push(\"SECOND_REVISION_SCOPE\"",
+    replace: "if (false) push(\"SECOND_REVISION_SCOPE\"",
+    placebo: "if (!(rv.scope === SECOND_SCOPE)) push(\"SECOND_REVISION_SCOPE\"",
+    detector: "S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason",
+    fingerprint: "RECON_SECOND_REVISION_SCOPE:expected SECOND_REVISION_SCOPE" }),
+  Object.freeze({ id: "RL3-11", target: "revision: no classic revision beside it", description: "a risk may carry both kinds of revision",
+    find: "if (r.revision) push(\"SECOND_REVISION_WITH_CLASSIC_REVISION\"",
+    replace: "if (false) push(\"SECOND_REVISION_WITH_CLASSIC_REVISION\"",
+    placebo: "if (r.revision !== undefined) push(\"SECOND_REVISION_WITH_CLASSIC_REVISION\"",
+    detector: "S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason",
+    fingerprint: "RECON_SECOND_REVISION_WITH_CLASSIC_REVISION:expected SECOND_REVISION_WITH_CLASSIC_REVISION" }),
+  Object.freeze({ id: "RL3-12", target: "revision: not on a risk of the second layer", description: "a risk the second layer opened may revise itself",
+    find: "if (isSecondDelta(r)) push(\"SECOND_REVISION_ON_SECOND_LAYER_RISK\"",
+    replace: "if (false) push(\"SECOND_REVISION_ON_SECOND_LAYER_RISK\"",
+    placebo: "if (isSecondDelta(r) === true) push(\"SECOND_REVISION_ON_SECOND_LAYER_RISK\"",
+    detector: "S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason",
+    fingerprint: "RECON_SECOND_REVISION_ON_SECOND_LAYER_RISK:expected SECOND_REVISION_ON_SECOND_LAYER_RISK" }),
+  Object.freeze({ id: "RL3-13", target: "revision: a reason", description: "a revision without a reason passes",
+    find: "if (typeof rv.reason !== \"string\" || rv.reason.trim().length < 30) push(\"SECOND_REVISION_WITHOUT_REASON\"",
+    replace: "if (false) push(\"SECOND_REVISION_WITHOUT_REASON\"",
+    placebo: "if (typeof rv.reason !== \"string\" || !(rv.reason.trim().length >= 30)) push(\"SECOND_REVISION_WITHOUT_REASON\"",
+    detector: "S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason",
+    fingerprint: "RECON_SECOND_REVISION_WITHOUT_REASON:expected SECOND_REVISION_WITHOUT_REASON" }),
+  Object.freeze({ id: "RL3-14", target: "revision: a finding", description: "a revision without a finding passes",
+    find: "if (ids.length === 0) push(\"SECOND_REVISION_WITHOUT_FINDING\"",
+    replace: "if (false) push(\"SECOND_REVISION_WITHOUT_FINDING\"",
+    placebo: "if (!(ids.length > 0)) push(\"SECOND_REVISION_WITHOUT_FINDING\"",
+    detector: "S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason",
+    fingerprint: "RECON_SECOND_REVISION_WITHOUT_FINDING:expected SECOND_REVISION_WITHOUT_FINDING" }),
+  Object.freeze({ id: "RL3-15", target: "revision: the finding exists", description: "a revision may name a finding the register does not hold",
+    find: "if (!f) push(\"SECOND_REVISION_UNKNOWN_FINDING\"",
+    replace: "if (!f) void (\"SECOND_REVISION_UNKNOWN_FINDING\"",
+    placebo: "if (f === undefined) push(\"SECOND_REVISION_UNKNOWN_FINDING\"",
+    detector: "S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason",
+    fingerprint: "RECON_SECOND_REVISION_UNKNOWN_FINDING:expected SECOND_REVISION_UNKNOWN_FINDING" }),
+  Object.freeze({ id: "RL3-16", target: "revision: the finding is of the second layer", description: "a revision may be motivated by a first-layer finding",
+    find: "else if (deltaLayerOfId(fid) !== \"SECOND\") push(\"SECOND_REVISION_WRONG_LAYER\"",
+    replace: "else if (false) push(\"SECOND_REVISION_WRONG_LAYER\"",
+    placebo: "else if (!(deltaLayerOfId(fid) === \"SECOND\")) push(\"SECOND_REVISION_WRONG_LAYER\"",
+    detector: "S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason",
+    fingerprint: "RECON_SECOND_REVISION_WRONG_LAYER:expected SECOND_REVISION_WRONG_LAYER" }),
+  Object.freeze({ id: "RL3-17", target: "revision: the risk owns the finding", description: "a revision may name a finding that another risk owns",
+    find: "else if (f.ownerRiskId !== id || !r.sourceFindingIds.includes(fid)) push(\"SECOND_REVISION_FINDING_NOT_OWNED\"",
+    replace: "else if (false) push(\"SECOND_REVISION_FINDING_NOT_OWNED\"",
+    placebo: "else if (!(f.ownerRiskId === id) || !r.sourceFindingIds.includes(fid)) push(\"SECOND_REVISION_FINDING_NOT_OWNED\"",
+    detector: "S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason",
+    fingerprint: "RECON_SECOND_REVISION_FINDING_NOT_OWNED:expected SECOND_REVISION_FINDING_NOT_OWNED" }),
+  Object.freeze({ id: "RL3-18", target: "revision: the recorded past exists", description: "a revision with an empty recorded past passes",
+    find: "if (!isPlainObject(sup) || Object.keys(sup).length === 0) {",
+    replace: "if (!isPlainObject(sup)) {",
+    placebo: "if (!isPlainObject(sup) || !(Object.keys(sup).length > 0)) {",
+    detector: "S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason",
+    fingerprint: "RECON_SECOND_REVISION_WITHOUT_SUPERSEDED_VALUES:expected SECOND_REVISION_WITHOUT_SUPERSEDED_VALUES" }),
+  Object.freeze({ id: "RL3-19", target: "revision: the recorded past is arithmetic", description: "a recorded past whose score is not its own factors' passes",
+    find: "if (sup.likelihood !== past.likelihood || sup.impact !== past.impact || sup.score !== past.score || sup.severity !== past.severity) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(sup.likelihood === past.likelihood && sup.impact === past.impact && sup.score === past.score && sup.severity === past.severity)) push(",
+    detector: "S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason",
+    fingerprint: "RECON_SECOND_REVISION_SUPERSEDED_ARITHMETIC:expected SECOND_REVISION_SUPERSEDED_ARITHMETIC" }),
+  Object.freeze({ id: "RL3-20", target: "factor review: present", description: "a revision without a factor review passes",
+    find: "if (!isPlainObject(review)) push(\"SECOND_REVISION_FACTOR_REVIEW_ABSENT\"",
+    replace: "if (!isPlainObject(review)) void (\"SECOND_REVISION_FACTOR_REVIEW_ABSENT\"",
+    placebo: "if (isPlainObject(review) === false) push(\"SECOND_REVISION_FACTOR_REVIEW_ABSENT\"",
+    detector: "S1-RLK3: a factor review covers all nine factors and agrees with both ends",
+    fingerprint: "RECON_SECOND_REVISION_FACTOR_REVIEW_ABSENT:expected SECOND_REVISION_FACTOR_REVIEW_ABSENT" }),
+  Object.freeze({ id: "RL3-21", target: "factor review: all nine factors", description: "a factor review may skip a factor",
+    find: "push(\"SECOND_REVISION_FACTOR_NOT_REVIEWED\", { id, factor: k });",
+    replace: "void 0;",
+    placebo: "push(\"SECOND_REVISION_FACTOR_NOT_REVIEWED\", { id, factor: `${k}` });",
+    detector: "S1-RLK3: a factor review covers all nine factors and agrees with both ends",
+    fingerprint: "RECON_SECOND_REVISION_FACTOR_NOT_REVIEWED:expected SECOND_REVISION_FACTOR_NOT_REVIEWED" }),
+  Object.freeze({ id: "RL3-22", target: "factor review: the value before", description: "a factor review may misstate the value before",
+    find: "if (e.before !== sup[group][k]) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(e.before === sup[group][k])) push(",
+    detector: "S1-RLK3: a factor review covers all nine factors and agrees with both ends",
+    fingerprint: "RECON_SECOND_REVISION_FACTOR_BEFORE_DIFFERS:expected SECOND_REVISION_FACTOR_BEFORE_DIFFERS" }),
+  Object.freeze({ id: "RL3-23", target: "factor review: the value now", description: "a factor review may misstate the value now",
+    find: "if (e.after !== r[group][k]) push(",
+    replace: "if (false) push(",
+    placebo: "if (!(e.after === r[group][k])) push(",
+    detector: "S1-RLK3: a factor review covers all nine factors and agrees with both ends",
+    fingerprint: "RECON_SECOND_REVISION_FACTOR_AFTER_DIFFERS:expected SECOND_REVISION_FACTOR_AFTER_DIFFERS" }),
+  Object.freeze({ id: "RL3-24", target: "factor review: a reason for each factor", description: "a factor that did not move may be left unexplained",
+    find: "if (typeof e.reason !== \"string\" || e.reason.trim().length < 30) push(\"SECOND_REVISION_FACTOR_WITHOUT_REASON\"",
+    replace: "if (false) push(\"SECOND_REVISION_FACTOR_WITHOUT_REASON\"",
+    placebo: "if (typeof e.reason !== \"string\" || !(e.reason.trim().length >= 30)) push(\"SECOND_REVISION_FACTOR_WITHOUT_REASON\"",
+    detector: "S1-RLK3: a factor review covers all nine factors and agrees with both ends",
+    fingerprint: "RECON_SECOND_REVISION_FACTOR_WITHOUT_REASON:expected SECOND_REVISION_FACTOR_WITHOUT_REASON" }),
+  Object.freeze({ id: "RL3-25", target: "append-only: the lists", description: "a revision may remove or reword an earlier gap, criterion or precondition",
+    find: "if (!prefixOf(field)) push(\"SECOND_REVISION_NOT_APPEND_ONLY\", { id, field });",
+    replace: "void field;",
+    placebo: "if (prefixOf(field) === false) push(\"SECOND_REVISION_NOT_APPEND_ONLY\", { id, field });",
+    detector: "S1-RLK3: a second-layer revision is append-only and must add something",
+    fingerprint: "RECON_SECOND_REVISION_NOT_APPEND_ONLY:expected SECOND_REVISION_NOT_APPEND_ONLY" }),
+  Object.freeze({ id: "RL3-26", target: "append-only: the evidence", description: "a revision may remove an earlier evidence item",
+    find: "if (!Array.isArray(sup.evidence) || !sup.evidence.every((e) => nowEvidence.has(evidenceKey(e)))) push(",
+    replace: "if (false) push(",
+    placebo: "if (!Array.isArray(sup.evidence) || sup.evidence.some((e) => !nowEvidence.has(evidenceKey(e)))) push(",
+    detector: "S1-RLK3: a second-layer revision is append-only and must add something",
+    fingerprint: "RECON_SECOND_REVISION_NOT_APPEND_ONLY:expected SECOND_REVISION_NOT_APPEND_ONLY" }),
+  Object.freeze({ id: "RL3-27", target: "append-only: the residual risk", description: "a revision may rewrite the residual risk",
+    find: "if (typeof sup.residualRisk !== \"string\" || !String(r.residualRisk).startsWith(sup.residualRisk)) push(",
+    replace: "if (false) push(",
+    placebo: "if (typeof sup.residualRisk !== \"string\" || String(r.residualRisk).startsWith(sup.residualRisk) === false) push(",
+    detector: "S1-RLK3: a second-layer revision is append-only and must add something",
+    fingerprint: "RECON_SECOND_REVISION_NOT_APPEND_ONLY:expected SECOND_REVISION_NOT_APPEND_ONLY" }),
+  Object.freeze({ id: "RL3-28", target: "append-only: it must add something", description: "a revision that adds nothing passes",
+    find: "if (!grew) push(\"SECOND_REVISION_EMPTY\"",
+    replace: "if (false) push(\"SECOND_REVISION_EMPTY\"",
+    placebo: "if (grew === false) push(\"SECOND_REVISION_EMPTY\"",
+    detector: "S1-RLK3: a second-layer revision is append-only and must add something",
+    fingerprint: "RECON_SECOND_REVISION_EMPTY:expected SECOND_REVISION_EMPTY" }),
 ]);
 export const PLACEBO_CONTROLS = Object.freeze([
   Object.freeze({ id: "C-01", kind: "SEMANTIC_NOOP", description: "the secret gate's condition rewritten with the same meaning",
@@ -5566,7 +6189,7 @@ export const PLACEBO_CONTROLS = Object.freeze([
     expected: "ONLY_INCIDENTAL", inRegion: false }),
 ]);
 export const MUTATION_CAMPAIGN = Object.freeze({
-  manifestSha256: "70286152ded97f6e8a4d6f256aec431dc5120d6beb5d6d69b67144eb9ae7bde4",
+  manifestSha256: "1ec8961e8f60959fa4dd9957757f09a4bdced3934035a7b1cb2972371f9be236",
   observed: Object.freeze({
     "FA-01a": "TARGETED_KILL",
     "FA-01b": "TARGETED_KILL",
@@ -5835,6 +6458,57 @@ export const MUTATION_CAMPAIGN = Object.freeze({
     "RL-51": "TARGETED_KILL",
     "RL-52": "TARGETED_KILL",
     "RL-53": "TARGETED_KILL",
+    "RL2-01": "TARGETED_KILL",
+    "RL2-02": "TARGETED_KILL",
+    "RL2-03": "TARGETED_KILL",
+    "RL2-04": "TARGETED_KILL",
+    "RL2-05": "TARGETED_KILL",
+    "RL2-06": "TARGETED_KILL",
+    "RL2-07": "TARGETED_KILL",
+    "RL2-08": "TARGETED_KILL",
+    "RL2-09": "TARGETED_KILL",
+    "RL2-10": "TARGETED_KILL",
+    "RL2-11": "TARGETED_KILL",
+    "RL2-12": "TARGETED_KILL",
+    "RL2-13": "TARGETED_KILL",
+    "RL2-14": "TARGETED_KILL",
+    "RL2-15": "TARGETED_KILL",
+    "RL2-16": "TARGETED_KILL",
+    "RL2-17": "TARGETED_KILL",
+    "RL2-19": "TARGETED_KILL",
+    "RL2-20": "TARGETED_KILL",
+    "RL2-21": "TARGETED_KILL",
+    "RL2-22": "TARGETED_KILL",
+    "RL2-23": "TARGETED_KILL",
+    "RL2-24": "TARGETED_KILL",
+    "RL3-01": "TARGETED_KILL",
+    "RL3-02": "TARGETED_KILL",
+    "RL3-03": "TARGETED_KILL",
+    "RL3-04": "TARGETED_KILL",
+    "RL3-05": "TARGETED_KILL",
+    "RL3-06": "TARGETED_KILL",
+    "RL3-07": "TARGETED_KILL",
+    "RL3-08": "TARGETED_KILL",
+    "RL3-09": "TARGETED_KILL",
+    "RL3-10": "TARGETED_KILL",
+    "RL3-11": "TARGETED_KILL",
+    "RL3-12": "TARGETED_KILL",
+    "RL3-13": "TARGETED_KILL",
+    "RL3-14": "TARGETED_KILL",
+    "RL3-15": "TARGETED_KILL",
+    "RL3-16": "TARGETED_KILL",
+    "RL3-17": "TARGETED_KILL",
+    "RL3-18": "TARGETED_KILL",
+    "RL3-19": "TARGETED_KILL",
+    "RL3-20": "TARGETED_KILL",
+    "RL3-21": "TARGETED_KILL",
+    "RL3-22": "TARGETED_KILL",
+    "RL3-23": "TARGETED_KILL",
+    "RL3-24": "TARGETED_KILL",
+    "RL3-25": "TARGETED_KILL",
+    "RL3-26": "TARGETED_KILL",
+    "RL3-27": "TARGETED_KILL",
+    "RL3-28": "TARGETED_KILL",
   }),
   controls: Object.freeze({
     "C-01": "SURVIVED",

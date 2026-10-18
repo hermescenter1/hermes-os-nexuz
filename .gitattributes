@@ -93,3 +93,5 @@ ops/backup/hermes-pg-backup.timer text eol=lf
 /scripts/security/s1/relock-mutation-campaign.mjs text eol=lf
 /scripts/security/s1/__tests__/relock-delta.e2e.mjs text eol=lf
 /docs/security/s1-relock-mutation-record.json text eol=lf
+/docs/security/S1-SECOND-DELTA-RELOCK.md text eol=lf
+/docs/security/s1-second-relock-delta.json text eol=lf

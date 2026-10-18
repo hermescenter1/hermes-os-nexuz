@@ -1609,7 +1609,11 @@ export function buildInventory(root = REPO_ROOT) {
   const orphanOverrides = [...byId.keys()].filter((id) => !seenOverrides.has(id)).sort();
   const orphanEdges = [...byEdgeId.keys()].filter((id) => !seenEdges.has(id)).sort();
   const orphanScreenings = [...byScreenId.keys()].filter((id) => !seenScreen.has(id)).sort();
-  const retryTraceProblems = retryTraceViolations(retrySubjects(overrides.adjudications ?? [], edgeTraces.traces ?? []), { root });
+  const retrySubjectList = retrySubjects(overrides.adjudications ?? [], edgeTraces.traces ?? []);
+  const retryTraceProblems = [
+    ...retryTraceViolations(retrySubjectList, { root }),
+    ...retryTraceIdentityViolations(retrySubjectList, { lineCountOf: (p) => lineCountAt(root, p) }),
+  ].sort();
   return {
     records, textual, staleOverrides, orphanOverrides, staleEdges, orphanEdges,
     staleScreenings, orphanScreenings, retryTraceProblems, fileCount: files.length,
@@ -1748,6 +1752,74 @@ export function retryTraceViolations(subjects, options = {}) {
     }
     const derived = deriveRetrySuppression(s.trace);
     if (derived !== s.declared) out.push(`${s.id}: the trace derives RETRY_SUPPRESSION=${derived} but the ${s.kind} declares ${s.declared}`);
+  }
+  return out.sort();
+}
+
+/**
+ * A trace belongs to ONE subject at ONE position. A call site that moved keeps its verdict only when the trace was
+ * moved with it, and the trace says so in three places that a re-key can leave behind:
+ *
+ *   operationIdentity   is derived from the subject's CURRENT identifier: `the operation behind <callsite id>` for
+ *                       a call site, `the consumer <function>@L<line>:<path>` for an edge;
+ *   sourceReferences    every `path:from-to` lies inside its file, and when the trace cites the subject's OWN file
+ *                       with a line, at least one such citation lies within the window of the subject's CURRENT
+ *                       position (a call site: from two lines before to eight after; an edge: it includes the
+ *                       consumer line named by the identifier).
+ *
+ * A trace that still names the old position of a moved call site fails all three, whatever its prose says.
+ */
+export const RETRY_IDENTITY_OF = Object.freeze({
+  callsite: (id) => `the operation behind ${id}`,
+  edge: (id) => `the consumer ${String(id).split("::")[1] ?? ""}`,
+});
+export const RETRY_WINDOW_BEFORE = 2;
+export const RETRY_WINDOW_AFTER = 8;
+const CALLSITE_ID_PARTS = /^(.+)#L(\d+)C(\d+)$/;
+const EDGE_ID_PARTS = /^(.+)#L(\d+)C(\d+)::(.+)@L(\d+):([A-Z_]+)$/;
+
+export function parseSourceReference(ref) {
+  const m = /^(.*?)(?::(\d+)(?:-(\d+))?)?$/.exec(String(ref));
+  return { path: m[1], from: m[2] === undefined ? null : Number(m[2]), to: m[2] === undefined ? null : Number(m[3] ?? m[2]) };
+}
+
+export function lineCountAt(root, relPath) {
+  if (!root) return null;
+  try {
+    return readSourceText(join(root, relPath)).split("\n").length;
+  } catch {
+    return null;
+  }
+}
+
+export function retryTraceIdentityViolations(subjects, { lineCountOf = () => null } = {}) {
+  const out = [];
+  for (const s of subjects) {
+    if (s.trace === undefined || s.trace === null || typeof s.trace !== "object") continue;
+    const expected = RETRY_IDENTITY_OF[s.kind]?.(s.id);
+    if (expected === undefined) continue;
+    if (s.trace.operationIdentity !== expected) {
+      out.push(`${s.id}: retryTrace.operationIdentity "${String(s.trace.operationIdentity).slice(0, 90)}" is not "${expected.slice(0, 90)}"`);
+    }
+    const refs = Array.isArray(s.trace.sourceReferences) ? s.trace.sourceReferences.filter((r) => typeof r === "string").map(parseSourceReference) : [];
+    for (const r of refs) {
+      if (r.from === null) continue;
+      const n = lineCountOf(r.path);
+      if (r.to < r.from || r.from < 1 || (n !== null && r.to > n)) out.push(`${s.id}: retryTrace.sourceReferences ${r.path}:${r.from}-${r.to} lies outside its file`);
+    }
+    const parts = (s.kind === "edge" ? EDGE_ID_PARTS : CALLSITE_ID_PARTS).exec(String(s.id));
+    if (!parts) continue;
+    const own = refs.filter((r) => r.path === parts[1] && r.from !== null);
+    if (own.length === 0) continue;
+    if (s.kind === "edge") {
+      const line = Number(parts[5]);
+      if (!own.some((r) => r.from <= line && r.to >= line)) out.push(`${s.id}: no sourceReference in its own file includes the consumer line ${line}`);
+    } else {
+      const line = Number(parts[2]);
+      if (!own.some((r) => r.to >= line - RETRY_WINDOW_BEFORE && r.from <= line + RETRY_WINDOW_AFTER)) {
+        out.push(`${s.id}: no sourceReference in its own file lies within ${RETRY_WINDOW_BEFORE} lines before to ${RETRY_WINDOW_AFTER} after the call site's current line ${line}`);
+      }
+    }
   }
   return out.sort();
 }

@@ -66,6 +66,9 @@ import {
   retryTraceViolations,
   RETRY_STATEMENT,
   retrySubjects,
+  retryTraceIdentityViolations,
+  RETRY_IDENTITY_OF,
+  parseSourceReference,
 } from "../getprisma-callsite-inventory.mjs";
 
 /**
@@ -1200,8 +1203,8 @@ test("retry: the three report callsites are traced and their flags follow the ru
   const { records } = INVENTORY_LAZY();
   const by = (id) => records.find((r) => r.id === id);
   const worker = by("src/lib/executive/report/worker.ts#L191C24");
-  const claim = by("src/lib/executive/report/generate.ts#L248C24");
-  const release = by("src/lib/executive/report/generate.ts#L281C24");
+  const claim = by("src/lib/executive/report/generate.ts#L360C24");
+  const release = by("src/lib/executive/report/generate.ts#L393C24");
   for (const r of [worker, claim, release]) {
     assert.ok(r?.adjudication?.retryTrace, `${r?.id} carries a retryTrace`);
     assert.equal(r.adjudication.outcomeFlags.includes("RETRY_SUPPRESSION"), deriveRetrySuppression(r.adjudication.retryTrace), `${r.id}: the flag is the derivation of its trace`);
@@ -1210,6 +1213,68 @@ test("retry: the three report callsites are traced and their flags follow the ru
   assert.equal(deriveRetrySuppression(worker.adjudication.retryTrace), false, "the next poll runs the same pass again");
   assert.equal(deriveRetrySuppression(claim.adjudication.retryTrace), false, "notifiedAt stays null and the next pass announces");
   assert.equal(deriveRetrySuppression(release.adjudication.retryTrace), true, "the claim stays set and no later pass announces");
+});
+
+// ── a trace follows its subject: identity and references are derived from the CURRENT position ──
+
+const MOVED = (over = {}) => ({
+  id: "src/lib/x.ts#L360C24",
+  kind: "callsite",
+  trace: TRACE({ operationIdentity: "the operation behind src/lib/x.ts#L360C24", sourceReferences: ["src/lib/x.ts:360-362", "src/lib/w.ts:12"] }),
+  declared: false,
+  talksAboutRetry: false,
+  ...over,
+});
+const LINES = (p) => (p === "src/lib/x.ts" ? 400 : p === "src/lib/w.ts" ? 50 : null);
+const identityProblems = (subjects) => retryTraceIdentityViolations(subjects, { lineCountOf: LINES });
+
+test("retry identity: a trace that moved with its call site is clean, and its identity is derived from the current identifier", () => {
+  assert.deepEqual(identityProblems([MOVED()]), [], "RETRY_IDENTITY_CLEAN: a trace at its current position is clean");
+  assert.equal(RETRY_IDENTITY_OF.callsite("a#L1C1"), "the operation behind a#L1C1", "RETRY_IDENTITY_FORM: a call site names its own identifier");
+  assert.equal(RETRY_IDENTITY_OF.edge("a#L1C1::f@L2:NULL_GUARD"), "the consumer f@L2:NULL_GUARD", "RETRY_IDENTITY_FORM: an edge names its consumer");
+  assert.deepEqual(parseSourceReference("src/x.ts:3-5"), { path: "src/x.ts", from: 3, to: 5 }, "RETRY_REFERENCE_PARSE: a range");
+  assert.deepEqual(parseSourceReference("src/x.ts:7"), { path: "src/x.ts", from: 7, to: 7 }, "RETRY_REFERENCE_PARSE: one line");
+  assert.deepEqual(parseSourceReference("src/x.ts"), { path: "src/x.ts", from: null, to: null }, "RETRY_REFERENCE_PARSE: a path alone");
+});
+
+test("retry identity: the old identifier of a moved call site is refused as the operation identity", () => {
+  const old = MOVED({ trace: TRACE({ operationIdentity: "the operation behind src/lib/x.ts#L248C24", sourceReferences: ["src/lib/x.ts:360-362"] }) });
+  assert.match(identityProblems([old])[0] ?? "no problem", /operationIdentity .* is not "the operation behind src\/lib\/x\.ts#L360C24"/, "RETRY_IDENTITY_OLD: an old identifier is refused");
+  const other = MOVED({ trace: TRACE({ operationIdentity: "the operation behind src/lib/x.ts#L393C24", sourceReferences: ["src/lib/x.ts:360-362"] }) });
+  assert.match(identityProblems([other])[0] ?? "no problem", /operationIdentity/, "RETRY_IDENTITY_OTHER_PAIR: another moved pair's identifier is refused");
+  const column = MOVED({ trace: TRACE({ operationIdentity: "the operation behind src/lib/x.ts#L360C25", sourceReferences: ["src/lib/x.ts:360-362"] }) });
+  assert.match(identityProblems([column])[0] ?? "no problem", /operationIdentity/, "RETRY_IDENTITY_COLUMN: the right line with the wrong column is refused");
+  const edge = { id: "src/lib/x.ts#L10C5::f@L40:NULL_GUARD", kind: "edge", trace: TRACE({ operationIdentity: "the consumer f@L39:NULL_GUARD", sourceReferences: ["src/lib/x.ts:40"] }), declared: false, talksAboutRetry: true };
+  assert.match(identityProblems([edge])[0] ?? "no problem", /operationIdentity/, "RETRY_IDENTITY_EDGE: an edge identity must be derived from the edge identifier");
+});
+
+test("retry identity: a source reference at the old position, or outside its file, is refused", () => {
+  const stale = MOVED({ trace: TRACE({ operationIdentity: "the operation behind src/lib/x.ts#L360C24", sourceReferences: ["src/lib/x.ts:248-250", "src/lib/w.ts:12"] }) });
+  assert.match(identityProblems([stale])[0] ?? "no problem", /no sourceReference in its own file lies within 2 lines before to 8 after the call site's current line 360/, "RETRY_REFERENCE_OLD_RANGE: the old range is refused");
+  const oldLine = MOVED({ trace: TRACE({ operationIdentity: "the operation behind src/lib/x.ts#L360C24", sourceReferences: ["src/lib/x.ts:283"] }) });
+  assert.match(identityProblems([oldLine])[0] ?? "no problem", /no sourceReference in its own file lies within/, "RETRY_REFERENCE_OLD_LINE: the old single line is refused");
+  const beyond = MOVED({ trace: TRACE({ operationIdentity: "the operation behind src/lib/x.ts#L360C24", sourceReferences: ["src/lib/x.ts:360-999"] }) });
+  assert.match(identityProblems([beyond])[0] ?? "no problem", /lies outside its file/, "RETRY_REFERENCE_OUTSIDE: a range past the end of the file is refused");
+  const inverted = MOVED({ trace: TRACE({ operationIdentity: "the operation behind src/lib/x.ts#L360C24", sourceReferences: ["src/lib/x.ts:362-360"] }) });
+  assert.match(identityProblems([inverted])[0] ?? "no problem", /lies outside its file/, "RETRY_REFERENCE_INVERTED: a reversed range is refused");
+  const edgeStale = { id: "src/lib/x.ts#L10C5::f@L40:NULL_GUARD", kind: "edge", trace: TRACE({ operationIdentity: "the consumer f@L40:NULL_GUARD", sourceReferences: ["src/lib/x.ts:30"] }), declared: false, talksAboutRetry: true };
+  assert.match(identityProblems([edgeStale])[0] ?? "no problem", /includes the consumer line 40/, "RETRY_REFERENCE_EDGE: an edge reference must include its consumer line");
+  const elsewhere = MOVED({ trace: TRACE({ operationIdentity: "the operation behind src/lib/x.ts#L360C24", sourceReferences: ["src/lib/w.ts:12"] }) });
+  assert.deepEqual(identityProblems([elsewhere]), [], "RETRY_REFERENCE_OTHER_FILE: a trace that cites only other files has no own-file window to hold");
+});
+
+test("retry identity: the committed adjudications and edge traces all follow their current identifiers", () => {
+  const adj = JSON.parse(readFileSync(join(HERE, "..", "getprisma-manual-adjudications.json"), "utf8")).adjudications;
+  const edges = JSON.parse(readFileSync(join(HERE, "..", "getprisma-consumer-edge-traces.json"), "utf8")).traces;
+  const root = join(HERE, "..", "..", "..", "..");
+  const count = (p) => {
+    try {
+      return readFileSync(join(root, p), "utf8").split("\n").length;
+    } catch {
+      return null;
+    }
+  };
+  assert.deepEqual(retryTraceIdentityViolations(retrySubjects(adj, edges), { lineCountOf: count }), [], "RETRY_IDENTITY_COMMITTED: no committed trace names a position other than its own");
 });
 
 test("retry: every adjudicated call site and every traced edge that concerns a retry carries a complete trace", () => {
@@ -1235,7 +1300,8 @@ test("retry: the outcome total is counted from the traces and equals the indepen
 
 test("retry: the completeness gate is computed from the committed data and stops the command line with exit 10", () => {
   const text = readFileSync(join(HERE, "..", "getprisma-callsite-inventory.mjs"), "utf8");
-  assert.match(text, /const retryTraceProblems = retryTraceViolations\(retrySubjects\(overrides\.adjudications \?\? \[\], edgeTraces\.traces \?\? \[\]\), \{ root \}\);/, "WIRING_RETRY_COMPUTE: the problems are derived from every adjudication and every edge trace");
+  assert.match(text, /const retrySubjectList = retrySubjects\(overrides\.adjudications \?\? \[\], edgeTraces\.traces \?\? \[\]\);/, "WIRING_RETRY_COMPUTE: the problems are derived from every adjudication and every edge trace");
+  assert.match(text, /\.\.\.retryTraceViolations\(retrySubjectList, \{ root \}\),\s*\.\.\.retryTraceIdentityViolations\(retrySubjectList, \{ lineCountOf: \(p\) => lineCountAt\(root, p\) \}\),/, "WIRING_RETRY_IDENTITY: the identity and reference gate runs on every subject, with the line counts of the working tree");
   assert.match(text, /if \(inv\.retryTraceProblems\.length > 0\) \{[\s\S]{0,400}?process\.exit\(10\);/, "WIRING_RETRY_EXIT: a retry problem stops the command line with exit 10");
   assert.match(text, /retryTraceProblems, fileCount: files\.length/, "WIRING_RETRY_EXPOSED: buildInventory exposes the problems");
 });

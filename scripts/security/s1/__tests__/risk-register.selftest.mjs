@@ -84,6 +84,18 @@ import {
   DELTA_UNIVERSE_COUNT,
   DELTA_UNIVERSE_SHA256,
   RECONCILED_UNIVERSE_SHA256,
+  FIRST_RELOCK_SNAPSHOT_PIN,
+  firstRelockSnapshot,
+  deltaLayerOfId,
+  deltaSourceOfId,
+  deltaDocumentIds,
+  DELTA_SOURCE_DOCUMENT,
+  SECOND_DELTA_SOURCE_DOCUMENT,
+  DELTA_SOURCE_DOCUMENTS,
+  FIRST_DELTA_UNIVERSE_COUNT,
+  FIRST_DELTA_UNIVERSE_SHA256,
+  SECOND_DELTA_UNIVERSE_COUNT,
+  SECOND_DELTA_UNIVERSE_SHA256,
   universeString,
   UNIVERSE_VERSION,
   extractSourceUniverse,
@@ -1246,7 +1258,7 @@ test("the review findings are NOT security findings and own nothing", () => {
     assert.equal(findingIn(REGISTER, id), undefined, `${id} must not be in the register`);
     for (const r of REGISTER.risks) assert.ok(!r.sourceFindingIds.includes(id), `${r.riskId} must not claim ${id}`);
   }
-  assert.equal(REVIEW_CLOSURE.length, 16, "all sixteen review findings are accounted for");
+  assert.equal(REVIEW_CLOSURE.length, 22, "all twenty-two review findings are accounted for");
   for (const [, , status] of REVIEW_CLOSURE) {
     assert.ok(
       ["FIXED", "FIXED_BY_DISCLOSURE_AND_DERIVED_PRESENTATION"].includes(status),
@@ -2043,7 +2055,7 @@ test("no risk datum moved during the checker hardening", () => {
   assert.ok(riskIn(REGISTER, "R-52").affectedAssets.includes("OT_GATEWAY_BOUNDARY"));
   // the HISTORICAL score histogram, rebuilt from the entries the delta did not add, with a revised entry at its former score
   const hist = {};
-  for (const r of REGISTER.risks.filter((x) => x.originScope !== "DELTA_RELOCK")) {
+  for (const r of REGISTER.risks.filter((x) => x.originScope !== "DELTA_RELOCK" && x.originScope !== "DELTA_RELOCK_2")) {
     const score = r.revision ? r.revision.supersedes.score : r.score;
     if (score > 0) hist[score] = (hist[score] ?? 0) + 1;
   }
@@ -5083,6 +5095,214 @@ test("FR-06 policy: the report matrix shows the open policy of exactly the risks
   const none = clone();
   for (const r of none.risks) delete r.policy;
   assert.equal(markdownBlocks(none).matrix.includes("**Open policy**"), false, "no row when no risk carries a policy");
+});
+
+// ──────── the second relock layer: pinned first layer, layered delta universe, no risk of its own ────────
+//
+// The supplementary relock adds findings and links them to risks the first relock already opened. It changes no value of
+// the first layer: the register as the first relock left it is a pinned snapshot, recomputed with the second layer's
+// findings set aside. Every assertion message starts with the code the gate must report, which is the fingerprint the
+// mutation campaign matches.
+
+test("S1-RLK2: the first relock is a pinned snapshot, and setting the second layer aside reproduces it", () => {
+  assert.deepEqual(REGISTER.reconciliation.firstRelockSnapshot, FIRST_RELOCK_SNAPSHOT_PIN, "FIRST_SNAPSHOT_PIN:the stored first-relock snapshot is the pin");
+  const universe = [...extractSourceUniverse().ids.keys()];
+  assert.deepEqual(firstRelockSnapshot(REGISTER, universe), FIRST_RELOCK_SNAPSHOT_PIN, "FIRST_SNAPSHOT_PIN:the recomputed first-relock snapshot is the pin");
+  const withoutSecond = clone();
+  withoutSecond.findings = withoutSecond.findings.filter((f) => deltaLayerOfId(f.findingId) !== "SECOND");
+  for (const r of withoutSecond.risks) r.sourceFindingIds = r.sourceFindingIds.filter((id) => deltaLayerOfId(id) !== "SECOND");
+  assert.deepEqual(firstRelockSnapshot(withoutSecond, universe), FIRST_RELOCK_SNAPSHOT_PIN, "FIRST_SNAPSHOT_INDEPENDENT:the snapshot does not depend on the second layer");
+  const c = counters(REGISTER);
+  assert.equal(c.S1_FINDINGS_TOTAL, FIRST_RELOCK_SNAPSHOT_PIN.findings + SECOND_DELTA_UNIVERSE_COUNT, "FIRST_SNAPSHOT_SUM:reconciled findings = first relock findings + second-layer findings");
+  assert.equal(c.S1_RISKS_TOTAL, FIRST_RELOCK_SNAPSHOT_PIN.risks + REGISTER.risks.filter((r) => r.originScope === "DELTA_RELOCK_2").length, "FIRST_SNAPSHOT_SUM:reconciled risks = first relock risks + the risks the second layer opened");
+});
+
+test("S1-RLK2: a layer is read from the identifier, and each layer has its own document", () => {
+  assert.equal(deltaLayerOfId("DELTA-RL-001"), "FIRST", "LAYER_OF_ID:a first-layer review finding");
+  assert.equal(deltaLayerOfId("DELTA-RR-007"), "FIRST", "LAYER_OF_ID:a first-layer remediation finding");
+  assert.equal(deltaLayerOfId("DELTA-RS-001"), "SECOND", "LAYER_OF_ID:a second-layer finding");
+  assert.equal(deltaSourceOfId("DELTA-RL-001"), DELTA_SOURCE_DOCUMENT, "LAYER_OF_ID:the first layer's document");
+  assert.equal(deltaSourceOfId("DELTA-RS-002"), SECOND_DELTA_SOURCE_DOCUMENT, "LAYER_OF_ID:the second layer's document");
+  assert.deepEqual([...DELTA_SOURCE_DOCUMENTS], [DELTA_SOURCE_DOCUMENT, SECOND_DELTA_SOURCE_DOCUMENT], "LAYER_OF_ID:both documents are sources of the delta family");
+});
+
+test("S1-RLK2: a layer's document may declare only the identifiers of its own layer", () => {
+  const root = mkdtempSync(join(tmpdir(), "s1-foreign-layer-"));
+  try {
+    mkdirSync(join(root, "docs", "security"), { recursive: true });
+    const first = { findings: [{ findingId: "RL-001" }, { findingId: "RS-009" }] };
+    writeFileSync(join(root, ...DELTA_SOURCE_DOCUMENT.split("/")), JSON.stringify(first));
+    writeFileSync(join(root, ...SECOND_DELTA_SOURCE_DOCUMENT.split("/")), JSON.stringify({ findings: [{ findingId: "RS-001" }] }));
+    const got = deltaDocumentIds(root);
+    assert.ok(String(got.error).startsWith("FOREIGN_LAYER_IDENTIFIER:"), `FOREIGN_LAYER_IDENTIFIER:expected a foreign-layer identifier to be refused, got ${got.error}`);
+    writeFileSync(join(root, ...DELTA_SOURCE_DOCUMENT.split("/")), JSON.stringify({ findings: [{ findingId: "RL-001" }] }));
+    writeFileSync(join(root, ...SECOND_DELTA_SOURCE_DOCUMENT.split("/")), JSON.stringify({ findings: [{ findingId: "RL-002" }] }));
+    assert.ok(String(deltaDocumentIds(root).error).startsWith("FOREIGN_LAYER_IDENTIFIER:"), "FOREIGN_LAYER_IDENTIFIER:a first-layer identifier in the second document is refused too");
+    writeFileSync(join(root, ...SECOND_DELTA_SOURCE_DOCUMENT.split("/")), JSON.stringify({ findings: [{ findingId: "RS-001" }] }));
+    assert.deepEqual(deltaDocumentIds(root), { error: null, ids: ["DELTA-RL-001", "DELTA-RS-001"] }, "FOREIGN_LAYER_IDENTIFIER:each document keeps its own identifiers");
+    rmSync(join(root, ...SECOND_DELTA_SOURCE_DOCUMENT.split("/")));
+    assert.ok(String(deltaDocumentIds(root).error).startsWith("MISSING_SOURCE_DOCUMENT:"), "FOREIGN_LAYER_IDENTIFIER:a missing second document is a missing source");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("S1-RLK2: a first-relock snapshot that is absent, stored differently or not reproduced is refused", () => {
+  expectRecon("FIRST_RELOCK_SNAPSHOT_ABSENT", (reg) => delete reg.reconciliation.firstRelockSnapshot);
+  expectRecon("FIRST_RELOCK_SNAPSHOT_DIFFERS_FROM_PIN", (reg) => (reg.reconciliation.firstRelockSnapshot.risks += 1));
+  expectRecon("FIRST_RELOCK_SNAPSHOT_NOT_REPRODUCED", (reg) => (riskIn(reg, "R-04").severity = "MEDIUM"));
+  expectRecon("FIRST_RELOCK_MERGE_CHANGED", (reg) => (reg.reconciliation.deltaReview.integrationMergeSha = "0".repeat(40)));
+});
+
+test("S1-RLK2: a first-layer value moved by a second-layer edit is refused", () => {
+  // the second layer may record a past in a revision, but it may not edit that past, nor a first-layer value that no revision records
+  expectRecon("FIRST_RELOCK_SNAPSHOT_NOT_REPRODUCED", (reg) => {
+    riskIn(reg, "R-72").secondLayerRevision.supersedes.productionState = "CODE_CONFIRMED_RUNTIME_UNPROVEN";
+  });
+  expectRecon("FIRST_RELOCK_SNAPSHOT_NOT_REPRODUCED", (reg) => {
+    riskIn(reg, "R-04").productionState = "CODE_CONFIRMED_RUNTIME_UNPROVEN";
+  });
+});
+
+test("S1-RLK2: the second delta review block is held to its shape, its range and its universe", () => {
+  expectRecon("SECOND_DELTA_REVIEW_ABSENT", (reg) => delete reg.reconciliation.secondDeltaReview);
+  expectRecon("SECOND_DELTA_REVIEW_SHA", (reg) => (reg.reconciliation.secondDeltaReview.targetMainSha = "66ca4ccc"));
+  expectRecon("SECOND_DELTA_REVIEW_ORIGINAL_SOURCE_DRIFT", (reg) => (reg.reconciliation.secondDeltaReview.originalFrozenSourceSha = "0".repeat(40)));
+  expectRecon("SECOND_DELTA_REVIEW_BASE_IS_NOT_THE_FIRST_TARGET", (reg) => (reg.reconciliation.secondDeltaReview.frozenSourceSha = "0".repeat(40)));
+  expectRecon("SECOND_DELTA_REVIEW_RANGE", (reg) => (reg.reconciliation.secondDeltaReview.range = "a..b"));
+  expectRecon("SECOND_DELTA_REVIEW_PROVENANCE", (reg) => (reg.reconciliation.secondDeltaReview.provenance = DELTA_SOURCE_DOCUMENT));
+  expectRecon("SECOND_DELTA_UNIVERSE_COUNT_STORED", (reg) => (reg.reconciliation.secondDeltaReview.deltaUniverseCount += 1));
+  expectRecon("SECOND_DELTA_UNIVERSE_HASH_STORED", (reg) => (reg.reconciliation.secondDeltaReview.deltaUniverseSha256 = "0".repeat(64)));
+  expectRecon("SECOND_DELTA_RISKS_TOUCHED_DIFFERS", (reg) => reg.reconciliation.secondDeltaReview.existingRisksTouched.pop());
+});
+
+test("S1-RLK2: the first-layer review stores the first layer's universe only", () => {
+  const first = REGISTER.findings.filter((f) => f.family === "DELTA" && deltaLayerOfId(f.findingId) === "FIRST").map((f) => f.findingId);
+  assert.equal(REGISTER.reconciliation.deltaReview.deltaUniverseCount, first.length, "FIRST_LAYER_STORED:the stored first-layer count excludes the second layer");
+  assert.equal(REGISTER.reconciliation.deltaReview.deltaUniverseSha256, sha256Hex(universeString(first)), "FIRST_LAYER_STORED:the stored first-layer hash excludes the second layer");
+  expectRecon("DELTA_UNIVERSE_COUNT_STORED", (reg) => reg.findings.splice(reg.findings.findIndex((f) => f.findingId === "DELTA-RL-001"), 1));
+});
+
+test("S1-RLK2: a classic revision never rides on a risk that owns a second-layer finding", () => {
+  expectRecon("SECOND_LAYER_REVISES_AN_ENTRY", (reg) => (riskIn(reg, "R-65").revision = { ...riskIn(reg, "R-53").revision }));
+});
+
+test("S1-RLK2: a second-layer finding names the second document, and a risk the first relock opened is its existing owner", () => {
+  expectRecon("DELTA_SOURCE", (reg) => (deltaFinding(reg, "DELTA-RS-001").source = DELTA_SOURCE_DOCUMENT));
+  assert.deepEqual(reconCodes(() => {}), new Set(), "SECOND_LAYER_OWNER:a second-layer finding owned by a first-layer delta risk passes every reconciliation gate");
+  assert.equal(deltaFinding(REGISTER, "DELTA-RS-001").deltaDisposition, "OWNED_BY_EXISTING_RISK", "SECOND_LAYER_OWNER:the finding is owned by an existing risk");
+});
+
+test("S1-RLK2: the first and the second layer are pinned by count and hash on their own", () => {
+  const without = (id) => {
+    const reg = clone();
+    reg.findings = reg.findings.filter((f) => f.findingId !== id);
+    return reg;
+  };
+  assert.ok(findingUniverseViolations(without("DELTA-RR-004")).some((v) => v.why === "FIRST_LAYER_DELTA_UNIVERSE_CHANGED"), "FIRST_LAYER_DELTA_UNIVERSE_CHANGED:expected FIRST_LAYER_DELTA_UNIVERSE_CHANGED when a first-layer finding is deleted");
+  assert.ok(findingUniverseViolations(without("DELTA-RS-002")).some((v) => v.why === "SECOND_LAYER_DELTA_UNIVERSE_CHANGED"), "SECOND_LAYER_DELTA_UNIVERSE_CHANGED:expected SECOND_LAYER_DELTA_UNIVERSE_CHANGED when a second-layer finding is deleted");
+  assert.equal(FIRST_DELTA_UNIVERSE_COUNT + SECOND_DELTA_UNIVERSE_COUNT, DELTA_UNIVERSE_COUNT, "LAYER_PINS:the layers add up to the delta universe");
+  const first = REGISTER.findings.filter((f) => deltaLayerOfId(f.findingId) === "FIRST" && f.family === "DELTA").map((f) => f.findingId);
+  const second = REGISTER.findings.filter((f) => deltaLayerOfId(f.findingId) === "SECOND").map((f) => f.findingId);
+  assert.equal(sha256Hex(universeString(first)), FIRST_DELTA_UNIVERSE_SHA256, "LAYER_PINS:the first-layer hash is the pin");
+  assert.equal(sha256Hex(universeString(second)), SECOND_DELTA_UNIVERSE_SHA256, "LAYER_PINS:the second-layer hash is the pin");
+});
+
+// ──────── the second layer may open a risk and may extend an existing one, append-only ────────
+//
+// R-74 is the only risk the second layer opened (scope DELTA_RELOCK_2); R-65 and R-72 are existing risks it extended. The first
+// relock's snapshot stays the pinned one because a revised risk is read as the revision recorded it. Every assertion
+// message starts with the code the gate must report, which is the fingerprint the mutation campaign matches.
+
+const secondRevision = (reg, id = "R-65") => riskIn(reg, id).secondLayerRevision;
+
+test("S1-RLK3: a second-layer finding carries the second scope, and a risk of the second layer owns second-layer findings only", () => {
+  expectRecon("DELTA_FINDING_SCOPE_LAYER", (reg) => (deltaFinding(reg, "DELTA-RS-001").originScope = "DELTA_RELOCK"));
+  expectRecon("DELTA_FINDING_SCOPE_LAYER", (reg) => (deltaFinding(reg, "DELTA-RL-001").originScope = "DELTA_RELOCK_2"));
+  expectRecon("DELTA_RISK_OWNS_OTHER_LAYER_FINDING", (reg) => riskIn(reg, "R-74").sourceFindingIds.push("DELTA-RL-001"));
+  expectRecon("SECOND_LAYER_RISK_REVISED_CLASSICALLY", (reg) => (riskIn(reg, "R-74").revision = { ...riskIn(reg, "R-53").revision }));
+  assert.equal(riskIn(REGISTER, "R-74").originScope, "DELTA_RELOCK_2", "SECOND_SCOPE_OWNER:R-74 was opened by the second layer");
+});
+
+test("S1-RLK3: the second layer may open a risk of its own, and only a risk of its own scope is new for it", () => {
+  assert.deepEqual(reconCodes(() => {}), new Set(), "SECOND_RISK_OPENED:the committed register passes every reconciliation gate with R-74 opened by the second layer");
+  assert.equal(deltaFinding(REGISTER, "DELTA-RS-003").deltaDisposition, "OWNED_BY_NEW_RISK", "SECOND_RISK_OPENED:the finding that opened R-74 is a new-risk disposition");
+  expectRecon("NEW_RISK_DISPOSITION_ON_EXISTING_OWNER", (reg) => (deltaFinding(reg, "DELTA-RS-001").deltaDisposition = "OWNED_BY_NEW_RISK"));
+  expectRecon("EXISTING_RISK_DISPOSITION_ON_SECOND_LAYER_OWNER", (reg) => (deltaFinding(reg, "DELTA-RS-003").deltaDisposition = "OWNED_BY_EXISTING_RISK"));
+  expectRecon("SECOND_DELTA_RISKS_OPENED_DIFFERS", (reg) => (reg.reconciliation.secondDeltaReview.risksOpened = []));
+  expectRecon("SECOND_DELTA_RISKS_REVISED_DIFFERS", (reg) => reg.reconciliation.secondDeltaReview.risksRevised.pop());
+});
+
+test("S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason", () => {
+  assert.ok(secondRevision(REGISTER), "SECOND_REVISION_PRESENT:R-65 carries a second-layer revision");
+  expectRecon("SECOND_REVISION_SCOPE", (reg) => (secondRevision(reg).scope = "DELTA_RELOCK"));
+  expectRecon("SECOND_REVISION_WITH_CLASSIC_REVISION", (reg) => (riskIn(reg, "R-65").revision = { ...riskIn(reg, "R-53").revision }));
+  expectRecon("SECOND_REVISION_ON_SECOND_LAYER_RISK", (reg) => (riskIn(reg, "R-74").secondLayerRevision = JSON.parse(JSON.stringify(secondRevision(reg)))));
+  expectRecon("SECOND_REVISION_WITHOUT_REASON", (reg) => (secondRevision(reg).reason = "short"));
+  expectRecon("SECOND_REVISION_WITHOUT_FINDING", (reg) => (secondRevision(reg).findingIds = []));
+  expectRecon("SECOND_REVISION_UNKNOWN_FINDING", (reg) => (secondRevision(reg).findingIds = ["DELTA-RS-999"]));
+  expectRecon("SECOND_REVISION_WRONG_LAYER", (reg) => {
+    riskIn(reg, "R-65").sourceFindingIds.push("DELTA-RL-001");
+    secondRevision(reg).findingIds = ["DELTA-RL-001"];
+  });
+  expectRecon("SECOND_REVISION_FINDING_NOT_OWNED", (reg) => (secondRevision(reg).findingIds = ["DELTA-RS-002"]));
+  expectRecon("SECOND_REVISION_WITHOUT_SUPERSEDED_VALUES", (reg) => (secondRevision(reg).supersedes = {}));
+  expectRecon("SECOND_REVISION_WITHOUT_SUPERSEDED_VALUES", (reg) => delete secondRevision(reg).supersedes);
+  expectRecon("SECOND_REVISION_SUPERSEDED_ARITHMETIC", (reg) => (secondRevision(reg).supersedes.score = 11));
+});
+
+test("S1-RLK3: a factor review covers all nine factors and agrees with both ends", () => {
+  expectRecon("SECOND_REVISION_FACTOR_REVIEW_ABSENT", (reg) => delete secondRevision(reg).factorReview);
+  expectRecon("SECOND_REVISION_FACTOR_NOT_REVIEWED", (reg) => delete secondRevision(reg).factorReview.integrity);
+  expectRecon("SECOND_REVISION_FACTOR_BEFORE_DIFFERS", (reg) => (secondRevision(reg).factorReview.reachability.before = 4));
+  expectRecon("SECOND_REVISION_FACTOR_AFTER_DIFFERS", (reg) => (secondRevision(reg).factorReview.reachability.after = 4));
+  expectRecon("SECOND_REVISION_FACTOR_WITHOUT_REASON", (reg) => (secondRevision(reg).factorReview.reachability.reason = "same"));
+  for (const k of [...LIKELIHOOD_FACTOR_KEYS, ...IMPACT_FACTOR_KEYS]) {
+    assert.ok(secondRevision(REGISTER).factorReview[k], `FACTOR_REVIEW_COMPLETE:${k} is reviewed in R-65`);
+    assert.ok(secondRevision(REGISTER, "R-72").factorReview[k], `FACTOR_REVIEW_COMPLETE:${k} is reviewed in R-72`);
+  }
+});
+
+test("S1-RLK3: a second-layer revision is append-only and must add something", () => {
+  expectRecon("SECOND_REVISION_NOT_APPEND_ONLY", (reg) => riskIn(reg, "R-65").controlGaps.shift());
+  expectRecon("SECOND_REVISION_NOT_APPEND_ONLY", (reg) => (riskIn(reg, "R-65").acceptanceCriteria[0] = "A reworded criterion."));
+  expectRecon("SECOND_REVISION_NOT_APPEND_ONLY", (reg) => riskIn(reg, "R-65").evidence.shift());
+  expectRecon("SECOND_REVISION_NOT_APPEND_ONLY", (reg) => (riskIn(reg, "R-65").residualRisk = "A different text."));
+  expectRecon("SECOND_REVISION_EMPTY", (reg) => {
+    const r = riskIn(reg, "R-65");
+    for (const f of ["preconditions", "existingControls", "controlGaps", "acceptanceCriteria", "evidence"]) r[f] = JSON.parse(JSON.stringify(r.secondLayerRevision.supersedes[f]));
+  });
+});
+
+test("S1-RLK3: a risk the second layer revised is read as it was in the first relock's snapshot", () => {
+  const reg = clone();
+  const r = riskIn(reg, "R-72");
+  r.impactFactors.confidentiality = 4;
+  r.secondLayerRevision.factorReview.confidentiality.after = 4;
+  const moved = canonicalize(reg);
+  const universe = [...extractSourceUniverse().ids.keys()];
+  assert.equal(riskIn(moved, "R-72").severity, "HIGH", "SNAPSHOT_READ_AS_BEFORE:the revision really moves R-72 into HIGH");
+  assert.deepEqual(firstRelockSnapshot(moved, universe), FIRST_RELOCK_SNAPSHOT_PIN, "SNAPSHOT_READ_AS_BEFORE:the first relock's snapshot still reads R-72 as the revision recorded it");
+  const plain = JSON.parse(JSON.stringify(moved));
+  delete riskIn(plain, "R-72").secondLayerRevision;
+  assert.notDeepEqual(firstRelockSnapshot(plain, universe), FIRST_RELOCK_SNAPSHOT_PIN, "SNAPSHOT_READ_AS_BEFORE:without the recorded past the same edit would move the snapshot");
+});
+
+test("S1-RLK3: R-74 records the conditions the performance suite's database guard must meet, and its score is derived", () => {
+  const r = riskIn(REGISTER, "R-74");
+  assert.equal(r.severity, "LOW", "RISK_74:the severity is computed, and it is LOW");
+  assert.equal(r.score, r.likelihood * r.impact, "RISK_74:the score is the product");
+  assert.equal(r.productionState, "CODE_CONFIRMED_RUNTIME_UNPROVEN", "RISK_74:the state says the code is confirmed and nothing was run");
+  const criteria = r.acceptanceCriteria.join("\n");
+  for (const [label, rx] of [
+    ["a database the harness created", /database that the harness itself created/],
+    ["an exact allowlist, not a substring", /exact allowlist[^.]*never by substring/],
+    ["a tunnel or production-like target refused", /tunnel or a production-like target is refused/],
+    ["an organization fixture of its own", /organization fixture of its own/],
+    ["teardown and proof of cleanup", /teardown removes every row[^.]*counts the fixture's rows/],
+    ["deceptive URLs", /deceptive URLs are refused/],
+  ]) assert.match(criteria, rx, `RISK_74:the acceptance criteria require ${label}`);
+  assert.deepEqual(r.sourceFindingIds, ["DELTA-RS-003"], "RISK_74:it owns exactly the finding that opened it");
 });
 
 // ──────── the last test: the ledger's reconciliation (S1-FA-04 / I4) ───────────

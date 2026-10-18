@@ -41,7 +41,7 @@ import { recordViolations } from "./relock-delta-check.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = join(HERE, "..", "..", "..");
-export const MANIFEST_VERSION = "relock-mut-1";
+export const MANIFEST_VERSION = "relock-mut-2";
 export const CHECKER_REL = "scripts/security/s1/relock-delta-check.mjs";
 export const IMPORT_REL = "scripts/security/s1/risk-register-check.mjs";
 export const S0_REL = "scripts/security/s0/getprisma-callsite-inventory.mjs";
@@ -379,9 +379,9 @@ export const MANIFEST = Object.freeze([
     "return fail(EXIT.SCHEMA,",
     "return fail(Number(EXIT.MALFORMED_JSON),"),
   m("M79", "cli: generate refreshes blocks", E2E, "e2e generate is idempotent: regenerating the committed inputs changes no byte", "generate: expected the report to be unchanged",
-    "writeFileSync(paths.report, fillBlocks(md, renderBlocks(canonical, record)));",
+    "writeFileSync(paths.report, fillBlocks(md, renderBlocks(canonical, record), blockNamesOf(layerOf(canonical))));",
     "writeFileSync(paths.report, md);",
-    "writeFileSync(paths.report, fillBlocks(md, renderBlocks(canonical, record ?? null)));"),
+    "writeFileSync(paths.report, fillBlocks(md, renderBlocks(canonical, record ?? null), blockNamesOf(layerOf(canonical))));"),
   m("M80", "cli: usage exit", E2E, "e2e usage: an unknown mode is a usage error", "usage: expected exit 2, got",
     "return stop(EXIT.USAGE, `unknown mode",
     "return stop(EXIT.SCHEMA, `unknown mode",
@@ -650,14 +650,14 @@ export const MANIFEST = Object.freeze([
     "\"--untracked-files=all\"], root);",
     "\"--untracked-files=no\"], root);",
     "\"--untracked-files=all\", ], root);"),
-  m("M147", "head: moved outside the allowlist", UNIT, "head: a descendant that changed only the allowlist is accepted, one that changed a product file is refused", "HEAD_MOVED_OUTSIDE_ALLOWLIST",
-    "return outside.length ? [v(\"SOURCES\", \"HEAD_MOVED_OUTSIDE_ALLOWLIST\", `${outside.length} path(s) changed since the integration merge outside the allowlist, first ${outside[0]}`)] : [];",
-    "return [];",
-    "return outside.length > 0 ? [v(\"SOURCES\", \"HEAD_MOVED_OUTSIDE_ALLOWLIST\", `${outside.length} path(s) changed since the integration merge outside the allowlist, first ${outside[0]}`)] : [];"),
+  m("M147", "head: moved outside the allowlist", UNIT, "head: a descendant that changed a product, workflow, package, migration, deploy or config path is refused, commit by commit", "expected HEAD_MOVED_OUTSIDE_ALLOWLIST, got",
+    "if (outside.length) out.push(v(\"SOURCES\", \"HEAD_MOVED_OUTSIDE_ALLOWLIST\", `${outside.length} path(s) changed since the integration merge outside the allowlist, first ${outside[0]}`));",
+    "void outside;",
+    "if (outside.length > 0) out.push(v(\"SOURCES\", \"HEAD_MOVED_OUTSIDE_ALLOWLIST\", `${outside.length} path(s) changed since the integration merge outside the allowlist, first ${outside[0]}`));"),
   m("M148", "wiring: head gate", UNIT, "wiring: checkRelock applies the head gate", "WIRING_HEAD",
-    "  out.push(...headViolations(s, root));",
+    "  out.push(...headViolations(s, root, headBase));",
     "  void headViolations;",
-    "  out.push(...headViolations(s, root)); /* kept */"),
+    "  out.push(...headViolations(s, root, headBase)); /* kept */"),
   m("M149", "wiring: worktree gate", UNIT, "wiring: checkRelock applies the worktree gate", "WIRING_WORKTREE",
     "  out.push(...worktreeViolations(worktreeStatus(root)));",
     "  void worktreeViolations;",
@@ -811,9 +811,9 @@ export const MANIFEST = Object.freeze([
     "    const flags = typed;",
     "    const flags = r.adjudication?.retryTrace && deriveRetrySuppression(r.adjudication.retryTrace) === true ? [...typed, \"RETRY_SUPPRESSION\"] : typed;", "s0"),
   m("M188", "s0 retry: the completeness gate is computed", S0, "retry: the completeness gate is computed from the committed data and stops the command line with exit 10", "WIRING_RETRY_COMPUTE",
-    "  const retryTraceProblems = retryTraceViolations(retrySubjects(overrides.adjudications ?? [], edgeTraces.traces ?? []), { root });",
-    "  const retryTraceProblems = [];",
-    "  const retryTraceProblems = retryTraceViolations(retrySubjects(overrides.adjudications ?? [], edgeTraces.traces ?? []), { root }); // pinned", "s0"),
+    "  const retrySubjectList = retrySubjects(overrides.adjudications ?? [], edgeTraces.traces ?? []);",
+    "  const retrySubjectList = [];",
+    "  const retrySubjectList = retrySubjects(overrides.adjudications ?? [], edgeTraces.traces ?? []); // pinned", "s0"),
   m("M189", "s0 retry: the completeness gate stops the command", S0, "retry: the completeness gate is computed from the committed data and stops the command line with exit 10", "WIRING_RETRY_EXIT",
     "  if (inv.retryTraceProblems.length > 0) {",
     "  if (false) {",
@@ -974,6 +974,394 @@ export const MANIFEST = Object.freeze([
     "  if (!gitOk([\"rev-parse\", \"--git-dir\"], paths.root)) return stop(EXIT.MISSING_FILE, \"git is required\");",
     "  if (false) return stop(EXIT.MISSING_FILE, \"git is required\");",
     "  if (gitOk([\"rev-parse\", \"--git-dir\"], paths.root) === false) return stop(EXIT.MISSING_FILE, \"git is required\");"),
+  m("M233", "layer 2: original frozen source required", UNIT, "layer 2: a second-layer document without the original frozen source is refused", FP("ORIGINAL_FROZEN_SOURCE_ABSENT"),
+    "if (!s.originalFrozenSourceSha) add(\"SOURCES\", \"ORIGINAL_FROZEN_SOURCE_ABSENT\"",
+    "if (false) add(\"SOURCES\", \"ORIGINAL_FROZEN_SOURCE_ABSENT\"",
+    "if (s.originalFrozenSourceSha === undefined) add(\"SOURCES\", \"ORIGINAL_FROZEN_SOURCE_ABSENT\""),
+  m("M234", "layer 2: original frozen source must be an ancestor", UNIT, "layer 2: an original frozen source that is not a proper ancestor of the range base is refused", FP("ORIGINAL_FROZEN_SOURCE_NOT_ANCESTOR"),
+    "else if (!gitOk([\"merge-base\", \"--is-ancestor\", s.originalFrozenSourceSha, s.frozenSourceSha], root) || s.originalFrozenSourceSha === s.frozenSourceSha) {",
+    "else if (false || s.originalFrozenSourceSha === s.frozenSourceSha) {",
+    "else if (!gitOk([\"merge-base\", \"--is-ancestor\", s.originalFrozenSourceSha, s.frozenSourceSha], root) || s.originalFrozenSourceSha === s.frozenSourceSha || false) {"),
+  m("M235", "layer 2: original frozen source must be a proper ancestor", UNIT, "layer 2: an original frozen source that is not a proper ancestor of the range base is refused", FP("ORIGINAL_FROZEN_SOURCE_NOT_ANCESTOR"),
+    "else if (!gitOk([\"merge-base\", \"--is-ancestor\", s.originalFrozenSourceSha, s.frozenSourceSha], root) || s.originalFrozenSourceSha === s.frozenSourceSha) {",
+    "else if (!gitOk([\"merge-base\", \"--is-ancestor\", s.originalFrozenSourceSha, s.frozenSourceSha], root)) {",
+    "else if (!gitOk([\"merge-base\", \"--is-ancestor\", s.originalFrozenSourceSha, s.frozenSourceSha], root) || s.frozenSourceSha === s.originalFrozenSourceSha) {"),
+  m("M236", "layer 2: a first-layer document has no original frozen source", UNIT, "layer 2: a first-layer document that names an original frozen source is refused", FP("ORIGINAL_FROZEN_SOURCE_UNEXPECTED"),
+    "} else if (s.originalFrozenSourceSha !== undefined) {",
+    "} else if (false) {",
+    "} else if (undefined !== s.originalFrozenSourceSha) {"),
+  m("M237", "layer 2: reconciled tree must descend from the merge", UNIT, "layer 2: a reconciled tree commit that does not descend from the integration merge is refused", FP("RECONCILED_TREE_NOT_DESCENDANT"),
+    "if (s.reconciledTreeSha !== undefined && (!hasCommit(s.reconciledTreeSha, root) ||",
+    "if (false && (!hasCommit(s.reconciledTreeSha, root) ||",
+    "if (undefined !== s.reconciledTreeSha && (!hasCommit(s.reconciledTreeSha, root) ||"),
+  m("M238", "layer 2: the first layer's head base is the later merge", UNIT, "head: the committed layer is measured from the repository's real history, whatever position HEAD has", "HEAD_BASE_FIRST",
+    "  const headBase = layer === \"FIRST\" ? successorBase(paths, s) : s.integrationMergeSha;",
+    "  const headBase = s.integrationMergeSha;",
+    "  const headBase = layer !== \"SECOND\" ? successorBase(paths, s) : s.integrationMergeSha;"),
+  m("M239", "layer 2: a successor must descend from the first-layer merge", UNIT, "layer 2: a successor that does not descend from the first-layer merge is not accepted as the head base", "HEAD_BASE_DESCENDANT",
+    "if (hasCommit(sha, paths.root) && sha !== sources.integrationMergeSha && gitOk([\"merge-base\", \"--is-ancestor\", sources.integrationMergeSha, sha], paths.root)) return sha;",
+    "if (hasCommit(sha, paths.root) && sha !== sources.integrationMergeSha) return sha;",
+    "if (hasCommit(sha, paths.root) && sha !== sources.integrationMergeSha && gitOk([\"merge-base\", \"--is-ancestor\", sources.integrationMergeSha, sha], paths.root) === true) return sha;"),
+  m("M240", "layer 2: HEAD is judged against the base it is given", UNIT, "layer 2: HEAD is judged against the base it is given", "expected HEAD_MOVED_OUTSIDE_ALLOWLIST, got",
+    "  if (head === base) return [];",
+    "  if (head === sources.integrationMergeSha) return [];",
+    "  if (head === base && true) return [];"),
+  m("M241", "layer 2: the diff is taken from the base it is given", UNIT, "layer 2: the diff is taken from the base it is given", "expected HEAD_MOVED_OUTSIDE_ALLOWLIST, got",
+    "git([\"diff\", \"--name-only\", \"--no-renames\", base, head], root)",
+    "git([\"diff\", \"--name-only\", \"--no-renames\", sources.integrationMergeSha, head], root)",
+    "git([\"diff\", \"--name-only\", \"--no-renames\", `${base}`, head], root)"),
+  m("M242", "layer 2: a finding carries its own layer's prefix", UNIT, "layer 2: a first-layer identifier in a second-layer document is refused", FP("FINDING_LAYER"),
+    "else if (!LAYER_ID_PREFIXES[layer].includes(idPrefix(w))) add(\"FINDINGS\", \"FINDING_LAYER\"",
+    "else if (false) add(\"FINDINGS\", \"FINDING_LAYER\"",
+    "else if (LAYER_ID_PREFIXES[layer].includes(idPrefix(w)) === false) add(\"FINDINGS\", \"FINDING_LAYER\""),
+  m("M243", "layer 2: an observation carries its own layer's prefix", UNIT, "layer 2: an observation of the wrong layer is refused", FP("OBSERVATION_ID"),
+    "if (!OBSERVATION_ID.test(p.id) || !LAYER_ID_PREFIXES[layer].includes(idPrefix(p.id))) add(",
+    "if (!OBSERVATION_ID.test(p.id)) add(",
+    "if (!OBSERVATION_ID.test(p.id) || LAYER_ID_PREFIXES[layer].includes(idPrefix(p.id)) === false) add("),
+  m("M244", "layer 2: a new-risk disposition needs a risk of the second layer", UNIT, "layer 2: a second-layer finding that claims a new risk is refused", "expected SECOND_LAYER_NEW_RISK, got",
+    "if (f.disposition === \"OWNED_BY_NEW_RISK\" && !ownScope) add(\"FINDINGS\", \"SECOND_LAYER_NEW_RISK\"",
+    "if (false) add(\"FINDINGS\", \"SECOND_LAYER_NEW_RISK\"",
+    "if (\"OWNED_BY_NEW_RISK\" === f.disposition && ownScope === false) add(\"FINDINGS\", \"SECOND_LAYER_NEW_RISK\""),
+  m("M245", "layer 2: a document is asked only for its own layer's findings", UNIT, "layer 2: the first-layer document is not asked to declare the second layer's findings", "LAYER_SOURCE_FILTER",
+    "x.family === DELTA_FAMILY && (x.source === undefined || x.source === docRel)",
+    "x.family === DELTA_FAMILY",
+    "x.family === DELTA_FAMILY && (x.source === docRel || x.source === undefined)"),
+  m("M246", "layer 2: the first layer's content pins are not applied to the second", UNIT, "layer 2: the content pins of the first layer are not applied to the second", "LAYER_PIN_SCOPE",
+    "if (layer === \"FIRST\") out.push(...identityViolations(data, reg, fresh.derivedFacts, root));",
+    "out.push(...identityViolations(data, reg, fresh.derivedFacts, root));",
+    "if (layer !== \"SECOND\") out.push(...identityViolations(data, reg, fresh.derivedFacts, root));"),
+  m("M247", "layer 2: the original register hash pin belongs to the first layer", UNIT, "layer 2: the original register hash pin belongs to the first layer", "FROZEN_REGISTER_PIN_SCOPE",
+    "layer === \"FIRST\" ? reg.reconciliation?.historicalSnapshot?.registerFileSha256 ?? null : null",
+    "reg.reconciliation?.historicalSnapshot?.registerFileSha256 ?? null",
+    "layer !== \"SECOND\" ? reg.reconciliation?.historicalSnapshot?.registerFileSha256 ?? null : null"),
+  m("M248", "layer 2: only a document that names a reconciled tree is sealed", UNIT, "layer 2: a sealed layer reads its reconciled tree from git and an unsealed one reads the files", "SEALED: the second layer is not sealed",
+    "  if (sources.reconciledTreeSha === undefined) return false;",
+    "  if (false) return false;",
+    "  if (undefined === sources.reconciledTreeSha) return false;"),
+  m("M249", "layer 2: a sealed layer yields to caller-supplied files", UNIT, "layer 2: a sealed layer reads its reconciled tree from git and an unsealed one reads the files", "SEALED: a caller-supplied inventory is read as given",
+    "  return paths.inventory === d.inventory && paths.adjudications === d.adjudications;",
+    "  return true;",
+    "  return d.inventory === paths.inventory && d.adjudications === paths.adjudications;"),
+  m("M250", "layer 2: a sealed layer reads its inventory from git", UNIT, "layer 2: the sealed first layer's figures do not follow the current inventory", "SEALED_FIGURES: the sealed figures are the recorded ones",
+    "const after = sealedTree(sources, paths) ? JSON.parse(git([\"show\", `${sources.reconciledTreeSha}:${S0_INVENTORY_REL}`], root)) : readJson(paths.inventory);",
+    "const after = readJson(paths.inventory);",
+    "const after = sealedTree(sources, paths) === true ? JSON.parse(git([\"show\", `${sources.reconciledTreeSha}:${S0_INVENTORY_REL}`], root)) : readJson(paths.inventory);"),
+  m("M251", "layer 2: the batch blob reader skips what is not a blob", UNIT, "layer 2: the batch blob reader returns what git returns", "BLOB_READER",
+    "if (header[1] !== \"blob\") continue;",
+    "",
+    "if (header[1] !== \"blob\") { continue; }"),
+  m("M252", "layer 2: the batch blob reader steps over the separator", UNIT, "layer 2: the batch blob reader returns what git returns", "BLOB_READER",
+    "    at += size + 1;",
+    "    at += size;",
+    "    at += 1 + size;"),
+  m("M253", "layer 2: a document without a layer is the first", UNIT, "layer 2: a document without a layer is the first, and the layers are named by their document", "LAYER_DEFAULT",
+    "export const layerOf = (data) => data?.sources?.layer ?? \"FIRST\";",
+    "export const layerOf = (data) => data?.sources?.layer ?? \"SECOND\";",
+    "export const layerOf = (data) => (data?.sources?.layer === undefined ? \"FIRST\" : data.sources.layer);"),
+  m("M254", "layer 2: the second-layer report names its columns", UNIT, "layer 2: the committed second-layer provenance has no violation", "expected no violation, got",
+    "second ? \"| | First relock tree | Integrated tree |\" : \"| | Frozen source | Integrated tree |\",",
+    "\"| | Frozen source | Integrated tree |\",",
+    "(second === true) ? \"| | First relock tree | Integrated tree |\" : \"| | Frozen source | Integrated tree |\","),
+  m("M255", "layer 2: the second layer has its own prefix", UNIT, "layer 2: a first-layer identifier in a second-layer document is refused", FP("FINDING_LAYER"),
+    "SECOND: Object.freeze([\"RS\"])",
+    "SECOND: Object.freeze([\"RS\", \"RL\"])",
+    "SECOND: Object.freeze([\"R\" + \"S\"])"),
+  m("M256", "layer 2: the first layer has its own prefixes", UNIT, "layer 2: a second-layer identifier in a first-layer document is refused", FP("FINDING_LAYER"),
+    "FIRST: Object.freeze([\"RL\", \"RR\"])",
+    "FIRST: Object.freeze([\"RL\", \"RR\", \"RS\"])",
+    "FIRST: Object.freeze([\"RL\", \"R\" + \"R\"])"),
+  m("M257", "layer 2: --layer=2 selects the second layer", E2E, "e2e layer: --layer=2 checks the second-layer document and its report and exits 0 on the committed files", "layer 2 clean: the summary is the second layer",
+    "opts.layer === \"2\" ? \"SECOND\" : \"FIRST\"",
+    "\"FIRST\"",
+    "opts.layer == \"2\" ? \"SECOND\" : \"FIRST\""),
+  m("M258", "layer 2: the layers have different documents", E2E, "e2e layer: the second-layer paths are not the first layer's", "LAYER_PATHS: the documents differ",
+    "SECOND: Object.freeze({ data: \"s1-second-relock-delta.json\", report: \"S1-SECOND-DELTA-RELOCK.md\", record: \"s1-relock-mutation-record.json\" }),",
+    "SECOND: Object.freeze({ data: \"s1-relock-delta.json\", report: \"S1-SECOND-DELTA-RELOCK.md\", record: \"s1-relock-mutation-record.json\" }),",
+    "SECOND: Object.freeze({ data: \"s1-second-relock-delta.json\", report: \"S1-SECOND-DELTA-RELOCK.md\", record: \"s1-relock-mutation-record.json\", }),"),
+  m("M259", "cli parser: an invalid layer value", UNIT, "cli parser: every other spelling of the layer is refused and never read as the first layer", "LAYER_PARSER: expected",
+    "else if (name === \"layer\" && !LAYER_VALUES.includes(value)) errors.push(",
+    "else if (false) errors.push(",
+    "else if (name === \"layer\" && !(LAYER_VALUES.includes(value))) errors.push("),
+  m("M260", "cli parser: a repeated option", UNIT, "cli parser: every other spelling of the layer is refused and never read as the first layer", "LAYER_PARSER: expected",
+    "else if (Object.prototype.hasOwnProperty.call(opts, name)) errors.push(",
+    "else if (false) errors.push(",
+    "else if (Object.prototype.hasOwnProperty.call(opts, name) === true) errors.push("),
+  m("M261", "cli parser: an empty value", UNIT, "cli parser: unknown options, stray arguments, repeated options and empty values are usage errors", "LAYER_PARSER: expected",
+    "else if (value === \"\") errors.push(",
+    "else if (false) errors.push(",
+    "else if (value.length === 0) errors.push("),
+  m("M262", "cli parser: an unknown option", UNIT, "cli parser: unknown options, stray arguments, repeated options and empty values are usage errors", "LAYER_PARSER: expected",
+    "if (!OPTION_NAMES.includes(name)) errors.push(",
+    "if (false) errors.push(",
+    "if (OPTION_NAMES.includes(name) === false) errors.push("),
+  m("M263", "cli parser: a stray argument", UNIT, "cli parser: unknown options, stray arguments, repeated options and empty values are usage errors", "LAYER_PARSER: expected",
+    "if (rest.length > 1) errors.push(",
+    "if (false) errors.push(",
+    "if (rest.length >= 2) errors.push("),
+  m("M264", "cli: a usage error stops the command", E2E, "e2e layer parser: an invalid layer is a usage error for every mode and never falls back to the first layer", "expected exit 2, got",
+    "if (errors.length > 0) return stop(EXIT.USAGE, `usage: ${errors[0]}`);",
+    "void errors;",
+    "if (errors.length !== 0) return stop(EXIT.USAGE, `usage: ${errors[0]}`);"),
+  m("M265", "cli: no layer is the first layer", E2E, "e2e layer parser: the two valid layers give different answers and no layer gives the first", "no layer is the first layer",
+    "defaultPaths(root, opts.layer === \"2\" ? \"SECOND\" : \"FIRST\")",
+    "defaultPaths(root, opts.layer === \"1\" ? \"FIRST\" : \"SECOND\")",
+    "defaultPaths(root, opts.layer !== \"2\" ? \"FIRST\" : \"SECOND\")"),
+  m("M266", "head: not a descendant of the base", UNIT, "head: an unrelated commit, a rewritten history and a history that lost the merge are not descendants", "expected HEAD_NOT_DESCENDANT_OF_BASE, got",
+    "return [v(\"SOURCES\", \"HEAD_NOT_DESCENDANT_OF_BASE\", \"HEAD does not descend from the commit it is measured against\")];",
+    "return [];",
+    "return [v(\"SOURCES\", \"HEAD_NOT_DESCENDANT_OF_BASE\", \"HEAD does not descend from the commit it is measured against\")]; /* pinned */"),
+  m("M267", "head: a merge after the integration merge", UNIT, "head: a merge commit after the integration merge is refused even when it brings only allowlisted paths", "expected HEAD_MERGE_AFTER_INTEGRATION, got",
+    "if (merges.length) out.push(v(\"SOURCES\", \"HEAD_MERGE_AFTER_INTEGRATION\"",
+    "if (false) out.push(v(\"SOURCES\", \"HEAD_MERGE_AFTER_INTEGRATION\"",
+    "if (merges.length > 0) out.push(v(\"SOURCES\", \"HEAD_MERGE_AFTER_INTEGRATION\""),
+  m("M268", "head: every commit is judged, not only the net change", UNIT, "head: a product change that a later commit reverted still fails, because the history is the subject", "expected HEAD_COMMIT_OUTSIDE_ALLOWLIST, got",
+    "if (outsideOne.length) offending.push(",
+    "if (false) offending.push(",
+    "if (outsideOne.length > 0) offending.push("),
+  m("M269", "head: the per-commit gate reports", UNIT, "head: a descendant that changed a product, workflow, package, migration, deploy or config path is refused, commit by commit", "expected HEAD_COMMIT_OUTSIDE_ALLOWLIST, got",
+    "if (offending.length) out.push(v(\"SOURCES\", \"HEAD_COMMIT_OUTSIDE_ALLOWLIST\"",
+    "if (false) out.push(v(\"SOURCES\", \"HEAD_COMMIT_OUTSIDE_ALLOWLIST\"",
+    "if (offending.length > 0) out.push(v(\"SOURCES\", \"HEAD_COMMIT_OUTSIDE_ALLOWLIST\""),
+  m("M270", "head: the allowlist is the allowlist", UNIT, "head: HEAD may be the integration merge or a descendant whose every commit stayed inside the allowlist", "expected no violation, got a violation",
+    "export const WORKTREE_ALLOWLIST = Object.freeze([\".gitattributes\", \"docs/security/\", \"scripts/security/s0/\", \"scripts/security/s1/\"]);",
+    "export const WORKTREE_ALLOWLIST = Object.freeze([\".gitattributes\", \"docs/security/\", \"scripts/security/s0/\"]);",
+    "export const WORKTREE_ALLOWLIST = Object.freeze([\".gitattributes\", \"scripts/security/s1/\", \"docs/security/\", \"scripts/security/s0/\"]);"),
+  m("M271", "ledger: a path without a disposition", UNIT, "ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused", "expected LEDGER_MISSING, got",
+    "add(\"FINDINGS\", \"LEDGER_MISSING\", `${row.path}: no disposition is recorded`);",
+    "void row;",
+    "add(\"FINDINGS\", \"LEDGER_MISSING\", `${row.path}: no disposition is recorded`); /* pinned */"),
+  m("M272", "ledger: a retyped path", UNIT, "ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused", "expected LEDGER_CHANGE_TYPE, got",
+    "if (a.changeType !== row.changeType) add(",
+    "if (false) add(",
+    "if (!(a.changeType === row.changeType)) add("),
+  m("M273", "ledger: a path reviewed at another blob", UNIT, "ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused", "expected LEDGER_STALE, got",
+    "else if (a.reviewedBlob !== (row.targetBlob ?? \"ABSENT\")) add(",
+    "else if (false) add(",
+    "else if (!(a.reviewedBlob === (row.targetBlob ?? \"ABSENT\"))) add("),
+  m("M274", "ledger: a disposition for a path the range did not change", UNIT, "ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused", "expected LEDGER_EXTRA, got",
+    "for (const a of authoredByPath.keys()) if (!ledgerPaths.has(a)) add(",
+    "for (const a of authoredByPath.keys()) if (false) add(",
+    "for (const a of authoredByPath.keys()) if (ledgerPaths.has(a) === false) add("),
+  m("M275", "ledger: a path recorded twice", UNIT, "ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused", "expected LEDGER_DUPLICATE, got",
+    "if (authoredByPath.has(a.path)) add(\"FINDINGS\", \"LEDGER_DUPLICATE\"",
+    "if (false) add(\"FINDINGS\", \"LEDGER_DUPLICATE\"",
+    "if (authoredByPath.has(a.path) === true) add(\"FINDINGS\", \"LEDGER_DUPLICATE\""),
+  m("M276", "ledger: a disposition that does not describe the category", UNIT, "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round", "expected LEDGER_DISPOSITION_CATEGORY, got",
+    "if (row.disposition in DISPOSITION_CATEGORY && DISPOSITION_CATEGORY[row.disposition] !== row.category) add(",
+    "if (false) add(",
+    "if (row.disposition in DISPOSITION_CATEGORY && !(DISPOSITION_CATEGORY[row.disposition] === row.category)) add("),
+  m("M277", "ledger: security-relevant and unlinked", UNIT, "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round", "expected LEDGER_SECURITY_UNLINKED, got",
+    "if (row.securityRelevant && !hasLinks) add(",
+    "if (false) add(",
+    "if (row.securityRelevant === true && !hasLinks) add("),
+  m("M278", "ledger: linked and not security-relevant", UNIT, "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round", "expected LEDGER_LINK_WITHOUT_SECURITY, got",
+    "if (!row.securityRelevant && hasLinks) add(",
+    "if (false) add(",
+    "if (row.securityRelevant === false && hasLinks) add("),
+  m("M279", "ledger: a disposition that cannot be linked", UNIT, "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round", "expected LEDGER_DISPOSITION_LINKS, got",
+    "if (![\"FINDING_EVIDENCE\", \"POSITIVE_CONTROL_EVIDENCE\"].includes(row.disposition) && (row.securityRelevant || hasLinks)) add(",
+    "if (false) add(",
+    "if (![\"FINDING_EVIDENCE\", \"POSITIVE_CONTROL_EVIDENCE\"].includes(row.disposition) && (hasLinks || row.securityRelevant)) add("),
+  m("M280", "ledger: a finding the document does not hold", UNIT, "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round", "expected LEDGER_FINDING_UNKNOWN, got",
+    "add(\"FINDINGS\", \"LEDGER_FINDING_UNKNOWN\", `${w}: ${id} is not a finding of this document`);",
+    "void id;",
+    "add(\"FINDINGS\", \"LEDGER_FINDING_UNKNOWN\", `${w}: ${id} is not a finding of this document`); /* pinned */"),
+  m("M281", "ledger: an observation the document does not hold", UNIT, "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round", "expected LEDGER_CONTROL_UNKNOWN, got",
+    "add(\"FINDINGS\", \"LEDGER_CONTROL_UNKNOWN\", `${w}: ${id} is not an observation of this document`);",
+    "void id;",
+    "add(\"FINDINGS\", \"LEDGER_CONTROL_UNKNOWN\", `${w}: ${id} is not an observation of this document`); /* pinned */"),
+  m("M282", "ledger: a finding that cites no evidence at the path", UNIT, "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round", "expected LEDGER_LINK_NOT_EVIDENCED, got",
+    "if (!f.evidence.some((e) => evidenceCovers(e.path, row.path) || (row.previousPath && evidenceCovers(e.path, row.previousPath)))) add(",
+    "if (false) add(",
+    "if (f.evidence.every((e) => !(evidenceCovers(e.path, row.path) || (row.previousPath && evidenceCovers(e.path, row.previousPath))))) add("),
+  m("M283", "ledger: an observation that cites no evidence at the path", UNIT, "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round", "expected LEDGER_LINK_NOT_EVIDENCED, got",
+    "if (!c.evidence.some((e) => evidenceCovers(e.path, row.path) || (row.previousPath && evidenceCovers(e.path, row.previousPath)))) add(",
+    "if (false) add(",
+    "if (c.evidence.every((e) => !(evidenceCovers(e.path, row.path) || (row.previousPath && evidenceCovers(e.path, row.previousPath))))) add("),
+  m("M284", "ledger: evidence that no row names", UNIT, "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round", "expected LEDGER_EVIDENCE_NOT_LINKED, got",
+    "if (rows.length === 0 || !rows.some((r) => linked.has(`${item.id}|${r.path}`))) add(",
+    "if (false) add(",
+    "if (rows.length === 0 || rows.every((r) => !linked.has(`${item.id}|${r.path}`))) add("),
+  m("M285", "ledger: the second layer carries the list", UNIT, "ledger: a ledger key in a first-layer document is refused, and a second-layer document must carry both lists", "expected LEDGER_ABSENT, got",
+    "if (!Array.isArray(data.pathDispositions)) add(\"FINDINGS\", \"LEDGER_ABSENT\"",
+    "if (false) add(\"FINDINGS\", \"LEDGER_ABSENT\"",
+    "if (Array.isArray(data.pathDispositions) === false) add(\"FINDINGS\", \"LEDGER_ABSENT\""),
+  m("M286", "ledger: the first layer carries no ledger key", UNIT, "ledger: a ledger key in a first-layer document is refused, and a second-layer document must carry both lists", "expected LAYER_KEY, got",
+    "else if (\"pathDispositions\" in data || \"sourceBehaviorChanges\" in data) add(\"SCHEMA\", \"LAYER_KEY\"",
+    "else if (false) add(\"SCHEMA\", \"LAYER_KEY\"",
+    "else if (\"sourceBehaviorChanges\" in data || \"pathDispositions\" in data) add(\"SCHEMA\", \"LAYER_KEY\""),
+  m("M287", "ledger: the aggregates are the ledger's", UNIT, "ledger: every path of the range has exactly one row, and the aggregates are read from the rows", "LEDGER_AGGREGATES",
+    "paths: { total: rows.length, added: ledger.summary.byChangeType.A, modified: ledger.summary.byChangeType.M,",
+    "paths: { total: rows.length, added: ledger.summary.byChangeType.M, modified: ledger.summary.byChangeType.A,",
+    "paths: { total: rows.length, added: ledger.summary.byChangeType[\"A\"], modified: ledger.summary.byChangeType[\"M\"],"),
+  m("M288", "ledger: strict means product", UNIT, "ledger: the strict, broad and category rules classify known paths", "LEDGER_RULES",
+    "if (p.startsWith(\"docs/\") || p.startsWith(\".github/\") || p.startsWith(\"scripts/\")) return false;",
+    "if (p.startsWith(\"docs/\") || p.startsWith(\".github/\")) return false;",
+    "if (p.startsWith(\"docs/\") || p.startsWith(\".github/\") || p.startsWith(\"scripts/\")) return false; /* pinned */"),
+  m("M289", "ledger: the categories", UNIT, "ledger: the strict, broad and category rules classify known paths", "LEDGER_RULES",
+    "if (path.startsWith(\"messages/\")) return \"LOCALIZATION\";",
+    "if (path.startsWith(\"messages/\")) return \"LIBRARY\";",
+    "if (path.startsWith(\"messages/\")) return \"LOCALIZATION\"; /* pinned */"),
+  m("M290", "ledger: a rename names where it came from", UNIT, "ledger: added, modified, deleted and renamed paths are all shown, and a later edit makes the row stale", "LEDGER_KINDS",
+    "previousPath: second === null ? null : first,",
+    "previousPath: null,",
+    "previousPath: second === null ? null : first, /* pinned */"),
+  m("M291", "ledger: a row is reviewed only at the same blob", UNIT, "ledger: added, modified, deleted and renamed paths are all shown, and a later edit makes the row stale", "LEDGER_STALE",
+    "const reviewed = a !== undefined && a.changeType === g.changeType && a.reviewedBlob === (g.targetBlob ?? \"ABSENT\");",
+    "const reviewed = a !== undefined && a.changeType === g.changeType;",
+    "const reviewed = a !== undefined && a.reviewedBlob === (g.targetBlob ?? \"ABSENT\") && a.changeType === g.changeType;"),
+  m("M292", "ledger: the rename is detected", UNIT, "ledger: added, modified, deleted and renamed paths are all shown, and a later edit makes the row stale", "LEDGER_KINDS",
+    "[\"diff\", \"--raw\", \"--no-abbrev\", \"-M\", \"-z\", sources.frozenSourceSha, sources.targetMainSha]",
+    "[\"diff\", \"--raw\", \"--no-abbrev\", \"--no-renames\", \"-z\", sources.frozenSourceSha, sources.targetMainSha]",
+    "[\"diff\", \"--raw\", \"--no-abbrev\", \"-z\", \"-M\", sources.frozenSourceSha, sources.targetMainSha]"),
+  m("M293", "moved: a source behaviour change must be described", UNIT, "moved ledger: a source behaviour change must be described, and only a real one may be", "expected SOURCE_BEHAVIOR_UNDECLARED, got",
+    "if (r.sourceBehavior.bodyChanged && !declared.get(w)) add(",
+    "if (false) add(",
+    "if (r.sourceBehavior.bodyChanged === true && !declared.get(w)) add("),
+  m("M294", "moved: a description needs a real change", UNIT, "moved ledger: a source behaviour change must be described, and only a real one may be", "expected SOURCE_BEHAVIOR_SPURIOUS, got",
+    "if (!r.sourceBehavior.bodyChanged && declared.get(w)) add(",
+    "if (false) add(",
+    "if (r.sourceBehavior.bodyChanged === false && declared.get(w)) add("),
+  m("M295", "moved: a description needs a moved call site", UNIT, "moved ledger: a source behaviour change must be described, and only a real one may be", "expected SOURCE_BEHAVIOR_UNKNOWN_CALLSITE, got",
+    "for (const id of declared.keys()) if (!movedAfter.has(id)) add(",
+    "for (const id of declared.keys()) if (false) add(",
+    "for (const id of declared.keys()) if (movedAfter.has(id) === false) add("),
+  m("M296", "moved: a description once", UNIT, "moved ledger: a source behaviour change must be described, and only a real one may be", "expected SOURCE_BEHAVIOR_DUPLICATE, got",
+    "if (declared.has(s.callsiteId)) add(\"FINDINGS\", \"SOURCE_BEHAVIOR_DUPLICATE\"",
+    "if (false) add(\"FINDINGS\", \"SOURCE_BEHAVIOR_DUPLICATE\"",
+    "if (declared.has(s.callsiteId) === true) add(\"FINDINGS\", \"SOURCE_BEHAVIOR_DUPLICATE\""),
+  m("M297", "moved: the old identifier in an S0 artifact", UNIT, "moved ledger: an old identifier left in an artifact, or in the document, is refused", "expected MOVED_OLD_ID_RESIDUE, got",
+    "if (r.oldIdResidue > 0) add(",
+    "if (false) add(",
+    "if (r.oldIdResidue >= 1) add("),
+  m("M298", "moved: the old identifier in the document", UNIT, "moved ledger: an old identifier left in an artifact, or in the document, is refused", "expected MOVED_OLD_ID_IN_DOCUMENT, got",
+    "if (authoredText.includes(r.before.id) ||",
+    "if (false ||",
+    "if (authoredText.indexOf(r.before.id) >= 0 ||"),
+  m("M299", "moved: the old identifier in the report", UNIT, "moved ledger: an old identifier left in an artifact, or in the document, is refused", "expected MOVED_OLD_ID_IN_DOCUMENT, got",
+    "|| (typeof md === \"string\" && narrativeOnly(md, SECOND_BLOCK_NAMES).includes(r.before.id))) add(",
+    ") add(",
+    "|| (typeof md === \"string\" && narrativeOnly(md, SECOND_BLOCK_NAMES).indexOf(r.before.id) >= 0)) add("),
+  m("M300", "moved: an adjudication that points elsewhere", UNIT, "moved ledger: an old identifier left in an artifact, or in the document, is refused", "expected MOVED_EVIDENCE_WINDOW, got",
+    "for (const problem of r.evidenceProblems) add(",
+    "for (const problem of []) add(",
+    "for (const problem of [...r.evidenceProblems]) add("),
+  m("M301", "moved: a pair whose verdict changed is not a move", UNIT, "moved ledger: the gates read the derived ledger", "expected MOVED_PAIR_REINTERPRETED, got",
+    "if (r.classificationSemanticChange) add(",
+    "if (false) add(",
+    "if (r.classificationSemanticChange === true) add("),
+  m("M302", "moved: an ambiguous pair", UNIT, "moved ledger: the gates read the derived ledger", "expected MOVED_PAIR_AMBIGUOUS, got",
+    "if (mp.ambiguous.length) add(",
+    "if (false) add(",
+    "if (mp.ambiguous.length > 0) add("),
+  m("M303", "moved: one row per moved call site", UNIT, "moved ledger: the gates read the derived ledger", "expected MOVED_LEDGER_INCOMPLETE, got",
+    "if (g.movedLedger.length !== g.moved.length - mp.ambiguous.length) add(",
+    "if (false) add(",
+    "if (!(g.movedLedger.length === g.moved.length - mp.ambiguous.length)) add("),
+  m("M304", "moved: the change model is counted from the rows", UNIT, "moved ledger: the gates read the derived ledger", "expected CHANGE_MODEL, got",
+    "if (m.classificationSemanticChanges !== g.movedLedger.filter((r) => r.classificationSemanticChange).length) add(",
+    "if (false) add(",
+    "if (m.classificationSemanticChanges !== g.movedLedger.filter((r) => r.classificationSemanticChange === true).length) add("),
+  m("M305", "moved: the ledger counts its rows", UNIT, "moved ledger: the gates read the derived ledger", "expected LEDGER_COUNT, got",
+    "if (sum.total !== ledger.length || sum.uniquePaths !== ledger.length) add(",
+    "if (false) add(",
+    "if (!(sum.total === ledger.length) || sum.uniquePaths !== ledger.length) add("),
+  m("M306", "moved: the report names no unqualified count", UNIT, "moved ledger: the words 'semantic change' are refused unless they name one of the three kinds", "expected UNQUALIFIED_SEMANTIC_CHANGE, got",
+    "if (unqualifiedSemanticChange(authoredText)) add(",
+    "if (false) add(",
+    "if (unqualifiedSemanticChange(authoredText) === true) add("),
+  m("M307", "moved: the narrative names no unqualified count", UNIT, "moved ledger: the words 'semantic change' are refused unless they name one of the three kinds", "expected UNQUALIFIED_SEMANTIC_CHANGE, got",
+    "if (typeof md === \"string\" && unqualifiedSemanticChange(narrativeOnly(md, SECOND_BLOCK_NAMES))) add(",
+    "if (false) add(",
+    "if (typeof md === \"string\" && unqualifiedSemanticChange(narrativeOnly(md, SECOND_BLOCK_NAMES)) === true) add("),
+  m("M308", "moved: the phrase is recognised", UNIT, "moved ledger: the words 'semantic change' are refused unless they name one of the three kinds", "SEMANTIC_WORDS",
+    "return /semantic[\\s-]*changes?/i.test(String(text).replace(ALLOWED_SEMANTIC_PHRASE, \"\"));",
+    "return false;",
+    "return /semantic[\\s-]*changes?/i.test(String(text).replace(ALLOWED_SEMANTIC_PHRASE, \"\")) === true;"),
+  m("M309", "moved: the named kinds are allowed", UNIT, "moved ledger: the words 'semantic change' are refused unless they name one of the three kinds", "SEMANTIC_WORDS",
+    "const ALLOWED_SEMANTIC_PHRASE = /classificationSemanticChanges?/g;",
+    "const ALLOWED_SEMANTIC_PHRASE = /(?!)/g;",
+    "const ALLOWED_SEMANTIC_PHRASE = /classificationSemanticChange(?:s)?/g;"),
+  m("M310", "moved: a position is not a verdict", UNIT, "moved ledger: a position-only move is told from a verdict change, and the function body from its comments", "ADJUDICATION_MOVE",
+    "    } else semantic.push(k);",
+    "    } else positional.push(k);",
+    "    } else { semantic.push(k); }"),
+  m("M311", "moved: evidence and caller path are positions", UNIT, "moved ledger: a position-only move is told from a verdict change, and the function body from its comments", "ADJUDICATION_MOVE",
+    "const POSITIONAL_ADJUDICATION_KEYS = Object.freeze([\"evidence\", \"callerPath\"]);",
+    "const POSITIONAL_ADJUDICATION_KEYS = Object.freeze([]);",
+    "const POSITIONAL_ADJUDICATION_KEYS = Object.freeze([\"callerPath\", \"evidence\"]);"),
+  m("M312", "moved: the trace position is a position", UNIT, "moved ledger: a position-only move is told from a verdict change, and the function body from its comments", "ADJUDICATION_MOVE",
+    "const POSITIONAL_TRACE_KEYS = Object.freeze([\"operationIdentity\", \"sourceReferences\"]);",
+    "const POSITIONAL_TRACE_KEYS = Object.freeze([]);",
+    "const POSITIONAL_TRACE_KEYS = Object.freeze([\"sourceReferences\", \"operationIdentity\"]);"),
+  m("M313", "moved: comments are not behaviour", UNIT, "moved ledger: a position-only move is told from a verdict change, and the function body from its comments", "FUNCTION_SPAN",
+    "    .filter((l) => !COMMENT_LINE.test(l))",
+    "    .filter((l) => true)",
+    "    .filter((l) => COMMENT_LINE.test(l) === false)"),
+  m("M314", "moved: a function ends at the next declaration", UNIT, "moved ledger: a position-only move is told from a verdict change, and the function body from its comments", "FUNCTION_SPAN",
+    "    if (TOP_LEVEL_DECL.test(lines[i])) {",
+    "    if (false) {",
+    "    if (TOP_LEVEL_DECL.test(lines[i]) === true) {"),
+  m("M315", "moved: the derived tags", UNIT, "moved ledger: the three kinds of change are counted apart, from the rows", "CHANGE_MODEL_DERIVED",
+    "const tagsAdded = (n.secondaryTags ?? []).filter((t) => !(o.secondaryTags ?? []).includes(t)).sort(byStr);",
+    "const tagsAdded = [];",
+    "const tagsAdded = (n.secondaryTags ?? []).filter((t) => (o.secondaryTags ?? []).includes(t) === false).sort(byStr);"),
+  m("M316", "moved: the source behaviour is read from the code", UNIT, "moved ledger: the three kinds of change are counted apart, from the rows", "CHANGE_MODEL_DERIVED",
+    "const bodyChanged = bs.code !== as.code;",
+    "const bodyChanged = false;",
+    "const bodyChanged = !(bs.code === as.code);"),
+  m("M317", "moved: the pair is one to one", UNIT, "moved ledger: the three kinds of change are counted apart, from the rows", "CHANGE_MODEL_DERIVED",
+    "return n.file === o.file && n.fingerprint === o.fingerprint && n.ordinalInFile === o.ordinalInFile;",
+    "return n.file === o.file;",
+    "return n.ordinalInFile === o.ordinalInFile && n.file === o.file && n.fingerprint === o.fingerprint;"),
+  m("M318", "moved: the first-layer tree is the before", UNIT, "moved ledger: the three kinds of change are counted apart, from the rows", "CHANGE_MODEL_DERIVED",
+    "const beforeText = blobText(root, sources.securityHeadSha, o.file) ?? \"\";",
+    "const beforeText = blobText(root, sources.integrationMergeSha, o.file) ?? \"\";",
+    "const beforeText = (blobText(root, sources.securityHeadSha, o.file)) ?? \"\";"),
+  m("M319", "evidence window: the expression is where the line says", UNIT, "moved ledger: an adjudication's references are checked for range, expression and window", "EVIDENCE_WINDOW",
+    "if (snippet !== undefined && !lines.slice(from - 1, to).join(\"\\n\").includes(snippet)) out.push(",
+    "if (false) out.push(",
+    "if (snippet !== undefined && lines.slice(from - 1, to).join(\"\\n\").indexOf(snippet) < 0) out.push("),
+  m("M320", "evidence window: the range is inside the file", UNIT, "moved ledger: an adjudication's references are checked for range, expression and window", "EVIDENCE_WINDOW",
+    "if (to < from || from < 1 || to > lines.length) {",
+    "if (false) {",
+    "if (to < from || from < 1 || lines.length < to) {"),
+  m("M321", "evidence window: a file in the tree", UNIT, "moved ledger: an adjudication's references are checked for range, expression and window", "EVIDENCE_WINDOW",
+    "    if (text === null) {\n      out.push(`evidence cites ${path}, which is not in the target tree`);",
+    "    if (false) {\n      out.push(`evidence cites ${path}, which is not in the target tree`);",
+    "    if (text === null || text === undefined) {\n      out.push(`evidence cites ${path}, which is not in the target tree`);"),
+  m("M322", "evidence window: the citation of the call site's own file is near it", UNIT, "moved ledger: an adjudication's references are checked for range, expression and window", "EVIDENCE_WINDOW",
+    "if (own.length > 0 && !own.some((r) => r.to >= site.line - EVIDENCE_WINDOW_BEFORE && r.from <= site.line + EVIDENCE_WINDOW_AFTER)) {",
+    "if (false) {",
+    "if (own.length > 0 && own.every((r) => !(r.to >= site.line - EVIDENCE_WINDOW_BEFORE && r.from <= site.line + EVIDENCE_WINDOW_AFTER))) {"),
+  m("M323", "s0 retry identity: the operation names its call site", S0, "retry identity: the old identifier of a moved call site is refused as the operation identity", "RETRY_IDENTITY_OLD",
+    "if (s.trace.operationIdentity !== expected) {",
+    "if (false) {",
+    "if (!(s.trace.operationIdentity === expected)) {", "s0"),
+  m("M324", "s0 retry identity: a range inside the file", S0, "retry identity: a source reference at the old position, or outside its file, is refused", "RETRY_REFERENCE_OUTSIDE",
+    "if (r.to < r.from || r.from < 1 || (n !== null && r.to > n)) out.push(",
+    "if (false) out.push(",
+    "if (r.to < r.from || r.from < 1 || (n !== null && n < r.to)) out.push(", "s0"),
+  m("M325", "s0 retry identity: a reference near the call site", S0, "retry identity: a source reference at the old position, or outside its file, is refused", "RETRY_REFERENCE_OLD_RANGE",
+    "if (!own.some((r) => r.to >= line - RETRY_WINDOW_BEFORE && r.from <= line + RETRY_WINDOW_AFTER)) {",
+    "if (false) {",
+    "if (own.every((r) => !(r.to >= line - RETRY_WINDOW_BEFORE && r.from <= line + RETRY_WINDOW_AFTER))) {", "s0"),
+  m("M326", "s0 retry identity: an edge reference includes its consumer line", S0, "retry identity: a source reference at the old position, or outside its file, is refused", "RETRY_REFERENCE_EDGE",
+    "if (!own.some((r) => r.from <= line && r.to >= line)) out.push(",
+    "if (false) out.push(",
+    "if (own.every((r) => !(r.from <= line && r.to >= line))) out.push(", "s0"),
+  m("M327", "s0 retry identity: an edge names its consumer", S0, "retry identity: a trace that moved with its call site is clean, and its identity is derived from the current identifier", "RETRY_IDENTITY_FORM",
+    "  edge: (id) => `the consumer ${String(id).split(\"::\")[1] ?? \"\"}`,",
+    "  edge: (id) => `the consumer ${String(id)}`,",
+    "  edge: (id) => `the consumer ${String(id).split(\"::\")[1] ?? \"\"}`, // pinned", "s0"),
+  m("M328", "s0 retry identity: a call site names its identifier", S0, "retry identity: a trace that moved with its call site is clean, and its identity is derived from the current identifier", "RETRY_IDENTITY_(?:FORM|CLEAN)",
+    "  callsite: (id) => `the operation behind ${id}`,",
+    "  callsite: (id) => `the operation ${id}`,",
+    "  callsite: (id) => `the operation behind ${id}`, // pinned", "s0"),
+  m("M329", "s0 retry identity: the gate runs on every subject", S0, "retry: the completeness gate is computed from the committed data and stops the command line with exit 10", "WIRING_RETRY_IDENTITY",
+    "    ...retryTraceIdentityViolations(retrySubjectList, { lineCountOf: (p) => lineCountAt(root, p) }),",
+    "    ...[],",
+    "    ...retryTraceIdentityViolations(retrySubjectList, { lineCountOf: (p) => lineCountAt(root, p) }), // pinned", "s0"),
 ]);
 // </MUTATION-MANIFEST>
 
@@ -1020,8 +1408,75 @@ export function listViolations(root = REPO_ROOT) {
     } catch {
       out.push(`${e.id}: the fingerprint is not a valid expression`);
     }
+    out.push(...positionProblems(e, tests));
   }
   return out;
+}
+
+/**
+ * POSITION. A mutant of the code that decides where HEAD may be must be killed by a test that does not depend on where the
+ * repository's HEAD happens to be. The first campaign recorded 253 of 253 kills with HEAD at the integration merge; the
+ * moment the artifacts were committed HEAD became its child, one test no longer separated the mutant from the original,
+ * and the same campaign gave 252 of 253. An entry whose anchor mentions HEAD, a head base, the successor merge or the
+ * worktree therefore names a test that either builds its own repository (`positionRepo` or `fixtureRepo`) or declares in
+ * its body that it is independent of the position (`POSITION-INDEPENDENT:` with its reason).
+ */
+export const POSITION_TOKENS = /\bHEAD\b|HEAD_|(?<!security )\bhead\b|headBase|successorBase|[Ww]orktree|WORKTREE|offending|outsideOne|\bmerges\b/;
+export const POSITION_ANSWERS = /positionRepo\(|fixtureRepo\(|POSITION-INDEPENDENT:/;
+
+export function testBody(source, title) {
+  const at = source.indexOf(`test(${JSON.stringify(title)},`);
+  if (at < 0) return null;
+  const next = source.indexOf("\ntest(", at + 5);
+  return source.slice(at, next < 0 ? source.length : next);
+}
+
+export function isPositionSensitive(e) {
+  return e.target === "relock" && POSITION_TOKENS.test(e.find);
+}
+
+/**
+ * Tests that decide a position-sensitive mutant without building a repository, with the reason each is independent of where HEAD is.
+ * They are named here, in the tool and not in the test file, so that naming one changes no byte the record is bound to.
+ */
+export const POSITION_INDEPENDENT_TESTS = Object.freeze({
+  "worktree: an untracked product file is refused (WORKTREE_UNTRACKED_OUTSIDE_ALLOWLIST)": "it feeds the parser a porcelain string and reads no repository",
+  "worktree: a modified product file is refused (WORKTREE_MODIFIED_OUTSIDE_ALLOWLIST)": "it feeds the parser a porcelain string and reads no repository",
+  "index flags: the ls-files tags are parsed as assume-unchanged (lowercase), skip-worktree (S) and plain": "it feeds the parser a listing string and reads no repository",
+});
+
+export function positionProblems(e, tests) {
+  if (!isPositionSensitive(e)) return [];
+  if (Object.prototype.hasOwnProperty.call(POSITION_INDEPENDENT_TESTS, e.test)) return [];
+  const body = tests[e.file] ? testBody(tests[e.file], e.test) : null;
+  if (body === null) return [];
+  return POSITION_ANSWERS.test(body) ? [] : [`${e.id}: its anchor decides where HEAD may be, and the test "${e.test}" neither builds its own repository nor declares POSITION-INDEPENDENT`];
+}
+
+/**
+ * Re-run, at the CURRENT repository position, every mutant whose anchor decides where HEAD may be, and require the same
+ * result the record claims: killed by the named test, placebo green. `verify` calls this, so a record made at one position
+ * cannot stay green at another position in which the campaign would not reproduce it.
+ */
+export async function reproducePositionSensitive(root = REPO_ROOT, concurrency = 4) {
+  const checker = lf(readFileSync(join(root, CHECKER_REL), "utf8"));
+  const env = { S1_RELOCK_ROOT: root };
+  const made = [];
+  const problems = [];
+  const entries = MANIFEST.filter(isPositionSensitive);
+  await pool(entries, concurrency, async (e) => {
+    const mutantDir = stage(root, "relock", checker.replace(e.find, () => e.replace));
+    const placeboDir = stage(root, "relock", checker.replace(e.find, () => e.placebo));
+    made.push(mutantDir, placeboDir);
+    const mutated = await runTest(mutantDir, e.file, e.test, env);
+    const placebo = await runTest(placeboDir, e.file, e.test, env);
+    const status = classify(mutated, e.fingerprint);
+    const green = executed(placebo.out) === 1 && placebo.code === 0 && passed(placebo.out) === 1;
+    if (status !== "TARGETED_KILL") problems.push(`${e.id}: at this repository position the mutant is ${status}, not a targeted kill`);
+    if (!green) problems.push(`${e.id}: at this repository position the placebo is not green`);
+  });
+  for (const d of made) rmSync(d, { recursive: true, force: true });
+  return { checked: entries.length, problems: problems.sort() };
 }
 
 function runTest(dir, file, testName, env) {
@@ -1189,8 +1644,23 @@ if (isMain()) {
     process.exit(bad.length ? 1 : 0);
   } else if (mode === "verify") {
     const bad = verifyViolations();
-    process.stdout.write(bad.length ? `${bad.join("\n")}\n` : `[relock-mutation] record verified — ${MANIFEST.length} mutants, bound to the current bytes\n`);
-    process.exit(bad.length ? 1 : 0);
+    if (bad.length || process.argv.includes("--static")) {
+      process.stdout.write(bad.length ? `${bad.join("\n")}\n` : `[relock-mutation] record verified (static) — ${MANIFEST.length} mutants, bound to the current bytes\n`);
+      process.exit(bad.length ? 1 : 0);
+    }
+    reproducePositionSensitive(REPO_ROOT)
+      .then((r) => {
+        process.stdout.write(
+          r.problems.length
+            ? `${r.problems.join("\n")}\n`
+            : `[relock-mutation] record verified — ${MANIFEST.length} mutants, bound to the current bytes; ${r.checked} position-sensitive mutants reproduced at this repository position\n`,
+        );
+        process.exit(r.problems.length ? 1 : 0);
+      })
+      .catch((e) => {
+        process.stderr.write(`${String(e.message ?? e)}\n`);
+        process.exit(2);
+      });
   } else if (mode === "run") {
     const workers = Number((process.argv.find((a) => a.startsWith("--workers=")) ?? "--workers=4").slice(10)) || 4;
     runCampaign(REPO_ROOT, workers)
@@ -1207,7 +1677,7 @@ if (isMain()) {
         process.exit(2);
       });
   } else {
-    process.stderr.write("usage: list | run | verify | manifest\n");
+    process.stderr.write("usage: list | run | verify [--static] | manifest\n");
     process.exit(64);
   }
 }

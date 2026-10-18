@@ -249,14 +249,14 @@ The earlier statement that five files were byte-identical to the frozen lane was
 <!-- RELOCK-BLOCK:mutations -->
 | Measure | Value |
 |---|---|
-| Manifest version | relock-mut-1 |
-| Manifest SHA-256 | `3b1a2bd24f9f28f23a41b6e5d4d90c36e86c7fbb5bee5db9f8cc03041a752c58` |
-| Mutants | 227 |
-| Targeted kills | 227 |
+| Manifest version | relock-mut-2 |
+| Manifest SHA-256 | `7eb5a0b118c87c6054381f3839b01ea3889cc4d22cd4940e48c36ae943451d99` |
+| Mutants | 324 |
+| Targeted kills | 324 |
 | Incidental kills | 0 |
 | Survivors | 0 |
 | Invalid mutants | 0 |
-| Placebos green | 227 of 227 |
+| Placebos green | 324 of 324 |
 | Controls as expected | 4 of 4 |
 | Deviations | 0 |
 | Cleanup | REMOVED |
@@ -409,7 +409,7 @@ The earlier statement that five files were byte-identical to the frozen lane was
 | `M144` | worktree: untracked kind | worktree: an untracked product file is refused (WORKTREE_UNTRACKED_OUTSIDE_ALLOWLIST) | TARGETED_KILL |
 | `M145` | worktree: product dirty path accepted | worktree: a modified product file is refused (WORKTREE_MODIFIED_OUTSIDE_ALLOWLIST) | TARGETED_KILL |
 | `M146` | worktree: untracked files listed | worktree: the live status of a real repository is read the same way | TARGETED_KILL |
-| `M147` | head: moved outside the allowlist | head: a descendant that changed only the allowlist is accepted, one that changed a product file is refused | TARGETED_KILL |
+| `M147` | head: moved outside the allowlist | head: a descendant that changed a product, workflow, package, migration, deploy or config path is refused, commit by commit | TARGETED_KILL |
 | `M148` | wiring: head gate | wiring: checkRelock applies the head gate | TARGETED_KILL |
 | `M149` | wiring: worktree gate | wiring: checkRelock applies the worktree gate | TARGETED_KILL |
 | `M150` | wiring: evidence context | wiring: checkRelock evaluates every evidence item against the committed integration merge | TARGETED_KILL |
@@ -490,6 +490,103 @@ The earlier statement that five files were byte-identical to the frozen lane was
 | `M230` | policy pin: a decided policy is refused whatever its evidence | policy: R-73 must keep both branches and the remediation must not choose one | TARGETED_KILL |
 | `M231` | policy pin: evidence that is a deliverable is not the owner's | policy: R-73 must keep both branches and the remediation must not choose one | TARGETED_KILL |
 | `M232` | environment: no repository is a missing prerequisite | e2e environment: when git cannot answer the checker exits 3 (a missing prerequisite), never 0 and never a validation code | TARGETED_KILL |
+| `M233` | layer 2: original frozen source required | layer 2: a second-layer document without the original frozen source is refused | TARGETED_KILL |
+| `M234` | layer 2: original frozen source must be an ancestor | layer 2: an original frozen source that is not a proper ancestor of the range base is refused | TARGETED_KILL |
+| `M235` | layer 2: original frozen source must be a proper ancestor | layer 2: an original frozen source that is not a proper ancestor of the range base is refused | TARGETED_KILL |
+| `M236` | layer 2: a first-layer document has no original frozen source | layer 2: a first-layer document that names an original frozen source is refused | TARGETED_KILL |
+| `M237` | layer 2: reconciled tree must descend from the merge | layer 2: a reconciled tree commit that does not descend from the integration merge is refused | TARGETED_KILL |
+| `M238` | layer 2: the first layer's head base is the later merge | head: the committed layer is measured from the repository's real history, whatever position HEAD has | TARGETED_KILL |
+| `M239` | layer 2: a successor must descend from the first-layer merge | layer 2: a successor that does not descend from the first-layer merge is not accepted as the head base | TARGETED_KILL |
+| `M240` | layer 2: HEAD is judged against the base it is given | layer 2: HEAD is judged against the base it is given | TARGETED_KILL |
+| `M241` | layer 2: the diff is taken from the base it is given | layer 2: the diff is taken from the base it is given | TARGETED_KILL |
+| `M242` | layer 2: a finding carries its own layer's prefix | layer 2: a first-layer identifier in a second-layer document is refused | TARGETED_KILL |
+| `M243` | layer 2: an observation carries its own layer's prefix | layer 2: an observation of the wrong layer is refused | TARGETED_KILL |
+| `M244` | layer 2: a new-risk disposition needs a risk of the second layer | layer 2: a second-layer finding that claims a new risk is refused | TARGETED_KILL |
+| `M245` | layer 2: a document is asked only for its own layer's findings | layer 2: the first-layer document is not asked to declare the second layer's findings | TARGETED_KILL |
+| `M246` | layer 2: the first layer's content pins are not applied to the second | layer 2: the content pins of the first layer are not applied to the second | TARGETED_KILL |
+| `M247` | layer 2: the original register hash pin belongs to the first layer | layer 2: the original register hash pin belongs to the first layer | TARGETED_KILL |
+| `M248` | layer 2: only a document that names a reconciled tree is sealed | layer 2: a sealed layer reads its reconciled tree from git and an unsealed one reads the files | TARGETED_KILL |
+| `M249` | layer 2: a sealed layer yields to caller-supplied files | layer 2: a sealed layer reads its reconciled tree from git and an unsealed one reads the files | TARGETED_KILL |
+| `M250` | layer 2: a sealed layer reads its inventory from git | layer 2: the sealed first layer's figures do not follow the current inventory | TARGETED_KILL |
+| `M251` | layer 2: the batch blob reader skips what is not a blob | layer 2: the batch blob reader returns what git returns | TARGETED_KILL |
+| `M252` | layer 2: the batch blob reader steps over the separator | layer 2: the batch blob reader returns what git returns | TARGETED_KILL |
+| `M253` | layer 2: a document without a layer is the first | layer 2: a document without a layer is the first, and the layers are named by their document | TARGETED_KILL |
+| `M254` | layer 2: the second-layer report names its columns | layer 2: the committed second-layer provenance has no violation | TARGETED_KILL |
+| `M255` | layer 2: the second layer has its own prefix | layer 2: a first-layer identifier in a second-layer document is refused | TARGETED_KILL |
+| `M256` | layer 2: the first layer has its own prefixes | layer 2: a second-layer identifier in a first-layer document is refused | TARGETED_KILL |
+| `M257` | layer 2: --layer=2 selects the second layer | e2e layer: --layer=2 checks the second-layer document and its report and exits 0 on the committed files | TARGETED_KILL |
+| `M258` | layer 2: the layers have different documents | e2e layer: the second-layer paths are not the first layer's | TARGETED_KILL |
+| `M259` | cli parser: an invalid layer value | cli parser: every other spelling of the layer is refused and never read as the first layer | TARGETED_KILL |
+| `M260` | cli parser: a repeated option | cli parser: every other spelling of the layer is refused and never read as the first layer | TARGETED_KILL |
+| `M261` | cli parser: an empty value | cli parser: unknown options, stray arguments, repeated options and empty values are usage errors | TARGETED_KILL |
+| `M262` | cli parser: an unknown option | cli parser: unknown options, stray arguments, repeated options and empty values are usage errors | TARGETED_KILL |
+| `M263` | cli parser: a stray argument | cli parser: unknown options, stray arguments, repeated options and empty values are usage errors | TARGETED_KILL |
+| `M264` | cli: a usage error stops the command | e2e layer parser: an invalid layer is a usage error for every mode and never falls back to the first layer | TARGETED_KILL |
+| `M265` | cli: no layer is the first layer | e2e layer parser: the two valid layers give different answers and no layer gives the first | TARGETED_KILL |
+| `M266` | head: not a descendant of the base | head: an unrelated commit, a rewritten history and a history that lost the merge are not descendants | TARGETED_KILL |
+| `M267` | head: a merge after the integration merge | head: a merge commit after the integration merge is refused even when it brings only allowlisted paths | TARGETED_KILL |
+| `M268` | head: every commit is judged, not only the net change | head: a product change that a later commit reverted still fails, because the history is the subject | TARGETED_KILL |
+| `M269` | head: the per-commit gate reports | head: a descendant that changed a product, workflow, package, migration, deploy or config path is refused, commit by commit | TARGETED_KILL |
+| `M270` | head: the allowlist is the allowlist | head: HEAD may be the integration merge or a descendant whose every commit stayed inside the allowlist | TARGETED_KILL |
+| `M271` | ledger: a path without a disposition | ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused | TARGETED_KILL |
+| `M272` | ledger: a retyped path | ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused | TARGETED_KILL |
+| `M273` | ledger: a path reviewed at another blob | ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused | TARGETED_KILL |
+| `M274` | ledger: a disposition for a path the range did not change | ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused | TARGETED_KILL |
+| `M275` | ledger: a path recorded twice | ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused | TARGETED_KILL |
+| `M276` | ledger: a disposition that does not describe the category | ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round | TARGETED_KILL |
+| `M277` | ledger: security-relevant and unlinked | ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round | TARGETED_KILL |
+| `M278` | ledger: linked and not security-relevant | ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round | TARGETED_KILL |
+| `M279` | ledger: a disposition that cannot be linked | ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round | TARGETED_KILL |
+| `M280` | ledger: a finding the document does not hold | ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round | TARGETED_KILL |
+| `M281` | ledger: an observation the document does not hold | ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round | TARGETED_KILL |
+| `M282` | ledger: a finding that cites no evidence at the path | ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round | TARGETED_KILL |
+| `M283` | ledger: an observation that cites no evidence at the path | ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round | TARGETED_KILL |
+| `M284` | ledger: evidence that no row names | ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round | TARGETED_KILL |
+| `M285` | ledger: the second layer carries the list | ledger: a ledger key in a first-layer document is refused, and a second-layer document must carry both lists | TARGETED_KILL |
+| `M286` | ledger: the first layer carries no ledger key | ledger: a ledger key in a first-layer document is refused, and a second-layer document must carry both lists | TARGETED_KILL |
+| `M287` | ledger: the aggregates are the ledger's | ledger: every path of the range has exactly one row, and the aggregates are read from the rows | TARGETED_KILL |
+| `M288` | ledger: strict means product | ledger: the strict, broad and category rules classify known paths | TARGETED_KILL |
+| `M289` | ledger: the categories | ledger: the strict, broad and category rules classify known paths | TARGETED_KILL |
+| `M290` | ledger: a rename names where it came from | ledger: added, modified, deleted and renamed paths are all shown, and a later edit makes the row stale | TARGETED_KILL |
+| `M291` | ledger: a row is reviewed only at the same blob | ledger: added, modified, deleted and renamed paths are all shown, and a later edit makes the row stale | TARGETED_KILL |
+| `M292` | ledger: the rename is detected | ledger: added, modified, deleted and renamed paths are all shown, and a later edit makes the row stale | TARGETED_KILL |
+| `M293` | moved: a source behaviour change must be described | moved ledger: a source behaviour change must be described, and only a real one may be | TARGETED_KILL |
+| `M294` | moved: a description needs a real change | moved ledger: a source behaviour change must be described, and only a real one may be | TARGETED_KILL |
+| `M295` | moved: a description needs a moved call site | moved ledger: a source behaviour change must be described, and only a real one may be | TARGETED_KILL |
+| `M296` | moved: a description once | moved ledger: a source behaviour change must be described, and only a real one may be | TARGETED_KILL |
+| `M297` | moved: the old identifier in an S0 artifact | moved ledger: an old identifier left in an artifact, or in the document, is refused | TARGETED_KILL |
+| `M298` | moved: the old identifier in the document | moved ledger: an old identifier left in an artifact, or in the document, is refused | TARGETED_KILL |
+| `M299` | moved: the old identifier in the report | moved ledger: an old identifier left in an artifact, or in the document, is refused | TARGETED_KILL |
+| `M300` | moved: an adjudication that points elsewhere | moved ledger: an old identifier left in an artifact, or in the document, is refused | TARGETED_KILL |
+| `M301` | moved: a pair whose verdict changed is not a move | moved ledger: the gates read the derived ledger | TARGETED_KILL |
+| `M302` | moved: an ambiguous pair | moved ledger: the gates read the derived ledger | TARGETED_KILL |
+| `M303` | moved: one row per moved call site | moved ledger: the gates read the derived ledger | TARGETED_KILL |
+| `M304` | moved: the change model is counted from the rows | moved ledger: the gates read the derived ledger | TARGETED_KILL |
+| `M305` | moved: the ledger counts its rows | moved ledger: the gates read the derived ledger | TARGETED_KILL |
+| `M306` | moved: the report names no unqualified count | moved ledger: the words 'semantic change' are refused unless they name one of the three kinds | TARGETED_KILL |
+| `M307` | moved: the narrative names no unqualified count | moved ledger: the words 'semantic change' are refused unless they name one of the three kinds | TARGETED_KILL |
+| `M308` | moved: the phrase is recognised | moved ledger: the words 'semantic change' are refused unless they name one of the three kinds | TARGETED_KILL |
+| `M309` | moved: the named kinds are allowed | moved ledger: the words 'semantic change' are refused unless they name one of the three kinds | TARGETED_KILL |
+| `M310` | moved: a position is not a verdict | moved ledger: a position-only move is told from a verdict change, and the function body from its comments | TARGETED_KILL |
+| `M311` | moved: evidence and caller path are positions | moved ledger: a position-only move is told from a verdict change, and the function body from its comments | TARGETED_KILL |
+| `M312` | moved: the trace position is a position | moved ledger: a position-only move is told from a verdict change, and the function body from its comments | TARGETED_KILL |
+| `M313` | moved: comments are not behaviour | moved ledger: a position-only move is told from a verdict change, and the function body from its comments | TARGETED_KILL |
+| `M314` | moved: a function ends at the next declaration | moved ledger: a position-only move is told from a verdict change, and the function body from its comments | TARGETED_KILL |
+| `M315` | moved: the derived tags | moved ledger: the three kinds of change are counted apart, from the rows | TARGETED_KILL |
+| `M316` | moved: the source behaviour is read from the code | moved ledger: the three kinds of change are counted apart, from the rows | TARGETED_KILL |
+| `M317` | moved: the pair is one to one | moved ledger: the three kinds of change are counted apart, from the rows | TARGETED_KILL |
+| `M318` | moved: the first-layer tree is the before | moved ledger: the three kinds of change are counted apart, from the rows | TARGETED_KILL |
+| `M319` | evidence window: the expression is where the line says | moved ledger: an adjudication's references are checked for range, expression and window | TARGETED_KILL |
+| `M320` | evidence window: the range is inside the file | moved ledger: an adjudication's references are checked for range, expression and window | TARGETED_KILL |
+| `M321` | evidence window: a file in the tree | moved ledger: an adjudication's references are checked for range, expression and window | TARGETED_KILL |
+| `M322` | evidence window: the citation of the call site's own file is near it | moved ledger: an adjudication's references are checked for range, expression and window | TARGETED_KILL |
+| `M323` | s0 retry identity: the operation names its call site | retry identity: the old identifier of a moved call site is refused as the operation identity | TARGETED_KILL |
+| `M324` | s0 retry identity: a range inside the file | retry identity: a source reference at the old position, or outside its file, is refused | TARGETED_KILL |
+| `M325` | s0 retry identity: a reference near the call site | retry identity: a source reference at the old position, or outside its file, is refused | TARGETED_KILL |
+| `M326` | s0 retry identity: an edge reference includes its consumer line | retry identity: a source reference at the old position, or outside its file, is refused | TARGETED_KILL |
+| `M327` | s0 retry identity: an edge names its consumer | retry identity: a trace that moved with its call site is clean, and its identity is derived from the current identifier | TARGETED_KILL |
+| `M328` | s0 retry identity: a call site names its identifier | retry identity: a trace that moved with its call site is clean, and its identity is derived from the current identifier | TARGETED_KILL |
+| `M329` | s0 retry identity: the gate runs on every subject | retry: the completeness gate is computed from the committed data and stops the command line with exit 10 | TARGETED_KILL |
 <!-- /RELOCK-BLOCK:mutations -->
 
 The campaign tool (`scripts/security/s1/relock-mutation-campaign.mjs verify`) additionally binds this record to the manifest and to the exact bytes of the checker, the selftest and the end-to-end test; the record's own consistency is checked here.

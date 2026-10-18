@@ -38,6 +38,40 @@
       "sourceUniverseCount": 110,
       "topPriorityRiskId": "R-01"
     },
+    "firstRelockSnapshot": {
+      "integrationMergeSha": "e3da6f2e928420f78d5ae95d668d7e67ba4e2cb0",
+      "risks": 73,
+      "findings": 179,
+      "severity": {
+        "CRITICAL": 0,
+        "HIGH": 36,
+        "MEDIUM": 24,
+        "LOW": 3,
+        "INFORMATIONAL": 10
+      },
+      "productionState": {
+        "ACTIVE_CONFIRMED": 24,
+        "LATENT_CONFIG_GUARDED": 4,
+        "CODE_CONFIRMED_RUNTIME_UNPROVEN": 21,
+        "ASSURANCE_GAP": 10,
+        "POLICY_AMBIGUITY": 4,
+        "POSITIVE_CONTROL": 10
+      },
+      "findingStatus": {
+        "MAPPED_TO_RISK": 99,
+        "DUPLICATE_OF": 2,
+        "POLICY_QUESTION": 9,
+        "ASSURANCE_GAP": 50,
+        "POSITIVE_CONTROL": 11,
+        "NOT_A_SECURITY_RISK_WITH_REASON": 8
+      },
+      "severityClamps": 2,
+      "topPriorityRiskId": "R-01",
+      "deltaUniverseCount": 18,
+      "deltaUniverseSha256": "9f7cc023d6b1b5fa71530f51176a819907cad9db8ef996fc13eb76f19b939d76",
+      "sourceUniverseCount": 128,
+      "sourceUniverseSha256": "06e796b75c8f5f05d1ce464c4eae9db73e52b3ce1e38b3869f528b5971f0d046"
+    },
     "deltaReview": {
       "range": "bcf3be9aa51f8d9f8f75e5568a2e4efea5f8fbd2..b461ac9709d6e82973de2b05f15317381c2fcc73",
       "frozenSourceSha": "bcf3be9aa51f8d9f8f75e5568a2e4efea5f8fbd2",
@@ -52,12 +86,34 @@
         "R-53"
       ]
     },
+    "secondDeltaReview": {
+      "range": "b461ac9709d6e82973de2b05f15317381c2fcc73..66ca4cccd51ca3c9c90933a82f8851bbde0a615e",
+      "originalFrozenSourceSha": "bcf3be9aa51f8d9f8f75e5568a2e4efea5f8fbd2",
+      "frozenSourceSha": "b461ac9709d6e82973de2b05f15317381c2fcc73",
+      "securityHeadSha": "1faa877ae3871b065a6e396a3ba68f29b5e08940",
+      "targetMainSha": "66ca4cccd51ca3c9c90933a82f8851bbde0a615e",
+      "integrationMergeSha": "c32556591f12965804dfd537f107f9b8b22eec52",
+      "provenance": "docs/security/s1-second-relock-delta.json",
+      "deltaUniverseCount": 3,
+      "deltaUniverseSha256": "b5a8ac75f883cea582da040f844400eb2d2379d160eb81b770f880f628c54643",
+      "existingRisksTouched": [
+        "R-65",
+        "R-72"
+      ],
+      "risksOpened": [
+        "R-74"
+      ],
+      "risksRevised": [
+        "R-65",
+        "R-72"
+      ]
+    },
     "reconciledTree": {
-      "base": "e3da6f2e928420f78d5ae95d668d7e67ba4e2cb0",
-      "assuranceChanges": "the unstaged assurance changes",
+      "base": "c32556591f12965804dfd537f107f9b8b22eec52",
+      "assuranceChanges": "the unstaged assurance changes of both relock layers",
       "universeVersion": "s1-universe-2",
-      "sourceUniverseCount": 128,
-      "sourceUniverseSha256": "06e796b75c8f5f05d1ce464c4eae9db73e52b3ce1e38b3869f528b5971f0d046"
+      "sourceUniverseCount": 131,
+      "sourceUniverseSha256": "e33509bdeb51428b8b77f1aaf94a8b936c99d221a5e2af8e5f61a92ac7a5dcb6"
     }
   },
   "note": "Threat model and risk register for Hermes OS, derived entirely from the committed S0 documents and the Phase 99 register on the source state named above. Severity is computed from the declared factors by scripts/security/s1/risk-register-check.mjs; there is no manual override. Contains no secret, no request data, no timestamp and no absolute path. A green check means this register is well-formed, never that a risk is mitigated.",
@@ -4710,7 +4766,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 64,
+      "remediationPriority": 65,
       "remediationPhase": "S10_OT_PRECONDITIONS_BEFORE_PROTOCOL_CLIENTS",
       "remediationOwnership": "protocol-client-preconditions",
       "acceptanceCriteria": [
@@ -5086,7 +5142,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 65,
+      "remediationPriority": 66,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "rate-limiter-failclosed-preservation",
       "acceptanceCriteria": [
@@ -5163,7 +5219,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 66,
+      "remediationPriority": 67,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "assignable-roles-clamp-preservation",
       "acceptanceCriteria": [
@@ -5242,7 +5298,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 67,
+      "remediationPriority": 68,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "compliance-scope-ladder-preservation",
       "acceptanceCriteria": [
@@ -5328,7 +5384,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 68,
+      "remediationPriority": 69,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "erp-pattern-propagation",
       "acceptanceCriteria": [
@@ -5406,7 +5462,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 69,
+      "remediationPriority": 70,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "single-mutation-transport-preservation",
       "acceptanceCriteria": [
@@ -5485,7 +5541,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 70,
+      "remediationPriority": 71,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "failclosed-core-preservation",
       "acceptanceCriteria": [
@@ -5571,7 +5627,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 71,
+      "remediationPriority": 72,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "security-control-denial-preservation",
       "acceptanceCriteria": [
@@ -5655,7 +5711,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 72,
+      "remediationPriority": 73,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "public-surface-identity-preservation",
       "acceptanceCriteria": [
@@ -5734,7 +5790,7 @@
       "severity": "INFORMATIONAL",
       "dominantImpact": [],
       "confidence": "HIGH",
-      "remediationPriority": 73,
+      "remediationPriority": 74,
       "remediationPhase": "S1_NO_CHANGE_REQUIRED",
       "remediationOwnership": "envelope-canonicalisation-preservation",
       "acceptanceCriteria": [
@@ -5965,7 +6021,8 @@
       "preconditions": [
         "The reader holds the platform administrator capability and an active membership of the organization, with an organization role that lacks the financial axis (every role but OWNER) or holds a subset of sites.",
         "At least one stored report exists. The runner is documented as not started by the deploy, so the archive holds rows only after the runner is activated or a platform administrator triggers a pass.",
-        "That a platform administrator stays within an organization role is a design assumption; no run-time evidence in this programme confirms or refutes it."
+        "That a platform administrator stays within an organization role is a design assumption; no run-time evidence in this programme confirms or refutes it.",
+        "The nightly pass also freezes a ranked list of the next day's priorities into its own column of the report row, built under the same synthetic OWNER scope, which now also holds the customers axis and every active site; the list names customers, work items, approvals and open alerts without regard to the reader."
       ],
       "affectedAssets": [
         "AUTHORIZATION_BOUNDARY",
@@ -5973,13 +6030,39 @@
         "SITE_ISOLATION"
       ],
       "sourceFindingIds": [
-        "DELTA-RL-001"
+        "DELTA-RL-001",
+        "DELTA-RS-001"
       ],
       "evidence": [
         {
           "path": "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx",
           "locator": "the detail page",
           "note": "The stored snapshot is rendered through the shared view with no authority or site check; only the organization is taken from the scope. The archive list returns envelopes only and there is no download or export route."
+        },
+        {
+          "path": "src/components/executive/FrozenPrioritiesPanel.tsx",
+          "locator": "the panel",
+          "note": "Every stored item's title and reason is rendered; the component takes the stored list and the locale and no reader scope."
+        },
+        {
+          "path": "src/lib/executive/contract.ts",
+          "locator": "ExecutiveAuthority.customers",
+          "note": "The customers axis exists as a separate permission, so the stored list can be wider than what a reader holds."
+        },
+        {
+          "path": "src/lib/executive/priorities.ts",
+          "locator": "the customer follow-up source",
+          "note": "A follow-up item carries the customer's display name, which the live screen shows only to a reader holding the customers axis."
+        },
+        {
+          "path": "src/lib/executive/report/generate.ts",
+          "locator": "freezePriorities and prioritySnapshot",
+          "note": "The list is computed in the generating pass from the synthetic scope and stored next to the snapshot."
+        },
+        {
+          "path": "src/lib/executive/report/read.ts",
+          "locator": "getReport",
+          "note": "The detail read returns the stored list with the snapshot; the archive list returns envelopes only and carries neither."
         },
         {
           "path": "src/lib/executive/report/worker.ts",
@@ -5990,6 +6073,11 @@
           "path": "src/lib/executive/scope.ts",
           "locator": "resolveExecutiveScope",
           "note": "Opening a report needs the platform administrator capability and one executive axis; it does not need the axis a stored section was built with."
+        },
+        {
+          "path": "src/lib/executive/scope.ts",
+          "locator": "resolveExecutiveScope",
+          "note": "A reader is admitted by any one executive axis, and the page does not ask which axis a stored section was built with."
         },
         {
           "path": "src/lib/org/rbac.ts",
@@ -6005,7 +6093,9 @@
       "controlGaps": [
         "No code narrows or refuses a stored section by the reader's authority at open time.",
         "No test opens an archived report as a reader who lacks the financial axis or holds a subset of sites.",
-        "The completion notification goes to OWNER and ADMIN members whether or not they may open every section."
+        "The completion notification goes to OWNER and ADMIN members whether or not they may open every section.",
+        "No code narrows the stored priority list by the reader's axes: a reader without the customers, operations or industrial axis still receives the customer, work and alert items the worker's synthetic scope included, and alert items of sites the reader does not hold.",
+        "No test opens an archived report's priority list as a reader who lacks the customers axis, the operations axis or a site."
       ],
       "likelihoodFactors": {
         "reachability": 3,
@@ -6036,17 +6126,137 @@
       "acceptanceCriteria": [
         "A test asserts that an ADMIN who lacks the financial axis opens a stored report and receives the financial section as refused, not rendered.",
         "A test asserts that a reader holding a subset of sites receives plant data for those sites only.",
-        "The worker comment and the detail page describe the same rule."
+        "The worker comment and the detail page describe the same rule.",
+        "A test asserts that a reader who lacks the customers axis opens a stored report and receives the customer follow-up items as refused, not rendered.",
+        "A test asserts that a reader who lacks the operations axis receives no task, work-order or approval item from the stored priority list, and that a reader holding a subset of sites receives alert items for those sites only."
       ],
       "verificationMethod": "AUTOMATED_TEST",
-      "residualRisk": "Narrowing at read time protects readers of the archive only. A stored snapshot still contains the names of users who acted on approvals and costs, and the completion notice still reaches every OWNER and ADMIN. The platform-administrator trust assumption stays a design assumption until it is exercised at run time.",
+      "residualRisk": "Narrowing at read time protects readers of the archive only. A stored snapshot still contains the names of users who acted on approvals and costs, and the completion notice still reaches every OWNER and ADMIN. The platform-administrator trust assumption stays a design assumption until it is exercised at run time. The stored priority list also names customers and work items: narrowing at read time protects the readers of the archive, not the stored column, whose retention and erasure are the open question of R-72.",
       "dependencies": [],
       "relatedRiskIds": [
         "R-10",
         "R-63",
         "R-72"
       ],
-      "originScope": "DELTA_RELOCK"
+      "originScope": "DELTA_RELOCK",
+      "secondLayerRevision": {
+        "scope": "DELTA_RELOCK_2",
+        "findingIds": [
+          "DELTA-RS-001"
+        ],
+        "supersedes": {
+          "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+          "confidence": "MEDIUM",
+          "likelihoodFactors": {
+            "reachability": 3,
+            "exploitability": 5,
+            "privilegeAccessibility": 2,
+            "repeatability": 5
+          },
+          "impactFactors": {
+            "confidentiality": 3,
+            "integrity": 0,
+            "availability": 0,
+            "auditability": 1,
+            "industrialSafety": 0
+          },
+          "likelihood": 4,
+          "impact": 3,
+          "score": 12,
+          "severity": "HIGH",
+          "preconditions": [
+            "The reader holds the platform administrator capability and an active membership of the organization, with an organization role that lacks the financial axis (every role but OWNER) or holds a subset of sites.",
+            "At least one stored report exists. The runner is documented as not started by the deploy, so the archive holds rows only after the runner is activated or a platform administrator triggers a pass.",
+            "That a platform administrator stays within an organization role is a design assumption; no run-time evidence in this programme confirms or refutes it."
+          ],
+          "evidence": [
+            {
+              "path": "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx",
+              "locator": "the detail page",
+              "note": "The stored snapshot is rendered through the shared view with no authority or site check; only the organization is taken from the scope. The archive list returns envelopes only and there is no download or export route."
+            },
+            {
+              "path": "src/lib/executive/report/worker.ts",
+              "locator": "systemScopeFor",
+              "note": "Reports are generated under a synthetic OWNER scope holding every axis and every active site, and the comment promises narrowing at open time."
+            },
+            {
+              "path": "src/lib/executive/scope.ts",
+              "locator": "resolveExecutiveScope",
+              "note": "Opening a report needs the platform administrator capability and one executive axis; it does not need the axis a stored section was built with."
+            },
+            {
+              "path": "src/lib/org/rbac.ts",
+              "locator": "view_erp_compensation",
+              "note": "Financial visibility is OWNER-only, so an ADMIN reaching the archive crosses a role boundary."
+            }
+          ],
+          "existingControls": [
+            "The archive is read by organization and date with the organization taken from the server-resolved scope, so another tenant's report is not reachable.",
+            "The live dashboard and the summary API gate every section on the reader's own axes and site list.",
+            "Reaching the page needs the platform administrator capability, so this is an insider-class exposure and not an anonymous one."
+          ],
+          "controlGaps": [
+            "No code narrows or refuses a stored section by the reader's authority at open time.",
+            "No test opens an archived report as a reader who lacks the financial axis or holds a subset of sites.",
+            "The completion notification goes to OWNER and ADMIN members whether or not they may open every section."
+          ],
+          "acceptanceCriteria": [
+            "A test asserts that an ADMIN who lacks the financial axis opens a stored report and receives the financial section as refused, not rendered.",
+            "A test asserts that a reader holding a subset of sites receives plant data for those sites only.",
+            "The worker comment and the detail page describe the same rule."
+          ],
+          "residualRisk": "Narrowing at read time protects readers of the archive only. A stored snapshot still contains the names of users who acted on approvals and costs, and the completion notice still reaches every OWNER and ADMIN. The platform-administrator trust assumption stays a design assumption until it is exercised at run time."
+        },
+        "factorReview": {
+          "reachability": {
+            "before": 3,
+            "after": 3,
+            "reason": "Unchanged. Opening a report still needs the platform-administrator capability, an active membership and at least one stored report; the priority list rides on the same detail page and adds no route."
+          },
+          "exploitability": {
+            "before": 5,
+            "after": 5,
+            "reason": "Unchanged. The list is rendered by the same detail request that already renders the snapshot; no extra step is needed."
+          },
+          "privilegeAccessibility": {
+            "before": 2,
+            "after": 2,
+            "reason": "Unchanged. The reader still needs the platform capability and an organization role holding at least one executive axis; the customers axis admits no organization role that the industrial axis did not already admit."
+          },
+          "repeatability": {
+            "before": 5,
+            "after": 5,
+            "reason": "Unchanged. Every open of the same report discloses the same stored list."
+          },
+          "confidentiality": {
+            "before": 3,
+            "after": 3,
+            "reason": "Unchanged. The disclosed class is the tenant's own business data shown to its own platform administrators beyond their organization role; customer display names and work titles are the same class as the financial figures already scored here, and no tenant boundary is crossed."
+          },
+          "integrity": {
+            "before": 0,
+            "after": 0,
+            "reason": "Unchanged. Nothing is written by opening a report."
+          },
+          "availability": {
+            "before": 0,
+            "after": 0,
+            "reason": "Unchanged. Nothing about availability moves."
+          },
+          "auditability": {
+            "before": 1,
+            "after": 1,
+            "reason": "Unchanged. Opening an archived report is still not audited; that gap is the subject of R-69."
+          },
+          "industrialSafety": {
+            "before": 0,
+            "after": 0,
+            "reason": "Unchanged. The alert titles are disclosed, not changed, and no control action depends on them."
+          }
+        },
+        "reason": "The second layer found that the archive detail page also renders a frozen priority list built under the synthetic scope with the customers axis. The risk body now covers that list, the customers axis and the alert items of every site. Every factor was reviewed one by one and none moves, so the score is reproduced by arithmetic and the first relock's snapshot is unchanged."
+      }
     },
     {
       "riskId": "R-66",
@@ -6620,7 +6830,7 @@
         "INTEGRITY"
       ],
       "confidence": "HIGH",
-      "remediationPriority": 63,
+      "remediationPriority": 64,
       "remediationPhase": "S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS",
       "remediationOwnership": "customer-name-uniqueness-constraint",
       "acceptanceCriteria": [
@@ -6656,9 +6866,15 @@
       "sourceFindingIds": [
         "DELTA-RR-007",
         "DELTA-RR-008",
-        "DELTA-RR-011"
+        "DELTA-RR-011",
+        "DELTA-RS-002"
       ],
       "evidence": [
+        {
+          "path": "prisma/schema.prisma",
+          "locator": "ExecutiveDailyReport.prioritySnapshot",
+          "note": "A second JSON column of the report row holds the frozen priority list, which carries customer display names, and has no retention or expiry rule."
+        },
         {
           "path": "prisma/schema.prisma",
           "locator": "model ExecutiveDailyReport",
@@ -6690,6 +6906,11 @@
           "note": "User names are resolved into the sections that are frozen."
         },
         {
+          "path": "src/lib/executive/priorities.ts",
+          "locator": "the customer follow-up source",
+          "note": "The customer's display name is read from the customer record and copied into the stored list."
+        },
+        {
           "path": "src/lib/executive/report/worker.ts",
           "locator": "runBatch",
           "note": "Organizations are selected by id with no lifecycle filter; the Organization model has no status field."
@@ -6701,7 +6922,8 @@
       ],
       "controlGaps": [
         "No retention period, erasure route or export route exists for customer personal data or for report snapshots, and Party and PartyInteraction are in none of the closed registries (erasure-targets, export-sources, processing-inventory).",
-        "Whether a pass should skip a closed or dormant organization is unproven because no lifecycle concept exists."
+        "Whether a pass should skip a closed or dormant organization is unproven because no lifecycle concept exists.",
+        "The frozen priority list is a second column of the report row, holds customer display names, is removed only when the organization is deleted, and is named by none of the closed registries."
       ],
       "likelihoodFactors": {
         "reachability": 3,
@@ -6735,12 +6957,142 @@
         "The owner records whether the nightly pass skips organizations that are closed or dormant, in the executive report design note; if it skips them, a test asserts that the pass writes no report and sends no notification for such an organization."
       ],
       "verificationMethod": "OWNER_POLICY_STATEMENT",
-      "residualRisk": "Until a policy exists the platform cannot show a data subject or a regulator what is kept, for how long or how it is removed; this entry records the question, not a breach.",
+      "residualRisk": "Until a policy exists the platform cannot show a data subject or a regulator what is kept, for how long or how it is removed; this entry records the question, not a breach. The stored priority list adds customer display names to the stored report row; the open question is the same one, and the policy is unchanged.",
       "dependencies": [],
       "relatedRiskIds": [
         "R-65"
       ],
       "originScope": "DELTA_RELOCK",
+      "secondLayerRevision": {
+        "scope": "DELTA_RELOCK_2",
+        "findingIds": [
+          "DELTA-RS-002"
+        ],
+        "supersedes": {
+          "productionState": "POLICY_AMBIGUITY",
+          "confidence": "MEDIUM",
+          "likelihoodFactors": {
+            "reachability": 3,
+            "exploitability": 1,
+            "privilegeAccessibility": 3,
+            "repeatability": 3
+          },
+          "impactFactors": {
+            "confidentiality": 2,
+            "integrity": 0,
+            "availability": 0,
+            "auditability": 1,
+            "industrialSafety": 0
+          },
+          "likelihood": 3,
+          "impact": 2,
+          "score": 6,
+          "severity": "MEDIUM",
+          "preconditions": [
+            "Customer records and stored reports exist and contain personal data of natural persons (contact e-mail and phone, free-text contact log, the names of users who acted on approvals and costs).",
+            "The owner has not decided a retention period, an erasure route or an export route for them, or whether dormant organizations should be skipped by the nightly pass."
+          ],
+          "evidence": [
+            {
+              "path": "prisma/schema.prisma",
+              "locator": "model ExecutiveDailyReport",
+              "note": "The snapshot is unbounded JSON of the rendered summary; the only removal is the cascade when the organization is deleted."
+            },
+            {
+              "path": "src/lib/compliance/erasure-targets.ts",
+              "locator": "the closed erasure registry",
+              "note": "Party and PartyInteraction are not enumerated."
+            },
+            {
+              "path": "src/lib/compliance/export-sources.ts",
+              "locator": "the closed export registry",
+              "note": "Party and PartyInteraction are not enumerated."
+            },
+            {
+              "path": "src/lib/compliance/processing-inventory.ts",
+              "locator": "the processing inventory",
+              "note": "Customer contact data is not listed."
+            },
+            {
+              "path": "src/lib/customers/service.ts",
+              "locator": "the header",
+              "note": "Nothing is deleted: a customer is archived and interactions are append-only; the service has no delete, anonymise or export operation."
+            },
+            {
+              "path": "src/lib/executive/oversight.ts",
+              "locator": "resolveNames",
+              "note": "User names are resolved into the sections that are frozen."
+            },
+            {
+              "path": "src/lib/executive/report/worker.ts",
+              "locator": "runBatch",
+              "note": "Organizations are selected by id with no lifecycle filter; the Organization model has no status field."
+            }
+          ],
+          "existingControls": [
+            "The candidate-data (ATS) module has its own retention and erasure path, which shows the platform can express one.",
+            "Customers are archived, not lost, and an archived customer is excluded from live counts."
+          ],
+          "controlGaps": [
+            "No retention period, erasure route or export route exists for customer personal data or for report snapshots, and Party and PartyInteraction are in none of the closed registries (erasure-targets, export-sources, processing-inventory).",
+            "Whether a pass should skip a closed or dormant organization is unproven because no lifecycle concept exists."
+          ],
+          "acceptanceCriteria": [
+            "If the owner decides that customer contact data and stored report snapshots are personal data: Party, PartyInteraction and the report snapshot are enumerated in the closed registries erasure-targets, export-sources and processing-inventory with a retention period, the registry completeness tests (erasure-governance and export-governance) pass with them listed, a test asserts that an erasure request for a data subject plans and executes a removal or anonymisation of the matching customer rows, and a test asserts that an export request includes them.",
+            "If the owner decides that customer contact data and stored report snapshots are not subject to erasure and export: the exemption and its basis are recorded in processing-inventory, a test asserts that the closed registries name Party, PartyInteraction and the report snapshot as exempt with that basis, and the customer feature documentation states the retention period that applies.",
+            "The owner records whether the nightly pass skips organizations that are closed or dormant, in the executive report design note; if it skips them, a test asserts that the pass writes no report and sends no notification for such an organization."
+          ],
+          "residualRisk": "Until a policy exists the platform cannot show a data subject or a regulator what is kept, for how long or how it is removed; this entry records the question, not a breach."
+        },
+        "factorReview": {
+          "reachability": {
+            "before": 3,
+            "after": 3,
+            "reason": "Unchanged. The same stored rows exist once the runner is active; the new column adds no way to reach them."
+          },
+          "exploitability": {
+            "before": 1,
+            "after": 1,
+            "reason": "Unchanged. The risk records a missing rule, not an attack step."
+          },
+          "privilegeAccessibility": {
+            "before": 3,
+            "after": 3,
+            "reason": "Unchanged. Reading the stored column needs the same access as reading the stored snapshot."
+          },
+          "repeatability": {
+            "before": 3,
+            "after": 3,
+            "reason": "Unchanged. Every pass stores a list again."
+          },
+          "confidentiality": {
+            "before": 2,
+            "after": 2,
+            "reason": "Unchanged. The list adds customer display names only; contact data stays in the customer table. The exposure class and the persistence are those already scored."
+          },
+          "integrity": {
+            "before": 0,
+            "after": 0,
+            "reason": "Unchanged. The stored list is not edited."
+          },
+          "availability": {
+            "before": 0,
+            "after": 0,
+            "reason": "Unchanged. Nothing about availability moves."
+          },
+          "auditability": {
+            "before": 1,
+            "after": 1,
+            "reason": "Unchanged. The gap is that a data subject cannot be shown what is kept, as before."
+          },
+          "industrialSafety": {
+            "before": 0,
+            "after": 0,
+            "reason": "Unchanged. No plant data is involved."
+          }
+        },
+        "reason": "The second layer found that the frozen priority list copies customer display names into a second JSON column of the report row. The risk body now names that column. Every factor was reviewed one by one and none moves; the policy stays open and no owner decision is recorded."
+      },
       "policy": {
         "status": "OPEN",
         "question": "Are the customer contact data (Party and PartyInteraction) and the frozen report snapshots personal data of natural persons that the platform must retain for a stated period, erase on request and include in a data export?",
@@ -6910,6 +7262,104 @@
           }
         ]
       }
+    },
+    {
+      "riskId": "R-74",
+      "title": "The executive performance test treats any database URL that contains localhost or a test marker as disposable, seeds the first organization it finds and leaves the rows behind",
+      "productionState": "CODE_CONFIRMED_RUNTIME_UNPROVEN",
+      "stride": [
+        "TAMPERING"
+      ],
+      "threatActors": [
+        "INSIDER_OR_ERRING_OPERATOR"
+      ],
+      "preconditions": [
+        "An operator sets EXECUTIVE_PERF_DB to a URL that satisfies the substring test but reaches a real database: a local port forwarded to a remote database, or a marker placed in a query parameter or a user name.",
+        "The operator runs the dedicated performance script, which is never part of the ordinary test run or of continuous integration."
+      ],
+      "affectedAssets": [
+        "FACTORY_AND_ERP_DATA",
+        "TENANT_ISOLATION"
+      ],
+      "sourceFindingIds": [
+        "DELTA-RS-003"
+      ],
+      "evidence": [
+        {
+          "path": "package.json",
+          "locator": "perf:executive",
+          "note": "The script that runs the suite names the dedicated configuration and nothing that limits the target."
+        },
+        {
+          "path": "src/lib/executive/__tests__/pg/summary-baseline.pg.test.ts",
+          "locator": "ISOLATED",
+          "note": "The only guard is an unanchored regular expression applied to the whole URL string."
+        },
+        {
+          "path": "src/lib/executive/__tests__/pg/summary-baseline.pg.test.ts",
+          "locator": "afterAll",
+          "note": "Teardown only closes the connection; no statement removes the rows the run wrote and none counts them."
+        },
+        {
+          "path": "src/lib/executive/__tests__/pg/summary-baseline.pg.test.ts",
+          "locator": "beforeAll",
+          "note": "The first organization of the target database, by identifier, receives the seeded customers; the suite creates no organization of its own."
+        },
+        {
+          "path": "vitest.executive-perf.config.ts",
+          "locator": "include",
+          "note": "A dedicated configuration selects only the suite that writes; the ordinary configuration excludes it."
+        }
+      ],
+      "existingControls": [
+        "The suite is skipped unless EXECUTIVE_PERF_DB names a database, and the ordinary test configuration excludes it, so neither a normal run nor continuous integration reaches it.",
+        "A URL that contains none of the permitted substrings is refused before any write."
+      ],
+      "controlGaps": [
+        "The permitted substrings are matched anywhere in the URL, so a forwarded port to a real database, an application-name parameter or a user name satisfies the guard.",
+        "The run seeds the first organization of the target database and creates no organization of its own.",
+        "Nothing removes the seeded customers afterwards and nothing proves that they are gone.",
+        "No test feeds the guard a deceptive URL."
+      ],
+      "likelihoodFactors": {
+        "reachability": 1,
+        "exploitability": 3,
+        "privilegeAccessibility": 1,
+        "repeatability": 2
+      },
+      "impactFactors": {
+        "confidentiality": 0,
+        "integrity": 2,
+        "availability": 1,
+        "auditability": 1,
+        "industrialSafety": 0
+      },
+      "likelihood": 2,
+      "impact": 2,
+      "score": 4,
+      "severityFromScore": "LOW",
+      "severityClamp": null,
+      "severity": "LOW",
+      "dominantImpact": [
+        "INTEGRITY"
+      ],
+      "confidence": "MEDIUM",
+      "remediationPriority": 63,
+      "remediationPhase": "S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS",
+      "remediationOwnership": "executive-perf-test-database-guard",
+      "acceptanceCriteria": [
+        "A test asserts that the performance suite connects only to a database that the harness itself created for the run, and refuses any URL it did not create.",
+        "A test asserts that the host and the database name are compared against an exact allowlist and never by substring, so a URL that carries localhost in a query parameter, a user name or a path is refused.",
+        "A test asserts that a tunnel or a production-like target is refused: a loopback address with a forwarded port to a remote database, and a database named like a production one.",
+        "A test asserts that the suite seeds an organization fixture of its own and never selects the first organization it finds.",
+        "A test asserts that teardown removes every row the run created and that the run counts the fixture's rows afterwards and fails if any remain.",
+        "A test asserts that deceptive URLs are refused: a user-information trick, a query string, an upper-case host, a trailing dot, and an IPv6 loopback with another port."
+      ],
+      "verificationMethod": "AUTOMATED_TEST",
+      "residualRisk": "A refused target protects the database the variable names. It does not protect a database an operator deliberately builds from production data, and it does not remove the customers already written by an earlier run.",
+      "dependencies": [],
+      "relatedRiskIds": [],
+      "originScope": "DELTA_RELOCK_2"
     }
   ],
   "findings": [
@@ -7332,6 +7782,36 @@
       "ownerRiskId": "R-72",
       "originScope": "DELTA_RELOCK",
       "deltaDisposition": "POLICY_AMBIGUITY"
+    },
+    {
+      "findingId": "DELTA-RS-001",
+      "family": "DELTA",
+      "source": "docs/security/s1-second-relock-delta.json",
+      "summary": "The nightly pass freezes a ranked priority list, built under the synthetic OWNER scope that now also holds the customers axis, and the archive detail page renders it without narrowing it to the reader.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-65",
+      "originScope": "DELTA_RELOCK_2",
+      "deltaDisposition": "OWNED_BY_EXISTING_RISK"
+    },
+    {
+      "findingId": "DELTA-RS-002",
+      "family": "DELTA",
+      "source": "docs/security/s1-second-relock-delta.json",
+      "summary": "A customer's display name is copied into the frozen priority list stored in the report row, a column that no erasure, export or retention registry names.",
+      "status": "POLICY_QUESTION",
+      "ownerRiskId": "R-72",
+      "originScope": "DELTA_RELOCK_2",
+      "deltaDisposition": "POLICY_AMBIGUITY"
+    },
+    {
+      "findingId": "DELTA-RS-003",
+      "family": "DELTA",
+      "source": "docs/security/s1-second-relock-delta.json",
+      "summary": "The executive performance test accepts any database URL that merely contains _test, _ci, localhost or 127.0.0.1, seeds the first organization of that database with customers, and has no teardown, so a local tunnel to a real database is treated as a throwaway one.",
+      "status": "MAPPED_TO_RISK",
+      "ownerRiskId": "R-74",
+      "originScope": "DELTA_RELOCK_2",
+      "deltaDisposition": "OWNED_BY_NEW_RISK"
     },
     {
       "findingId": "EDGE-01",

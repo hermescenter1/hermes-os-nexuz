@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
-  "manifestVersion": "relock-mut-1",
-  "manifestSha256": "3b1a2bd24f9f28f23a41b6e5d4d90c36e86c7fbb5bee5db9f8cc03041a752c58",
+  "manifestVersion": "relock-mut-2",
+  "manifestSha256": "7eb5a0b118c87c6054381f3839b01ea3889cc4d22cd4940e48c36ae943451d99",
   "targetFile": "scripts/security/s1/relock-delta-check.mjs",
   "targetFiles": {
     "relock": "scripts/security/s1/relock-delta-check.mjs",
     "s0": "scripts/security/s0/getprisma-callsite-inventory.mjs"
   },
   "files": {
-    "checkerSha256": "ce38f156bd08625ce5bc04ffd3e5f8e1201376a452f19bf2b789a9d68fb878fa",
-    "selftestSha256": "622e8eedd7a23de76efc45f1a17d7a0cc7f07a4923e7afb5410b06ee25e7e84b",
-    "e2eSha256": "ee811a6e6180c31228b86cd62a283224f9416f4b541c3b76ece78a3614211080",
-    "s0ScannerSha256": "3a4ec9c0a192c15188346717d4c6b7456cf1a3c268e7399355c72c04568a43b2",
-    "s0SelftestSha256": "e2e2d99b7706ea491fef9bbc606152aea725a8aef68a207e06a58e57323ab72c",
-    "s0AdjudicationsSha256": "1369568399b946a72d4f0589a13fe17c88cdc5a5ed0d82521880581a89d02f25"
+    "checkerSha256": "5d4c4318bf53c60382488e8fe69c53a89b5505e152cbcc070e05792e4277237f",
+    "selftestSha256": "a3279c27550da8384f35563dd0d5bcd4ae2c2064bd70245fbd4e826e2805144b",
+    "e2eSha256": "45b48531473c5cc30801935e63a03160c0ac2286b527001092a23ff288cd5bc9",
+    "s0ScannerSha256": "d0a29727bdaa1a4a11f2be2035031cfcdd5c6e4c101eef6144b9e23b271ee60a",
+    "s0SelftestSha256": "fa30d84953659580813e9563730e24be3c731f29638241492ad1ca335de60038",
+    "s0AdjudicationsSha256": "d037615b8b0348c9e8943d32153a5fc172c5095edeeb573c42e2c0256418e47e"
   },
   "mutants": [
     {
@@ -1041,7 +1041,7 @@
     {
       "id": "M147",
       "gate": "head: moved outside the allowlist",
-      "test": "head: a descendant that changed only the allowlist is accepted, one that changed a product file is refused",
+      "test": "head: a descendant that changed a product, workflow, package, migration, deploy or config path is refused, commit by commit",
       "status": "TARGETED_KILL",
       "placebo": "GREEN"
     },
@@ -1604,6 +1604,685 @@
       "test": "e2e environment: when git cannot answer the checker exits 3 (a missing prerequisite), never 0 and never a validation code",
       "status": "TARGETED_KILL",
       "placebo": "GREEN"
+    },
+    {
+      "id": "M233",
+      "gate": "layer 2: original frozen source required",
+      "test": "layer 2: a second-layer document without the original frozen source is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M234",
+      "gate": "layer 2: original frozen source must be an ancestor",
+      "test": "layer 2: an original frozen source that is not a proper ancestor of the range base is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M235",
+      "gate": "layer 2: original frozen source must be a proper ancestor",
+      "test": "layer 2: an original frozen source that is not a proper ancestor of the range base is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M236",
+      "gate": "layer 2: a first-layer document has no original frozen source",
+      "test": "layer 2: a first-layer document that names an original frozen source is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M237",
+      "gate": "layer 2: reconciled tree must descend from the merge",
+      "test": "layer 2: a reconciled tree commit that does not descend from the integration merge is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M238",
+      "gate": "layer 2: the first layer's head base is the later merge",
+      "test": "head: the committed layer is measured from the repository's real history, whatever position HEAD has",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M239",
+      "gate": "layer 2: a successor must descend from the first-layer merge",
+      "test": "layer 2: a successor that does not descend from the first-layer merge is not accepted as the head base",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M240",
+      "gate": "layer 2: HEAD is judged against the base it is given",
+      "test": "layer 2: HEAD is judged against the base it is given",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M241",
+      "gate": "layer 2: the diff is taken from the base it is given",
+      "test": "layer 2: the diff is taken from the base it is given",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M242",
+      "gate": "layer 2: a finding carries its own layer's prefix",
+      "test": "layer 2: a first-layer identifier in a second-layer document is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M243",
+      "gate": "layer 2: an observation carries its own layer's prefix",
+      "test": "layer 2: an observation of the wrong layer is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M244",
+      "gate": "layer 2: a new-risk disposition needs a risk of the second layer",
+      "test": "layer 2: a second-layer finding that claims a new risk is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M245",
+      "gate": "layer 2: a document is asked only for its own layer's findings",
+      "test": "layer 2: the first-layer document is not asked to declare the second layer's findings",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M246",
+      "gate": "layer 2: the first layer's content pins are not applied to the second",
+      "test": "layer 2: the content pins of the first layer are not applied to the second",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M247",
+      "gate": "layer 2: the original register hash pin belongs to the first layer",
+      "test": "layer 2: the original register hash pin belongs to the first layer",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M248",
+      "gate": "layer 2: only a document that names a reconciled tree is sealed",
+      "test": "layer 2: a sealed layer reads its reconciled tree from git and an unsealed one reads the files",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M249",
+      "gate": "layer 2: a sealed layer yields to caller-supplied files",
+      "test": "layer 2: a sealed layer reads its reconciled tree from git and an unsealed one reads the files",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M250",
+      "gate": "layer 2: a sealed layer reads its inventory from git",
+      "test": "layer 2: the sealed first layer's figures do not follow the current inventory",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M251",
+      "gate": "layer 2: the batch blob reader skips what is not a blob",
+      "test": "layer 2: the batch blob reader returns what git returns",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M252",
+      "gate": "layer 2: the batch blob reader steps over the separator",
+      "test": "layer 2: the batch blob reader returns what git returns",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M253",
+      "gate": "layer 2: a document without a layer is the first",
+      "test": "layer 2: a document without a layer is the first, and the layers are named by their document",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M254",
+      "gate": "layer 2: the second-layer report names its columns",
+      "test": "layer 2: the committed second-layer provenance has no violation",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M255",
+      "gate": "layer 2: the second layer has its own prefix",
+      "test": "layer 2: a first-layer identifier in a second-layer document is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M256",
+      "gate": "layer 2: the first layer has its own prefixes",
+      "test": "layer 2: a second-layer identifier in a first-layer document is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M257",
+      "gate": "layer 2: --layer=2 selects the second layer",
+      "test": "e2e layer: --layer=2 checks the second-layer document and its report and exits 0 on the committed files",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M258",
+      "gate": "layer 2: the layers have different documents",
+      "test": "e2e layer: the second-layer paths are not the first layer's",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M259",
+      "gate": "cli parser: an invalid layer value",
+      "test": "cli parser: every other spelling of the layer is refused and never read as the first layer",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M260",
+      "gate": "cli parser: a repeated option",
+      "test": "cli parser: every other spelling of the layer is refused and never read as the first layer",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M261",
+      "gate": "cli parser: an empty value",
+      "test": "cli parser: unknown options, stray arguments, repeated options and empty values are usage errors",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M262",
+      "gate": "cli parser: an unknown option",
+      "test": "cli parser: unknown options, stray arguments, repeated options and empty values are usage errors",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M263",
+      "gate": "cli parser: a stray argument",
+      "test": "cli parser: unknown options, stray arguments, repeated options and empty values are usage errors",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M264",
+      "gate": "cli: a usage error stops the command",
+      "test": "e2e layer parser: an invalid layer is a usage error for every mode and never falls back to the first layer",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M265",
+      "gate": "cli: no layer is the first layer",
+      "test": "e2e layer parser: the two valid layers give different answers and no layer gives the first",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M266",
+      "gate": "head: not a descendant of the base",
+      "test": "head: an unrelated commit, a rewritten history and a history that lost the merge are not descendants",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M267",
+      "gate": "head: a merge after the integration merge",
+      "test": "head: a merge commit after the integration merge is refused even when it brings only allowlisted paths",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M268",
+      "gate": "head: every commit is judged, not only the net change",
+      "test": "head: a product change that a later commit reverted still fails, because the history is the subject",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M269",
+      "gate": "head: the per-commit gate reports",
+      "test": "head: a descendant that changed a product, workflow, package, migration, deploy or config path is refused, commit by commit",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M270",
+      "gate": "head: the allowlist is the allowlist",
+      "test": "head: HEAD may be the integration merge or a descendant whose every commit stayed inside the allowlist",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M271",
+      "gate": "ledger: a path without a disposition",
+      "test": "ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M272",
+      "gate": "ledger: a retyped path",
+      "test": "ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M273",
+      "gate": "ledger: a path reviewed at another blob",
+      "test": "ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M274",
+      "gate": "ledger: a disposition for a path the range did not change",
+      "test": "ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M275",
+      "gate": "ledger: a path recorded twice",
+      "test": "ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M276",
+      "gate": "ledger: a disposition that does not describe the category",
+      "test": "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M277",
+      "gate": "ledger: security-relevant and unlinked",
+      "test": "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M278",
+      "gate": "ledger: linked and not security-relevant",
+      "test": "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M279",
+      "gate": "ledger: a disposition that cannot be linked",
+      "test": "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M280",
+      "gate": "ledger: a finding the document does not hold",
+      "test": "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M281",
+      "gate": "ledger: an observation the document does not hold",
+      "test": "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M282",
+      "gate": "ledger: a finding that cites no evidence at the path",
+      "test": "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M283",
+      "gate": "ledger: an observation that cites no evidence at the path",
+      "test": "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M284",
+      "gate": "ledger: evidence that no row names",
+      "test": "ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M285",
+      "gate": "ledger: the second layer carries the list",
+      "test": "ledger: a ledger key in a first-layer document is refused, and a second-layer document must carry both lists",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M286",
+      "gate": "ledger: the first layer carries no ledger key",
+      "test": "ledger: a ledger key in a first-layer document is refused, and a second-layer document must carry both lists",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M287",
+      "gate": "ledger: the aggregates are the ledger's",
+      "test": "ledger: every path of the range has exactly one row, and the aggregates are read from the rows",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M288",
+      "gate": "ledger: strict means product",
+      "test": "ledger: the strict, broad and category rules classify known paths",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M289",
+      "gate": "ledger: the categories",
+      "test": "ledger: the strict, broad and category rules classify known paths",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M290",
+      "gate": "ledger: a rename names where it came from",
+      "test": "ledger: added, modified, deleted and renamed paths are all shown, and a later edit makes the row stale",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M291",
+      "gate": "ledger: a row is reviewed only at the same blob",
+      "test": "ledger: added, modified, deleted and renamed paths are all shown, and a later edit makes the row stale",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M292",
+      "gate": "ledger: the rename is detected",
+      "test": "ledger: added, modified, deleted and renamed paths are all shown, and a later edit makes the row stale",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M293",
+      "gate": "moved: a source behaviour change must be described",
+      "test": "moved ledger: a source behaviour change must be described, and only a real one may be",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M294",
+      "gate": "moved: a description needs a real change",
+      "test": "moved ledger: a source behaviour change must be described, and only a real one may be",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M295",
+      "gate": "moved: a description needs a moved call site",
+      "test": "moved ledger: a source behaviour change must be described, and only a real one may be",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M296",
+      "gate": "moved: a description once",
+      "test": "moved ledger: a source behaviour change must be described, and only a real one may be",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M297",
+      "gate": "moved: the old identifier in an S0 artifact",
+      "test": "moved ledger: an old identifier left in an artifact, or in the document, is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M298",
+      "gate": "moved: the old identifier in the document",
+      "test": "moved ledger: an old identifier left in an artifact, or in the document, is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M299",
+      "gate": "moved: the old identifier in the report",
+      "test": "moved ledger: an old identifier left in an artifact, or in the document, is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M300",
+      "gate": "moved: an adjudication that points elsewhere",
+      "test": "moved ledger: an old identifier left in an artifact, or in the document, is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M301",
+      "gate": "moved: a pair whose verdict changed is not a move",
+      "test": "moved ledger: the gates read the derived ledger",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M302",
+      "gate": "moved: an ambiguous pair",
+      "test": "moved ledger: the gates read the derived ledger",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M303",
+      "gate": "moved: one row per moved call site",
+      "test": "moved ledger: the gates read the derived ledger",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M304",
+      "gate": "moved: the change model is counted from the rows",
+      "test": "moved ledger: the gates read the derived ledger",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M305",
+      "gate": "moved: the ledger counts its rows",
+      "test": "moved ledger: the gates read the derived ledger",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M306",
+      "gate": "moved: the report names no unqualified count",
+      "test": "moved ledger: the words 'semantic change' are refused unless they name one of the three kinds",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M307",
+      "gate": "moved: the narrative names no unqualified count",
+      "test": "moved ledger: the words 'semantic change' are refused unless they name one of the three kinds",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M308",
+      "gate": "moved: the phrase is recognised",
+      "test": "moved ledger: the words 'semantic change' are refused unless they name one of the three kinds",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M309",
+      "gate": "moved: the named kinds are allowed",
+      "test": "moved ledger: the words 'semantic change' are refused unless they name one of the three kinds",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M310",
+      "gate": "moved: a position is not a verdict",
+      "test": "moved ledger: a position-only move is told from a verdict change, and the function body from its comments",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M311",
+      "gate": "moved: evidence and caller path are positions",
+      "test": "moved ledger: a position-only move is told from a verdict change, and the function body from its comments",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M312",
+      "gate": "moved: the trace position is a position",
+      "test": "moved ledger: a position-only move is told from a verdict change, and the function body from its comments",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M313",
+      "gate": "moved: comments are not behaviour",
+      "test": "moved ledger: a position-only move is told from a verdict change, and the function body from its comments",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M314",
+      "gate": "moved: a function ends at the next declaration",
+      "test": "moved ledger: a position-only move is told from a verdict change, and the function body from its comments",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M315",
+      "gate": "moved: the derived tags",
+      "test": "moved ledger: the three kinds of change are counted apart, from the rows",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M316",
+      "gate": "moved: the source behaviour is read from the code",
+      "test": "moved ledger: the three kinds of change are counted apart, from the rows",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M317",
+      "gate": "moved: the pair is one to one",
+      "test": "moved ledger: the three kinds of change are counted apart, from the rows",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M318",
+      "gate": "moved: the first-layer tree is the before",
+      "test": "moved ledger: the three kinds of change are counted apart, from the rows",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M319",
+      "gate": "evidence window: the expression is where the line says",
+      "test": "moved ledger: an adjudication's references are checked for range, expression and window",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M320",
+      "gate": "evidence window: the range is inside the file",
+      "test": "moved ledger: an adjudication's references are checked for range, expression and window",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M321",
+      "gate": "evidence window: a file in the tree",
+      "test": "moved ledger: an adjudication's references are checked for range, expression and window",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M322",
+      "gate": "evidence window: the citation of the call site's own file is near it",
+      "test": "moved ledger: an adjudication's references are checked for range, expression and window",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M323",
+      "gate": "s0 retry identity: the operation names its call site",
+      "test": "retry identity: the old identifier of a moved call site is refused as the operation identity",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M324",
+      "gate": "s0 retry identity: a range inside the file",
+      "test": "retry identity: a source reference at the old position, or outside its file, is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M325",
+      "gate": "s0 retry identity: a reference near the call site",
+      "test": "retry identity: a source reference at the old position, or outside its file, is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M326",
+      "gate": "s0 retry identity: an edge reference includes its consumer line",
+      "test": "retry identity: a source reference at the old position, or outside its file, is refused",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M327",
+      "gate": "s0 retry identity: an edge names its consumer",
+      "test": "retry identity: a trace that moved with its call site is clean, and its identity is derived from the current identifier",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M328",
+      "gate": "s0 retry identity: a call site names its identifier",
+      "test": "retry identity: a trace that moved with its call site is clean, and its identity is derived from the current identifier",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
+    },
+    {
+      "id": "M329",
+      "gate": "s0 retry identity: the gate runs on every subject",
+      "test": "retry: the completeness gate is computed from the committed data and stops the command line with exit 10",
+      "status": "TARGETED_KILL",
+      "placebo": "GREEN"
     }
   ],
   "controls": [
@@ -1633,12 +2312,12 @@
     }
   ],
   "totals": {
-    "mutants": 227,
-    "targetedKill": 227,
+    "mutants": 324,
+    "targetedKill": 324,
     "incidental": 0,
     "survived": 0,
     "invalid": 0,
-    "placebosGreen": 227,
+    "placebosGreen": 324,
     "controls": 4,
     "controlsAsExpected": 4,
     "deviations": 0

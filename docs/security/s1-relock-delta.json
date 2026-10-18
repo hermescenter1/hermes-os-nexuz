@@ -7,7 +7,8 @@
     "frozenSourceSha": "bcf3be9aa51f8d9f8f75e5568a2e4efea5f8fbd2",
     "securityHeadSha": "391fa2f2d3d1a3c714753ef5da8594da2e331658",
     "targetMainSha": "b461ac9709d6e82973de2b05f15317381c2fcc73",
-    "integrationMergeSha": "e3da6f2e928420f78d5ae95d668d7e67ba4e2cb0"
+    "integrationMergeSha": "e3da6f2e928420f78d5ae95d668d7e67ba4e2cb0",
+    "reconciledTreeSha": "1faa877ae3871b065a6e396a3ba68f29b5e08940"
   },
   "attribution": {
     "historicalBaseline": "The S0/S1 audit was performed in full on the frozen source. Nothing in the historical documents was re-audited against the target; the historical snapshot in the canonical register is pinned and recomputed.",

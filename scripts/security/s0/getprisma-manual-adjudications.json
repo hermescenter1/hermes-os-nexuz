@@ -2891,7 +2891,7 @@
       "reviewer": "S0 manual adjudication"
     },
     {
-      "callsiteId": "src/lib/executive/priorities.ts#L273C24",
+      "callsiteId": "src/lib/executive/priorities.ts#L327C24",
       "sourceFingerprint": "3c80c3eb5d33ca6f",
       "classification": "EXPLICIT_DEGRADED_MODE",
       "secondaryTags": [
@@ -2900,15 +2900,15 @@
         "USER_VISIBLE"
       ],
       "reason": "This expression is the `return null;` of a local accessor `db()`, so its behaviour is the behaviour of its consumers (the same convention as rule R22). It has exactly one consumer, `buildTomorrowsPriorities`, which tests the accessor's result and answers every affected section as `refusedSection(\"UNAVAILABLE\", sourceUnavailable)` (or FORBIDDEN where the axis is not held). The null is therefore an explicit, stated unavailability and never an empty-success panel.",
-      "evidence": "src/lib/executive/priorities.ts:272-278 (accessor), :393 (consumer test at :393)",
-      "callerPath": "src/app/[locale]/dashboard/executive/priorities/page.tsx → buildTomorrowsPriorities (src/lib/executive/priorities.ts:361)",
+      "evidence": "src/lib/executive/priorities.ts:326-332 (accessor), :472 (consumer test at :472)",
+      "callerPath": "src/app/[locale]/dashboard/executive/priorities/page.tsx → buildTomorrowsPriorities (src/lib/executive/priorities.ts:420)",
       "terminalBehavior": "the priorities page renders the section as UNAVAILABLE with the stated reason",
       "outcomeFlags": [],
       "supersededRuleId": "R08-guard-null-undefined",
       "reviewer": "S0 manual adjudication"
     },
     {
-      "callsiteId": "src/lib/executive/report/generate.ts#L112C24",
+      "callsiteId": "src/lib/executive/report/generate.ts#L196C24",
       "sourceFingerprint": "8460b67c90dc58fd",
       "classification": "DB_REQUIRED_FAIL_CLOSED",
       "secondaryTags": [
@@ -2917,7 +2917,7 @@
         "BACKGROUND_JOB"
       ],
       "reason": "`generateDailyReport` reads the client and its report delegate; when either is absent it returns the typed outcome `{ kind: \"FAILED\", reasonKey: sourceUnavailable }` before building or writing anything. The pass counts it in `failed` and lists the organization in `failures`. No row is created and no success is claimed.",
-      "evidence": "src/lib/executive/report/generate.ts:112-114 (absent delegate returns FAILED); src/lib/executive/report/worker.ts (failed counter and failures list)",
+      "evidence": "src/lib/executive/report/generate.ts:196-198 (absent delegate returns FAILED); src/lib/executive/report/worker.ts (failed counter and failures list)",
       "callerPath": "POST /api/executive/reports/run → runReportPass → runBatch → generateDailyReport",
       "terminalBehavior": "pass JSON reports failed and a failures entry for the organization; nothing is persisted",
       "outcomeFlags": [],
@@ -2925,7 +2925,7 @@
       "reviewer": "S0 manual adjudication"
     },
     {
-      "callsiteId": "src/lib/executive/report/generate.ts#L248C24",
+      "callsiteId": "src/lib/executive/report/generate.ts#L360C24",
       "sourceFingerprint": "189eee756297e423",
       "classification": "DB_REQUIRED_FAIL_CLOSED",
       "secondaryTags": [
@@ -2935,12 +2935,12 @@
         "SILENT"
       ],
       "reason": "This expression is `if (!reports) return false;` in `claimNotification`. With no client or delegate it writes nothing and returns false, which is the same value the function returns when another replica already holds the claim. The caller answers NOT_CLAIMED and sends nothing: the safe direction (no duplicate, no unrecorded send), and because the row keeps `notifiedAt = null` the next pass tries again. The residual defect is observability: the two situations are indistinguishable and NOT_CLAIMED is excluded from the pass's `undelivered` list, so an outage here leaves no trace in the pass report.",
-      "evidence": "src/lib/executive/report/generate.ts:250 (`if (!reports) return false;`); caller src/lib/executive/report/worker.ts:384 (`if (!claimed) return \"NOT_CLAIMED\"`) and :336 (`result !== \"NOT_CLAIMED\"` is the only path into `undelivered`)",
+      "evidence": "src/lib/executive/report/generate.ts:362 (`if (!reports) return false;`); caller src/lib/executive/report/worker.ts:384 (`if (!claimed) return \"NOT_CLAIMED\"`) and :336 (`result !== \"NOT_CLAIMED\"` is the only path into `undelivered`)",
       "callerPath": "POST /api/executive/reports/run → runReportPass → runBatch → announce → claimNotification",
       "terminalBehavior": "no notification this pass, no undelivered entry, retried by the next pass",
       "outcomeFlags": [],
       "retryTrace": {
-        "operationIdentity": "the operation behind src/lib/executive/report/generate.ts#L248C24",
+        "operationIdentity": "the operation behind src/lib/executive/report/generate.ts#L360C24",
         "failureObservedByCaller": false,
         "sameOperationRetried": true,
         "retryTrigger": "INDEPENDENT_SCHEDULE",
@@ -2949,7 +2949,7 @@
         "terminal": "no notification this pass and no undelivered entry",
         "justification": "A claim that could not be taken writes nothing, so notifiedAt stays null; the next pass finds the report already reported with no announcement and announces it again.",
         "sourceReferences": [
-          "src/lib/executive/report/generate.ts:248-250",
+          "src/lib/executive/report/generate.ts:360-362",
           "src/lib/executive/report/worker.ts:321-325"
         ]
       },
@@ -2957,7 +2957,7 @@
       "reviewer": "S0 manual adjudication"
     },
     {
-      "callsiteId": "src/lib/executive/report/generate.ts#L281C24",
+      "callsiteId": "src/lib/executive/report/generate.ts#L393C24",
       "sourceFingerprint": "a2c047349cdc9c33",
       "classification": "DB_REQUIRED_FAIL_CLOSED",
       "secondaryTags": [
@@ -2967,14 +2967,14 @@
         "SILENT"
       ],
       "reason": "This expression is `if (!reports) return false;` in `releaseNotificationClaim`. With no client or delegate it performs no write and returns false: it refuses, it does not claim success and it swallows no exception. The harm is not in this expression but in what its only caller does with the answer: `announce` neither reads the boolean nor logs, and wraps the call in `.catch(() => false)`, so the claim taken just before stays set. RETRY_SUPPRESSION is therefore a consequence at the caller of this refusal, recorded here because this call is the only way a report nobody received can be retried; the row then says notified although nobody was told.",
-      "evidence": "src/lib/executive/report/generate.ts:283 (`if (!reports) return false;`); caller src/lib/executive/report/worker.ts:394 (`.catch(() => false)`, result not inspected)",
+      "evidence": "src/lib/executive/report/generate.ts:395 (`if (!reports) return false;`); caller src/lib/executive/report/worker.ts:394 (`.catch(() => false)`, result not inspected)",
       "callerPath": "POST /api/executive/reports/run → runReportPass → runBatch → announce → releaseNotificationClaim",
       "terminalBehavior": "release not performed; the claim stays set; no later pass re-announces the report; visible only in that pass's undelivered list",
       "outcomeFlags": [
         "RETRY_SUPPRESSION"
       ],
       "retryTrace": {
-        "operationIdentity": "the operation behind src/lib/executive/report/generate.ts#L281C24",
+        "operationIdentity": "the operation behind src/lib/executive/report/generate.ts#L393C24",
         "failureObservedByCaller": false,
         "sameOperationRetried": true,
         "retryTrigger": "INDEPENDENT_SCHEDULE",
@@ -2983,7 +2983,7 @@
         "terminal": "release not performed; the claim stays set; visible only in that pass's undelivered list",
         "justification": "The release returns false and clears nothing, its caller neither reads the result nor logs it and swallows a throw, so the durable claim stops every later pass from announcing the report.",
         "sourceReferences": [
-          "src/lib/executive/report/generate.ts:283",
+          "src/lib/executive/report/generate.ts:395",
           "src/lib/executive/report/worker.ts:394",
           "src/lib/executive/report/worker.ts:321-325"
         ]
@@ -2992,42 +2992,7 @@
       "reviewer": "S0 manual adjudication"
     },
     {
-      "callsiteId": "src/lib/executive/report/read.ts#L126C36",
-      "sourceFingerprint": "9a004a4bff3edce2",
-      "classification": "EMPTY_SUCCESS_FALLBACK",
-      "secondaryTags": [
-        "READ",
-        "TENANT_SCOPED",
-        "USER_VISIBLE",
-        "SILENT"
-      ],
-      "reason": "This expression is `delegateOf(await getPrisma())` in `getReport`, followed by `if (!reports) return null;`; the query's catch also returns null, as does a missing row. The function therefore answers null for an absent client, a failed query and a report that does not exist. The detail page renders every null as `reports.notFound`, so an outage is presented as a missing report; the list page has an unavailable state for the same condition, the detail page has none.",
-      "evidence": "src/lib/executive/report/read.ts:126-127 (null branch), :140 (missing row) and :145-146 (catch); src/app/[locale]/dashboard/executive/reports/[date]/page.tsx (`report ? view : NotFound`)",
-      "callerPath": "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx → getReport",
-      "terminalBehavior": "an outage renders as 'report not found'",
-      "outcomeFlags": [],
-      "supersededRuleId": "R11-ambiguous",
-      "reviewer": "S0 manual adjudication"
-    },
-    {
-      "callsiteId": "src/lib/executive/report/read.ts#L152C36",
-      "sourceFingerprint": "af76db2511aaa751",
-      "classification": "EXPLICIT_DEGRADED_MODE",
-      "secondaryTags": [
-        "READ",
-        "TENANT_SCOPED",
-        "USER_VISIBLE"
-      ],
-      "reason": "This expression is `delegateOf(await getPrisma())` in `countReports`, followed by `if (!reports) return null;`; the query's catch also returns null, and a successful query returns a number. The return type separates 'unreadable' (null) from 'empty' (0), and the doc comment states that purpose ('Used to tell EMPTY from UNAVAILABLE'). The archive page branches on null and shows the archive-unavailable alert.",
-      "evidence": "src/lib/executive/report/read.ts:152-153 (null branch) and :156-157 (catch); src/app/[locale]/dashboard/executive/reports/page.tsx:52 (`total === null` → archiveUnavailable)",
-      "callerPath": "src/app/[locale]/dashboard/executive/reports/page.tsx → countReports",
-      "terminalBehavior": "the archive page states that the archive is unavailable",
-      "outcomeFlags": [],
-      "supersededRuleId": "R11-ambiguous",
-      "reviewer": "S0 manual adjudication"
-    },
-    {
-      "callsiteId": "src/lib/executive/report/read.ts#L96C36",
+      "callsiteId": "src/lib/executive/report/read.ts#L101C36",
       "sourceFingerprint": "c658450ef17befb3",
       "classification": "EMPTY_SUCCESS_FALLBACK",
       "secondaryTags": [
@@ -3037,9 +3002,44 @@
         "SILENT"
       ],
       "reason": "This expression is `delegateOf(await getPrisma())` in `listReports`, followed by `if (!reports) return [];`; the query's catch also returns `[]`. The function therefore answers an empty list both for an absent client and for a failed query, and the empty list is indistinguishable from an archive with no reports. The archive page pairs it with `countReports`, whose null means 'unreadable', so a total outage is stated on the page; a failure that hits only this query while the count succeeds falls into the 'no reports yet' branch, because that branch tests only `entries.length === 0`.",
-      "evidence": "src/lib/executive/report/read.ts:96-97 (null branch) and :108-112 (catch); src/app/[locale]/dashboard/executive/reports/page.tsx:52 (`total === null` → archiveUnavailable) and :58 (`entries.length === 0` → no reports)",
+      "evidence": "src/lib/executive/report/read.ts:101-102 (null branch) and :113-117 (catch); src/app/[locale]/dashboard/executive/reports/page.tsx:52 (`total === null` → archiveUnavailable) and :58 (`entries.length === 0` → no reports)",
       "callerPath": "src/app/[locale]/dashboard/executive/reports/page.tsx → listReports",
       "terminalBehavior": "'no reports yet' for a partial read failure; 'archive unavailable' for a full outage",
+      "outcomeFlags": [],
+      "supersededRuleId": "R11-ambiguous",
+      "reviewer": "S0 manual adjudication"
+    },
+    {
+      "callsiteId": "src/lib/executive/report/read.ts#L131C36",
+      "sourceFingerprint": "9a004a4bff3edce2",
+      "classification": "EMPTY_SUCCESS_FALLBACK",
+      "secondaryTags": [
+        "READ",
+        "TENANT_SCOPED",
+        "USER_VISIBLE",
+        "SILENT"
+      ],
+      "reason": "This expression is `delegateOf(await getPrisma())` in `getReport`, followed by `if (!reports) return null;`; the query's catch also returns null, as does a missing row. The function therefore answers null for an absent client, a failed query and a report that does not exist. The detail page renders every null as `reports.notFound`, so an outage is presented as a missing report; the list page has an unavailable state for the same condition, the detail page has none.",
+      "evidence": "src/lib/executive/report/read.ts:131-132 (null branch), :145 (missing row) and :154-155 (catch); src/app/[locale]/dashboard/executive/reports/[date]/page.tsx (`report ? view : NotFound`)",
+      "callerPath": "src/app/[locale]/dashboard/executive/reports/[date]/page.tsx → getReport",
+      "terminalBehavior": "an outage renders as 'report not found'",
+      "outcomeFlags": [],
+      "supersededRuleId": "R11-ambiguous",
+      "reviewer": "S0 manual adjudication"
+    },
+    {
+      "callsiteId": "src/lib/executive/report/read.ts#L161C36",
+      "sourceFingerprint": "af76db2511aaa751",
+      "classification": "EXPLICIT_DEGRADED_MODE",
+      "secondaryTags": [
+        "READ",
+        "TENANT_SCOPED",
+        "USER_VISIBLE"
+      ],
+      "reason": "This expression is `delegateOf(await getPrisma())` in `countReports`, followed by `if (!reports) return null;`; the query's catch also returns null, and a successful query returns a number. The return type separates 'unreadable' (null) from 'empty' (0), and the doc comment states that purpose ('Used to tell EMPTY from UNAVAILABLE'). The archive page branches on null and shows the archive-unavailable alert.",
+      "evidence": "src/lib/executive/report/read.ts:161-162 (null branch) and :165-166 (catch); src/app/[locale]/dashboard/executive/reports/page.tsx:52 (`total === null` → archiveUnavailable)",
+      "callerPath": "src/app/[locale]/dashboard/executive/reports/page.tsx → countReports",
+      "terminalBehavior": "the archive page states that the archive is unavailable",
       "outcomeFlags": [],
       "supersededRuleId": "R11-ambiguous",
       "reviewer": "S0 manual adjudication"
@@ -3076,7 +3076,7 @@
       "reviewer": "S0 manual adjudication"
     },
     {
-      "callsiteId": "src/lib/executive/summary.ts#L181C24",
+      "callsiteId": "src/lib/executive/summary.ts#L182C24",
       "sourceFingerprint": "3c8fecce5ec174f6",
       "classification": "EXPLICIT_DEGRADED_MODE",
       "secondaryTags": [
@@ -3085,7 +3085,7 @@
         "USER_VISIBLE"
       ],
       "reason": "This expression is the `return null;` of a local accessor `db()`, so its behaviour is the behaviour of its consumers (the same convention as rule R22). It has exactly one consumer, `buildExecutiveSummary`, which tests the accessor's result and answers every affected section as `refusedSection(\"UNAVAILABLE\", sourceUnavailable)` (or FORBIDDEN where the axis is not held). The null is therefore an explicit, stated unavailability and never an empty-success panel. The summary route additionally maps an inconsistent section set to HTTP 503, and the nightly report path records FAILED for a throw.",
-      "evidence": "src/lib/executive/summary.ts:180-187 (accessor), :857-872 (consumer test at :857-872); src/app/api/executive/summary/route.ts (consistency check, 503)",
+      "evidence": "src/lib/executive/summary.ts:181-188 (accessor), :858-873 (consumer test at :858-873); src/app/api/executive/summary/route.ts (consistency check, 503)",
       "callerPath": "src/app/api/executive/summary/route.ts and src/app/[locale]/dashboard/executive/page.tsx → buildExecutiveSummary; src/lib/executive/report/generate.ts → buildExecutiveSummary",
       "terminalBehavior": "HTTP 200 with every section marked UNAVAILABLE and a stated reason; never an empty or zeroed section",
       "outcomeFlags": [],

@@ -4,7 +4,7 @@
   "note": "Reachability screening for every residual HIGH call site — the sites the rule set classified at HIGH confidence that carry no impact tag. PUBLIC_PATH is a floor, so the absence of impact tags cannot by itself make a site low-impact; each is screened and three verdicts then require a full terminal trace. Each entry is pinned to the call site's sourceFingerprint. The label is 'S0 residual reachability screening' and does not claim an independent human review.",
   "screenings": [
     {
-      "callsiteId": "src/app/[locale]/admin/page.tsx#L24C34",
+      "callsiteId": "src/app/[locale]/admin/page.tsx#L25C34",
       "file": "src/app/[locale]/admin/page.tsx",
       "function": "src/app/[locale]/admin/page.tsx",
       "sourceFingerprint": "6824f63ff802d6aa",
@@ -13,7 +13,7 @@
       "terminalSurface": "src/app/[locale]/admin/page.tsx — a signed-in page render",
       "fullTrace": true,
       "reason": "A presence test on the client drives the page's declared degraded or demo mode, so the page renders its no-data state rather than failing. The user sees an empty screen with no statement that the platform could not read its own database.",
-      "evidence": "src/app/[locale]/admin/page.tsx:24 — the presence comparison; consumer is the page itself",
+      "evidence": "src/app/[locale]/admin/page.tsx:25 — the presence comparison; consumer is the page itself",
       "screenedBy": "S0 residual reachability screening"
     },
     {

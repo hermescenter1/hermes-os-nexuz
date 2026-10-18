@@ -112,16 +112,16 @@ the drift gate between this document and the JSON.
 <!-- S1-BLOCK:summary -->
 ```
 S1_METHOD_VERSION = s1-v1
-S1_RISKS_TOTAL = 73
-S1_FINDINGS_TOTAL = 179
+S1_RISKS_TOTAL = 74
+S1_FINDINGS_TOTAL = 182
 SEVERITY_CRITICAL = 0
 SEVERITY_HIGH = 36
 SEVERITY_MEDIUM = 24
-SEVERITY_LOW = 3
+SEVERITY_LOW = 4
 SEVERITY_INFORMATIONAL = 10
 STATE_ACTIVE_CONFIRMED = 24
 STATE_LATENT_CONFIG_GUARDED = 4
-STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN = 21
+STATE_CODE_CONFIRMED_RUNTIME_UNPROVEN = 22
 STATE_ASSURANCE_GAP = 10
 STATE_POLICY_AMBIGUITY = 4
 STATE_POSITIVE_CONTROL = 10
@@ -141,8 +141,8 @@ VERIFICATION_LINKAGE_VIOLATIONS = 0
 DOMINANT_IMPACT_VIOLATIONS = 0
 HISTORICAL_S1_RISKS_TOTAL = 64
 HISTORICAL_S1_FINDINGS_TOTAL = 161
-DELTA_RISKS_TOTAL = 9
-DELTA_FINDINGS_TOTAL = 18
+DELTA_RISKS_TOTAL = 10
+DELTA_FINDINGS_TOTAL = 21
 REVISED_HISTORICAL_RISKS = 1
 RECONCILIATION_VIOLATIONS = 0
 ```
@@ -156,31 +156,33 @@ Sections 1 to 14 below are the **historical S1 baseline**: the analysis was perf
 | Scope | Reference | Risks | Findings |
 |---|---|---|---|
 | Historical S1 baseline (snapshot) | source state `bcf3be9a` | 64 | 161 |
-| Delta review | `bcf3be9a..b461ac97` | 9 new, 1 revised | 18 |
-| Reconciled register | integrated tree `e3da6f2e` plus the unstaged assurance changes | 73 | 179 |
+| First relock (snapshot) | integrated tree `e3da6f2e` | 73 | 179 |
+| Delta review, first layer | `bcf3be9a..b461ac97` | 9 new, 1 revised | 18 |
+| Delta review, second layer | `b461ac97..66ca4ccc` | 1 new, 2 revised | 3 |
+| Reconciled register | integrated tree `c3255659` plus the unstaged assurance changes of both relock layers | 74 | 182 |
 
 | Severity | Historical snapshot | Reconciled | Change |
 |---|---|---|---|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 35 | 36 | +1 |
 | MEDIUM | 17 | 24 | +7 |
-| LOW | 1 | 3 | +2 |
+| LOW | 1 | 4 | +3 |
 | INFORMATIONAL | 11 | 10 | -1 |
 
 | Production state | Historical snapshot | Reconciled | Change |
 |---|---|---|---|
 | ACTIVE_CONFIRMED | 24 | 24 | 0 |
 | LATENT_CONFIG_GUARDED | 4 | 4 | 0 |
-| CODE_CONFIRMED_RUNTIME_UNPROVEN | 12 | 21 | +9 |
+| CODE_CONFIRMED_RUNTIME_UNPROVEN | 12 | 22 | +10 |
 | ASSURANCE_GAP | 10 | 10 | 0 |
 | POLICY_AMBIGUITY | 3 | 4 | +1 |
 | POSITIVE_CONTROL | 11 | 10 | -1 |
 
 | Finding status | Historical snapshot | Reconciled | Change |
 |---|---|---|---|
-| MAPPED_TO_RISK | 83 | 99 | +16 |
+| MAPPED_TO_RISK | 83 | 101 | +18 |
 | DUPLICATE_OF | 2 | 2 | 0 |
-| POLICY_QUESTION | 7 | 9 | +2 |
+| POLICY_QUESTION | 7 | 10 | +3 |
 | ASSURANCE_GAP | 49 | 50 | +1 |
 | POSITIVE_CONTROL | 12 | 11 | -1 |
 | NOT_A_SECURITY_RISK_WITH_REASON | 8 | 8 | 0 |
@@ -200,7 +202,7 @@ Severity clamps: 2 historical, 2 reconciled. Top remediation priority: `R-01` hi
 | 9 | `R-32` | **HIGH** | 15 | HISTORICAL_S1_BASELINE |
 | 10 | `R-33` | **HIGH** | 15 | HISTORICAL_S1_BASELINE |
 
-Source universe (`s1-universe-2`): historical 110 identifiers + 51 bookkeeping = 161; delta 18; reconciled 128 identifiers + 51 bookkeeping = 179. Reconciled universe hash `06e796b75c8f5f05d1ce464c4eae9db73e52b3ce1e38b3869f528b5971f0d046`.
+Source universe (`s1-universe-2`): historical 110 identifiers + 51 bookkeeping = 161; delta 18 first layer + 3 second layer; reconciled 131 identifiers + 51 bookkeeping = 182. Reconciled universe hash `e33509bdeb51428b8b77f1aaf94a8b936c99d221a5e2af8e5f61a92ac7a5dcb6`.
 
 | Delta finding | Disposition | Canonical risk | Severity | Production state | Score |
 |---|---|---|---|---|---|
@@ -222,12 +224,20 @@ Source universe (`s1-universe-2`): historical 110 identifiers + 51 bookkeeping =
 | `DELTA-RR-009` | OWNED_BY_NEW_RISK | `R-68` | **MEDIUM** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 6 |
 | `DELTA-RR-010` | OWNED_BY_NEW_RISK | `R-69` | **MEDIUM** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 9 |
 | `DELTA-RR-011` | POLICY_AMBIGUITY | `R-72` | **MEDIUM** | POLICY_AMBIGUITY | 6 |
+| `DELTA-RS-001` | OWNED_BY_EXISTING_RISK | `R-65` | **HIGH** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 12 |
+| `DELTA-RS-002` | POLICY_AMBIGUITY | `R-72` | **MEDIUM** | POLICY_AMBIGUITY | 6 |
+| `DELTA-RS-003` | OWNED_BY_NEW_RISK | `R-74` | **LOW** | CODE_CONFIRMED_RUNTIME_UNPROVEN | 4 |
 
 | Revised or touched historical entry | Before the relock | Now | Why |
 |---|---|---|---|
 | `R-09` | unchanged ACTIVE_CONFIRMED / HIGH (score 15) | owns `DELTA-RR-005` | A delta finding falls under this existing risk; its score is not moved. |
 | `R-53` | POSITIVE_CONTROL / INFORMATIONAL (score 0) | CODE_CONFIRMED_RUNTIME_UNPROVEN / MEDIUM (score 10) | The production compose file injects the whole production environment file into every worker container, including the one added since the frozen source, so the image-level minimality recorded as a positive control does not bound the credentials the running process holds. The positive control stays recorded as an existing control. |
 | `LOCK-WORKER-BLAST-RADIUS` | status POSITIVE_CONTROL | status MAPPED_TO_RISK | R-53 is no longer a positive control; the image-level finding stays recorded and is now owned by a current risk. |
+
+| Existing risk extended by the second layer | Evidence, gaps and criteria before | Now | Score before and now | Why |
+|---|---|---|---|---|
+| `R-65` (`DELTA-RS-001`) | 4 / 3 / 3 | 10 / 5 / 5 | 12 then 12 (HIGH) | The second layer found that the archive detail page also renders a frozen priority list built under the synthetic scope with the customers axis. The risk body now covers that list, the customers axis and the alert items of every site. Every factor was reviewed one by one and none moves, so the score is reproduced by arithmetic and the first relock's snapshot is unchanged. |
+| `R-72` (`DELTA-RS-002`) | 7 / 2 / 3 | 9 / 3 / 3 | 6 then 6 (MEDIUM) | The second layer found that the frozen priority list copies customer display names into a second JSON column of the report row. The risk body now names that column. Every factor was reviewed one by one and none moves; the policy stays open and no owner decision is recorded. |
 <!-- /S1-BLOCK:reconciliation -->
 
 ---
@@ -729,7 +739,7 @@ also claim it — and `DUPLICATE_OF` entries carry no ownership.
 | `DB-F1` | Silent database-to-session fallback in six core repositories plus one document path: 69 fallback points, 34 inside bare catch blocks, writes included, zero logging, so any transient Prisma exception reroutes a mutation into process memory and reports success. | `MAPPED_TO_RISK` → `R-32` |
 | `DB-F2` | The industrial and twin read paths answer an unavailable database with an empty success: 26 sites on the legacy single-line shape and 98 on the semantic definition, so an operator reads "zero alarms" when the truth is "no connection". | `MAPPED_TO_RISK` → `R-35` |
 
-### DELTA — 18 findings
+### DELTA — 21 findings
 
 | Finding | What it records | Disposition |
 |---|---|---|
@@ -751,6 +761,9 @@ also claim it — and `DUPLICATE_OF` entries carry no ownership.
 | `DELTA-RR-009` | An existing report is looked up by organization and date label only, and each pass targets only the last completed day, so a zone change can reuse a label for a different window and a night missed entirely is never reported. | `MAPPED_TO_RISK` → `R-68` |
 | `DELTA-RR-010` | The nightly pass writes a frozen financial snapshot per organization under a synthetic OWNER scope with no audit record, and no read of the archive is audited by the read module, by either archive page or by a database trigger; only a correction is audited and nothing issues one. | `MAPPED_TO_RISK` → `R-69` |
 | `DELTA-RR-011` | Customer contact data (Party) and the free-text contact log (PartyInteraction) are stored with no deletion, anonymisation, export or retention rule: the customer library has no such operation and neither model is in the closed erasure registry, the closed export registry or the processing inventory; customers are archived and interactions are append-only. | `POLICY_QUESTION` → `R-72` |
+| `DELTA-RS-001` | The nightly pass freezes a ranked priority list, built under the synthetic OWNER scope that now also holds the customers axis, and the archive detail page renders it without narrowing it to the reader. | `MAPPED_TO_RISK` → `R-65` |
+| `DELTA-RS-002` | A customer's display name is copied into the frozen priority list stored in the report row, a column that no erasure, export or retention registry names. | `POLICY_QUESTION` → `R-72` |
+| `DELTA-RS-003` | The executive performance test accepts any database URL that merely contains _test, _ci, localhost or 127.0.0.1, seeds the first organization of that database with customers, and has no teardown, so a local tunnel to a real database is treated as a throwaway one. | `MAPPED_TO_RISK` → `R-74` |
 
 ### EDGE — 10 findings
 
@@ -1368,15 +1381,15 @@ criteria whose purpose is to keep them from eroding rather than to change anythi
 <!-- S1-BLOCK:verdict -->
 ```
 S1_STATUS:                       COMPLETE
-S1_RISKS:                        73
-S1_FINDINGS:                     179        coverage 100%        orphans 0
+S1_RISKS:                        74
+S1_FINDINGS:                     182        coverage 100%        orphans 0
 S1_CRITICAL:                     0          (2 clamped from CRITICAL to HIGH, each recorded)
 S1_HIGH:                         36
 S1_MEDIUM:                       24
-S1_LOW:                          3
+S1_LOW:                          4
 S1_INFORMATIONAL:                10         (10 positive controls)
 ACTIVE_PRODUCTION_EXPOSURES:     24
-LATENT_DESIGN_FLAWS:             25         (21 code-confirmed runtime-unproven + 4 config-guarded)
+LATENT_DESIGN_FLAWS:             26         (22 code-confirmed runtime-unproven + 4 config-guarded)
 CONFIG_GUARDED_WITH_EVIDENCE:    4          (each names its guard)
 RISKS_WITH_RUNTIME_EVIDENCE:     3          (all settled from committed S0 evidence)
 RUNTIME_EVIDENCE_CONFLICTS:      0
@@ -2026,7 +2039,7 @@ visible in the management document, only in the machine register.
 
 #### `R-50` — No code path from the platform reaches a programmable controller, because the capability is absent
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 64 · phase S10_OT_PRECONDITIONS_BEFORE_PROTOCOL_CLIENTS
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 65 · phase S10_OT_PRECONDITIONS_BEFORE_PROTOCOL_CLIENTS
 
 | | |
 |---|---|
@@ -2074,7 +2087,7 @@ visible in the management document, only in the machine register.
 
 #### `R-54` — The rate limiter fails closed on an undeclared bucket and audits the refusal
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 65 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 66 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2086,7 +2099,7 @@ visible in the management document, only in the machine register.
 
 #### `R-55` — No role can assign organization ownership, and every client-supplied role is clamped
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 66 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 67 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2098,7 +2111,7 @@ visible in the management document, only in the machine register.
 
 #### `R-56` — The compliance organization-scope helper has a complete fail-closed ladder
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 67 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 68 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2110,7 +2123,7 @@ visible in the management document, only in the machine register.
 
 #### `R-57` — The enterprise-resource surface is the reference implementation of the target failure policy
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 68 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 69 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2122,7 +2135,7 @@ visible in the management document, only in the machine register.
 
 #### `R-58` — There is exactly one mutation transport, because the framework's alternative is unused
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 69 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 70 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2134,7 +2147,7 @@ visible in the management document, only in the machine register.
 
 #### `R-59` — The session store and the tenant contract both fail closed by construction
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 70 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 71 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2146,7 +2159,7 @@ visible in the management document, only in the machine register.
 
 #### `R-60` — Twelve security-control dependencies were traced and confirmed to deny rather than to succeed emptily
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 71 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 72 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2158,7 +2171,7 @@ visible in the management document, only in the machine register.
 
 #### `R-61` — No public handler accepts a tenant, user or role identifier, and every privileged column a public writer sets is hardcoded
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 72 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 73 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2170,7 +2183,7 @@ visible in the management document, only in the machine register.
 
 #### `R-62` — The gateway envelope is canonicalised and replay-bounded by construction
 
-**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 73 · phase S1_NO_CHANGE_REQUIRED
+**INFORMATIONAL** (0×0=0) · POSITIVE_CONTROL · dominant impact **NONE** · confidence HIGH · priority 74 · phase S1_NO_CHANGE_REQUIRED
 
 | | |
 |---|---|
@@ -2211,10 +2224,10 @@ visible in the management document, only in the machine register.
 | | |
 |---|---|
 | **Existing controls** | The archive is read by organization and date with the organization taken from the server-resolved scope, so another tenant's report is not reachable.<br>• The live dashboard and the summary API gate every section on the reader's own axes and site list.<br>• Reaching the page needs the platform administrator capability, so this is an insider-class exposure and not an anonymous one. |
-| **Control gaps** | No code narrows or refuses a stored section by the reader's authority at open time.<br>• No test opens an archived report as a reader who lacks the financial axis or holds a subset of sites.<br>• The completion notification goes to OWNER and ADMIN members whether or not they may open every section. |
-| **Acceptance criteria** | A test asserts that an ADMIN who lacks the financial axis opens a stored report and receives the financial section as refused, not rendered.<br>• A test asserts that a reader holding a subset of sites receives plant data for those sites only.<br>• The worker comment and the detail page describe the same rule. |
+| **Control gaps** | No code narrows or refuses a stored section by the reader's authority at open time.<br>• No test opens an archived report as a reader who lacks the financial axis or holds a subset of sites.<br>• The completion notification goes to OWNER and ADMIN members whether or not they may open every section.<br>• No code narrows the stored priority list by the reader's axes: a reader without the customers, operations or industrial axis still receives the customer, work and alert items the worker's synthetic scope included, and alert items of sites the reader does not hold.<br>• No test opens an archived report's priority list as a reader who lacks the customers axis, the operations axis or a site. |
+| **Acceptance criteria** | A test asserts that an ADMIN who lacks the financial axis opens a stored report and receives the financial section as refused, not rendered.<br>• A test asserts that a reader holding a subset of sites receives plant data for those sites only.<br>• The worker comment and the detail page describe the same rule.<br>• A test asserts that a reader who lacks the customers axis opens a stored report and receives the customer follow-up items as refused, not rendered.<br>• A test asserts that a reader who lacks the operations axis receives no task, work-order or approval item from the stored priority list, and that a reader holding a subset of sites receives alert items for those sites only. |
 | **Verification method** | `AUTOMATED_TEST` |
-| **Residual risk** | Narrowing at read time protects readers of the archive only. A stored snapshot still contains the names of users who acted on approvals and costs, and the completion notice still reaches every OWNER and ADMIN. The platform-administrator trust assumption stays a design assumption until it is exercised at run time. |
+| **Residual risk** | Narrowing at read time protects readers of the archive only. A stored snapshot still contains the names of users who acted on approvals and costs, and the completion notice still reaches every OWNER and ADMIN. The platform-administrator trust assumption stays a design assumption until it is exercised at run time. The stored priority list also names customers and work items: narrowing at read time protects the readers of the archive, not the stored column, whose retention and erasure are the open question of R-72. |
 
 #### `R-66` — The customer project panel returns summed project cost to ADMIN, who is refused cost figures on every ERP surface
 
@@ -2279,7 +2292,7 @@ visible in the management document, only in the machine register.
 
 #### `R-71` — Customer name uniqueness is enforced only by a read before the insert, so concurrent creates or a double submit can store duplicates
 
-**LOW** (3×1=3) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **INTEGRITY** · confidence HIGH · priority 63 · phase S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS
+**LOW** (3×1=3) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **INTEGRITY** · confidence HIGH · priority 64 · phase S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS
 
 | | |
 |---|---|
@@ -2296,11 +2309,11 @@ visible in the management document, only in the machine register.
 | | |
 |---|---|
 | **Existing controls** | The candidate-data (ATS) module has its own retention and erasure path, which shows the platform can express one.<br>• Customers are archived, not lost, and an archived customer is excluded from live counts. |
-| **Control gaps** | No retention period, erasure route or export route exists for customer personal data or for report snapshots, and Party and PartyInteraction are in none of the closed registries (erasure-targets, export-sources, processing-inventory).<br>• Whether a pass should skip a closed or dormant organization is unproven because no lifecycle concept exists. |
+| **Control gaps** | No retention period, erasure route or export route exists for customer personal data or for report snapshots, and Party and PartyInteraction are in none of the closed registries (erasure-targets, export-sources, processing-inventory).<br>• Whether a pass should skip a closed or dormant organization is unproven because no lifecycle concept exists.<br>• The frozen priority list is a second column of the report row, holds customer display names, is removed only when the organization is deleted, and is named by none of the closed registries. |
 | **Acceptance criteria** | If the owner decides that customer contact data and stored report snapshots are personal data: Party, PartyInteraction and the report snapshot are enumerated in the closed registries erasure-targets, export-sources and processing-inventory with a retention period, the registry completeness tests (erasure-governance and export-governance) pass with them listed, a test asserts that an erasure request for a data subject plans and executes a removal or anonymisation of the matching customer rows, and a test asserts that an export request includes them.<br>• If the owner decides that customer contact data and stored report snapshots are not subject to erasure and export: the exemption and its basis are recorded in processing-inventory, a test asserts that the closed registries name Party, PartyInteraction and the report snapshot as exempt with that basis, and the customer feature documentation states the retention period that applies.<br>• The owner records whether the nightly pass skips organizations that are closed or dormant, in the executive report design note; if it skips them, a test asserts that the pass writes no report and sends no notification for such an organization. |
 | **Verification method** | `OWNER_POLICY_STATEMENT` |
 | **Open policy** | OPEN (DATA_PROTECTION_OWNER): Are the customer contact data (Party and PartyInteraction) and the frozen report snapshots personal data of natural persons that the platform must retain for a stated period, erase on request and include in a data export?<br>• RETENTION_AND_ERASURE_APPLY: They are personal data and fall under retention, erasure and export.<br>• EXEMPT_DOCUMENTED: They are not personal data of natural persons, or are held for a documented purpose without erasure or export. |
-| **Residual risk** | Until a policy exists the platform cannot show a data subject or a regulator what is kept, for how long or how it is removed; this entry records the question, not a breach. |
+| **Residual risk** | Until a policy exists the platform cannot show a data subject or a regulator what is kept, for how long or how it is removed; this entry records the question, not a breach. The stored priority list adds customer display names to the stored report row; the open question is the same one, and the policy is unchanged. |
 
 #### `R-73` — The customer and project-link surface skips the platform-administrator gate that all ERP routes apply, so an organization owner or administrator who is not a platform admin reads ERP project data and changes a project's customer
 
@@ -2314,20 +2327,32 @@ visible in the management document, only in the machine register.
 | **Verification method** | `AUTOMATED_TEST` |
 | **Open policy** | OPEN (PRODUCT_OWNER): Should an organization OWNER or ADMIN who does not hold the platform administrator capability reach the customer project data and the project-to-customer link, which no ERP route allows without that capability?<br>• PLATFORM_ADMIN_REQUIRED: The platform-administrator capability is required on the customer surface, as on every ERP route.<br>• TENANT_ACCESS_DOCUMENTED: Tenant OWNER and ADMIN may use the customer project surface without the platform capability. |
 | **Residual risk** | Adding the gate makes the customer feature unavailable to tenant owners who are not platform admins, which may be the opposite of the feature's purpose; keeping the difference needs its own documentation and tests. The fix and the product decision cannot be separated, and both outcomes are recorded in policy without choosing one. |
+
+#### `R-74` — The executive performance test treats any database URL that contains localhost or a test marker as disposable, seeds the first organization it finds and leaves the rows behind
+
+**LOW** (2×2=4) · CODE_CONFIRMED_RUNTIME_UNPROVEN · dominant impact **INTEGRITY** · confidence MEDIUM · priority 63 · phase S5_MUTATION_SURFACE_AND_ABUSE_CONTROLS
+
+| | |
+|---|---|
+| **Existing controls** | The suite is skipped unless EXECUTIVE_PERF_DB names a database, and the ordinary test configuration excludes it, so neither a normal run nor continuous integration reaches it.<br>• A URL that contains none of the permitted substrings is refused before any write. |
+| **Control gaps** | The permitted substrings are matched anywhere in the URL, so a forwarded port to a real database, an application-name parameter or a user name satisfies the guard.<br>• The run seeds the first organization of the target database and creates no organization of its own.<br>• Nothing removes the seeded customers afterwards and nothing proves that they are gone.<br>• No test feeds the guard a deceptive URL. |
+| **Acceptance criteria** | A test asserts that the performance suite connects only to a database that the harness itself created for the run, and refuses any URL it did not create.<br>• A test asserts that the host and the database name are compared against an exact allowlist and never by substring, so a URL that carries localhost in a query parameter, a user name or a path is refused.<br>• A test asserts that a tunnel or a production-like target is refused: a loopback address with a forwarded port to a remote database, and a database named like a production one.<br>• A test asserts that the suite seeds an organization fixture of its own and never selects the first organization it finds.<br>• A test asserts that teardown removes every row the run created and that the run counts the fixture's rows afterwards and fails if any remain.<br>• A test asserts that deceptive URLs are refused: a user-information trick, a query string, an upper-case host, a trailing dot, and an IPv6 loopback with another port. |
+| **Verification method** | `AUTOMATED_TEST` |
+| **Residual risk** | A refused target protects the database the variable names. It does not protect a database an operator deliberately builds from production data, and it does not remove the customers already written by an earlier run. |
 <!-- /S1-BLOCK:matrix -->
 
 ### Appendix B — scoring calibration
 
 <!-- S1-BLOCK:calibration -->
 ```
-SCORED_RISKS                 63   (the 10 positive controls score 0 by construction)
+SCORED_RISKS                 64   (the 10 positive controls score 0 by construction)
 HIGH_COUNT                   36
-HIGH_PERCENT_OF_SCORED       57%
+HIGH_PERCENT_OF_SCORED       56%
 DISTINCT_SCORES_USED         10 of 14 reachable
 
 score histogram
    3  # (1)
-   4  ## (2)
+   4  ### (3)
    6  ######## (8)
    8  ####### (7)
    9  #### (4)
@@ -2338,20 +2363,20 @@ score histogram
   20  ## (2)
 
 likelihood distribution
-  L=2  12
+  L=2  13
   L=3  32
   L=4  15
   L=5  4
 
 impact distribution
   I=1  2
-  I=2  10
+  I=2  11
   I=3  15
   I=4  19
   I=5  17
 ```
 
-**What this means, and it is a weakness of the method rather than of the estate.** 36 of 63 scored risks (57%) land in HIGH, and only 10 of the 14 reachable scores are used. Likelihood clusters because it is a *mean* of four factors, and the HIGH band spans 12 to 19, which is wide. **Severity therefore does not order the work on its own.** The remediation order in §12 is a severity-consistent total order over `remediationPriority`, and `productionState` is what separates a confirmed exposure from a configuration-guarded one inside the same band. Reading the band alone will mislead; the register is built so that nobody has to.
+**What this means, and it is a weakness of the method rather than of the estate.** 36 of 64 scored risks (56%) land in HIGH, and only 10 of the 14 reachable scores are used. Likelihood clusters because it is a *mean* of four factors, and the HIGH band spans 12 to 19, which is wide. **Severity therefore does not order the work on its own.** The remediation order in §12 is a severity-consistent total order over `remediationPriority`, and `productionState` is what separates a confirmed exposure from a configuration-guarded one inside the same band. Reading the band alone will mislead; the register is built so that nobody has to.
 <!-- /S1-BLOCK:calibration -->
 
 ### Appendix C — the dominant impact dimension
@@ -2367,8 +2392,8 @@ Which axis set each risk's band, because `max()` does not say.
 | INTEGRITY + AUDITABILITY | 6 | 3 |
 | AVAILABILITY | 5 | 3 |
 | CONFIDENTIALITY + AUDITABILITY | 3 | 0 |
+| INTEGRITY | 3 | 0 |
 | CONFIDENTIALITY + INTEGRITY + AVAILABILITY | 2 | 0 |
-| INTEGRITY | 2 | 0 |
 | INTEGRITY + AVAILABILITY | 2 | 2 |
 | AVAILABILITY + AUDITABILITY | 1 | 1 |
 | CONFIDENTIALITY + INTEGRITY + AUDITABILITY | 1 | 1 |
@@ -2401,8 +2426,14 @@ The findings of the first independent adversarial review of this register, and w
 | `S1-RLK-SURVIVORS` | SURVIVOR | **FIXED** | relock checker and its end-to-end tests | relock mutation campaign, verified by the campaign tool |
 | `S1-RLK-TEXT` | PRECISION | **FIXED** | register risks R-65 to R-73, R-53 and the relock report | register arithmetic, ownership and universe gates |
 | `S1-RLK-SCOPE` | PRECISION | **FIXED** | product-path definitions and the historical-file statement | relock checker: strict and broad path counts, historical-file gate |
+| `S1-RLK2-F01` | HIGH | **FIXED** | relock checker: where HEAD may be; campaign tool: the position guard and the reproduction in verify | position tests on throw-away repositories and the committed-state end-to-end test with a product commit after the merge |
+| `S1-RLK2-F02` | MEDIUM | **FIXED** | S0 adjudications and scanner: the identity and references of a retry trace | retry identity selftests, the moved ledger and the old-identifier gates |
+| `S1-RLK2-F03` | MEDIUM | **FIXED** | relock checker: one strict command-line parser | parser unit tests and the process-level usage tests |
+| `S1-RLK2-F04` | MEDIUM | **FIXED** | register: the second layer's structured, append-only revision of R-65 and R-72 | second-layer revision gates and the pinned-snapshot test |
+| `S1-RLK2-F05` | LOW | **FIXED** | relock delta document: the ledger of every changed path | ledger gates and the throw-away repository test of added, modified, deleted and renamed paths |
+| `S1-RLK2-F06` | LOW | **FIXED** | register: DELTA-RS-003 opens R-74, with the conditions the guard must meet | register arithmetic, ownership, universe and second-layer scope gates |
 
-No review finding is OPEN. The two marked `FIXED_BY_DISCLOSURE_AND_DERIVED_PRESENTATION` were calibration criticisms of the scoring method, not defects in the data: the bands and every severity are unchanged, and what was added is derived presentation so a reader can see the saturation and the dominant harm without recomputing them. **The review identifiers are deliberately NOT security findings** — they are not among the register's 179 and they own no risk.
+No review finding is OPEN. The two marked `FIXED_BY_DISCLOSURE_AND_DERIVED_PRESENTATION` were calibration criticisms of the scoring method, not defects in the data: the bands and every severity are unchanged, and what was added is derived presentation so a reader can see the saturation and the dominant harm without recomputing them. **The review identifiers are deliberately NOT security findings** — they are not among the register's 182 and they own no risk.
 <!-- /S1-BLOCK:closure -->
 
 ### Appendix E — the mutation manifest
@@ -2677,6 +2708,57 @@ No review finding is OPEN. The two marked `FIXED_BY_DISCLOSURE_AND_DERIVED_PRESE
 | `RL-51` | snapshot: clamps counted | a clamped historical risk is not counted | S1-RLK: the committed register passes every reconciliation gate | **TARGETED_KILL** |
 | `RL-52` | render: reconciled priorities table | the reconciled priorities table lists nine rows | S1-RLK: the reconciliation block of the report is the rendered one, byte for byte | **TARGETED_KILL** |
 | `RL-53` | priority: permutation | a gap in the remediation priorities passes | S1-RLK: a remediation priority with a gap is not a permutation | **TARGETED_KILL** |
+| `RL2-01` | layers: the layer is read from the identifier | a second-layer identifier is read as a first-layer one | S1-RLK2: a layer is read from the identifier, and each layer has its own document | **TARGETED_KILL** |
+| `RL2-02` | layers: each layer has its own document | a second-layer finding is attributed to the first document | S1-RLK2: a layer is read from the identifier, and each layer has its own document | **TARGETED_KILL** |
+| `RL2-03` | layers: a document declares only its own identifiers | a foreign-layer identifier in a delta document passes | S1-RLK2: a layer's document may declare only the identifiers of its own layer | **TARGETED_KILL** |
+| `RL2-04` | first relock: snapshot absent | an absent first-relock snapshot passes | S1-RLK2: a first-relock snapshot that is absent, stored differently or not reproduced is refused | **TARGETED_KILL** |
+| `RL2-05` | first relock: snapshot stored differently | a stored first-relock snapshot that is not the pin passes | S1-RLK2: a first-relock snapshot that is absent, stored differently or not reproduced is refused | **TARGETED_KILL** |
+| `RL2-06` | first relock: snapshot not reproduced | a first-layer value moved by an edit passes | S1-RLK2: a first-relock snapshot that is absent, stored differently or not reproduced is refused | **TARGETED_KILL** |
+| `RL2-07` | first relock: merge changed | the first-layer integration merge can change | S1-RLK2: a first-relock snapshot that is absent, stored differently or not reproduced is refused | **TARGETED_KILL** |
+| `RL2-08` | first relock: layered recomputation | the first-relock snapshot is recomputed with the second layer included | S1-RLK2: the first relock is a pinned snapshot, and setting the second layer aside reproduces it | **TARGETED_KILL** |
+| `RL2-09` | second review: block absent | an absent second delta review passes | S1-RLK2: the second delta review block is held to its shape, its range and its universe | **TARGETED_KILL** |
+| `RL2-10` | second review: commit ids | a malformed commit id in the second delta review passes | S1-RLK2: the second delta review block is held to its shape, its range and its universe | **TARGETED_KILL** |
+| `RL2-11` | second review: original source | the original frozen source of the second review can drift | S1-RLK2: the second delta review block is held to its shape, its range and its universe | **TARGETED_KILL** |
+| `RL2-12` | second review: base is the first target | the second range may start anywhere but the first target | S1-RLK2: the second delta review block is held to its shape, its range and its universe | **TARGETED_KILL** |
+| `RL2-13` | second review: range | a second-review range that is not base..target passes | S1-RLK2: the second delta review block is held to its shape, its range and its universe | **TARGETED_KILL** |
+| `RL2-14` | second review: provenance | the second review may point at another document | S1-RLK2: the second delta review block is held to its shape, its range and its universe | **TARGETED_KILL** |
+| `RL2-15` | second review: stored count | a wrong stored second-layer count passes | S1-RLK2: the second delta review block is held to its shape, its range and its universe | **TARGETED_KILL** |
+| `RL2-16` | second review: stored hash | a wrong stored second-layer hash passes | S1-RLK2: the second delta review block is held to its shape, its range and its universe | **TARGETED_KILL** |
+| `RL2-17` | second review: touched risks | a list of touched risks that is not the derived one passes | S1-RLK2: the second delta review block is held to its shape, its range and its universe | **TARGETED_KILL** |
+| `RL2-19` | second layer: revises no entry | a risk the second layer owns for may carry a revision | S1-RLK2: a classic revision never rides on a risk that owns a second-layer finding | **TARGETED_KILL** |
+| `RL2-20` | second layer: an existing-risk disposition may name a first-layer risk | a risk the first relock opened is refused as an existing owner of a second-layer finding | S1-RLK: the committed register passes every reconciliation gate | **TARGETED_KILL** |
+| `RL2-21` | universe: the first layer is pinned | a first-layer finding can be deleted | S1-RLK2: the first and the second layer are pinned by count and hash on their own | **TARGETED_KILL** |
+| `RL2-22` | universe: the second layer is pinned | a second-layer finding can be deleted | S1-RLK2: the first and the second layer are pinned by count and hash on their own | **TARGETED_KILL** |
+| `RL2-23` | first review: stores the first layer only | the stored first-layer universe includes the second layer | S1-RLK: the committed register passes every reconciliation gate | **TARGETED_KILL** |
+| `RL2-24` | second review: owners are derived | the touched risks of the second review are not derived from the findings | S1-RLK2: the second delta review block is held to its shape, its range and its universe | **TARGETED_KILL** |
+| `RL3-01` | scope: a delta finding carries its layer's scope | a second-layer finding may carry the first layer's scope | S1-RLK3: a second-layer finding carries the second scope, and a risk of the second layer owns second-layer findings only | **TARGETED_KILL** |
+| `RL3-02` | scope: a second-layer risk owns second-layer findings only | a risk the second layer opened may own a first-layer finding | S1-RLK3: a second-layer finding carries the second scope, and a risk of the second layer owns second-layer findings only | **TARGETED_KILL** |
+| `RL3-03` | scope: a second-layer risk is never revised classically | a risk the second layer opened may carry a classic revision | S1-RLK3: a second-layer finding carries the second scope, and a risk of the second layer owns second-layer findings only | **TARGETED_KILL** |
+| `RL3-04` | second layer: a new-risk disposition needs a risk of its own scope | a second-layer finding may claim a new risk that the first relock already owned | S1-RLK3: the second layer may open a risk of its own, and only a risk of its own scope is new for it | **TARGETED_KILL** |
+| `RL3-05` | second layer: an existing-risk disposition may not name a second-layer risk | a second-layer finding may call the risk it opened existing | S1-RLK3: the second layer may open a risk of its own, and only a risk of its own scope is new for it | **TARGETED_KILL** |
+| `RL3-06` | second review: opened risks are derived | a list of opened risks that is not the derived one passes | S1-RLK3: the second layer may open a risk of its own, and only a risk of its own scope is new for it | **TARGETED_KILL** |
+| `RL3-07` | second review: revised risks are derived | a list of revised risks that is not the derived one passes | S1-RLK3: the second layer may open a risk of its own, and only a risk of its own scope is new for it | **TARGETED_KILL** |
+| `RL3-08` | first relock: a revised risk is read as it was | the first relock's snapshot reads a revised risk at its revised values | S1-RLK3: a risk the second layer revised is read as it was in the first relock's snapshot | **TARGETED_KILL** |
+| `RL3-09` | first relock: a risk of the second layer is absent | the first relock's snapshot counts a risk the second layer opened | S1-RLK2: the first relock is a pinned snapshot, and setting the second layer aside reproduces it | **TARGETED_KILL** |
+| `RL3-10` | revision: scope | a revision of another scope passes | S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason | **TARGETED_KILL** |
+| `RL3-11` | revision: no classic revision beside it | a risk may carry both kinds of revision | S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason | **TARGETED_KILL** |
+| `RL3-12` | revision: not on a risk of the second layer | a risk the second layer opened may revise itself | S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason | **TARGETED_KILL** |
+| `RL3-13` | revision: a reason | a revision without a reason passes | S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason | **TARGETED_KILL** |
+| `RL3-14` | revision: a finding | a revision without a finding passes | S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason | **TARGETED_KILL** |
+| `RL3-15` | revision: the finding exists | a revision may name a finding the register does not hold | S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason | **TARGETED_KILL** |
+| `RL3-16` | revision: the finding is of the second layer | a revision may be motivated by a first-layer finding | S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason | **TARGETED_KILL** |
+| `RL3-17` | revision: the risk owns the finding | a revision may name a finding that another risk owns | S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason | **TARGETED_KILL** |
+| `RL3-18` | revision: the recorded past exists | a revision with an empty recorded past passes | S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason | **TARGETED_KILL** |
+| `RL3-19` | revision: the recorded past is arithmetic | a recorded past whose score is not its own factors' passes | S1-RLK3: a second-layer revision names its scope, its findings, the recorded past and a reason | **TARGETED_KILL** |
+| `RL3-20` | factor review: present | a revision without a factor review passes | S1-RLK3: a factor review covers all nine factors and agrees with both ends | **TARGETED_KILL** |
+| `RL3-21` | factor review: all nine factors | a factor review may skip a factor | S1-RLK3: a factor review covers all nine factors and agrees with both ends | **TARGETED_KILL** |
+| `RL3-22` | factor review: the value before | a factor review may misstate the value before | S1-RLK3: a factor review covers all nine factors and agrees with both ends | **TARGETED_KILL** |
+| `RL3-23` | factor review: the value now | a factor review may misstate the value now | S1-RLK3: a factor review covers all nine factors and agrees with both ends | **TARGETED_KILL** |
+| `RL3-24` | factor review: a reason for each factor | a factor that did not move may be left unexplained | S1-RLK3: a factor review covers all nine factors and agrees with both ends | **TARGETED_KILL** |
+| `RL3-25` | append-only: the lists | a revision may remove or reword an earlier gap, criterion or precondition | S1-RLK3: a second-layer revision is append-only and must add something | **TARGETED_KILL** |
+| `RL3-26` | append-only: the evidence | a revision may remove an earlier evidence item | S1-RLK3: a second-layer revision is append-only and must add something | **TARGETED_KILL** |
+| `RL3-27` | append-only: the residual risk | a revision may rewrite the residual risk | S1-RLK3: a second-layer revision is append-only and must add something | **TARGETED_KILL** |
+| `RL3-28` | append-only: it must add something | a revision that adds nothing passes | S1-RLK3: a second-layer revision is append-only and must add something | **TARGETED_KILL** |
 
 | Placebo control | Kind | What it does | Named test | Expected | Observed |
 |---|---|---|---|---|---|
@@ -2689,15 +2771,15 @@ No review finding is OPEN. The two marked `FIXED_BY_DISCLOSURE_AND_DERIVED_PRESE
 
 ```
 MUTATION_MANIFEST_VERSION    s1-mut-2
-MUTANTS_TOTAL                267
-TARGETED_KILL                267
+MUTANTS_TOTAL                318
+TARGETED_KILL                318
 ONLY_INCIDENTAL              0
 SURVIVED                     0
 INVALID_MUTANT               0
 PLACEBO_CONTROLS             6
 CONTROLS_AS_EXPECTED         6
-MANIFEST_SHA256              70286152ded97f6e8a4d6f256aec431dc5120d6beb5d6d69b67144eb9ae7bde4
-CAMPAIGN_BOUND_TO            70286152ded97f6e8a4d6f256aec431dc5120d6beb5d6d69b67144eb9ae7bde4
+MANIFEST_SHA256              1ec8961e8f60959fa4dd9957757f09a4bdced3934035a7b1cb2972371f9be236
+CAMPAIGN_BOUND_TO            1ec8961e8f60959fa4dd9957757f09a4bdced3934035a7b1cb2972371f9be236
 ```
 
 Each mutant is applied to the checker's own source in a temporary copy outside the repository, and only its named test is run. **A mutant counts as TARGETED_KILL only when** its anchor occurs exactly once, the named test ran and failed, the failure carries the mutant's fingerprint, the failure is not the manifest gate, a manifest drift or a setup error, and a semantically equivalent placebo on the same source text leaves the named test green. Because a mutation removes its own anchor, this list is, in the mutated copy only, rebound to the entries whose anchors survive, and Appendix E of the copy is re-rendered from it; the mutated code is never repaired, and the placebo copy is rebound the same way, so a failure caused by the scaffolding appears in the placebo and voids the proof. The placebo controls prove the classifier does not mistake a no-op, a drift, a setup break, an earlier gate or an unrelated failure for a kill. `check` refuses a record bound to a different list, any result other than TARGETED_KILL, and any control whose result differs from its expectation (exit 25). The campaign is reproduced by the `mutants` mode (§18).

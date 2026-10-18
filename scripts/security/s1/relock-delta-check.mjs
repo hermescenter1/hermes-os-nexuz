@@ -10,8 +10,10 @@
  *   node scripts/security/s1/relock-delta-check.mjs check      # every gate; the first failing class sets the exit code
  *   node scripts/security/s1/relock-delta-check.mjs summary    # the computed counters as JSON
  *
- * Options (every path defaults to the repository layout under --root):
- *   --root=DIR --data=FILE --report=FILE --register=FILE --inventory=FILE
+ * Options (every path defaults to the repository layout under --root). One strict parser serves every mode: an
+ * option is exactly --name=value, once; --layer is exactly 1 or 2 (no --layer means the first layer, by design);
+ * anything else is a usage error (exit 2) raised before any file is read or written. See `parseArgs`.
+ *   --layer=1|2 --root=DIR --data=FILE --report=FILE --register=FILE --inventory=FILE
  *   --adjudications=FILE --residual=FILE --record=FILE
  *
  * WHAT THE DOCUMENT IS. The canonical risk register (docs/security/s1-risk-register.json)
@@ -36,7 +38,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { join, dirname, resolve, posix } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -76,15 +78,25 @@ export const EXIT = Object.freeze({
 /** The gate order: a lower index reports first. */
 const CLASS_ORDER = Object.freeze(["MISSING_FILE", "MALFORMED_JSON", "SCHEMA", "SOURCES", "DERIVED_DRIFT", "FINDINGS", "PATH_OUTSIDE_DELTA", "REPORT", "RECORD", "CONTENT", "NOT_CANONICAL"]);
 
-export const defaultPaths = (root = REPO_ROOT) => ({
+/**
+ * The two relock layers keep their own provenance document, report and mutation record. The FIRST layer is
+ * the relock of the frozen source onto the first target; the SECOND layer is the supplementary relock of the
+ * delta between the first target and the current main. A layer is never overwritten by the next one.
+ */
+export const LAYERS = Object.freeze({
+  FIRST: Object.freeze({ data: "s1-relock-delta.json", report: "S1-CURRENT-MAIN-DELTA-RELOCK.md", record: "s1-relock-mutation-record.json" }),
+  SECOND: Object.freeze({ data: "s1-second-relock-delta.json", report: "S1-SECOND-DELTA-RELOCK.md", record: "s1-relock-mutation-record.json" }),
+});
+
+export const defaultPaths = (root = REPO_ROOT, layer = "FIRST") => ({
   root,
-  data: join(root, "docs", "security", "s1-relock-delta.json"),
-  report: join(root, "docs", "security", "S1-CURRENT-MAIN-DELTA-RELOCK.md"),
+  data: join(root, "docs", "security", LAYERS[layer].data),
+  report: join(root, "docs", "security", LAYERS[layer].report),
   register: join(root, "docs", "security", "s1-risk-register.json"),
   inventory: join(root, "docs", "security", "s0-getprisma-callsite-inventory.json"),
   adjudications: join(root, "scripts", "security", "s0", "getprisma-manual-adjudications.json"),
   residual: join(root, "scripts", "security", "s0", "getprisma-residual-reachability.json"),
-  record: join(root, "docs", "security", "s1-relock-mutation-record.json"),
+  record: join(root, "docs", "security", LAYERS[layer].record),
 });
 
 export const S0_INVENTORY_REL = "docs/security/s0-getprisma-callsite-inventory.json";
@@ -110,8 +122,41 @@ export const EVIDENCE_SCOPES = Object.freeze(["DELTA", "CONTEXT"]);
 export const EVIDENCE_RULES = Object.freeze(["PRESENT", "ABSENT", "REGEX", "ABSENT_REGEX", "FN_BODY_REGEX", "BLOCK_REGEX", "TREE_ABSENT_REGEX", "CALLERS_LACK"]);
 
 const SHA = /^[0-9a-f]{40}$/;
-const FINDING_ID = /^(?:RL|RR)-\d{3}$/;
-const OBSERVATION_ID = /^RL-P\d{2}$/;
+export const LEDGER_CHANGE_TYPES = Object.freeze(["A", "M", "D", "R"]);
+export const LEDGER_DISPOSITIONS = Object.freeze([
+  "FINDING_EVIDENCE",
+  "POSITIVE_CONTROL_EVIDENCE",
+  "REVIEWED_NO_SECURITY_EFFECT",
+  "TEST_ONLY",
+  "DOCUMENTATION_ONLY",
+  "LOCALIZATION_COPY",
+  "ASSURANCE_CONFIGURATION",
+]);
+export const LEDGER_METHODS = Object.freeze(["SOURCE_AND_DIFF_READ", "DIFF_READ", "PATH_AND_CONTENT_CLASSIFICATION"]);
+export const LEDGER_CATEGORIES = Object.freeze([
+  "ASSURANCE_CONFIG",
+  "TEST",
+  "DOCUMENTATION",
+  "LOCALIZATION",
+  "MIGRATION",
+  "SCHEMA",
+  "API_ROUTE",
+  "PAGE",
+  "UI_COMPONENT",
+  "LIBRARY",
+  "DEPLOY_AND_RUNTIME_CONFIG",
+]);
+/** The category a disposition may describe, where it describes one. */
+const DISPOSITION_CATEGORY = Object.freeze({ TEST_ONLY: "TEST", DOCUMENTATION_ONLY: "DOCUMENTATION", LOCALIZATION_COPY: "LOCALIZATION", ASSURANCE_CONFIGURATION: "ASSURANCE_CONFIG" });
+const LEDGER_FINDING_ID = /^RS-\d{3}$/;
+const LEDGER_CONTROL_ID = /^RS-P\d{2}$/;
+
+const FINDING_ID = /^(?:RL|RR|RS)-\d{3}$/;
+const OBSERVATION_ID = /^R[LS]-P\d{2}$/;
+/** The identifier prefixes a layer may use. A second-layer document never carries a first-layer id, or the reverse. */
+export const LAYER_ID_PREFIXES = Object.freeze({ FIRST: Object.freeze(["RL", "RR"]), SECOND: Object.freeze(["RS"]) });
+export const layerOf = (data) => data?.sources?.layer ?? "FIRST";
+const idPrefix = (id) => String(id).split("-")[0];
 const RISK_ID = /^R-\d{2}$/;
 
 /* ── process helpers ───────────────────────────────────────────────────────── */
@@ -198,7 +243,18 @@ const AUTHORED_SPEC = T.obj(
     phase: T.str,
     methodVersion: T.str,
     note: T.text,
-    sources: T.obj({ frozenSourceSha: T.sha, securityHeadSha: T.sha, targetMainSha: T.sha, integrationMergeSha: T.sha }),
+    sources: T.obj(
+      {
+        frozenSourceSha: T.sha,
+        securityHeadSha: T.sha,
+        targetMainSha: T.sha,
+        integrationMergeSha: T.sha,
+        layer: T.en(["FIRST", "SECOND"]),
+        originalFrozenSourceSha: T.sha,
+        reconciledTreeSha: T.sha,
+      },
+      ["layer", "originalFrozenSourceSha", "reconciledTreeSha"],
+    ),
     attribution: T.obj({ historicalBaseline: T.text, currentMainDelta: T.text, reconciledTree: T.text }),
     findings: T.arr(
       T.obj(
@@ -223,8 +279,22 @@ const AUTHORED_SPEC = T.obj(
     supersessions: T.arr(T.obj({ target: T.str, kind: T.str, statement: T.text })),
     openItems: T.arr(T.obj({ id: T.str, statement: T.text })),
     reviewedCallsites: T.arr(T.obj({ id: T.str, reachability: T.en(REACHABILITY), note: T.text }), 1),
+    pathDispositions: T.arr(
+      T.obj({
+        path: T.str,
+        changeType: T.en(LEDGER_CHANGE_TYPES),
+        reviewedBlob: T.str,
+        securityRelevant: T.bool,
+        disposition: T.en(LEDGER_DISPOSITIONS),
+        reason: T.text,
+        findingIds: T.arr(T.str),
+        positiveControlIds: T.arr(T.str),
+        reviewerMethod: T.en(LEDGER_METHODS),
+      }),
+    ),
+    sourceBehaviorChanges: T.arr(T.obj({ callsiteId: T.str, summary: T.text })),
   },
-  [],
+  ["pathDispositions", "sourceBehaviorChanges"],
 );
 
 /** Every top-level key the document may carry; anything else is an unknown key. */
@@ -243,6 +313,8 @@ const TOP_ORDER = Object.freeze([
   "canonicalProjection",
   "topPriorities",
   "reviewedCallsites",
+  "pathDispositions",
+  "sourceBehaviorChanges",
   "findings",
   "positiveControls",
   "supersessions",
@@ -271,10 +343,145 @@ export function deltaPathRows(sources, root) {
     });
 }
 
-export function gatherDelta(sources, root) {
+/* ── layer 2: the ledger of every changed path ─────────────────────────────── */
+
+
+export function categoryOf(path) {
+  if (path === ".gitattributes") return "ASSURANCE_CONFIG";
+  if (/(^|\/)__tests__\//.test(path) || /\.(test|spec)\./.test(path)) return "TEST";
+  if (path.startsWith("docs/")) return "DOCUMENTATION";
+  if (path.startsWith("messages/")) return "LOCALIZATION";
+  if (path.startsWith("prisma/migrations/")) return "MIGRATION";
+  if (path === "prisma/schema.prisma") return "SCHEMA";
+  if (path.startsWith("src/app/api/")) return "API_ROUTE";
+  if (/^src\/app\/.*\/(page|layout)\.tsx$/.test(path)) return "PAGE";
+  if (path.startsWith("src/components/")) return "UI_COMPONENT";
+  if (path.startsWith("src/")) return "LIBRARY";
+  return "DEPLOY_AND_RUNTIME_CONFIG";
+}
+
+const NO_BLOB = /^0{40}$/;
+
+/**
+ * Every changed path of the range as git reports it with rename detection: its change type, the path it came from
+ * when it was renamed, and the blob it had at each end. A deleted path has no target blob, an added path no base blob.
+ */
+export function ledgerGitRows(sources, root) {
+  const raw = git(["diff", "--raw", "--no-abbrev", "-M", "-z", sources.frozenSourceSha, sources.targetMainSha], root);
+  const tokens = raw.split("\0");
+  const rows = [];
+  for (let i = 0; i < tokens.length; ) {
+    const header = tokens[i++];
+    if (!header) break;
+    const m = /^:\d+ \d+ ([0-9a-f]{40}) ([0-9a-f]{40}) ([A-Z])\d*$/.exec(header);
+    if (!m) throw new Error("unreadable git diff header");
+    const kind = m[3];
+    const first = tokens[i++];
+    const second = kind === "R" || kind === "C" ? tokens[i++] : null;
+    rows.push({
+      changeType: kind,
+      path: second ?? first,
+      previousPath: second === null ? null : first,
+      baseBlob: NO_BLOB.test(m[1]) ? null : m[1],
+      targetBlob: NO_BLOB.test(m[2]) ? null : m[2],
+    });
+  }
+  return rows.sort((a, b) => byStr(a.path, b.path));
+}
+
+/**
+ * The ledger: one row per changed path, git's facts merged with the reviewer's. A row is `reviewed` only when a
+ * disposition was recorded for exactly this path, this change type and this blob. Everything the reviewer did not
+ * record is reported by the counters (`missing`, `extra`, `duplicate`, `stale`) and by the gates, never filled in.
+ */
+export function buildPathLedger(sources, root, authored) {
+  const gitRows = ledgerGitRows(sources, root);
+  const byPath = new Map();
+  const duplicate = new Set();
+  for (const a of authored ?? []) {
+    if (byPath.has(a.path)) duplicate.add(a.path);
+    else byPath.set(a.path, a);
+  }
+  const rows = gitRows.map((g) => {
+    const a = byPath.get(g.path);
+    const reviewed = a !== undefined && a.changeType === g.changeType && a.reviewedBlob === (g.targetBlob ?? "ABSENT");
+    return {
+      path: g.path,
+      previousPath: g.previousPath,
+      changeType: g.changeType,
+      strictProduct: isStrictProductPath(g.path),
+      broadProduct: isBroadRuntimePath(g.path),
+      category: categoryOf(g.path),
+      securityRelevant: a ? a.securityRelevant : null,
+      disposition: a ? a.disposition : null,
+      reason: a ? a.reason : null,
+      findingIds: a ? [...a.findingIds] : [],
+      positiveControlIds: a ? [...a.positiveControlIds] : [],
+      reviewed,
+      reviewerMethod: a ? a.reviewerMethod : null,
+      baseBlob: g.baseBlob,
+      targetBlob: g.targetBlob,
+    };
+  });
+  const gitPaths = new Set(gitRows.map((g) => g.path));
+  const count = (f) => rows.filter(f).length;
+  const tally = (key) => {
+    const out = {};
+    for (const r of rows) out[r[key] ?? "NONE"] = (out[r[key] ?? "NONE"] ?? 0) + 1;
+    return Object.fromEntries(Object.entries(out).sort(([x], [y]) => byStr(x, y)));
+  };
+  return {
+    rows,
+    summary: {
+      total: rows.length,
+      uniquePaths: gitPaths.size,
+      byChangeType: { A: count((r) => r.changeType === "A"), M: count((r) => r.changeType === "M"), D: count((r) => r.changeType === "D"), R: count((r) => r.changeType === "R") },
+      byCategory: tally("category"),
+      byDisposition: tally("disposition"),
+      securityRelevant: count((r) => r.securityRelevant === true),
+      reviewed: count((r) => r.reviewed),
+      missing: count((r) => !byPath.has(r.path)),
+      extra: [...byPath.keys()].filter((p) => !gitPaths.has(p)).length,
+      duplicate: duplicate.size,
+      stale: count((r) => byPath.has(r.path) && !r.reviewed),
+    },
+  };
+}
+
+export function gatherDelta(sources, root, options = {}) {
   const range = `${sources.frozenSourceSha}..${sources.targetMainSha}`;
   const total = Number(git(["rev-list", "--count", range], root).trim());
   const nonMerge = git(["log", "--no-merges", "--format=%H", range], root).split("\n").filter(Boolean);
+  if (options.layer === "SECOND") {
+    // The second layer derives every aggregate FROM the ledger, so a count cannot say anything its rows do not.
+    const ledger = buildPathLedger(sources, root, options.authored);
+    const rows = ledger.rows.map((r) => ({ status: r.changeType, path: r.path }));
+    const strict = ledger.rows.filter((r) => r.strictProduct).map((r) => r.path).sort(byStr);
+    const broad = ledger.rows.filter((r) => r.broadProduct).map((r) => r.path).sort(byStr);
+    const schemaDiff = git(["diff", sources.frozenSourceSha, sources.targetMainSha, "--", "prisma/schema.prisma"], root);
+    const added = (kw) => [...schemaDiff.matchAll(new RegExp(`^\\+${kw} (\\w+)`, "gm"))].map((m) => m[1]).sort(byStr);
+    return {
+      range,
+      commits: { total, nonMerge: nonMerge.length, nonMergeShortIds: nonMerge.map((s) => s.slice(0, 8)).sort(byStr) },
+      paths: { total: rows.length, added: ledger.summary.byChangeType.A, modified: ledger.summary.byChangeType.M, deleted: ledger.summary.byChangeType.D, renamed: ledger.summary.byChangeType.R },
+      strictProductPaths: { rule: STRICT_PRODUCT_RULE, total: strict.length, list: strict },
+      broadRuntimeAffectingPaths: { rule: BROAD_RUNTIME_RULE, total: broad.length },
+      apiRoutes: strict.filter((p) => /^src\/app\/api\/.+\/route\.ts$/.test(p)),
+      pages: strict.filter((p) => /^src\/app\/\[locale\]\/.+\/page\.tsx$/.test(p)),
+      schema: {
+        models: added("model"),
+        enums: added("enum"),
+        migrations: [...new Set(rows.filter((r) => r.status === "A" && /^prisma\/migrations\/[^/]+\/migration\.sql$/.test(r.path)).map((r) => r.path.split("/")[2]))].sort(byStr),
+      },
+      infrastructure: rows
+        .filter((r) => /^(Dockerfile|\.dockerignore|docker-compose.*\.yml|\.github\/workflows\/.+|scripts\/executive\/.+|scripts\/ci\/.+)$/.test(r.path))
+        .map((r) => `${r.status} ${r.path}`)
+        .sort(byStr),
+      authSessionNamedProductPaths: strict.filter((p) => /(^|\/)(auth|session|middleware|proxy|nginx)[^/]*(\/|\.|$)/i.test(p)),
+      pathLedgerSummary: ledger.summary,
+      pathLedger: ledger.rows,
+    };
+  }
   const rows = deltaPathRows(sources, root);
   const strict = rows.filter((r) => isStrictProductPath(r.path)).map((r) => r.path).sort(byStr);
   const broad = rows.filter((r) => isBroadRuntimePath(r.path)).map((r) => r.path).sort(byStr);
@@ -306,9 +513,22 @@ export function gatherDelta(sources, root) {
 
 const readJson = (p) => JSON.parse(readFileSync(p, "utf8"));
 
+export const S0_ADJUDICATIONS_REL = "scripts/security/s0/getprisma-manual-adjudications.json";
+
+/**
+ * A SEALED layer (one whose sources name a `reconciledTreeSha`) reads its reconciled tree from git, so a later tree
+ * cannot move its figures. It does so only when the caller did not point the checker at other S0 files: a test or a
+ * campaign that hands over its own inventory is asking about THOSE bytes.
+ */
+export function sealedTree(sources, paths) {
+  if (sources.reconciledTreeSha === undefined) return false;
+  const d = defaultPaths(paths.root);
+  return paths.inventory === d.inventory && paths.adjudications === d.adjudications;
+}
+
 function inventoryAt(sources, paths, root) {
   const before = JSON.parse(git(["show", `${sources.securityHeadSha}:${S0_INVENTORY_REL}`], root));
-  const after = readJson(paths.inventory);
+  const after = sealedTree(sources, paths) ? JSON.parse(git(["show", `${sources.reconciledTreeSha}:${S0_INVENTORY_REL}`], root)) : readJson(paths.inventory);
   return { before, after };
 }
 
@@ -390,6 +610,28 @@ export function traceConsumers(site, ctx) {
   };
 }
 
+/** Every named file of one commit in a single git process: `git cat-file --batch` prints a header and the bytes. */
+export function readBlobs(root, sha, files) {
+  const out = new Map();
+  if (files.length === 0) return out;
+  const r = spawnSync("git", ["cat-file", "--batch"], { cwd: root, input: files.map((f) => `${sha}:${f}
+`).join(""), maxBuffer: 1 << 30 });
+  if (r.status !== 0) return out;
+  const buf = r.stdout;
+  let at = 0;
+  for (const f of files) {
+    const eol = buf.indexOf(10, at);
+    if (eol < 0) break;
+    const header = buf.toString("utf8", at, eol).split(" ");
+    at = eol + 1;
+    if (header[1] !== "blob") continue;
+    const size = Number(header[2]);
+    out.set(f, lf(buf.toString("utf8", at, at + size)));
+    at += size + 1;
+  }
+  return out;
+}
+
 const contextMemo = new Map();
 
 /** The file list and the text cache are per process and per target: reading the tree once is enough for a run. */
@@ -397,12 +639,14 @@ function consumerContext(sources, root) {
   const key = `${root}|${sources.targetMainSha}`;
   if (!contextMemo.has(key)) {
     const files = sourceFiles(sources, root);
-    const cache = new Map();
+    // The text of a file is the text of the COMMITTED target, never of the working tree: a sealed layer must give the same
+    // answer whatever a later tree looks like, and an uncommitted edit cannot create or hide a position.
+    const cache = readBlobs(root, sources.targetMainSha, files);
     contextMemo.set(key, {
       files,
       fileSet: new Set(files),
       text: (f) => {
-        if (!cache.has(f)) cache.set(f, existsSync(join(root, f)) ? readText(join(root, f)) : "");
+        if (!cache.has(f)) cache.set(f, blobText(root, sources.targetMainSha, f) === null ? "" : lf(blobText(root, sources.targetMainSha, f)));
         return cache.get(f);
       },
     });
@@ -474,8 +718,183 @@ export function gatherGetPrisma(data, paths, root) {
     outcomeTotals: summary.outcomes.totals,
     frozenOutcomeTotals: before.summary.outcomes.totals,
     rulesetVersion: after.rulesetVersion,
-    inventorySha256: sha256(readFileSync(paths.inventory)),
-    adjudicationsSha256: sha256(readFileSync(paths.adjudications)),
+    inventorySha256: sealedTree(sources, paths) ? sha256(Buffer.from(git(["show", `${sources.reconciledTreeSha}:${S0_INVENTORY_REL}`], root), "utf8")) : sha256(readFileSync(paths.inventory)),
+    adjudicationsSha256: sealedTree(sources, paths) ? sha256(Buffer.from(git(["show", `${sources.reconciledTreeSha}:${S0_ADJUDICATIONS_REL}`], root), "utf8")) : sha256(readFileSync(paths.adjudications)),
+    ...(layerOf(data) === "SECOND" ? movedLedgerSections(data, paths, root, { before, after, B, A, addedIds, removed, moved }) : {}),
+  };
+}
+
+/* ── layer 2: the moved call sites, kept apart from the three kinds of change ─── */
+
+const TOP_LEVEL_DECL = /^(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function|class|interface|type|enum)\b|^(?:export\s+)?(?:const|let|var)\s/;
+const COMMENT_LINE = /^\s*(?:\/\/|\/\*|\*)/;
+
+/** The code of the top-level function that holds a 1-based line: comments and trailing blanks are not behaviour. */
+export function functionSpan(text, line) {
+  const lines = String(text).split("\n");
+  const fn = enclosing(lines, line);
+  const start = fn ? fn.line : 1;
+  let end = lines.length + 1;
+  for (let i = start; i < lines.length; i += 1) {
+    if (TOP_LEVEL_DECL.test(lines[i])) {
+      end = i + 1;
+      break;
+    }
+  }
+  const code = lines
+    .slice(start - 1, end - 1)
+    .filter((l) => !COMMENT_LINE.test(l))
+    .map((l) => l.replace(/\s+$/, ""))
+    .filter((l) => l.length > 0);
+  return { name: fn ? fn.name : null, code: code.join("\n") };
+}
+
+const POSITIONAL_ADJUDICATION_KEYS = Object.freeze(["evidence", "callerPath"]);
+const POSITIONAL_TRACE_KEYS = Object.freeze(["operationIdentity", "sourceReferences"]);
+
+/** Which fields of a call site's adjudication changed with the move, split into those that only name a position and the rest. */
+export function adjudicationMove(o, n) {
+  const oa = o.adjudication ?? null;
+  const na = n.adjudication ?? null;
+  if (!oa && !na) return { before: false, after: false, positionalFields: [], semanticFields: [] };
+  if (!oa || !na) return { before: Boolean(oa), after: Boolean(na), positionalFields: [], semanticFields: ["adjudication"] };
+  const positional = [];
+  const semantic = [];
+  for (const k of [...new Set([...Object.keys(oa), ...Object.keys(na)])].sort(byStr)) {
+    if (JSON.stringify(oa[k]) === JSON.stringify(na[k])) continue;
+    if (POSITIONAL_ADJUDICATION_KEYS.includes(k)) positional.push(k);
+    else if (k === "retryTrace" && oa.retryTrace && na.retryTrace) {
+      for (const t of [...new Set([...Object.keys(oa.retryTrace), ...Object.keys(na.retryTrace)])].sort(byStr)) {
+        if (JSON.stringify(oa.retryTrace[t]) === JSON.stringify(na.retryTrace[t])) continue;
+        (POSITIONAL_TRACE_KEYS.includes(t) ? positional : semantic).push(`retryTrace.${t}`);
+      }
+    } else semantic.push(k);
+  }
+  return { before: true, after: true, positionalFields: positional, semanticFields: semantic };
+}
+
+const EVIDENCE_REFERENCE = /([A-Za-z0-9_@()[\].\/-]+\.(?:ts|tsx|mjs|js)):(\d+)(?:-(\d+))?(?:\s*\(`([^`]+)`)?/g;
+export const EVIDENCE_WINDOW_BEFORE = 2;
+export const EVIDENCE_WINDOW_AFTER = 8;
+
+/**
+ * The adjudication's evidence names `path:from-to` (and, in backticks, the expression it points at). After a move it
+ * must point at the call site where it is NOW: every named range lies inside its file, the expression quoted for a
+ * range is inside that range, and the citation of the call site's own file lies within its window.
+ */
+export function evidenceWindowProblems(site, evidenceText, textOf) {
+  const out = [];
+  if (typeof evidenceText !== "string") return out;
+  const own = [];
+  for (const m of evidenceText.matchAll(EVIDENCE_REFERENCE)) {
+    const [, path, a, b, snippet] = m;
+    const from = Number(a);
+    const to = b === undefined ? from : Number(b);
+    const text = textOf(path);
+    if (text === null) {
+      out.push(`evidence cites ${path}, which is not in the target tree`);
+      continue;
+    }
+    const lines = String(text ?? "").split("\n");
+    if (to < from || from < 1 || to > lines.length) {
+      out.push(`evidence cites ${path}:${from}-${to}, outside the file`);
+      continue;
+    }
+    if (snippet !== undefined && !lines.slice(from - 1, to).join("\n").includes(snippet)) out.push(`evidence quotes \`${snippet.slice(0, 50)}\` at ${path}:${from}-${to} and the expression is not there`);
+    if (path === site.file) own.push({ from, to });
+  }
+  if (own.length > 0 && !own.some((r) => r.to >= site.line - EVIDENCE_WINDOW_BEFORE && r.from <= site.line + EVIDENCE_WINDOW_AFTER)) {
+    out.push(`no evidence citation of ${site.file} lies within ${EVIDENCE_WINDOW_BEFORE} lines before to ${EVIDENCE_WINDOW_AFTER} after line ${site.line}`);
+  }
+  return out;
+}
+
+const sameList = (a, b) => JSON.stringify([...(a ?? [])].sort(byStr)) === JSON.stringify([...(b ?? [])].sort(byStr));
+
+/**
+ * THREE KINDS OF CHANGE, never one number:
+ *
+ *   classificationSemanticChanges  the verdict changed: classification, rule, confidence, guard shape, control flow,
+ *                                  reason, or an adjudicated field that is not merely a position;
+ *   sourceBehaviorChanges          the code of the enclosing function differs between the first-layer tree and the
+ *                                  integrated tree, comments aside, whether or not the verdict moved with it;
+ *   derivedTagChanges              a secondary tag the scanner derives from a bounded window differs.
+ *
+ * Each moved pair is paired one to one by file, ordinal and fingerprint. A pair whose verdict changed is not a move.
+ */
+function movedLedgerSections(data, paths, root, ctx) {
+  const { A, B, addedIds, removed, moved } = ctx;
+  const sources = data.sources;
+  const declared = new Map((data.sourceBehaviorChanges ?? []).map((x) => [x.callsiteId, x.summary]));
+  const edgePath = join(dirname(paths.adjudications), "getprisma-consumer-edge-traces.json");
+  const artifacts = [paths.adjudications, paths.residual, edgePath, paths.inventory].map((p) => (existsSync(p) ? readFileSync(p, "utf8") : ""));
+  const residueOf = (id) => artifacts.reduce((n, t) => n + (t.split(id).length - 1), 0);
+  const claimed = new Map();
+  const ambiguous = [];
+  const pairs = [];
+  for (const oldId of moved) {
+    const o = B.get(oldId);
+    const candidates = addedIds.filter((id) => {
+      const n = A.get(id);
+      return n.file === o.file && n.fingerprint === o.fingerprint && n.ordinalInFile === o.ordinalInFile;
+    });
+    if (candidates.length !== 1) {
+      ambiguous.push(oldId);
+      continue;
+    }
+    claimed.set(candidates[0], (claimed.get(candidates[0]) ?? 0) + 1);
+    pairs.push([oldId, candidates[0]]);
+  }
+  for (const [id, n] of claimed) if (n > 1) ambiguous.push(id);
+  const rows = pairs
+    .map(([oldId, newId]) => {
+      const o = B.get(oldId);
+      const n = A.get(newId);
+      const adj = adjudicationMove(o, n);
+      const verdictFields = ["classification", "ruleId", "confidence", "autoConfidence", "guardShape", "controlFlow", "reason", "testOnly"].filter((k) => JSON.stringify(o[k]) !== JSON.stringify(n[k]));
+      const flagsDiffer = !sameList(o.adjudication?.outcomeFlags, n.adjudication?.outcomeFlags);
+      const semantic = verdictFields.length > 0 || adj.semanticFields.length > 0 || flagsDiffer;
+      const tagsAdded = (n.secondaryTags ?? []).filter((t) => !(o.secondaryTags ?? []).includes(t)).sort(byStr);
+      const tagsRemoved = (o.secondaryTags ?? []).filter((t) => !(n.secondaryTags ?? []).includes(t)).sort(byStr);
+      const beforeText = blobText(root, sources.securityHeadSha, o.file) ?? "";
+      const afterText = blobText(root, sources.integrationMergeSha, n.file) ?? "";
+      const bs = functionSpan(beforeText, o.line);
+      const as = functionSpan(afterText, n.line);
+      const bodyChanged = bs.code !== as.code;
+      return {
+        file: n.file,
+        ordinalInFile: n.ordinalInFile,
+        fingerprint: n.fingerprint,
+        before: { id: oldId, line: o.line, column: o.column },
+        after: { id: newId, line: n.line, column: n.column },
+        lineDelta: n.line - o.line,
+        classification: { before: o.classification, after: n.classification },
+        ruleId: { before: o.ruleId, after: n.ruleId },
+        outcomeFlags: { before: o.adjudication?.outcomeFlags ?? [], after: n.adjudication?.outcomeFlags ?? [] },
+        adjudication: adj,
+        classificationSemanticChange: semantic,
+        derivedTagChanges: { added: tagsAdded, removed: tagsRemoved },
+        sourceBehavior: { enclosingFunction: as.name, bodyChanged, summary: declared.get(newId) ?? null },
+        evidenceProblems: evidenceWindowProblems(n, n.adjudication?.evidence, (path) => blobText(root, sources.integrationMergeSha, path)),
+        oldIdResidue: residueOf(oldId),
+      };
+    })
+    .sort((x, y) => byStr(x.after.id, y.after.id));
+  const pairedNew = new Set(rows.map((r) => r.after.id));
+  const pairedOld = new Set(rows.map((r) => r.before.id));
+  return {
+    movedLedger: rows,
+    movedPairProblems: { ambiguous: [...new Set(ambiguous)].sort(byStr), unpairedAdded: addedIds.filter((id) => !pairedNew.has(id)).sort(byStr), unpairedRemoved: removed.filter((id) => !pairedOld.has(id)).sort(byStr) },
+    changeModel: {
+      movedPairs: rows.length,
+      genuinelyAdded: addedIds.filter((id) => !pairedNew.has(id)).length,
+      genuinelyRemoved: removed.filter((id) => !pairedOld.has(id)).length,
+      unchangedRecords: [...A.keys()].filter((k) => B.has(k) && JSON.stringify(B.get(k)) === JSON.stringify(A.get(k))).length,
+      classificationSemanticChanges: rows.filter((r) => r.classificationSemanticChange).length,
+      sourceBehaviorChanges: rows.filter((r) => r.sourceBehavior.bodyChanged).length,
+      derivedTagChanges: rows.filter((r) => r.derivedTagChanges.added.length + r.derivedTagChanges.removed.length > 0).length,
+      positionOnlyPairs: rows.filter((r) => !r.classificationSemanticChange && !r.sourceBehavior.bodyChanged && r.derivedTagChanges.added.length + r.derivedTagChanges.removed.length === 0).length,
+    },
   };
 }
 
@@ -839,7 +1258,7 @@ export function deriveAll(data, paths) {
   const root = paths.root;
   const register = readJson(paths.register);
   return {
-    delta: gatherDelta(data.sources, root),
+    delta: gatherDelta(data.sources, root, layerOf(data) === "SECOND" ? { layer: "SECOND", authored: data.pathDispositions ?? [] } : {}),
     getPrisma: gatherGetPrisma(data, paths, root),
     derivedFacts: gatherDerivedFacts(data.sources, root),
     historicalFiles: gatherHistoricalFiles(data.sources, root),
@@ -852,6 +1271,8 @@ export function canonicalize(data, paths) {
   const next = { ...data, schemaVersion: SCHEMA_VERSION, methodVersion: RELOCK_METHOD_VERSION, ...deriveAll(data, paths) };
   next.findings = [...data.findings].sort((a, b) => byStr(a.findingId, b.findingId));
   next.reviewedCallsites = [...data.reviewedCallsites].sort((a, b) => byStr(a.id, b.id));
+  if (data.pathDispositions) next.pathDispositions = [...data.pathDispositions].sort((a, b) => byStr(a.path, b.path));
+  if (data.sourceBehaviorChanges) next.sourceBehaviorChanges = [...data.sourceBehaviorChanges].sort((a, b) => byStr(a.callsiteId, b.callsiteId));
   return ordered(next, TOP_ORDER);
 }
 export const serialize = (data) => `${JSON.stringify(data, null, 2)}\n`;
@@ -871,21 +1292,33 @@ export function renderBlocks(data, record) {
   const sev = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, INFORMATIONAL: 0 };
   const L = {};
 
-  L.scopes = [
-    "| Name | Commit | What it is |",
-    "|---|---|---|",
-    `| Frozen source | \`${s.frozenSourceSha}\` | The tree the S0/S1 audit was performed on. |`,
-    `| Security head | \`${s.securityHeadSha}\` | Tip of the historical lane. |`,
-    `| Relock target | \`${s.targetMainSha}\` | Main as authorized for the relock. |`,
-    `| Integration merge | \`${s.integrationMergeSha}\` | Merge of the security head into the target; parents in that order. |`,
-  ].join("\n");
+  const second = layerOf(data) === "SECOND";
+  L.scopes = (second
+    ? [
+        "| Name | Commit | What it is |",
+        "|---|---|---|",
+        `| Original frozen source | \`${s.originalFrozenSourceSha}\` | The tree the S0/S1 audit was performed on; changed by neither relock. |`,
+        `| First relock target | \`${s.frozenSourceSha}\` | Main as authorized for the first relock; the base of this delta. |`,
+        `| Security head | \`${s.securityHeadSha}\` | Final commit of the first relock lane. |`,
+        `| Second relock target | \`${s.targetMainSha}\` | Main as authorized for the supplementary relock. |`,
+        `| Integration merge | \`${s.integrationMergeSha}\` | Merge of the security head into the second target; parents in that order. |`,
+      ]
+    : [
+        "| Name | Commit | What it is |",
+        "|---|---|---|",
+        `| Frozen source | \`${s.frozenSourceSha}\` | The tree the S0/S1 audit was performed on. |`,
+        `| Security head | \`${s.securityHeadSha}\` | Tip of the historical lane. |`,
+        `| Relock target | \`${s.targetMainSha}\` | Main as authorized for the relock. |`,
+        `| Integration merge | \`${s.integrationMergeSha}\` | Merge of the security head into the target; parents in that order. |`,
+      ]
+  ).join("\n");
 
   L.delta = [
     "| Measure | Value |",
     "|---|---|",
     `| Range | \`${short(s.frozenSourceSha)}..${short(s.targetMainSha)}\` |`,
     `| Commits (all / non-merge) | ${d.commits.total} / ${d.commits.nonMerge} |`,
-    `| Changed paths (added / modified / deleted) | ${d.paths.total} (${d.paths.added} / ${d.paths.modified} / ${d.paths.deleted}) |`,
+    second ? `| Changed paths (added / modified / deleted / renamed) | ${d.paths.total} (${d.paths.added} / ${d.paths.modified} / ${d.paths.deleted} / ${d.paths.renamed}) |` : `| Changed paths (added / modified / deleted) | ${d.paths.total} (${d.paths.added} / ${d.paths.modified} / ${d.paths.deleted}) |`,
     `| STRICT_PRODUCT_PATHS | ${d.strictProductPaths.total} |`,
     `| BROAD_RUNTIME_AFFECTING_PATHS | ${d.broadRuntimeAffectingPaths.total} |`,
     `| API route files | ${d.apiRoutes.length} |`,
@@ -898,7 +1331,7 @@ export function renderBlocks(data, record) {
   ].join("\n");
 
   L.getprisma = [
-    "| | Frozen source | Integrated tree |",
+    second ? "| | First relock tree | Integrated tree |" : "| | Frozen source | Integrated tree |",
     "|---|---|---|",
     `| Textual occurrences | ${g.before.textualOccurrences} | ${g.after.textualOccurrences} |`,
     `| Real call expressions | ${g.before.realCallExpressions} | ${g.after.realCallExpressions} |`,
@@ -988,6 +1421,66 @@ export function renderBlocks(data, record) {
   ].join("\n");
 
   L.mutations = renderMutations(record);
+  if (second) Object.assign(L, renderSecondLayerBlocks(data));
+  return L;
+}
+
+/** The ledger of every changed path, the moved call sites and the three kinds of change: all read from derived sections. */
+export function renderSecondLayerBlocks(data) {
+  const ledger = data.delta.pathLedger;
+  const sum = data.delta.pathLedgerSummary;
+  const g = data.getPrisma;
+  const L = {};
+  const yes = (b) => (b ? "yes" : "no");
+  const codeList = (ids) => ids.map((x) => `\`${x}\``).join(", ") || "none";
+  L.pathledger = [
+    "| Measure | Value |",
+    "|---|---|",
+    `| Changed paths in the ledger | ${sum.total} |`,
+    `| Added / modified / deleted / renamed | ${sum.byChangeType.A} / ${sum.byChangeType.M} / ${sum.byChangeType.D} / ${sum.byChangeType.R} |`,
+    `| Strict product paths / broad runtime-affecting paths | ${ledger.filter((r) => r.strictProduct).length} / ${ledger.filter((r) => r.broadProduct).length} |`,
+    `| Security-relevant paths | ${sum.securityRelevant} |`,
+    `| Paths with a valid recorded review | ${sum.reviewed} |`,
+    `| Missing / extra / duplicate / stale | ${sum.missing} / ${sum.extra} / ${sum.duplicate} / ${sum.stale} |`,
+    "",
+    "| Category | Paths |",
+    "|---|---|",
+    ...Object.entries(sum.byCategory).map(([k, n]) => `| ${k} | ${n} |`),
+    "",
+    "| Disposition | Paths |",
+    "|---|---|",
+    ...Object.entries(sum.byDisposition).map(([k, n]) => `| ${k} | ${n} |`),
+    "",
+    "| Path | Type | Category | Strict | Broad | Security | Disposition | Findings | Controls | Target blob |",
+    "|---|---|---|---|---|---|---|---|---|---|",
+    ...ledger.map(
+      (r) =>
+        `| \`${r.path}\`${r.previousPath ? ` (from \`${r.previousPath}\`)` : ""} | ${r.changeType} | ${r.category} | ${yes(r.strictProduct)} | ${yes(r.broadProduct)} | ${r.securityRelevant === null ? "n/a" : yes(r.securityRelevant)} | ${r.disposition ?? "UNREVIEWED"} | ${codeList(r.findingIds)} | ${codeList(r.positiveControlIds)} | ${r.targetBlob ? r.targetBlob.slice(0, 10) : "none"} |`,
+    ),
+  ].join("\n");
+  L.movedledger = [
+    "| After | Before | Lines moved | Classification | Verdict changed | Source behaviour changed | Derived tags added / removed | Old identifier left behind |",
+    "|---|---|---|---|---|---|---|---|",
+    ...g.movedLedger.map(
+      (r) =>
+        `| \`${r.after.id}\` | \`${r.before.id}\` | ${r.lineDelta} | ${r.classification.after} | ${yes(r.classificationSemanticChange)} | ${yes(r.sourceBehavior.bodyChanged)} | ${r.derivedTagChanges.added.join(", ") || "none"} / ${r.derivedTagChanges.removed.join(", ") || "none"} | ${r.oldIdResidue} |`,
+    ),
+  ].join("\n");
+  const m = g.changeModel;
+  L.changemodel = [
+    "| Kind of change | Moved call sites |",
+    "|---|---|",
+    `| classificationSemanticChanges | ${m.classificationSemanticChanges} |`,
+    `| sourceBehaviorChanges | ${m.sourceBehaviorChanges} |`,
+    `| derivedTagChanges | ${m.derivedTagChanges} |`,
+    `| Position only | ${m.positionOnlyPairs} |`,
+    "",
+    `Moved pairs ${m.movedPairs}, genuinely added ${m.genuinelyAdded}, genuinely removed ${m.genuinelyRemoved}, unchanged records ${m.unchangedRecords}.`,
+    "",
+    "| Call site | Enclosing function | Source behaviour that changed |",
+    "|---|---|---|",
+    ...g.movedLedger.filter((r) => r.sourceBehavior.bodyChanged).map((r) => `| \`${r.after.id}\` | ${r.sourceBehavior.enclosingFunction ?? "n/a"} | ${cell(r.sourceBehavior.summary ?? "UNDECLARED")} |`),
+  ].join("\n");
   return L;
 }
 
@@ -1027,10 +1520,13 @@ export function extractBlock(md, name) {
 }
 
 export const BLOCK_NAMES = Object.freeze(["scopes", "delta", "getprisma", "runtimeenv", "authzgate", "findings", "priorities", "historicalfiles", "observations", "supersessions", "openitems", "mutations"]);
+/** The second layer's report carries three more generated blocks: the path ledger, the moved call sites and the change model. */
+export const SECOND_BLOCK_NAMES = Object.freeze([...BLOCK_NAMES, "pathledger", "movedledger", "changemodel"]);
+export const blockNamesOf = (layer) => (layer === "SECOND" ? SECOND_BLOCK_NAMES : BLOCK_NAMES);
 
-export function fillBlocks(md, blocks) {
+export function fillBlocks(md, blocks, names = BLOCK_NAMES) {
   let out = md;
-  for (const name of BLOCK_NAMES) {
+  for (const name of names) {
     const a = out.indexOf(BLOCK_OPEN(name));
     const b = out.indexOf(BLOCK_CLOSE(name));
     if (a < 0 || b < a) throw new Error(`block absent: ${name}`);
@@ -1039,9 +1535,9 @@ export function fillBlocks(md, blocks) {
   return out;
 }
 
-export function narrativeOnly(md) {
+export function narrativeOnly(md, names = BLOCK_NAMES) {
   let out = md;
-  for (const name of BLOCK_NAMES) {
+  for (const name of names) {
     const a = out.indexOf(BLOCK_OPEN(name));
     const b = out.indexOf(BLOCK_CLOSE(name));
     if (a < 0 || b < a) continue;
@@ -1088,7 +1584,22 @@ export function checkRelock(data, md, paths, record, extra = {}) {
     add("SOURCES", "MERGE_PARENTS", "the integration merge must have the target and the security head as its two parents, in that order");
   }
   if (!gitOk(["merge-base", "--is-ancestor", s.integrationMergeSha, "HEAD"], root)) add("SOURCES", "HEAD_NOT_DESCENDANT", "HEAD must descend from the integration merge");
-  out.push(...headViolations(s, root));
+  /* a second-layer sources block names the range base, which must itself descend from the original frozen source */
+  const layer = layerOf(data);
+  if (layer === "SECOND") {
+    if (!s.originalFrozenSourceSha) add("SOURCES", "ORIGINAL_FROZEN_SOURCE_ABSENT", "a second-layer document must name the original frozen source");
+    else if (!hasCommit(s.originalFrozenSourceSha, root)) add("SOURCES", "GIT_OBJECTS", "the original frozen source is not present in this repository");
+    else if (!gitOk(["merge-base", "--is-ancestor", s.originalFrozenSourceSha, s.frozenSourceSha], root) || s.originalFrozenSourceSha === s.frozenSourceSha) {
+      add("SOURCES", "ORIGINAL_FROZEN_SOURCE_NOT_ANCESTOR", "the original frozen source must be a proper ancestor of the second-layer range base");
+    }
+  } else if (s.originalFrozenSourceSha !== undefined) {
+    add("SOURCES", "ORIGINAL_FROZEN_SOURCE_UNEXPECTED", "a first-layer document does not carry an original frozen source");
+  }
+  if (s.reconciledTreeSha !== undefined && (!hasCommit(s.reconciledTreeSha, root) || !gitOk(["merge-base", "--is-ancestor", s.integrationMergeSha, s.reconciledTreeSha], root))) {
+    add("SOURCES", "RECONCILED_TREE_NOT_DESCENDANT", "the reconciled tree commit must exist and descend from the integration merge");
+  }
+  const headBase = layer === "FIRST" ? successorBase(paths, s) : s.integrationMergeSha;
+  out.push(...headViolations(s, root, headBase));
   out.push(...worktreeViolations(worktreeStatus(root)));
   out.push(...indexFlagViolations(indexFlags(root)));
   if (out.length) return out;
@@ -1119,7 +1630,7 @@ export function checkRelock(data, md, paths, record, extra = {}) {
   for (const id of reviewedIds) if (!addedIds.has(id)) add("DERIVED_DRIFT", "REVIEW_OF_UNKNOWN_CALLSITE", `${id} is not a call site added by the delta`);
   const reg = readJson(paths.register);
   const edgeRow = fresh.historicalFiles.find((h) => h.role === "S0_EVIDENCE");
-  for (const x of historicalViolations(fresh.historicalFiles, edgeRow ? sha256(readFileSync(join(root, edgeRow.path))) : null, reg.reconciliation?.historicalSnapshot?.registerFileSha256 ?? null)) {
+  for (const x of historicalViolations(fresh.historicalFiles, edgeRow ? sha256(readFileSync(join(root, edgeRow.path))) : null, layer === "FIRST" ? reg.reconciliation?.historicalSnapshot?.registerFileSha256 ?? null : null)) {
     out.push(x);
   }
 
@@ -1130,13 +1641,15 @@ export function checkRelock(data, md, paths, record, extra = {}) {
   const regFindings = new Map(reg.findings.map((f) => [f.findingId, f]));
   const regRisks = new Map(reg.risks.map((r) => [r.riskId, r]));
   const declared = new Set(data.findings.map((f) => f.registerFindingId));
-  for (const f of reg.findings.filter((x) => x.family === DELTA_FAMILY)) {
+  const docRel = `docs/security/${LAYERS[layer].data}`;
+  for (const f of reg.findings.filter((x) => x.family === DELTA_FAMILY && (x.source === undefined || x.source === docRel))) {
     if (!declared.has(f.findingId)) add("FINDINGS", "REGISTER_FINDING_MISSING_FROM_DELTA", `${f.findingId} is in the register but not in the delta document`);
   }
   const addedFiles = new Map(fresh.getPrisma.added.map((a) => [a.id, a.position.file]));
   for (const f of data.findings) {
     const w = f.findingId;
     if (!FINDING_ID.test(w)) add("FINDINGS", "FINDING_ID", `${w}: malformed id`);
+    else if (!LAYER_ID_PREFIXES[layer].includes(idPrefix(w))) add("FINDINGS", "FINDING_LAYER", `${w}: a ${layer.toLowerCase()}-layer document may not carry this identifier`);
     if (f.registerFindingId !== `${DELTA_FINDING_PREFIX}${f.findingId}`) add("FINDINGS", "REGISTER_ID", `${w}: registerFindingId must be ${DELTA_FINDING_PREFIX}${w}`);
     if (seen.has(w)) add("FINDINGS", "DUPLICATE_FINDING", `${w}: declared twice`);
     seen.add(w);
@@ -1154,8 +1667,16 @@ export function checkRelock(data, md, paths, record, extra = {}) {
       if (!owner) add("FINDINGS", "OWNER_RISK_MISSING", `${w}: ${f.canonicalRiskId}`);
       else {
         const newScope = (owner.originScope ?? "HISTORICAL_S1_BASELINE") === "DELTA_RELOCK";
-        if (f.disposition === "OWNED_BY_NEW_RISK" && !newScope) add("FINDINGS", "NEW_RISK_EXPECTED", `${w}: ${owner.riskId} is a historical risk`);
-        if (f.disposition === "OWNED_BY_EXISTING_RISK" && newScope) add("FINDINGS", "EXISTING_RISK_EXPECTED", `${w}: ${owner.riskId} is a delta risk`);
+        if (layer === "SECOND") {
+          // The supplementary relock may open a risk of its own (scope DELTA_RELOCK_2). A risk the first relock opened is
+          // already existing for it, and only a risk of its own scope is new.
+          const ownScope = (owner.originScope ?? "HISTORICAL_S1_BASELINE") === "DELTA_RELOCK_2";
+          if (f.disposition === "OWNED_BY_NEW_RISK" && !ownScope) add("FINDINGS", "SECOND_LAYER_NEW_RISK", `${w}: ${owner.riskId} was not opened by the second layer, so the finding cannot claim a new risk`);
+          if (f.disposition === "OWNED_BY_EXISTING_RISK" && ownScope) add("FINDINGS", "SECOND_LAYER_EXISTING_RISK", `${w}: ${owner.riskId} was opened by the second layer, so the finding cannot call it existing`);
+        } else {
+          if (f.disposition === "OWNED_BY_NEW_RISK" && !newScope) add("FINDINGS", "NEW_RISK_EXPECTED", `${w}: ${owner.riskId} is a historical risk`);
+          if (f.disposition === "OWNED_BY_EXISTING_RISK" && newScope) add("FINDINGS", "EXISTING_RISK_EXPECTED", `${w}: ${owner.riskId} is a delta risk`);
+        }
       }
     }
     // callsite linkage
@@ -1172,26 +1693,30 @@ export function checkRelock(data, md, paths, record, extra = {}) {
     checkEvidence(f.evidence, w, evidenceCtx, deltaPaths, add);
   }
   for (const p of data.positiveControls) {
-    if (!OBSERVATION_ID.test(p.id)) add("FINDINGS", "OBSERVATION_ID", p.id);
+    if (!OBSERVATION_ID.test(p.id) || !LAYER_ID_PREFIXES[layer].includes(idPrefix(p.id))) add("FINDINGS", "OBSERVATION_ID", p.id);
     checkEvidence(p.evidence, p.id, evidenceCtx, deltaPaths, add);
   }
   const proj = new Map(data.canonicalProjection.map((p) => [p.findingId, p]));
   for (const f of data.findings) if (!proj.has(f.findingId)) add("FINDINGS", "PROJECTION_MISSING", f.findingId);
-  out.push(...identityViolations(data, reg, fresh.derivedFacts, root));
+  // The content pins describe first-layer findings; a second-layer document carries none of them.
+  if (layer === "FIRST") out.push(...identityViolations(data, reg, fresh.derivedFacts, root));
   out.push(...duplicateContentViolations(data.findings));
+
+  if (layer === "SECOND") out.push(...secondLayerViolations(data, fresh, md, paths, root));
+  else if ("pathDispositions" in data || "sourceBehaviorChanges" in data) add("SCHEMA", "LAYER_KEY", "the ledger keys belong to the second layer");
 
   /* report */
   if (typeof md !== "string") add("REPORT", "REPORT_MISSING", "the Markdown report was not supplied");
   else {
     const blocks = renderBlocks(data, record);
-    for (const name of BLOCK_NAMES) {
+    for (const name of blockNamesOf(layer)) {
       const found = extractBlock(md, name);
       if (found === null) add("REPORT", "BLOCK_ABSENT", `block ${name}`);
       else if (found !== blocks[name]) add("REPORT", "BLOCK_DRIFT", `block ${name} differs from the renderer`);
     }
     for (const f of data.findings) if (!md.includes(f.registerFindingId)) add("REPORT", "FINDING_NOT_IN_REPORT", f.registerFindingId);
     for (const p of data.positiveControls) if (!md.includes(p.id)) add("REPORT", "OBSERVATION_NOT_IN_REPORT", p.id);
-    const nar = narrativeOnly(md);
+    const nar = narrativeOnly(md, blockNamesOf(layer));
     nar.split("\n").forEach((line, i) => {
       if (NARRATIVE_NUMBER.test(line)) add("REPORT", "UNMARKED_NARRATIVE_NUMBER", `line ${i + 1}: ${line.trim().slice(0, 70)}`);
     });
@@ -1223,6 +1748,122 @@ export function checkRelock(data, md, paths, record, extra = {}) {
   }
   if (TIMESTAMP.test(text) || (typeof md === "string" && TIMESTAMP.test(md))) add("CONTENT", "TIMESTAMP", "a clock time or date-time is present");
   void extra;
+  return out;
+}
+
+/* ── layer 2: the ledger, the moved call sites and the three kinds of change are gated ─────────── */
+
+const ALLOWED_SEMANTIC_PHRASE = /classificationSemanticChanges?/g;
+/** "semantic change" with no qualifier is the number the first draft misread; only the three named kinds may be counted. */
+export function unqualifiedSemanticChange(text) {
+  return /semantic[\s-]*changes?/i.test(String(text).replace(ALLOWED_SEMANTIC_PHRASE, ""));
+}
+
+const evidenceCovers = (evidencePath, rowPath) => rowPath === evidencePath || (evidencePath.endsWith("/") && rowPath.startsWith(evidencePath));
+
+export function secondLayerViolations(data, fresh, md, paths, root) {
+  const out = [];
+  const add = (...a) => out.push(v(...a));
+  const authoredText = JSON.stringify(Object.fromEntries(Object.entries(data).filter(([k]) => !["delta", "getPrisma", "derivedFacts", "historicalFiles", "canonicalProjection", "topPriorities"].includes(k))));
+  if (!Array.isArray(data.pathDispositions)) add("FINDINGS", "LEDGER_ABSENT", "a second-layer document must carry pathDispositions");
+  if (!Array.isArray(data.sourceBehaviorChanges)) add("FINDINGS", "SOURCE_BEHAVIOR_LIST_ABSENT", "a second-layer document must carry sourceBehaviorChanges");
+  // an absent list is reported above and read as empty below, so the rest of the gate still answers instead of crashing
+  const authoredLedger = Array.isArray(data.pathDispositions) ? data.pathDispositions : [];
+  const authoredBehavior = Array.isArray(data.sourceBehaviorChanges) ? data.sourceBehaviorChanges : [];
+
+  /* the ledger covers exactly the changed paths, once each, as they are now */
+  const ledger = fresh.delta.pathLedger;
+  const sum = fresh.delta.pathLedgerSummary;
+  const gitPaths = new Set(deltaPathRows(data.sources, root).map((r) => r.path));
+  const ledgerPaths = new Set(ledger.flatMap((r) => [r.path, ...(r.previousPath ? [r.previousPath] : [])]));
+  const authoredByPath = new Map();
+  for (const a of authoredLedger) {
+    if (authoredByPath.has(a.path)) add("FINDINGS", "LEDGER_DUPLICATE", `${a.path}: recorded twice`);
+    else authoredByPath.set(a.path, a);
+  }
+  for (const g of gitPaths) if (!ledgerPaths.has(g)) add("FINDINGS", "LEDGER_PATHSET", `${g}: changed in the range and absent from the ledger`);
+  for (const l of ledgerPaths) if (!gitPaths.has(l)) add("FINDINGS", "LEDGER_PATHSET", `${l}: in the ledger but not changed in the range`);
+  if (sum.total !== ledger.length || sum.uniquePaths !== ledger.length) add("FINDINGS", "LEDGER_COUNT", "the ledger summary does not count its rows");
+  for (const row of ledger) {
+    const a = authoredByPath.get(row.path);
+    if (!a) {
+      add("FINDINGS", "LEDGER_MISSING", `${row.path}: no disposition is recorded`);
+      continue;
+    }
+    if (a.changeType !== row.changeType) add("FINDINGS", "LEDGER_CHANGE_TYPE", `${row.path}: reviewed as ${a.changeType}, git reports ${row.changeType}`);
+    else if (a.reviewedBlob !== (row.targetBlob ?? "ABSENT")) add("FINDINGS", "LEDGER_STALE", `${row.path}: the reviewed content is not the content at the target`);
+  }
+  for (const a of authoredByPath.keys()) if (!ledgerPaths.has(a)) add("FINDINGS", "LEDGER_EXTRA", `${a}: a disposition for a path the range did not change`);
+
+  /* each row is internally sound and cross-checked against the findings and observations it names */
+  const findings = new Map(data.findings.map((f) => [f.findingId, f]));
+  const controls = new Map(data.positiveControls.map((c) => [c.id, c]));
+  const linked = new Map();
+  for (const row of ledger) {
+    if (!row.reviewed) continue;
+    const w = row.path;
+    if (row.disposition in DISPOSITION_CATEGORY && DISPOSITION_CATEGORY[row.disposition] !== row.category) add("FINDINGS", "LEDGER_DISPOSITION_CATEGORY", `${w}: ${row.disposition} describes ${DISPOSITION_CATEGORY[row.disposition]} paths, this one is ${row.category}`);
+    const hasLinks = row.findingIds.length + row.positiveControlIds.length > 0;
+    if (row.securityRelevant && !hasLinks) add("FINDINGS", "LEDGER_SECURITY_UNLINKED", `${w}: security-relevant and tied to no finding or positive control`);
+    if (!row.securityRelevant && hasLinks) add("FINDINGS", "LEDGER_LINK_WITHOUT_SECURITY", `${w}: names a finding or a control and is not marked security-relevant`);
+    if (row.disposition === "FINDING_EVIDENCE" && row.findingIds.length === 0) add("FINDINGS", "LEDGER_DISPOSITION_LINKS", `${w}: FINDING_EVIDENCE names no finding`);
+    if (row.disposition === "POSITIVE_CONTROL_EVIDENCE" && row.positiveControlIds.length === 0) add("FINDINGS", "LEDGER_DISPOSITION_LINKS", `${w}: POSITIVE_CONTROL_EVIDENCE names no control`);
+    if (!["FINDING_EVIDENCE", "POSITIVE_CONTROL_EVIDENCE"].includes(row.disposition) && (row.securityRelevant || hasLinks)) add("FINDINGS", "LEDGER_DISPOSITION_LINKS", `${w}: ${row.disposition} cannot be security-relevant or linked`);
+    for (const id of row.findingIds) {
+      const f = LEDGER_FINDING_ID.test(id) ? findings.get(id) : undefined;
+      if (!f) {
+        add("FINDINGS", "LEDGER_FINDING_UNKNOWN", `${w}: ${id} is not a finding of this document`);
+        continue;
+      }
+      if (!f.evidence.some((e) => evidenceCovers(e.path, row.path) || (row.previousPath && evidenceCovers(e.path, row.previousPath)))) add("FINDINGS", "LEDGER_LINK_NOT_EVIDENCED", `${w}: ${id} cites no evidence at this path`);
+      linked.set(`${id}|${row.path}`, true);
+    }
+    for (const id of row.positiveControlIds) {
+      const c = LEDGER_CONTROL_ID.test(id) ? controls.get(id) : undefined;
+      if (!c) {
+        add("FINDINGS", "LEDGER_CONTROL_UNKNOWN", `${w}: ${id} is not an observation of this document`);
+        continue;
+      }
+      if (!c.evidence.some((e) => evidenceCovers(e.path, row.path) || (row.previousPath && evidenceCovers(e.path, row.previousPath)))) add("FINDINGS", "LEDGER_LINK_NOT_EVIDENCED", `${w}: ${id} cites no evidence at this path`);
+      linked.set(`${id}|${row.path}`, true);
+    }
+  }
+  /* and the other way: every changed path a finding or an observation cites as DELTA evidence is a ledger row that names it */
+  for (const item of [...data.findings.map((f) => ({ id: f.findingId, evidence: f.evidence })), ...data.positiveControls.map((c) => ({ id: c.id, evidence: c.evidence }))]) {
+    for (const e of item.evidence) {
+      if (e.scope !== "DELTA") continue;
+      const rows = ledger.filter((r) => evidenceCovers(e.path, r.path));
+      if (rows.length === 0 || !rows.some((r) => linked.has(`${item.id}|${r.path}`))) add("FINDINGS", "LEDGER_EVIDENCE_NOT_LINKED", `${item.id}: its evidence at ${e.path} is not named by any ledger row`);
+    }
+  }
+
+  /* the moved call sites */
+  const g = fresh.getPrisma;
+  const mp = g.movedPairProblems;
+  if (mp.ambiguous.length) add("DERIVED_DRIFT", "MOVED_PAIR_AMBIGUOUS", `${mp.ambiguous.length} moved call site(s) cannot be paired one to one, first ${mp.ambiguous[0]}`);
+  if (g.movedLedger.length !== g.moved.length - mp.ambiguous.length) add("DERIVED_DRIFT", "MOVED_LEDGER_INCOMPLETE", "the moved ledger does not hold one row per moved call site");
+  const declared = new Map();
+  for (const s of authoredBehavior) {
+    if (declared.has(s.callsiteId)) add("FINDINGS", "SOURCE_BEHAVIOR_DUPLICATE", s.callsiteId);
+    declared.set(s.callsiteId, s.summary);
+  }
+  const movedAfter = new Set(g.movedLedger.map((r) => r.after.id));
+  for (const id of declared.keys()) if (!movedAfter.has(id)) add("FINDINGS", "SOURCE_BEHAVIOR_UNKNOWN_CALLSITE", `${id} is not a moved call site`);
+  for (const r of g.movedLedger) {
+    const w = r.after.id;
+    if (r.classificationSemanticChange) add("DERIVED_DRIFT", "MOVED_PAIR_REINTERPRETED", `${w}: its verdict changed, so it is not a move`);
+    if (r.oldIdResidue > 0) add("DERIVED_DRIFT", "MOVED_OLD_ID_RESIDUE", `${w}: the old identifier ${r.before.id} still occurs ${r.oldIdResidue} time(s) in the S0 artifacts`);
+    if (authoredText.includes(r.before.id) || (typeof md === "string" && narrativeOnly(md, SECOND_BLOCK_NAMES).includes(r.before.id))) add("DERIVED_DRIFT", "MOVED_OLD_ID_IN_DOCUMENT", `${w}: the old identifier ${r.before.id} is named outside the derived ledgers`);
+    if (r.sourceBehavior.bodyChanged && !declared.get(w)) add("FINDINGS", "SOURCE_BEHAVIOR_UNDECLARED", `${w}: the code of ${r.sourceBehavior.enclosingFunction} changed and no sourceBehaviorChanges entry says how`);
+    if (!r.sourceBehavior.bodyChanged && declared.get(w)) add("FINDINGS", "SOURCE_BEHAVIOR_SPURIOUS", `${w}: declared as a source behaviour change, the code did not change`);
+    for (const problem of r.evidenceProblems) add("DERIVED_DRIFT", "MOVED_EVIDENCE_WINDOW", `${w}: ${problem}`);
+  }
+  const m = g.changeModel;
+  if (m.classificationSemanticChanges !== g.movedLedger.filter((r) => r.classificationSemanticChange).length) add("DERIVED_DRIFT", "CHANGE_MODEL", "classificationSemanticChanges is not counted from the ledger");
+
+  /* the words: three kinds of change, never one number */
+  if (unqualifiedSemanticChange(authoredText)) add("CONTENT", "UNQUALIFIED_SEMANTIC_CHANGE", "the document says \"semantic change\" without naming which of classificationSemanticChanges, sourceBehaviorChanges or derivedTagChanges it means");
+  if (typeof md === "string" && unqualifiedSemanticChange(narrativeOnly(md, SECOND_BLOCK_NAMES))) add("CONTENT", "UNQUALIFIED_SEMANTIC_CHANGE", "the report says \"semantic change\" without naming which kind of change it means");
   return out;
 }
 
@@ -1721,15 +2362,65 @@ export function indexFlagViolations(lsFilesVZ) {
   return out;
 }
 
-/** HEAD is the integration merge, or a descendant that changed nothing outside the allowlist. */
-export function headViolations(sources, root) {
-  const head = git(["rev-parse", "HEAD"], root).trim();
-  if (head === sources.integrationMergeSha) return [];
-  if (!gitOk(["merge-base", "--is-ancestor", sources.integrationMergeSha, "HEAD"], root)) return [];
-  const outside = git(["diff", "--name-only", "--no-renames", sources.integrationMergeSha, "HEAD"], root)
+/**
+ * The commit a first-layer document is measured against at HEAD. A first-layer document is sealed at its own
+ * integration merge, but HEAD is allowed to carry the later integration merge of the second layer: the second-layer
+ * document names it, and it must be a proper descendant of the first-layer merge. The second layer itself is never
+ * given such a base: it is held to its OWN merge, so the base cannot be moved by editing the first-layer document.
+ */
+export function successorBase(paths, sources, secondDocument = join(paths.root, "docs", "security", LAYERS.SECOND.data)) {
+  const p = secondDocument;
+  if (!existsSync(p)) return sources.integrationMergeSha;
+  try {
+    const next = JSON.parse(readFileSync(p, "utf8"))?.sources;
+    const sha = next?.integrationMergeSha;
+    if (hasCommit(sha, paths.root) && sha !== sources.integrationMergeSha && gitOk(["merge-base", "--is-ancestor", sources.integrationMergeSha, sha], paths.root)) return sha;
+  } catch {
+    // an unreadable second-layer document leaves the first layer held to its own merge
+  }
+  return sources.integrationMergeSha;
+}
+
+/**
+ * WHERE HEAD MAY BE. The identity of a layer is its integration merge, a fixed commit named by the document. HEAD is
+ * NOT that identity: the artifacts are committed on top of the merge, and the moment they are, HEAD is a child of it.
+ * So HEAD must be the integration merge OR a descendant of it such that
+ *
+ *   - the merge is an ancestor of HEAD (an unrelated commit, a rewritten history and a history that lost the merge
+ *     all fail the ancestry test);
+ *   - no commit after the merge is itself a merge (a merge after the integration pulls in history nobody reviewed);
+ *   - EVERY commit after the merge changed only allowlisted paths, one by one, so a product change that a later
+ *     commit reverted still fails: the history is the subject, not only the net result;
+ *   - the net difference between the merge and HEAD is inside the allowlist too.
+ *
+ * `head` is a parameter so that the answer can be asked about a position without moving the repository to it.
+ * A test that asks about the real HEAD answers differently before and after a commit; a test that names the position
+ * answers the same everywhere, and that is what the mutation campaign relies on.
+ */
+export function headViolations(sources, root, base = sources.integrationMergeSha, head = git(["rev-parse", "HEAD"], root).trim()) {
+  if (head === base) return [];
+  if (!gitOk(["merge-base", "--is-ancestor", base, head], root)) {
+    return [v("SOURCES", "HEAD_NOT_DESCENDANT_OF_BASE", "HEAD does not descend from the commit it is measured against")];
+  }
+  const out = [];
+  const history = git(["rev-list", "--parents", `${base}..${head}`], root).split("\n").filter(Boolean);
+  const merges = history.filter((l) => l.split(" ").length > 2);
+  if (merges.length) out.push(v("SOURCES", "HEAD_MERGE_AFTER_INTEGRATION", `${merges.length} merge commit(s) lie between the integration merge and HEAD`));
+  const offending = [];
+  for (const line of history) {
+    const [commit, ...parents] = line.split(" ");
+    if (parents.length !== 1) continue;
+    const outsideOne = git(["diff-tree", "--no-commit-id", "--name-only", "-r", "--no-renames", commit], root)
+      .split("\n")
+      .filter((p) => p && !isAllowlistedPath(p));
+    if (outsideOne.length) offending.push(`${commit.slice(0, 8)}:${outsideOne[0]}`);
+  }
+  if (offending.length) out.push(v("SOURCES", "HEAD_COMMIT_OUTSIDE_ALLOWLIST", `${offending.length} commit(s) after the integration merge changed a path outside the allowlist, first ${offending[0]}`));
+  const outside = git(["diff", "--name-only", "--no-renames", base, head], root)
     .split("\n")
     .filter((p) => p && !isAllowlistedPath(p));
-  return outside.length ? [v("SOURCES", "HEAD_MOVED_OUTSIDE_ALLOWLIST", `${outside.length} path(s) changed since the integration merge outside the allowlist, first ${outside[0]}`)] : [];
+  if (outside.length) out.push(v("SOURCES", "HEAD_MOVED_OUTSIDE_ALLOWLIST", `${outside.length} path(s) changed since the integration merge outside the allowlist, first ${outside[0]}`));
+  return out;
 }
 
 /** The record's own consistency. Whether it belongs to the current files is checked by the campaign tool. */
@@ -1791,20 +2482,55 @@ export function counters(data) {
 
 /* ── command line ──────────────────────────────────────────────────────────── */
 
+/**
+ * THE COMMAND-LINE CONTRACT, one parser for every mode (generate, check, summary).
+ *
+ *   relock-delta-check.mjs [mode] [--layer=1|2] [--root=DIR] [--data=FILE] [--report=FILE] [--register=FILE]
+ *                          [--inventory=FILE] [--adjudications=FILE] [--residual=FILE] [--record=FILE]
+ *
+ *   - no mode means `check`; no `--layer` means layer 1, deliberately: the first layer is the original
+ *     document and the default of every command that existed before the second layer;
+ *   - an option is exactly `--name=value`, with a lowercase name and a non-empty value, and may be given once;
+ *   - `--layer` takes exactly `1` or `2`: not `02`, not ` 2`, not `two`, not empty, not `--layer 2`;
+ *   - an unknown option, a stray argument, a repeated option or a malformed token is a usage error (exit 2).
+ *
+ * An invalid value is NEVER read as a layer: it stops the command before any file is read or written.
+ */
+export const LAYER_VALUES = Object.freeze(["1", "2"]);
+export const OPTION_NAMES = Object.freeze(["layer", "root", "data", "report", "register", "inventory", "adjudications", "residual", "record"]);
+
 export function parseArgs(argv) {
   const opts = {};
   const rest = [];
+  const errors = [];
   for (const a of argv) {
-    const m = /^--([a-z-]+)=(.+)$/.exec(a);
-    if (m) opts[m[1]] = m[2];
-    else rest.push(a);
+    if (typeof a !== "string") {
+      errors.push("an argument is not a string");
+      continue;
+    }
+    if (!a.startsWith("-")) {
+      rest.push(a);
+      continue;
+    }
+    const m = /^--([a-z]+)=(.*)$/.exec(a);
+    if (!m) {
+      errors.push(`malformed option "${a.slice(0, 40)}" — an option is written --name=value`);
+      continue;
+    }
+    const [, name, value] = m;
+    if (!OPTION_NAMES.includes(name)) errors.push(`unknown option --${name}`);
+    else if (Object.prototype.hasOwnProperty.call(opts, name)) errors.push(`option --${name} is given more than once`);
+    else if (value === "") errors.push(`option --${name} has an empty value`);
+    else if (name === "layer" && !LAYER_VALUES.includes(value)) errors.push(`--layer must be 1 or 2, got "${value.slice(0, 20)}"`);
+    else opts[name] = value;
   }
-  return { opts, rest };
+  if (rest.length > 1) errors.push(`unexpected argument "${rest[1].slice(0, 40)}" — only one mode is accepted`);
+  return { opts, rest, errors };
 }
 
 export function pathsFromOptions(opts) {
   const root = opts.root ? resolve(opts.root) : REPO_ROOT;
-  const p = defaultPaths(root);
+  const p = defaultPaths(root, opts.layer === "2" ? "SECOND" : "FIRST");
   for (const k of ["data", "report", "register", "inventory", "adjudications", "residual", "record"]) if (opts[k]) p[k] = resolve(opts[k]);
   return p;
 }
@@ -1829,12 +2555,13 @@ function loadJson(path, label, fail) {
 }
 
 export function main(argv = process.argv.slice(2)) {
-  const { opts, rest } = parseArgs(argv);
+  const { opts, rest, errors } = parseArgs(argv);
   const mode = rest[0] ?? "check";
   const stop = (code, message) => {
     process.stderr.write(`[s1-relock] ${message}\n`);
     process.exit(code);
   };
+  if (errors.length > 0) return stop(EXIT.USAGE, `usage: ${errors[0]}`);
   if (!["generate", "check", "summary"].includes(mode)) return stop(EXIT.USAGE, `unknown mode "${mode}" — use generate | check | summary`);
   const paths = pathsFromOptions(opts);
   if (!gitOk(["rev-parse", "--git-dir"], paths.root)) return stop(EXIT.MISSING_FILE, "git is required");
@@ -1850,7 +2577,7 @@ export function main(argv = process.argv.slice(2)) {
     writeFileSync(paths.data, serialize(canonical));
     if (existsSync(paths.report)) {
       const md = readText(paths.report);
-      writeFileSync(paths.report, fillBlocks(md, renderBlocks(canonical, record)));
+      writeFileSync(paths.report, fillBlocks(md, renderBlocks(canonical, record), blockNamesOf(layerOf(canonical))));
     }
     process.stdout.write(`[s1-relock] wrote the delta document and its report blocks (${data.findings.length} delta findings)\n`);
     return;

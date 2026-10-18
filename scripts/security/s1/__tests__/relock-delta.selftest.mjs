@@ -172,7 +172,7 @@ test("derived: a stale inventory is refused", () => {
 
 test("derived: an unresolved call site is refused", () => {
   const inv = JSON.parse(readFileSync(PATHS.inventory, "utf8"));
-  inv.callSites.find((c) => c.id === "src/lib/executive/report/read.ts#L96C36").classification = "UNRESOLVED_REQUIRES_MANUAL_REVIEW";
+  inv.callSites.find((c) => c.id === "src/lib/executive/report/read.ts#L101C36").classification = "UNRESOLVED_REQUIRES_MANUAL_REVIEW";
   const found = R.checkRelock(DATA, MD, { ...PATHS, inventory: tmpJson(inv) }, RECORD);
   assert.ok(found.some((x) => x.code === "GETPRISMA_UNRESOLVED"), `expected GETPRISMA_UNRESOLVED, got ${found.map((x) => x.code).join(",")}`);
 });
@@ -427,7 +427,7 @@ test("rule: the two product-path counts are both derived and the strict set is a
 test("scope: the historical snapshot and the reconciled summary are not the same numbers", () => {
   const snap = REGISTER.reconciliation.historicalSnapshot;
   assert.notEqual(snap.risks, REGISTER.risks.length, "expected the reconciled risk count to differ from the historical snapshot");
-  assert.equal(REGISTER.risks.length - snap.risks, REGISTER.risks.filter((r) => r.originScope === "DELTA_RELOCK").length, "expected the difference to be exactly the delta risks");
+  assert.equal(REGISTER.risks.length - snap.risks, REGISTER.risks.filter((r) => r.originScope === "DELTA_RELOCK" || r.originScope === "DELTA_RELOCK_2").length, "expected the difference to be exactly the delta risks");
 });
 
 test("scope: no delta finding id collides with a historical identifier", () => {
@@ -784,7 +784,7 @@ test("head: a descendant that changed only the allowlist is accepted, one that c
   assert.deepEqual(R.headViolations(sources, dir), [], "HEAD moved inside the allowlist");
   writeFileSync(join(dir, "src/a.ts"), "export const a = 2;\n");
   FIX_GIT(dir, "commit", "-q", "-a", "-m", "product");
-  assert.deepEqual(R.headViolations(sources, dir).map((x) => x.code), ["HEAD_MOVED_OUTSIDE_ALLOWLIST"]);
+  assert.deepEqual(R.headViolations(sources, dir).map((x) => x.code), ["HEAD_COMMIT_OUTSIDE_ALLOWLIST", "HEAD_MOVED_OUTSIDE_ALLOWLIST"]);
 });
 
 // ───────────── FR-03: the mechanism is a canonical sentence, not a list of keywords ─────────────
@@ -1128,10 +1128,12 @@ const checkRelockBody = () => {
 };
 
 test("wiring: checkRelock applies the head gate", () => {
-  assert.match(checkRelockBody(), /out\.push\(\.\.\.headViolations\(s, root\)\)/, "WIRING_HEAD: checkRelock must push headViolations");
+  // POSITION-INDEPENDENT: this reads the text of the checker, not the repository, so it answers the same at any HEAD.
+  assert.match(checkRelockBody(), /out\.push\(\.\.\.headViolations\(s, root, headBase\)\)/, "WIRING_HEAD: checkRelock must push headViolations");
 });
 
 test("wiring: checkRelock applies the worktree gate", () => {
+  // POSITION-INDEPENDENT: this reads the text of the checker, not the repository, so it answers the same at any HEAD.
   assert.match(checkRelockBody(), /out\.push\(\.\.\.worktreeViolations\(worktreeStatus\(root\)\)\)/, "WIRING_WORKTREE: checkRelock must push worktreeViolations");
 });
 
@@ -1278,4 +1280,587 @@ test("stale text: process wording in the delta document or the report is refused
   assert.ok(!quoted.some((x) => x.code === "STALE_PROCESS_TEXT"), "STALE_QUOTED: the explicit marker exempts a quotation");
   const clean = run();
   assert.ok(!clean.some((x) => x.code === "STALE_PROCESS_TEXT"), "STALE_CLEAN: the open items may be named by their own ids");
+});
+
+// ───────────── the second layer: the supplementary relock of the delta between two targets ─────────────
+//
+// The second-layer document is checked by the SAME checker. These tests prove that the layers stay apart (their own
+// identifiers, sources, pins and head base), that a sealed first layer cannot be moved by a later tree, and that the
+// second layer is continuous with the first (its range base is the first target, its "before" the first layer's "after").
+
+const PATHS2 = R.defaultPaths(ROOT, "SECOND");
+const DATA2 = JSON.parse(readFileSync(PATHS2.data, "utf8"));
+const MD2 = lf(readFileSync(PATHS2.report, "utf8"));
+
+function run2({ data = DATA2, md = MD2, record = RECORD, register } = {}) {
+  const paths = { ...PATHS2 };
+  if (register) paths.register = tmpJson(register);
+  return R.checkRelock(data, md, paths, record);
+}
+function expectCode2(code, options, klass) {
+  const found = run2(options);
+  const codes = found.map((x) => x.code);
+  assert.ok(codes.includes(code), `expected ${code}, got ${codes.join(",") || "no violation"}`);
+  if (klass) assert.ok(found.some((x) => x.code === code && x.klass === klass), `expected ${code} in class ${klass}`);
+}
+function mutated2(fn) {
+  const d = clone(DATA2);
+  fn(d);
+  return { data: d };
+}
+
+test("layer 2: the committed second-layer provenance has no violation", () => {
+  const found = run2();
+  assert.deepEqual(found, [], `expected no violation, got ${found.map((x) => `${x.klass}/${x.code}`).join(",")}`);
+});
+
+test("layer 2: the committed second-layer document is in canonical form", () => {
+  assert.equal(R.serialize(R.canonicalize(clone(DATA2), PATHS2)), readFileSync(PATHS2.data, "utf8"), "expected the committed second-layer document to be canonical");
+});
+
+test("layer 2: the layers are continuous — the range base, the security head and the original source line up", () => {
+  assert.equal(DATA2.sources.frozenSourceSha, DATA.sources.targetMainSha, "LAYER_CONTINUITY: the second range starts at the first target");
+  assert.equal(DATA2.sources.securityHeadSha, DATA.sources.reconciledTreeSha, "LAYER_CONTINUITY: the second security head is the first layer's sealed tree");
+  assert.equal(DATA2.sources.originalFrozenSourceSha, DATA.sources.frozenSourceSha, "LAYER_CONTINUITY: both layers name the same original frozen source");
+  assert.deepEqual(DATA2.getPrisma.before, DATA.getPrisma.after, "LAYER_CONTINUITY: what the second layer starts from is what the first layer ended with");
+});
+
+test("layer 2: a second-layer document without the original frozen source is refused", () => {
+  expectCode2("ORIGINAL_FROZEN_SOURCE_ABSENT", mutated2((d) => delete d.sources.originalFrozenSourceSha), "SOURCES");
+});
+
+test("layer 2: an original frozen source that is not a proper ancestor of the range base is refused", () => {
+  expectCode2("ORIGINAL_FROZEN_SOURCE_NOT_ANCESTOR", mutated2((d) => (d.sources.originalFrozenSourceSha = d.sources.frozenSourceSha)), "SOURCES");
+  expectCode2("ORIGINAL_FROZEN_SOURCE_NOT_ANCESTOR", mutated2((d) => (d.sources.originalFrozenSourceSha = d.sources.targetMainSha)), "SOURCES");
+});
+
+test("layer 2: a first-layer document that names an original frozen source is refused", () => {
+  expectCode("ORIGINAL_FROZEN_SOURCE_UNEXPECTED", mutated((d) => (d.sources.originalFrozenSourceSha = d.sources.frozenSourceSha)), "SOURCES");
+});
+
+test("layer 2: a reconciled tree commit that does not descend from the integration merge is refused", () => {
+  expectCode("RECONCILED_TREE_NOT_DESCENDANT", mutated((d) => (d.sources.reconciledTreeSha = d.sources.securityHeadSha)), "SOURCES");
+});
+
+test("layer 2: a second-layer derived section the tree does not produce is refused", () => {
+  expectCode2("DERIVED_DRIFT", mutated2((d) => (d.delta.paths.total += 1)), "DERIVED_DRIFT");
+});
+
+test("layer 2: a call site the second range added with no recorded review is refused", () => {
+  expectCode2("CALLSITE_NOT_REVIEWED", mutated2((d) => d.reviewedCallsites.pop()), "DERIVED_DRIFT");
+});
+
+test("layer 2: a first-layer identifier in a second-layer document is refused", () => {
+  expectCode2("FINDING_LAYER", mutated2((d) => (d.findings[0].findingId = "RL-001")), "FINDINGS");
+});
+
+test("layer 2: a second-layer identifier in a first-layer document is refused", () => {
+  expectCode("FINDING_LAYER", mutated((d) => (finding(d, "RL-001").findingId = "RS-001")), "FINDINGS");
+});
+
+test("layer 2: an observation of the wrong layer is refused", () => {
+  expectCode2("OBSERVATION_ID", mutated2((d) => (d.positiveControls[0].id = "RL-P09")), "FINDINGS");
+});
+
+test("layer 2: a second-layer finding that claims a new risk is refused", () => {
+  expectCode2("SECOND_LAYER_NEW_RISK", mutated2((d) => (d.findings[0].disposition = "OWNED_BY_NEW_RISK")), "FINDINGS");
+});
+
+test("layer 2: a register finding of the second layer missing from its document is refused", () => {
+  expectCode2("REGISTER_FINDING_MISSING_FROM_DELTA", mutated2((d) => d.findings.pop()), "FINDINGS");
+});
+
+test("layer 2: the first-layer document is not asked to declare the second layer's findings", () => {
+  const found = run();
+  assert.ok(!found.some((x) => x.code === "REGISTER_FINDING_MISSING_FROM_DELTA"), "LAYER_SOURCE_FILTER: expected no REGISTER_FINDING_MISSING_FROM_DELTA for the first-layer document");
+});
+
+test("layer 2: the content pins of the first layer are not applied to the second", () => {
+  const found = run2();
+  assert.ok(!found.some((x) => x.code.startsWith("IDENTITY_")), "LAYER_PIN_SCOPE: expected no IDENTITY_ violation for the second-layer document");
+  assert.ok(R.identityViolations(DATA2, REGISTER, DATA2.derivedFacts, ROOT).some((x) => x.code === "IDENTITY_MISSING"), "LAYER_PIN_SCOPE: the pins themselves are first-layer content");
+});
+
+test("layer 2: the first layer is held to the later integration merge, the second to its own", () => {
+  assert.equal(R.successorBase(PATHS, DATA.sources), DATA2.sources.integrationMergeSha, "HEAD_BASE: the first layer's head base is the second-layer merge");
+  assert.equal(R.successorBase(PATHS2, DATA2.sources), DATA2.sources.integrationMergeSha, "HEAD_BASE: the second layer's head base is its own merge");
+  assert.equal(R.successorBase({ ...PATHS, root: SCRATCH }, DATA.sources), DATA.sources.integrationMergeSha, "HEAD_BASE: without a readable successor the first layer keeps its own merge");
+});
+
+test("layer 2: a sealed layer reads its reconciled tree from git and an unsealed one reads the files", () => {
+  assert.equal(R.sealedTree(DATA.sources, PATHS), true, "SEALED: the first layer is sealed by default");
+  assert.equal(R.sealedTree(DATA.sources, { ...PATHS, inventory: tmpJson({}) }), false, "SEALED: a caller-supplied inventory is read as given");
+  assert.equal(R.sealedTree(DATA2.sources, PATHS2), false, "SEALED: the second layer is not sealed");
+});
+
+test("layer 2: the sealed first layer's figures do not follow the current inventory", () => {
+  const sealed = R.gatherGetPrisma(DATA, PATHS, ROOT);
+  assert.equal(sealed.after.textualOccurrences, DATA.getPrisma.after.textualOccurrences, "SEALED_FIGURES: the sealed figures are the recorded ones");
+  const inv = JSON.parse(readFileSync(PATHS.inventory, "utf8"));
+  inv.summary.textualOccurrences = 999999;
+  const asGiven = R.gatherGetPrisma(DATA, { ...PATHS, inventory: tmpJson(inv) }, ROOT);
+  assert.equal(asGiven.after.textualOccurrences, 999999, "SEALED_FIGURES: a supplied inventory is read as given");
+});
+
+test("layer 2: the batch blob reader returns what git returns", () => {
+  const files = ["package.json", "src/lib/executive/summary.ts"];
+  const got = R.readBlobs(ROOT, DATA2.sources.targetMainSha, files);
+  for (const f of files) {
+    assert.equal(got.get(f), lf(execFileSync("git", ["show", `${DATA2.sources.targetMainSha}:${f}`], { cwd: ROOT, encoding: "utf8", maxBuffer: 1 << 28 })), `BLOB_READER: ${f} differs from git show`);
+  }
+  assert.equal(R.readBlobs(ROOT, DATA2.sources.targetMainSha, ["no/such/file.ts"]).has("no/such/file.ts"), false, "BLOB_READER: a missing path is absent");
+});
+
+test("layer 2: a successor that does not descend from the first-layer merge is not accepted as the head base", () => {
+  const ancestor = clone(DATA2);
+  ancestor.sources.integrationMergeSha = DATA.sources.frozenSourceSha;
+  assert.equal(R.successorBase(PATHS, DATA.sources, tmpJson(ancestor)), DATA.sources.integrationMergeSha, "HEAD_BASE_DESCENDANT: an ancestor of the first-layer merge is not a successor");
+  const unknown = clone(DATA2);
+  unknown.sources.integrationMergeSha = "0".repeat(40);
+  assert.equal(R.successorBase(PATHS, DATA.sources, tmpJson(unknown)), DATA.sources.integrationMergeSha, "HEAD_BASE_DESCENDANT: a commit the repository does not hold is not a successor");
+  assert.equal(R.successorBase(PATHS, DATA.sources, tmpJson(clone(DATA2))), DATA2.sources.integrationMergeSha, "HEAD_BASE_DESCENDANT: a real descendant is");
+});
+
+// ───────────────────── corrective round: position, command line, ledger, moved call sites ─────────────────────
+//
+// F-01. Where HEAD may be is a property of the repository's HISTORY, so these tests build their own throw-away
+//       repositories and name the position they ask about. They answer the same whether the artifacts are
+//       uncommitted (HEAD is the integration merge) or committed (HEAD is its child), which is what the mutation
+//       campaign relies on.
+// F-03. The command line has one strict parser.
+// F-05. Every changed path has a ledger row; the aggregates are read from the ledger.
+// F-02/semantic. Moved call sites carry a before-and-after ledger and three separate counts.
+
+const HEAD_CODES = (list) => list.map((x) => x.code);
+const expectHeadCodes = (label, got, want, notWant = []) => {
+  const codes = HEAD_CODES(got);
+  for (const c of want) assert.ok(codes.includes(c), `expected ${c}, got ${codes.join(",") || "no violation"} (${label})`);
+  for (const c of notWant) assert.ok(!codes.includes(c), `expected no ${c}, got ${codes.join(",")} (${label})`);
+};
+
+/** A repository with an integration merge M and the commits asked for on top of it, each on its own branch from M. */
+function positionRepo() {
+  const { dir, sha: M } = fixtureRepo({ "src/a.ts": "export const a = 1;\n", "docs/security/note.md": "n\n", "package.json": "{}\n" });
+  const on = (branch, from, edits, message) => {
+    FIX_GIT(dir, "checkout", "-q", "-B", branch, from);
+    for (const [rel, text] of Object.entries(edits)) {
+      mkdirSync(join(dir, rel, ".."), { recursive: true });
+      writeFileSync(join(dir, rel), text);
+    }
+    FIX_GIT(dir, "add", "-A");
+    FIX_GIT(dir, "commit", "-q", "-m", message);
+    return FIX_GIT(dir, "rev-parse", "HEAD").trim();
+  };
+  return { dir, M, on, git: (...a) => FIX_GIT(dir, ...a).trim() };
+}
+
+test("head: HEAD may be the integration merge or a descendant whose every commit stayed inside the allowlist", () => {
+  const { dir, M, on } = positionRepo();
+  const S = { integrationMergeSha: M };
+  assert.deepEqual(R.headViolations(S, dir, M, M), [], "expected no violation, got a violation at the merge itself");
+  const docs = on("docs", M, { "docs/security/note.md": "changed\n", "scripts/security/s1/tool.mjs": "export {};\n", ".gitattributes": "* text=auto\n" }, "assurance only");
+  assert.deepEqual(R.headViolations(S, dir, M, docs), [], "expected no violation, got a violation for a descendant that changed only the allowlist");
+  const second = on("docs2", docs, { "scripts/security/s0/data.json": "{}\n" }, "assurance again");
+  assert.deepEqual(R.headViolations(S, dir, M, second), [], "expected no violation, got a violation for a chain of allowlisted commits");
+});
+
+test("head: a descendant that changed a product, workflow, package, migration, deploy or config path is refused, commit by commit", () => {
+  const { dir, M, on } = positionRepo();
+  const S = { integrationMergeSha: M };
+  for (const [label, edits] of Object.entries({
+    product: { "src/a.ts": "export const a = 2;\n" },
+    workflow: { ".github/workflows/deploy.yml": "name: x\n" },
+    package: { "package.json": '{"name":"x"}\n' },
+    migration: { "prisma/migrations/20990101000000_x/migration.sql": "SELECT 1;\n" },
+    deploy: { "scripts/deploy/new.sh": "echo hi\n" },
+    nginx: { "deploy/nginx/default.conf": "server {}\n" },
+    container: { "Dockerfile": "FROM scratch\n" },
+    compose: { "docker-compose.prod.yml": "services: {}\n" },
+    environment: { ".env.production.example": "A=1\n" },
+  })) {
+    const head = on(`bad-${label}`, M, edits, `change ${label}`);
+    expectHeadCodes(label, R.headViolations(S, dir, M, head), ["HEAD_COMMIT_OUTSIDE_ALLOWLIST", "HEAD_MOVED_OUTSIDE_ALLOWLIST"]);
+  }
+});
+
+test("head: a product change that a later commit reverted still fails, because the history is the subject", () => {
+  const { dir, M, on } = positionRepo();
+  const S = { integrationMergeSha: M };
+  const changed = on("revert", M, { "src/a.ts": "export const a = 2;\n" }, "product");
+  const reverted = on("revert", changed, { "src/a.ts": "export const a = 1;\n" }, "put it back");
+  expectHeadCodes("reverted", R.headViolations(S, dir, M, reverted), ["HEAD_COMMIT_OUTSIDE_ALLOWLIST"], ["HEAD_MOVED_OUTSIDE_ALLOWLIST"]);
+});
+
+test("head: a merge commit after the integration merge is refused even when it brings only allowlisted paths", () => {
+  const { dir, M, on, git } = positionRepo();
+  const S = { integrationMergeSha: M };
+  const left = on("left", M, { "docs/security/a.md": "a\n" }, "left");
+  on("right", M, { "docs/security/b.md": "b\n" }, "right");
+  git("checkout", "-q", "left");
+  git("merge", "-q", "--no-ff", "-m", "merge", "right");
+  const merged = git("rev-parse", "HEAD");
+  expectHeadCodes("merge", R.headViolations(S, dir, M, merged), ["HEAD_MERGE_AFTER_INTEGRATION"]);
+  assert.notEqual(left, merged, "fixture: the merge is a new commit");
+});
+
+test("head: an unrelated commit, a rewritten history and a history that lost the merge are not descendants", () => {
+  const { dir, M, git } = positionRepo();
+  const S = { integrationMergeSha: M };
+  git("checkout", "-q", "--orphan", "stranger");
+  writeFileSync(join(dir, "docs/security/other.md"), "o\n");
+  git("add", "-A");
+  git("commit", "-q", "-m", "an unrelated root");
+  const stranger = git("rev-parse", "HEAD");
+  expectHeadCodes("unrelated", R.headViolations(S, dir, M, stranger), ["HEAD_NOT_DESCENDANT_OF_BASE"]);
+  writeFileSync(join(dir, "docs/security/other.md"), "o2\n");
+  git("commit", "-q", "-a", "-m", "a child of the stranger, inside the allowlist");
+  const lost = git("rev-parse", "HEAD");
+  expectHeadCodes("lost the merge", R.headViolations(S, dir, M, lost), ["HEAD_NOT_DESCENDANT_OF_BASE"]);
+  expectHeadCodes("reversed", R.headViolations({ integrationMergeSha: lost }, dir, lost, M), ["HEAD_NOT_DESCENDANT_OF_BASE"]);
+});
+
+test("head: the whole check reports a product commit after the integration merge as a source violation", () => {
+  const { dir, M, on } = positionRepo();
+  const head = on("product", M, { "src/a.ts": "export const a = 2;\n" }, "product");
+  const out = R.headViolations({ integrationMergeSha: M }, dir, M, head);
+  assert.ok(out.every((x) => x.klass === "SOURCES"), "expected SOURCES, got another class for a head violation");
+  assert.equal(R.exitCodeFor(out), R.EXIT.SOURCES, `expected exit ${R.EXIT.SOURCES}, got ${R.exitCodeFor(out)}`);
+});
+
+test("head: the committed layer is measured from the repository's real history, whatever position HEAD has", () => {
+  // POSITION-INDEPENDENT: the assertion is that no HEAD violation exists, which holds with HEAD at the integration merge and at any
+  // allowlisted descendant of it; the mutant it separates measures the first layer from a commit older than both positions, so it
+  // fails at either of them. The end-to-end committed-state test proves the descendant case from a real commit.
+  const found = R.checkRelock(DATA2, MD2, PATHS2, RECORD);
+  const heads = found.filter((x) => x.code.startsWith("HEAD_"));
+  assert.deepEqual(heads.map((x) => x.code), [], `HEAD_REAL_HISTORY: expected no HEAD violation, got ${heads.map((x) => x.code).join(",")}`);
+  const first = R.checkRelock(DATA, MD, PATHS, RECORD).filter((x) => x.code.startsWith("HEAD_"));
+  assert.deepEqual(first.map((x) => x.code), [], `HEAD_BASE_FIRST: the first layer is held to the later merge, so the second layer's own range is not charged to it; got ${first.map((x) => x.code).join(",")}`);
+});
+
+test("layer 2: HEAD is judged against the base it is given", () => {
+  const { dir, M, on } = positionRepo();
+  const first = M;
+  const second = on("later", M, { "src/a.ts": "export const a = 2;\n", "docs/security/note.md": "later\n" }, "the second merge changed a product file");
+  const S = { integrationMergeSha: second };
+  expectHeadCodes("old base", R.headViolations(S, dir, first, second), ["HEAD_MOVED_OUTSIDE_ALLOWLIST"]);
+  assert.deepEqual(R.headViolations(S, dir, second, second), [], "HEAD_BASE: HEAD at the base it is given has no violation");
+});
+
+test("layer 2: the diff is taken from the base it is given", () => {
+  const { dir, M, on } = positionRepo();
+  const second = on("later", M, { "src/a.ts": "export const a = 2;\n" }, "product");
+  const third = on("later2", second, { "docs/security/note.md": "docs\n" }, "docs only");
+  const S = { integrationMergeSha: third };
+  expectHeadCodes("from the first", R.headViolations(S, dir, M, third), ["HEAD_MOVED_OUTSIDE_ALLOWLIST"]);
+  assert.deepEqual(R.headViolations(S, dir, second, third), [], "HEAD_BASE: from the later base only the allowlisted change remains");
+});
+
+test("layer 2: a document without a layer is the first, and the layers are named by their document", () => {
+  assert.equal(R.layerOf(DATA), "FIRST", "LAYER_DEFAULT: the sealed first-layer document names no layer and is the first");
+  assert.equal(R.layerOf({}), "FIRST", "LAYER_DEFAULT: a document without sources is the first");
+  assert.equal(R.layerOf({ sources: {} }), "FIRST", "LAYER_DEFAULT: a sources block without a layer is the first");
+  assert.equal(R.layerOf(DATA2), "SECOND", "LAYER_DEFAULT: the second-layer document names its layer");
+});
+
+test("layer 2: the original register hash pin belongs to the first layer", () => {
+  const found = run2();
+  assert.ok(!found.some((x) => x.code === "FROZEN_REGISTER_HASH"), "FROZEN_REGISTER_PIN_SCOPE: the second layer is not held to the register hash the first layer pins");
+  const first = run();
+  assert.ok(!first.some((x) => x.code === "FROZEN_REGISTER_HASH"), "FROZEN_REGISTER_PIN_SCOPE: the first layer still matches the hash it pins");
+});
+
+// ── F-03: the command line ──
+
+test("cli parser: the accepted forms are no layer, --layer=1 and --layer=2, once, with one mode", () => {
+  for (const ok of [[], ["check"], ["check", "--layer=1"], ["--layer=2", "summary"], ["generate", "--layer=2"], ["check", "--root=/somewhere", "--layer=1"]]) {
+    const p = R.parseArgs(ok);
+    assert.deepEqual(p.errors, [], `LAYER_PARSER: expected ${JSON.stringify(ok)} to be accepted, got ${p.errors.join("; ")}`);
+  }
+  assert.equal(R.parseArgs(["check", "--layer=2"]).opts.layer, "2", "LAYER_PARSER: --layer=2 selects the second layer");
+  assert.equal(R.parseArgs(["check"]).opts.layer, undefined, "LAYER_PARSER: no --layer is the documented first layer");
+});
+
+test("cli parser: every other spelling of the layer is refused and never read as the first layer", () => {
+  const refused = [
+    ["--layer=3"], ["--layer="], ["--layer"], ["--layer=02"], ["--layer=2 "], ["--layer= 2"], ["--layer=two"], ["--layer=II"], ["--layer=2x"], ["--layer=0"],
+    ["--Layer=2"], ["--LAYER=2"], ["-layer=2"], ["-l=2"], ["--layer", "2"], ["--layer=1", "--layer=2"], ["--layer=2", "--layer=2"], ["--layer=1", "--layer=1"],
+    ["--layer=\t2"], ["--layer=2\n"], ["--layer==2"],
+  ];
+  for (const argv of refused) {
+    const p = R.parseArgs(argv);
+    assert.ok(p.errors.length > 0, `LAYER_PARSER: expected ${JSON.stringify(argv)} to be refused, got no error`);
+    assert.ok(!["1", "2"].includes(p.opts.layer) || argv.filter((a) => a.startsWith("--layer=")).length > 1, `LAYER_PARSER: ${JSON.stringify(argv)} must not be read as a valid single layer`);
+  }
+});
+
+test("cli parser: unknown options, stray arguments, repeated options and empty values are usage errors", () => {
+  for (const argv of [["--bogus=1"], ["check", "summary"], ["check", "extra"], ["--root="], ["--data=a", "--data=b"], ["--severity=LOW"], ["--layer=2", "--root"], [42]]) {
+    assert.ok(R.parseArgs(argv).errors.length > 0, `LAYER_PARSER: expected ${JSON.stringify(argv)} to be a usage error, got none`);
+  }
+  assert.deepEqual(R.LAYER_VALUES, ["1", "2"], "LAYER_PARSER: the layers are exactly 1 and 2");
+});
+
+// ── F-05: the ledger of every changed path ──
+
+let _fresh2 = null;
+/** The second layer's derived sections recomputed from git, the inventory and the register; computed once and only when a test asks. */
+const fresh2 = () => (_fresh2 ??= R.deriveAll(DATA2, PATHS2));
+
+const LEDGER = DATA2.delta.pathLedger;
+const authoredOf = (d, p) => d.pathDispositions.find((x) => x.path === p);
+const ledgerRow = (p) => LEDGER.find((r) => r.path === p);
+
+test("ledger: every path of the range has exactly one row, and the aggregates are read from the rows", () => {
+  const rows = R.ledgerGitRows(DATA2.sources, ROOT);
+  assert.equal(LEDGER.length, rows.length, "LEDGER_COMPLETE: expected one ledger row per changed path");
+  assert.deepEqual(LEDGER.map((r) => r.path), rows.map((r) => r.path).sort(), "LEDGER_COMPLETE: the ledger holds the changed paths and nothing else");
+  assert.equal(new Set(LEDGER.map((r) => r.path)).size, LEDGER.length, "LEDGER_COMPLETE: no path is listed twice");
+  const s = DATA2.delta.pathLedgerSummary;
+  assert.deepEqual([s.missing, s.extra, s.duplicate, s.stale], [0, 0, 0, 0], "LEDGER_COMPLETE: missing, extra, duplicate and stale are all zero");
+  assert.equal(s.reviewed, LEDGER.length, "LEDGER_COMPLETE: every row is reviewed");
+  assert.equal(DATA2.delta.paths.total, LEDGER.length, "LEDGER_AGGREGATES: the path total is the ledger's");
+  assert.equal(DATA2.delta.strictProductPaths.total, LEDGER.filter((r) => r.strictProduct).length, "LEDGER_AGGREGATES: the strict total is counted from the rows");
+  assert.equal(DATA2.delta.broadRuntimeAffectingPaths.total, LEDGER.filter((r) => r.broadProduct).length, "LEDGER_AGGREGATES: the broad total is counted from the rows");
+  assert.equal(DATA2.delta.paths.added + DATA2.delta.paths.modified + DATA2.delta.paths.deleted + DATA2.delta.paths.renamed, LEDGER.length, "LEDGER_AGGREGATES: the change types add up to the total");
+  assert.ok(LEDGER.every((r) => r.reviewed && r.reason && r.disposition && r.reviewerMethod), "LEDGER_COMPLETE: every row carries a disposition, a reason and a method");
+  const f = fresh2();
+  assert.deepEqual(f.delta.paths, DATA2.delta.paths, "LEDGER_AGGREGATES: the recomputed path counts are the committed ones");
+  assert.deepEqual([f.delta.paths.added, f.delta.paths.modified, f.delta.paths.deleted, f.delta.paths.renamed], [46, 54, 0, 0], "LEDGER_AGGREGATES: added, modified, deleted and renamed are counted from the rows by type");
+  assert.equal(f.delta.strictProductPaths.total, 47, "LEDGER_AGGREGATES: the strict total is counted from the rows");
+  assert.equal(f.delta.broadRuntimeAffectingPaths.total, 53, "LEDGER_AGGREGATES: the broad total is counted from the rows");
+  assert.deepEqual(f.delta.pathLedgerSummary, DATA2.delta.pathLedgerSummary, "LEDGER_AGGREGATES: the recomputed summary is the committed one");
+});
+
+test("ledger: a path that is missing, extra, duplicated, retyped or reviewed at another blob is refused", () => {
+  expectCode2("LEDGER_MISSING", mutated2((d) => d.pathDispositions.pop()), "FINDINGS");
+  expectCode2("LEDGER_EXTRA", mutated2((d) => d.pathDispositions.push({ ...clone(d.pathDispositions[0]), path: "src/lib/never/changed.ts" })), "FINDINGS");
+  expectCode2("LEDGER_DUPLICATE", mutated2((d) => d.pathDispositions.push(clone(d.pathDispositions[0]))), "FINDINGS");
+  expectCode2("LEDGER_CHANGE_TYPE", mutated2((d) => (authoredOf(d, "src/lib/executive/cache.ts").changeType = "M")), "FINDINGS");
+  expectCode2("LEDGER_STALE", mutated2((d) => (authoredOf(d, "src/lib/executive/cache.ts").reviewedBlob = "0".repeat(40))), "FINDINGS");
+  expectCode2("MISSING_KEY", mutated2((d) => delete d.pathDispositions[0].disposition), "SCHEMA");
+  expectCode2("UNKNOWN_KEY", mutated2((d) => (d.pathDispositions[0].severity = "LOW")), "SCHEMA");
+});
+
+test("ledger: a security-relevant path needs a finding or an observation that cites it, and the other way round", () => {
+  expectCode2("LEDGER_SECURITY_UNLINKED", mutated2((d) => {
+    const a = authoredOf(d, "src/lib/executive/cache.ts");
+    a.positiveControlIds = [];
+  }), "FINDINGS");
+  expectCode2("LEDGER_LINK_WITHOUT_SECURITY", mutated2((d) => (authoredOf(d, "src/lib/executive/cache.ts").securityRelevant = false)), "FINDINGS");
+  expectCode2("LEDGER_FINDING_UNKNOWN", mutated2((d) => (authoredOf(d, "src/lib/executive/cache.ts").findingIds = ["RS-999"])), "FINDINGS");
+  expectCode2("LEDGER_CONTROL_UNKNOWN", mutated2((d) => (authoredOf(d, "src/lib/executive/cache.ts").positiveControlIds = ["RS-P99"])), "FINDINGS");
+  expectCode2("LEDGER_LINK_NOT_EVIDENCED", mutated2((d) => (authoredOf(d, "src/lib/executive/cache.ts").positiveControlIds = ["RS-P03"])), "FINDINGS");
+  expectCode2("LEDGER_LINK_NOT_EVIDENCED", mutated2((d) => {
+    const a = authoredOf(d, "src/lib/executive/cache.ts");
+    Object.assign(a, { disposition: "FINDING_EVIDENCE", positiveControlIds: [], findingIds: ["RS-003"] });
+  }), "FINDINGS");
+  expectCode2("LEDGER_EVIDENCE_NOT_LINKED", mutated2((d) => {
+    const a = authoredOf(d, "src/lib/executive/cache.ts");
+    Object.assign(a, { securityRelevant: false, positiveControlIds: [], disposition: "REVIEWED_NO_SECURITY_EFFECT" });
+  }), "FINDINGS");
+  expectCode2("LEDGER_DISPOSITION_CATEGORY", mutated2((d) => (authoredOf(d, "src/lib/executive/status-label.ts").disposition = "TEST_ONLY")), "FINDINGS");
+  expectCode2("LEDGER_DISPOSITION_LINKS", mutated2((d) => (authoredOf(d, "src/lib/executive/cache.ts").disposition = "REVIEWED_NO_SECURITY_EFFECT")), "FINDINGS");
+});
+
+test("ledger: a ledger key in a first-layer document is refused, and a second-layer document must carry both lists", () => {
+  expectCode("LAYER_KEY", mutated((d) => (d.pathDispositions = [])), "SCHEMA");
+  expectCode2("LEDGER_ABSENT", mutated2((d) => delete d.pathDispositions), "FINDINGS");
+  expectCode2("SOURCE_BEHAVIOR_LIST_ABSENT", mutated2((d) => delete d.sourceBehaviorChanges), "FINDINGS");
+});
+
+test("ledger: the strict, broad and category rules classify known paths", () => {
+  assert.equal(R.isStrictProductPath("src/lib/a.ts"), true, "LEDGER_RULES: a source file is a strict product path");
+  assert.equal(R.isStrictProductPath("src/lib/__tests__/a.test.ts"), false, "LEDGER_RULES: a test is not");
+  assert.equal(R.isStrictProductPath("scripts/deploy/x.sh"), false, "LEDGER_RULES: a script is broad but not strict");
+  assert.equal(R.isBroadRuntimePath("scripts/deploy/x.sh"), true, "LEDGER_RULES: a script is a broad runtime path");
+  assert.equal(R.isBroadRuntimePath("docs/security/x.md"), false, "LEDGER_RULES: documentation is neither");
+  assert.equal(R.isBroadRuntimePath(".gitattributes"), false, "LEDGER_RULES: the attributes file is neither");
+  assert.equal(R.isStrictProductPath(".github/workflows/deploy.yml"), false, "LEDGER_RULES: a workflow is broad but not strict");
+  for (const [p, c] of [
+    [".gitattributes", "ASSURANCE_CONFIG"],
+    ["src/lib/__tests__/a.test.ts", "TEST"],
+    ["docs/x.md", "DOCUMENTATION"],
+    ["messages/en.json", "LOCALIZATION"],
+    ["prisma/migrations/1_x/migration.sql", "MIGRATION"],
+    ["prisma/schema.prisma", "SCHEMA"],
+    ["src/app/api/x/route.ts", "API_ROUTE"],
+    ["src/app/[locale]/x/page.tsx", "PAGE"],
+    ["src/components/x.tsx", "UI_COMPONENT"],
+    ["src/lib/x.ts", "LIBRARY"],
+    ["Dockerfile", "DEPLOY_AND_RUNTIME_CONFIG"],
+  ]) assert.equal(R.categoryOf(p), c, `LEDGER_RULES: ${p} is ${c}`);
+});
+
+test("ledger: added, modified, deleted and renamed paths are all shown, and a later edit makes the row stale", () => {
+  const { dir, sha: A } = fixtureRepo({ "src/a.ts": "a\n", "src/b.ts": "b\n", "src/c/d.ts": "export const d = 1;\nexport const e = 2;\nexport const f = 3;\n", "docs/x.md": "x\n" });
+  writeFileSync(join(dir, "src/a.ts"), "a2\n");
+  rmSync(join(dir, "src/b.ts"));
+  mkdirSync(join(dir, "src/c"), { recursive: true });
+  FIX_GIT(dir, "mv", "src/c/d.ts", "src/c/g.ts");
+  writeFileSync(join(dir, "src/n.ts"), "n\n");
+  FIX_GIT(dir, "add", "-A");
+  FIX_GIT(dir, "commit", "-q", "-m", "all four kinds of change");
+  const B = FIX_GIT(dir, "rev-parse", "HEAD").trim();
+  const sources = { frozenSourceSha: A, targetMainSha: B };
+  const rows = R.ledgerGitRows(sources, dir);
+  const by = Object.fromEntries(rows.map((r) => [r.path, r]));
+  assert.equal(by["src/a.ts"].changeType, "M", "LEDGER_KINDS: a changed file is M");
+  assert.equal(by["src/b.ts"].changeType, "D", "LEDGER_KINDS: a deleted file is D and is shown");
+  assert.equal(by["src/b.ts"].targetBlob, null, "LEDGER_KINDS: a deleted file has no target blob");
+  assert.equal(by["src/n.ts"].changeType, "A", "LEDGER_KINDS: a new file is A");
+  assert.equal(by["src/n.ts"].baseBlob, null, "LEDGER_KINDS: a new file has no base blob");
+  assert.equal(by["src/c/g.ts"].changeType, "R", "LEDGER_KINDS: a rename is R");
+  assert.equal(by["src/c/g.ts"].previousPath, "src/c/d.ts", "LEDGER_KINDS: a rename names the path it came from");
+  const authored = rows.map((r) => ({
+    path: r.path, changeType: r.changeType, reviewedBlob: r.targetBlob ?? "ABSENT", securityRelevant: false, disposition: "REVIEWED_NO_SECURITY_EFFECT",
+    reason: "A fixture row for the ledger test, long enough to be accepted.", findingIds: [], positiveControlIds: [], reviewerMethod: "DIFF_READ",
+  }));
+  const ledger = R.buildPathLedger(sources, dir, authored);
+  assert.deepEqual(ledger.summary.byChangeType, { A: 1, M: 1, D: 1, R: 1 }, "LEDGER_KINDS: the change types are counted from the rows");
+  assert.deepEqual([ledger.summary.missing, ledger.summary.extra, ledger.summary.duplicate, ledger.summary.stale], [0, 0, 0, 0], "LEDGER_STALE: a matching review is complete");
+  writeFileSync(join(dir, "src/a.ts"), "a3\n");
+  FIX_GIT(dir, "commit", "-q", "-a", "-m", "a later edit");
+  const later = R.buildPathLedger({ frozenSourceSha: A, targetMainSha: FIX_GIT(dir, "rev-parse", "HEAD").trim() }, dir, authored);
+  assert.equal(later.summary.stale, 1, "LEDGER_STALE: a later edit of a reviewed file makes its row stale");
+  assert.equal(later.rows.find((r) => r.path === "src/a.ts").reviewed, false, "LEDGER_STALE: the stale row is not reviewed");
+  assert.equal(R.buildPathLedger(sources, dir, authored.slice(1)).summary.missing, 1, "LEDGER_MISSING: a dropped row is counted missing");
+});
+
+// ── moved call sites and the three kinds of change ──
+
+const MOVED_ROWS = DATA2.getPrisma.movedLedger;
+const ADJ2 = JSON.parse(readFileSync(PATHS2.adjudications, "utf8"));
+const INV2 = JSON.parse(readFileSync(PATHS2.inventory, "utf8"));
+
+test("moved ledger: each moved pair is one to one, keeps both identifiers and leaves no old identifier behind", () => {
+  assert.equal(MOVED_ROWS.length, DATA2.getPrisma.moved.length, "MOVED_LEDGER: one row per moved call site");
+  assert.equal(new Set(MOVED_ROWS.map((r) => r.after.id)).size, MOVED_ROWS.length, "MOVED_LEDGER: no new identifier is claimed twice");
+  assert.equal(new Set(MOVED_ROWS.map((r) => r.before.id)).size, MOVED_ROWS.length, "MOVED_LEDGER: no old identifier is claimed twice");
+  assert.deepEqual(DATA2.getPrisma.movedPairProblems, { ambiguous: [], unpairedAdded: [], unpairedRemoved: [] }, "MOVED_LEDGER: nothing is ambiguous or unpaired");
+  assert.ok(MOVED_ROWS.every((r) => r.oldIdResidue === 0), "MOVED_OLD_ID_RESIDUE: no old identifier occurs in the S0 artifacts");
+  assert.ok(MOVED_ROWS.every((r) => r.evidenceProblems.length === 0), "MOVED_EVIDENCE_WINDOW: every adjudication cites the call site where it is now");
+  assert.ok(MOVED_ROWS.every((r) => r.fingerprint && r.before.id !== r.after.id), "MOVED_LEDGER: the fingerprint is kept and the identifier changed");
+});
+
+test("moved ledger: the three kinds of change are counted apart, from the rows", () => {
+  const m = DATA2.getPrisma.changeModel;
+  assert.equal(m.classificationSemanticChanges, MOVED_ROWS.filter((r) => r.classificationSemanticChange).length, "CHANGE_MODEL: classificationSemanticChanges is counted from the rows");
+  assert.equal(m.sourceBehaviorChanges, MOVED_ROWS.filter((r) => r.sourceBehavior.bodyChanged).length, "CHANGE_MODEL: sourceBehaviorChanges is counted from the rows");
+  assert.equal(m.derivedTagChanges, MOVED_ROWS.filter((r) => r.derivedTagChanges.added.length + r.derivedTagChanges.removed.length > 0).length, "CHANGE_MODEL: derivedTagChanges is counted from the rows");
+  assert.equal(m.classificationSemanticChanges, 0, "CHANGE_MODEL: no verdict changed");
+  assert.ok(m.sourceBehaviorChanges > m.derivedTagChanges, "CHANGE_MODEL: the three counts are not one number");
+  assert.equal(m.positionOnlyPairs + m.sourceBehaviorChanges + m.derivedTagChanges + m.classificationSemanticChanges >= m.movedPairs, true, "CHANGE_MODEL: every pair is accounted for");
+  assert.equal(m.genuinelyAdded, 0, "CHANGE_MODEL: no call site was genuinely added");
+  assert.equal(m.genuinelyRemoved, 0, "CHANGE_MODEL: no call site was genuinely removed");
+  const f = fresh2().getPrisma;
+  assert.deepEqual(f.changeModel, m, "CHANGE_MODEL_DERIVED: the recomputed change model is the committed one");
+  assert.equal(f.changeModel.sourceBehaviorChanges, 6, "CHANGE_MODEL_DERIVED: six moved call sites sit in a function whose code changed");
+  const media = f.movedLedger.find((r) => r.after.id === "src/app/api/media/assets/route.ts#L443C21");
+  assert.deepEqual(media.derivedTagChanges, { added: ["READ"], removed: ["SILENT_CATCH"] }, "CHANGE_MODEL_DERIVED: the media route's tag moved with the window");
+  assert.equal(media.sourceBehavior.bodyChanged, true, "CHANGE_MODEL_DERIVED: and its function really changed too");
+  assert.equal(media.classificationSemanticChange, false, "CHANGE_MODEL_DERIVED: while its verdict did not");
+  const plain = f.movedLedger.find((r) => r.after.id === "src/lib/customers/service.ts#L158C25");
+  assert.equal(plain.sourceBehavior.bodyChanged, false, "CHANGE_MODEL_DERIVED: a function that only moved is not a behaviour change");
+  assert.equal(f.movedLedger.find((r) => r.after.id === "src/lib/executive/priorities.ts#L327C24").sourceBehavior.bodyChanged, true, "CHANGE_MODEL_DERIVED: the accessor that now needs the party delegate changed");
+  const pairs = new Set(f.movedLedger.map((r) => `${r.file}|${r.ordinalInFile}`));
+  assert.equal(pairs.size, f.movedLedger.length, "CHANGE_MODEL_DERIVED: the pairing is one to one by file and ordinal");
+  const generate = f.movedLedger.find((r) => r.after.id === "src/lib/executive/report/generate.ts#L196C24");
+  assert.equal(generate.before.id, "src/lib/executive/report/generate.ts#L112C24", "CHANGE_MODEL_DERIVED: each pair keeps the identifier it replaced");
+  assert.ok(f.movedLedger.every((r) => r.before.line < r.after.line), "CHANGE_MODEL_DERIVED: every pair moved down, as the added lines above it say");
+  const second = f.movedLedger.filter((r) => r.file === "src/lib/executive/report/generate.ts").map((r) => r.after.id);
+  assert.deepEqual(second, ["src/lib/executive/report/generate.ts#L196C24", "src/lib/executive/report/generate.ts#L360C24", "src/lib/executive/report/generate.ts#L393C24"], "CHANGE_MODEL_DERIVED: three call sites of one file are paired by their order");
+  assert.equal(f.movedLedger.find((r) => r.after.id === "src/lib/executive/report/generate.ts#L360C24").before.id, "src/lib/executive/report/generate.ts#L248C24", "CHANGE_MODEL_DERIVED: the second one replaced the second one");
+  assert.equal(f.movedLedger.find((r) => r.after.id === "src/lib/executive/report/generate.ts#L393C24").before.id, "src/lib/executive/report/generate.ts#L281C24", "CHANGE_MODEL_DERIVED: the third replaced the third");
+});
+
+test("moved ledger: a source behaviour change must be described, and only a real one may be", () => {
+  expectCode2("SOURCE_BEHAVIOR_UNDECLARED", mutated2((d) => d.sourceBehaviorChanges.pop()), "FINDINGS");
+  expectCode2("SOURCE_BEHAVIOR_SPURIOUS", mutated2((d) => d.sourceBehaviorChanges.push({ callsiteId: "src/lib/customers/service.ts#L158C25", summary: "This function did not change and the claim must be refused." })), "FINDINGS");
+  expectCode2("SOURCE_BEHAVIOR_UNKNOWN_CALLSITE", mutated2((d) => d.sourceBehaviorChanges.push({ callsiteId: "src/lib/never/moved.ts#L1C1", summary: "This call site never moved and the entry must be refused." })), "FINDINGS");
+  expectCode2("SOURCE_BEHAVIOR_DUPLICATE", mutated2((d) => d.sourceBehaviorChanges.push(clone(d.sourceBehaviorChanges[0]))), "FINDINGS");
+  expectCode2("MISSING_KEY", mutated2((d) => delete d.sourceBehaviorChanges[0].summary), "SCHEMA");
+});
+
+test("moved ledger: an old identifier left in an artifact, or in the document, is refused", () => {
+  const adj = clone(ADJ2);
+  const row = adj.adjudications.find((a) => a.callsiteId === "src/lib/executive/report/generate.ts#L360C24");
+  row.retryTrace.operationIdentity = "the operation behind src/lib/executive/report/generate.ts#L248C24";
+  const found = R.checkRelock(DATA2, MD2, { ...PATHS2, adjudications: tmpJson(adj) }, RECORD).map((x) => x.code);
+  assert.ok(found.includes("MOVED_OLD_ID_RESIDUE"), `expected MOVED_OLD_ID_RESIDUE, got ${found.join(",")}`);
+  expectCode2("MOVED_OLD_ID_IN_DOCUMENT", mutated2((d) => (d.findings[0].summary += " It was once found at src/lib/executive/report/read.ts#L126C36.")), "DERIVED_DRIFT");
+  const withOld = R.checkRelock(DATA2, `${MD2}\nIt was once at src/lib/executive/report/read.ts#L126C36 and moved.\n`, PATHS2, RECORD).map((x) => x.code);
+  assert.ok(withOld.includes("MOVED_OLD_ID_IN_DOCUMENT"), `expected MOVED_OLD_ID_IN_DOCUMENT, got ${withOld.join(",")}`);
+  const stale = clone(INV2);
+  const site = stale.callSites.find((c) => c.id === "src/lib/executive/report/generate.ts#L393C24");
+  site.adjudication.evidence = "src/lib/executive/report/generate.ts:283 (`if (!reports) return false;`); caller src/lib/executive/report/worker.ts:394 (`.catch(() => false)`, result not inspected)";
+  const codes = R.checkRelock(DATA2, MD2, { ...PATHS2, inventory: tmpJson(stale) }, RECORD).map((x) => x.code);
+  assert.ok(codes.includes("MOVED_EVIDENCE_WINDOW"), `expected MOVED_EVIDENCE_WINDOW, got ${codes.join(",")}`);
+});
+
+test("moved ledger: an adjudication's references are checked for range, expression and window", () => {
+  const text = (path) => (path === "src/x.ts" ? Array.from({ length: 50 }, (_, i) => (i === 19 ? "  if (!reports) return false;" : `line ${i + 1}`)).join("\n") : null);
+  const site = { file: "src/x.ts", line: 20 };
+  assert.deepEqual(R.evidenceWindowProblems(site, "src/x.ts:20 (`if (!reports) return false;`)", text), [], "EVIDENCE_WINDOW: a reference to the expression where it is");
+  assert.match(R.evidenceWindowProblems(site, "src/x.ts:12 (`if (!reports) return false;`)", text).join("|"), /expression is not there/, "EVIDENCE_WINDOW: the expression at another line is refused");
+  assert.match(R.evidenceWindowProblems(site, "src/x.ts:40-41", text).join("|"), /no evidence citation of src\/x\.ts lies within/, "EVIDENCE_WINDOW: a range far from the call site is refused");
+  assert.match(R.evidenceWindowProblems(site, "src/x.ts:48-60", text).join("|"), /outside the file/, "EVIDENCE_WINDOW: a range beyond the file is refused");
+  assert.match(R.evidenceWindowProblems(site, "src/gone.ts:3", text).join("|"), /not in the target tree/, "EVIDENCE_WINDOW: a file that is not there is refused");
+  assert.deepEqual(R.evidenceWindowProblems(site, "caller src/other.ts:3", () => "x\n".repeat(10)), [], "EVIDENCE_WINDOW: a citation of another file has no window to hold");
+});
+
+test("moved ledger: a position-only move is told from a verdict change, and the function body from its comments", () => {
+  const rec = (over = {}) => ({ adjudication: { evidence: "a:1", callerPath: "p", terminalBehavior: "t", outcomeFlags: [], retryTrace: { operationIdentity: "x", sourceReferences: ["a:1"], terminal: "t" }, ...over }, classification: "C" });
+  const move = R.adjudicationMove(rec(), rec({ evidence: "a:9", callerPath: "p2", retryTrace: { operationIdentity: "y", sourceReferences: ["a:9"], terminal: "t" } }));
+  assert.deepEqual(move.semanticFields, [], "ADJUDICATION_MOVE: evidence, caller path and trace position are positional");
+  assert.deepEqual(move.positionalFields, ["callerPath", "evidence", "retryTrace.operationIdentity", "retryTrace.sourceReferences"], "ADJUDICATION_MOVE: the positional fields are named");
+  const verdict = R.adjudicationMove(rec(), rec({ terminalBehavior: "other", retryTrace: { operationIdentity: "x", sourceReferences: ["a:1"], terminal: "changed" } }));
+  assert.deepEqual(verdict.semanticFields, ["retryTrace.terminal", "terminalBehavior"], "ADJUDICATION_MOVE: a changed terminal behaviour is semantic");
+  assert.equal(R.adjudicationMove({}, {}).before, false, "ADJUDICATION_MOVE: no adjudication on either side is neither");
+  const before = "export async function f() {\n  // old note\n  const x = await getPrisma();\n  return x;\n}\n\nexport async function g() {\n  return 1;\n}\n";
+  const noteOnly = "export async function f() {\n  // a different note\n\n  const x = await getPrisma();\n  return x;\n}\n\nexport async function g() {\n  return 2;\n}\n";
+  assert.equal(R.functionSpan(before, 3).code, R.functionSpan(noteOnly, 4).code, "FUNCTION_SPAN: a comment, a blank line and the next function's change are not behaviour of f");
+  const changed = before.replace("return x;", "return null;");
+  assert.notEqual(R.functionSpan(before, 3).code, R.functionSpan(changed, 3).code, "FUNCTION_SPAN: a changed statement is behaviour");
+  assert.equal(R.functionSpan(before, 3).name, "f", "FUNCTION_SPAN: the enclosing function is named");
+});
+
+test("moved ledger: the gates read the derived ledger", () => {
+  const codesOf = (mutate) => {
+    const f = structuredClone(fresh2());
+    mutate(f);
+    return R.secondLayerViolations(DATA2, f, MD2, PATHS2, ROOT).map((x) => x.code);
+  };
+  const expectDerived = (code, mutate) => {
+    const codes = codesOf(mutate);
+    assert.ok(codes.includes(code), `expected ${code}, got ${codes.join(",") || "no violation"}`);
+  };
+  assert.deepEqual(codesOf(() => {}), [], "expected no violation, got a violation from the committed derivation");
+  expectDerived("MOVED_PAIR_AMBIGUOUS", (f) => f.getPrisma.movedPairProblems.ambiguous.push("src/lib/x.ts#L1C1"));
+  expectDerived("MOVED_LEDGER_INCOMPLETE", (f) => f.getPrisma.movedLedger.pop());
+  expectDerived("MOVED_PAIR_REINTERPRETED", (f) => (f.getPrisma.movedLedger[0].classificationSemanticChange = true));
+  expectDerived("MOVED_OLD_ID_RESIDUE", (f) => (f.getPrisma.movedLedger[0].oldIdResidue = 2));
+  expectDerived("MOVED_EVIDENCE_WINDOW", (f) => f.getPrisma.movedLedger[0].evidenceProblems.push("evidence cites a file that is not there"));
+  expectDerived("CHANGE_MODEL", (f) => (f.getPrisma.changeModel.classificationSemanticChanges = 5));
+  expectDerived("LEDGER_COUNT", (f) => (f.delta.pathLedgerSummary.total += 1));
+});
+
+test("moved ledger: the words 'semantic change' are refused unless they name one of the three kinds", () => {
+  assert.equal(R.unqualifiedSemanticChange("there is one semantic change"), true, "SEMANTIC_WORDS: a bare 'semantic change' is refused");
+  assert.equal(R.unqualifiedSemanticChange("two semantic-changes were found"), true, "SEMANTIC_WORDS: the hyphenated plural is refused too");
+  assert.equal(R.unqualifiedSemanticChange("Semantic Change"), true, "SEMANTIC_WORDS: the capitalised form is refused");
+  assert.equal(R.unqualifiedSemanticChange("classificationSemanticChanges is 0 and sourceBehaviorChanges is 6"), false, "SEMANTIC_WORDS: the named kinds are allowed");
+  assert.equal(R.unqualifiedSemanticChange("nothing of the kind"), false, "SEMANTIC_WORDS: other text is untouched");
+  expectCode2("UNQUALIFIED_SEMANTIC_CHANGE", mutated2((d) => (d.attribution.currentMainDelta += " There was one semantic change.")), "CONTENT");
+  const md = `${MD2}\nOne semantic change was found.\n`;
+  const found = R.checkRelock(DATA2, md, PATHS2, RECORD).map((x) => x.code);
+  assert.ok(found.includes("UNQUALIFIED_SEMANTIC_CHANGE"), `expected UNQUALIFIED_SEMANTIC_CHANGE, got ${found.join(",")}`);
+});
+
+test("moved ledger: the second-layer report carries the three generated blocks and no more", () => {
+  assert.deepEqual([...R.SECOND_BLOCK_NAMES].slice(R.BLOCK_NAMES.length), ["pathledger", "movedledger", "changemodel"], "BLOCK_NAMES: the second layer adds exactly the ledger, the moved call sites and the change model");
+  assert.deepEqual([...R.blockNamesOf("FIRST")], [...R.BLOCK_NAMES], "BLOCK_NAMES: the first layer keeps its own blocks");
+  const blocks = R.renderBlocks(DATA2, RECORD);
+  for (const n of ["pathledger", "movedledger", "changemodel"]) assert.ok(blocks[n] && blocks[n].length > 100, `BLOCK_NAMES: ${n} is rendered`);
+  expectCode2("BLOCK_DRIFT", { md: MD2.replace("| classificationSemanticChanges | 0 |", "| classificationSemanticChanges | 9 |"), data: DATA2 }, "REPORT");
 });
