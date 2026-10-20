@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
     const tag = await createTag({
       organizationId: ctx.orgId,
       assetId:        input.assetId,
+      siteId:         asset.siteId,
       tagName:        input.tagName,
       tagPath:        input.tagPath,
       unit:           input.unit,

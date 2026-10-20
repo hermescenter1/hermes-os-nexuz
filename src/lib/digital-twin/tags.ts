@@ -17,6 +17,7 @@ import type { AssetTagRecord } from "./types";
 import { TWIN_LIMITS }    from "./schemas";
 import { TwinDomainError, isUniqueViolation, twinNotFound } from "./errors";
 import { auditInTx, runTwinTransaction, type Row, type TwinModel } from "./tx";
+import { lockActiveSitesForWrite, lockAssetsForWrite } from "@/lib/site/write-locks";
 
 type TagModel = TwinModel;
 
@@ -84,6 +85,11 @@ export async function getTag(id: string, organizationId: string): Promise<AssetT
 export async function createTag(params: {
   organizationId: string;
   assetId:        string;
+  /**
+   * The site the caller was authorised on — the asset's site as the route read
+   * it. Required: the write is refused unless the asset still stands there.
+   */
+  siteId:         string;
   tagName:        string;
   tagPath:        string;
   unit?:          string | null;
@@ -94,11 +100,14 @@ export async function createTag(params: {
 }): Promise<AssetTagRecord | null> {
   try {
     const created = await runTwinTransaction(async (tx) => {
-      const asset = await tx.industrialAsset.findFirst({
-        where: { id: params.assetId, organizationId: params.organizationId },
-        select: { id: true, siteId: true },
-      });
-      if (!asset) throw twinNotFound.asset();
+      // DT-01 review F1: the route authorised the asset's site BEFORE this
+      // transaction. Re-read under FOR SHARE (assets, then sites): the asset must
+      // still be in this organisation, still at the authorised site, and that site
+      // still ACTIVE — otherwise the same not-found as a missing asset.
+      const assetSites = await lockAssetsForWrite(tx, params.organizationId, [params.assetId]);
+      if (assetSites.get(params.assetId) !== params.siteId) throw twinNotFound.asset();
+      const activeSites = await lockActiveSitesForWrite(tx, params.organizationId, [params.siteId]);
+      if (!activeSites.has(params.siteId)) throw twinNotFound.asset();
 
       const r = await tx.assetTag.create({
         data: {
@@ -118,7 +127,7 @@ export async function createTag(params: {
         userId:         params.actorUserId ?? null,
         action:         DT_AUDIT.TAG_CREATED,
         entityId:       String(r.id),
-        siteId:         String(asset.siteId),
+        siteId:         params.siteId,
         details:        { assetId: params.assetId, tagPath: params.tagPath },
       });
       return r;

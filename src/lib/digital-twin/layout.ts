@@ -4,6 +4,7 @@ import type { TwinLayoutRecord } from "./types";
 import { TWIN_LIMITS }    from "./schemas";
 import { twinNotFound }   from "./errors";
 import { auditInTx, runTwinTransaction, type TwinModel } from "./tx";
+import { lockActiveSitesForWrite } from "@/lib/site/write-locks";
 
 type LayoutModel = TwinModel;
 
@@ -61,11 +62,10 @@ export async function createLayout(params: {
   actorUserId?:   string | null;
 }): Promise<TwinLayoutRecord | null> {
   const created = await runTwinTransaction(async (tx) => {
-    const site = await tx.industrialSite.findFirst({
-      where: { id: params.siteId, organizationId: params.organizationId },
-      select: { id: true },
-    });
-    if (!site) throw twinNotFound.site();
+    // DT-01 review F1: re-read the route's decision under FOR SHARE — the site
+    // must still be in this organisation AND ACTIVE when the layout is written.
+    const activeSites = await lockActiveSitesForWrite(tx, params.organizationId, [params.siteId]);
+    if (!activeSites.has(params.siteId)) throw twinNotFound.site();
 
     const r = await tx.digitalTwinLayout.create({
       data: {

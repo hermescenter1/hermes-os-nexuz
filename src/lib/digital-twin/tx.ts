@@ -49,6 +49,11 @@ export interface TwinTx {
    * which returns a row count and reads no column.
    */
   $executeRaw: (strings: TemplateStringsArray, ...values: unknown[]) => Promise<number>;
+  /**
+   * Used for the row locks of `@/lib/site/write-locks` (`FOR SHARE` / `FOR UPDATE`),
+   * which return ordinary text columns. Always a parameterised tagged template.
+   */
+  $queryRaw: (strings: TemplateStringsArray, ...values: unknown[]) => Promise<Row[]>;
 }
 
 interface TxHost {

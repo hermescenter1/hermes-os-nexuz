@@ -122,9 +122,13 @@ export async function getConversation(
   if (!row) return null;
   const msgs = await (db.copilotMessage as unknown as MsgModel).findMany({
     where:   { conversationId: id },
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    // The NEWEST messages are the ones the bound keeps: read newest-first, then
+    // restore chronological order. (Oldest-first with a `take` would freeze a
+    // long conversation at its first N messages — review F4.)
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take:    MAX_MESSAGES_PER_CONVERSATION,
   });
+  msgs.reverse();
   const messages = msgs.map(rowToMsg).map((m) =>
     m.role === "ASSISTANT" && !storedAnswerReadable(m.metadata, viewer.siteIds) ? withheld(m) : m);
   return { conversation: rowToConv(row), messages };

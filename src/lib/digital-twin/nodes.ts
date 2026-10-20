@@ -5,16 +5,45 @@ import { TWIN_LIMITS }   from "./schemas";
 import { twinNotFound, TwinDomainError } from "./errors";
 import { assertParentChainAcyclic, lockHierarchy } from "./hierarchy";
 import { auditInTx, runTwinTransaction, type Row, type TwinModel, type TwinTx } from "./tx";
+import { lockActiveSitesForWrite, lockAssetsForWrite } from "@/lib/site/write-locks";
 
 type NodeModel = TwinModel;
 
+/**
+ * DT-01 review F2 — what a node's references are read with.
+ *
+ * `assetId` and `parentNodeId` are plain foreign keys, so a row written before the
+ * Slice 1 ownership checks (or an asset moved since) can point at an asset or a
+ * node of ANOTHER site — or another organisation — and returning the raw id would
+ * hand a site-limited viewer an id from a site it cannot see. Every read that
+ * feeds `rowToNode` loads the referenced row's owner with this include, and
+ * `rowToNode` shows a reference only when it resolves inside the node's own
+ * organisation AND site — the only place a reference may legitimately live.
+ */
+export const NODE_REFERENCE_INCLUDE = {
+  parent: { select: { organizationId: true, siteId: true } },
+  asset:  { select: { organizationId: true, siteId: true } },
+} as const;
+
+function referenceInScope(ref: unknown, organizationId: unknown, siteId: unknown): boolean {
+  if (!ref || typeof ref !== "object") return false;
+  const owner = ref as Record<string, unknown>;
+  return owner.organizationId === organizationId && owner.siteId === siteId;
+}
+
+/**
+ * Fail-closed: a reference whose owner was NOT loaded (a query without
+ * `NODE_REFERENCE_INCLUDE`) is withheld rather than trusted.
+ */
 export function rowToNode(r: Record<string, unknown>): TwinNodeRecord {
+  const assetId      = (r.assetId      ?? null) as string | null;
+  const parentNodeId = (r.parentNodeId ?? null) as string | null;
   return {
     id:             r.id             as string,
     organizationId: r.organizationId as string,
     siteId:         r.siteId         as string,
-    assetId:        (r.assetId       ?? null) as string | null,
-    parentNodeId:   (r.parentNodeId  ?? null) as string | null,
+    assetId:        assetId      && referenceInScope(r.asset,  r.organizationId, r.siteId) ? assetId      : null,
+    parentNodeId:   parentNodeId && referenceInScope(r.parent, r.organizationId, r.siteId) ? parentNodeId : null,
     displayName:    r.displayName    as string,
     nodeType:       r.nodeType       as DigitalTwinNodeType,
     metadata:       (r.metadata       ?? {}) as Record<string, unknown>,
@@ -52,6 +81,7 @@ export async function listNodesPage(
   const limit = Math.min(Math.max(1, requested), TWIN_LIMITS.LIST_NODES);
   const rows = await (prisma.digitalTwinNode as unknown as NodeModel).findMany({
     where,
+    include: NODE_REFERENCE_INCLUDE,
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     take: limit + 1,
   });
@@ -63,23 +93,17 @@ export async function getNode(id: string, organizationId: string): Promise<TwinN
   if (!prisma) return null;
   const r = await (prisma.digitalTwinNode as unknown as NodeModel).findFirst({
     where: { id, organizationId },
+    include: NODE_REFERENCE_INCLUDE,
   });
   return r ? rowToNode(r) : null;
 }
 
 /**
- * Ownership checks shared by create and update. Every lookup carries the
+ * Ownership check shared by create and update. The lookup carries the
  * organisation AND the node's site, so "exists", "is another tenant's" and "is at
- * another site" are the same answer — not found.
+ * another site" are the same answer — not found. (Assets are checked through
+ * `lockAssetsForWrite`, which also returns their CURRENT site under a lock.)
  */
-async function assertAssetInSite(tx: TwinTx, assetId: string, organizationId: string, siteId: string): Promise<void> {
-  const asset = await tx.industrialAsset.findFirst({
-    where: { id: assetId, organizationId, siteId },
-    select: { id: true },
-  });
-  if (!asset) throw twinNotFound.asset();
-}
-
 async function assertParentInSite(tx: TwinTx, parentId: string, organizationId: string, siteId: string): Promise<void> {
   const parent = await tx.digitalTwinNode.findFirst({
     where: { id: parentId, organizationId, siteId },
@@ -103,13 +127,18 @@ export async function createNode(params: {
     // lock still matters because the parent chain it joins may be changing.
     if (params.parentNodeId) await lockHierarchy(tx, params.organizationId);
 
-    const site = await tx.industrialSite.findFirst({
-      where: { id: params.siteId, organizationId: params.organizationId },
-      select: { id: true },
-    });
-    if (!site) throw twinNotFound.site();
+    // DT-01 review F1: the route authorised the site BEFORE this transaction. The
+    // rows that decision rests on — the asset's current site and the site being
+    // ACTIVE — are re-read here under `FOR SHARE` (write-locks.ts lock order:
+    // assets, then sites), so a concurrent asset move or site deactivation either
+    // commits first and is seen here, or waits until this insert has committed.
+    const assetSites  = params.assetId
+      ? await lockAssetsForWrite(tx, params.organizationId, [params.assetId])
+      : new Map<string, string>();
+    const activeSites = await lockActiveSitesForWrite(tx, params.organizationId, [params.siteId]);
+    if (!activeSites.has(params.siteId)) throw twinNotFound.site();
 
-    if (params.assetId)      await assertAssetInSite(tx, params.assetId, params.organizationId, params.siteId);
+    if (params.assetId && assetSites.get(params.assetId) !== params.siteId) throw twinNotFound.asset();
     if (params.parentNodeId) await assertParentInSite(tx, params.parentNodeId, params.organizationId, params.siteId);
 
     const r = await tx.digitalTwinNode.create({
@@ -122,6 +151,7 @@ export async function createNode(params: {
         parentNodeId:   params.parentNodeId ?? null,
         metadata:       params.metadata     ?? {},
       },
+      include: NODE_REFERENCE_INCLUDE,
     });
 
     await auditInTx(tx, {
@@ -158,11 +188,34 @@ export async function updateNode(
   const updated = await runTwinTransaction(async (tx) => {
     if (touchesParent) await lockHierarchy(tx, organizationId);
 
-    const current: Row | null = await tx.digitalTwinNode.findFirst({ where: { id, organizationId } });
+    // DT-01 review F1 — lock order of write-locks.ts: the written row first,
+    // then the asset it is re-pointed at, then its site. The route authorised the
+    // node's site before this transaction; the decision is re-read here, under the
+    // locks, so it cannot change before this write commits. NO KEY UPDATE, not
+    // UPDATE: the id never changes, so foreign-key checks of concurrent child
+    // nodes and relations (KEY SHARE) need not wait for this patch.
+    const lockedNode = await tx.$queryRaw`
+      SELECT n."id" AS "id"
+      FROM "DigitalTwinNode" n
+      WHERE n."id" = ${id} AND n."organizationId" = ${organizationId}
+      FOR NO KEY UPDATE
+    `;
+    if (lockedNode.length === 0) throw twinNotFound.node();
+
+    const current: Row | null = await tx.digitalTwinNode.findFirst({
+      where: { id, organizationId },
+      include: NODE_REFERENCE_INCLUDE,
+    });
     if (!current) throw twinNotFound.node();
     const siteId = String(current.siteId);
 
-    if (patch.assetId) await assertAssetInSite(tx, patch.assetId, organizationId, siteId);
+    const assetSites  = patch.assetId
+      ? await lockAssetsForWrite(tx, organizationId, [patch.assetId])
+      : new Map<string, string>();
+    const activeSites = await lockActiveSitesForWrite(tx, organizationId, [siteId]);
+    if (!activeSites.has(siteId)) throw twinNotFound.node();
+
+    if (patch.assetId && assetSites.get(patch.assetId) !== siteId) throw twinNotFound.asset();
     if (patch.parentNodeId) {
       if (patch.parentNodeId === id) {
         throw new TwinDomainError("HIERARCHY_CYCLE", 422, "A node cannot be its own parent");
@@ -182,7 +235,7 @@ export async function updateNode(
     // An empty patch is a no-op: nothing to write, nothing to audit.
     if (Object.keys(data).length === 0) return current;
 
-    const r = await tx.digitalTwinNode.update({ where: { id, organizationId }, data });
+    const r = await tx.digitalTwinNode.update({ where: { id, organizationId }, data, include: NODE_REFERENCE_INCLUDE });
 
     await auditInTx(tx, {
       organizationId,

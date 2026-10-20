@@ -333,7 +333,10 @@ describe("tenant isolation — a tenant cannot reference another tenant's record
       .rejects.toMatchObject({ code: "PARENT_NODE_NOT_FOUND" });
     await expect(createRelation({ organizationId: ORG_A, sourceNodeId: mine, targetNodeId: theirs, relationType: "FEEDS" }))
       .rejects.toMatchObject({ code: "TARGET_NODE_NOT_FOUND" });
-    await expect(createTag({ organizationId: ORG_A, assetId: B_S1_PUMP, tagName: "t", tagPath: "a.b" }))
+    await expect(createTag({ organizationId: ORG_A, assetId: B_S1_PUMP, siteId: A_S1, tagName: "t", tagPath: "a.b" }))
+      .rejects.toMatchObject({ code: "ASSET_NOT_FOUND" });
+    // Even naming the foreign asset's REAL site does not help: the asset is not this tenant's.
+    await expect(createTag({ organizationId: ORG_A, assetId: B_S1_PUMP, siteId: B_S1, tagName: "t", tagPath: "a.b" }))
       .rejects.toMatchObject({ code: "ASSET_NOT_FOUND" });
     await expect(createLayout({ organizationId: ORG_A, siteId: B_S1, name: "l" }))
       .rejects.toMatchObject({ code: "SITE_NOT_FOUND" });

@@ -8,7 +8,7 @@
  */
 
 import { getPrisma }     from "@/lib/db/prisma";
-import { rowToNode }     from "./nodes";
+import { NODE_REFERENCE_INCLUDE, rowToNode } from "./nodes";
 import { rowToRelation, buildAdjacency, findDependencyPath, traverseDownstream, traverseUpstream } from "./relations";
 import { TWIN_LIMITS }   from "./schemas";
 import { MAX_TRAVERSAL_DEPTH } from "./types";
@@ -45,6 +45,7 @@ export async function getAssetGraph(
   const [rawNodes, rawRelations] = await Promise.all([
     (prisma.digitalTwinNode as unknown as NodeModel).findMany({
       where:   { organizationId, siteId },
+      include: NODE_REFERENCE_INCLUDE,
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       take:    TWIN_LIMITS.GRAPH_NODES + 1,
     }),
@@ -214,6 +215,7 @@ async function scopedTraversal(
 
   const rawNodes = await nodeModel.findMany({
     where: { organizationId, siteId: { in: sites }, id: { in: ids } },
+    include: NODE_REFERENCE_INCLUDE,
     take:  maxNodes,
   });
   const order = new Map(ids.map((id, i) => [id, i]));
@@ -294,6 +296,7 @@ export async function getConnectedAssets(
 
   const rawNodes = await nodeModel.findMany({
     where: { organizationId, siteId: { in: sites }, id: { in: ids } },
+    include: NODE_REFERENCE_INCLUDE,
     take:  maxNodes,
   });
   const order = new Map(ids.map((id, i) => [id, i]));
@@ -346,6 +349,7 @@ export async function getDependencyPath(
 
   const rawNodes = await nodeModel.findMany({
     where: { organizationId, siteId: { in: sites }, id: { in: path } },
+    include: NODE_REFERENCE_INCLUDE,
     take:  path.length,
   });
   const order = new Map(path.map((id, i) => [id, i]));

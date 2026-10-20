@@ -6,6 +6,7 @@ import { TWIN_LIMITS }       from "./schemas";
 import { TwinDomainError, isUniqueViolation, twinNotFound } from "./errors";
 import { assertPartOfAcyclic, lockHierarchy } from "./hierarchy";
 import { auditInTx, runTwinTransaction, type Row, type TwinModel } from "./tx";
+import { lockActiveSitesForWrite } from "@/lib/site/write-locks";
 
 type RelModel = TwinModel;
 
@@ -115,6 +116,11 @@ export async function createRelation(params: {
       if (src.siteId !== tgt.siteId) {
         throw new TwinDomainError("CROSS_SITE_RELATION", 422, "Both nodes of a relation must belong to the same site");
       }
+
+      // DT-01 review F1: the route authorised the endpoints' site before this
+      // transaction; it must still be ACTIVE (FOR SHARE) when the edge is written.
+      const activeSites = await lockActiveSitesForWrite(tx, params.organizationId, [String(src.siteId)]);
+      if (!activeSites.has(String(src.siteId))) throw twinNotFound.source();
 
       // The unique index covers (source, target, type) only. For a bidirectional
       // type the reverse pair is the SAME link, so it is checked explicitly.
