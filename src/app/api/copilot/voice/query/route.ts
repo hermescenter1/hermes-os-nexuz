@@ -33,6 +33,7 @@ import { z } from "zod";
 
 import { recordAuditEvent } from "@/lib/audit/audit-service";
 import { generateResponse } from "@/lib/copilot/copilot";
+import { authorizeCopilotSelectors } from "@/lib/copilot/scope";
 import { renderSpeechText, toVoiceAnswer } from "@/lib/copilot/voice/answer";
 import {
   VOICE_AUDIT,
@@ -98,13 +99,14 @@ export async function POST(req: NextRequest) {
   const { transcript, locale } = parsed.data;
 
   // ── The deterministic engine. The authority. ───────────────────────────────
-  // Site and asset scoping are deliberately not exposed on the voice path: the
-  // engine already filters everything it reads by the server-derived
-  // organisation, and a spoken free-text field is the wrong place to introduce
-  // a new scoping parameter.
+  // Site and asset selectors are deliberately not exposed on the voice path (a spoken free-text field is
+  // the wrong place for them). The engine still runs with the SAME server-built scope as the text path
+  // (slice C, IR-03): the actor's readable ACTIVE sites, never the whole organisation.
   let response;
   try {
-    response = await generateResponse(organizationId, transcript, undefined, undefined, locale);
+    const authorized = await authorizeCopilotSelectors(userId, organizationId, {});
+    if (!authorized.ok) throw new Error("COPILOT_SCOPE_UNAVAILABLE");
+    response = await generateResponse(authorized.scope, transcript, locale);
   } catch {
     // The engine is the product; if it cannot answer, there is nothing to speak
     // and nothing to fall back to. The internal cause stays in the server.

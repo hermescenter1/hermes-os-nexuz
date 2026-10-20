@@ -8,6 +8,7 @@
 
 import { getKnowledgeGraph, getAssetKnowledgeGraph, findShortestEvidencePath } from "./query";
 import { explainAssetRisk } from "./reasoning";
+import type { GraphViewerScope } from "./visibility";
 
 const MAX_CONTEXT_NODES = 30;
 const MAX_CONTEXT_EDGES = 50;
@@ -48,9 +49,9 @@ export interface AssetReasoningContext {
 }
 
 /** Summary of the org's knowledge graph for Copilot context. */
-export async function getKnowledgeGraphContext(orgId: string): Promise<KGContextSummary> {
+export async function getKnowledgeGraphContext(scope: GraphViewerScope): Promise<KGContextSummary> {
   try {
-    const result = await getKnowledgeGraph(orgId);
+    const result = await getKnowledgeGraph(scope);
     const nodes  = result.nodes.slice(0, MAX_CONTEXT_NODES);
     const edges  = result.edges.slice(0, MAX_CONTEXT_EDGES);
     const nodesByType: Record<string, number> = {};
@@ -65,12 +66,12 @@ export async function getKnowledgeGraphContext(orgId: string): Promise<KGContext
 
 /** Evidence path context between two graph node IDs for Copilot. */
 export async function getEvidencePathContext(
-  orgId:        string,
+  scope:        GraphViewerScope,
   sourceNodeId: string,
   targetNodeId: string,
 ): Promise<EvidencePathContext> {
   try {
-    const result = await findShortestEvidencePath(orgId, sourceNodeId, targetNodeId);
+    const result = await findShortestEvidencePath(scope, sourceNodeId, targetNodeId);
     const cappedPath = result.path.slice(0, MAX_CONTEXT_PATH);
 
     return {
@@ -95,11 +96,11 @@ export async function getEvidencePathContext(
 
 /** Asset reasoning context — risk, failure modes, root causes — for Copilot. */
 export async function getAssetReasoningContext(
-  orgId:   string,
+  scope:   GraphViewerScope,
   assetId: string,
 ): Promise<AssetReasoningContext> {
   try {
-    const explanation = await explainAssetRisk(orgId, assetId);
+    const explanation = await explainAssetRisk(scope, assetId);
     return {
       assetId,
       assetLabel:       explanation.assetLabel,

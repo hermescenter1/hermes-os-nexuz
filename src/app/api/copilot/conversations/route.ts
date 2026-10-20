@@ -16,7 +16,8 @@ export async function GET(req: NextRequest) {
   if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   const limit       = Math.min(Number(req.nextUrl.searchParams.get("limit") ?? 20), 50);
-  const conversations = await listConversations(ctx.orgId, limit);
+  // Slice C (IR-03): the actor's own conversations only.
+  const conversations = await listConversations(ctx.orgId, member.ctx.userId, limit);
   return NextResponse.json({ conversations });
 }
 

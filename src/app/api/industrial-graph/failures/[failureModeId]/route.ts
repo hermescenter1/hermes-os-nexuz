@@ -12,6 +12,7 @@ import { requirePlatformAuth }                     from "@/lib/api/auth";
 import { requireOrgActor }                         from "@/lib/org/context";
 import { requirePermission }                       from "@/lib/org/rbac";
 import { getFailureModeGraph }                     from "@/lib/knowledge-graph/query";
+import { resolveGraphViewerScope }                 from "@/lib/knowledge-graph/visibility";
 import { explainFailureMode }                      from "@/lib/knowledge-graph/reasoning";
 import { recordAuditEvent, KNOWLEDGE_GRAPH_AUDIT } from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }                    from "@/lib/api/meter";
@@ -36,9 +37,11 @@ export async function GET(
 
   meterIndustrialEvent(ctx.orgId, "knowledge_graph_queries");
 
+  // RV-01: subgraph and explanation are both bounded by the viewer's site scope.
+  const scope = await resolveGraphViewerScope(member.ctx.userId, ctx.orgId, member.ctx.role);
   const [subgraph, explanation] = await Promise.all([
-    getFailureModeGraph(ctx.orgId, failureModeId),
-    explainFailureMode(ctx.orgId, failureModeId),
+    getFailureModeGraph(scope, failureModeId),
+    explainFailureMode(scope, failureModeId),
   ]);
 
   recordAuditEvent({

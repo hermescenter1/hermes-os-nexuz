@@ -5,6 +5,7 @@ import { requirePermission }               from "@/lib/org/rbac";
 import { searchKnowledge }                 from "@/lib/knowledge/search";
 import { recordAuditEvent, KNOWLEDGE_AUDIT } from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }            from "@/lib/api/meter";
+import { resolveGraphViewerScope }          from "@/lib/knowledge-graph/visibility";
 import type { KnowledgeItemType }          from "@/lib/knowledge/types";
 
 export const runtime = "nodejs";
@@ -33,7 +34,9 @@ export async function GET(req: NextRequest) {
 
   meterIndustrialEvent(ctx.orgId, "knowledge_queries");
 
-  const results = await searchKnowledge(ctx.orgId, q, types, limit);
+  // RV-01: cases in the results are limited to the viewer's scope (same policy as /api/knowledge/cases).
+  const scope   = await resolveGraphViewerScope(member.ctx.userId, ctx.orgId, member.ctx.role);
+  const results = await searchKnowledge(ctx.orgId, q, types, limit, scope);
 
   recordAuditEvent({
     action:     KNOWLEDGE_AUDIT.KNOWLEDGE_QUERY,

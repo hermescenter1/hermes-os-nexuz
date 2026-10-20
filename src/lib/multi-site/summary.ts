@@ -26,17 +26,19 @@
  * SAME semantics the benchmark itself used, so the summary agrees with the
  * detail pages a scoped caller can actually open.
  *
- * `allowedSiteIds === undefined` means "no site scope applies" — the caller has
- * no user context (API-key auth). That path is byte-for-byte unchanged: no
- * filter is added and the stored benchmark summary fields are used as before.
+ * SCOPE IS MANDATORY (slice D1, MS-03). There is no unscoped path any more: the
+ * caller passes the viewer's readable ACTIVE sites (OWNER/ADMIN: every active
+ * site; others: their granted active sites). Omitting it is a compile error and
+ * a runtime refusal; an EMPTY scope yields the empty summary and reads nothing.
+ * Nothing from the stored organisation-wide benchmark summary is reported.
  */
 
 import { getPrisma }                    from "@/lib/db/prisma";
 import { getLatestSnapshot, isStaleSince } from "@/lib/knowledge-graph/builder";
 import { getLatestBenchmark } from "./benchmarks";
+import { projectPersistedPatterns } from "./projection";
 import {
   type EnterpriseIndustrialSummary,
-  type BenchmarkSummary,
 } from "./types";
 
 type SiteModel   = { count: (a: unknown) => Promise<number> };
@@ -53,8 +55,25 @@ function mean(arr: number[]): number | null {
  * one the sibling Phase 43 routes build, so the summary and the detail views
  * can never disagree about what "in scope" means.
  */
-function siteFilter(allowedSiteIds: string[] | undefined): Record<string, unknown> {
-  return allowedSiteIds ? { siteId: { in: allowedSiteIds } } : {};
+function siteFilter(allowedSiteIds: readonly string[]): Record<string, unknown> {
+  return { siteId: { in: [...allowedSiteIds] } };
+}
+
+/** The answer for a viewer with no readable site: nothing about the organisation, no benchmark claimed. */
+function emptySummary(orgId: string): EnterpriseIndustrialSummary {
+  return {
+    organizationId:    orgId,
+    siteCount:         0,
+    latestBenchmarkId: null,
+    latestBenchmarkAt: null,
+    benchmarkStale:    false,
+    stalenessWarning:  null,
+    riskSummary: { sitesRanked: 0, highestRiskSiteId: null, avgOrgRiskScore: null },
+    kpiSummary:  { sitesCompared: 0, avgOrgAvailability: null, avgOrgHealthScore: null },
+    patternCount:          0,
+    knowledgeGraphStale:   false,
+    knowledgeGraphBuiltAt: null,
+  };
 }
 
 /**
@@ -71,7 +90,13 @@ function highestRiskSiteIdFrom(rows: Record<string, unknown>[]): string | null {
   for (const r of rows) {
     const score = r.avgRiskScore as number | null;
     if (score === null || score === undefined) continue;
-    if (score > bestScore) { bestScore = score; bestId = String(r.siteId); }
+    const siteId = String(r.siteId);
+    // Independent review S3: EQUAL scores used to leave the winner to the database's row order, so the
+    // summary could name a different site on two reads of the same benchmark. The lowest site id wins.
+    if (score > bestScore || (score === bestScore && bestId !== null && siteId < bestId)) {
+      bestScore = score;
+      bestId = siteId;
+    }
   }
   return bestId;
 }
@@ -79,38 +104,34 @@ function highestRiskSiteIdFrom(rows: Record<string, unknown>[]): string | null {
 /**
  * Cross-site patterns visible to the caller.
  *
- * `CrossSiteFailurePattern.siteIds` is a JSON array, so this cannot be filtered
- * at the database layer — the same reason `/api/multi-site/failure-patterns`
- * filters in memory. The predicate is deliberately IDENTICAL to that route's
- * (a pattern counts when it involves at least one accessible site), so the
- * number on the summary card equals the number of rows the caller sees when
- * they open the failure-patterns page.
+ * The number on the summary card is the number of patterns the caller can actually open: it is the length
+ * of the SAME viewer-safe projection `/api/multi-site/failure-patterns` returns (a pattern counts only
+ * when at least two of the caller's sites each contribute valid, policy-eligible evidence). Counting
+ * stored rows that merely touch one accessible site would disclose that patterns involving hidden sites
+ * exist. A lookup error counts as zero (fail closed).
  */
 async function scopedPatternCount(
   db: Record<string, unknown>,
+  orgId: string,
   benchmarkId: string,
-  allowedSiteIds: string[],
+  allowedSiteIds: readonly string[],
 ): Promise<number> {
   const rows = await (db.crossSiteFailurePattern as unknown as PatternModel)
-    .findMany({ where: { benchmarkId }, select: { siteIds: true } })
+    .findMany({ where: { benchmarkId, organizationId: orgId } })
     .catch(() => [] as Record<string, unknown>[]);
-  const allowed = new Set(allowedSiteIds);
-  return rows.filter((r) => {
-    const ids = Array.isArray(r.siteIds) ? (r.siteIds as string[]) : [];
-    return ids.some((sid) => allowed.has(sid));
-  }).length;
+  return (await projectPersistedPatterns(db, orgId, allowedSiteIds, rows)).length;
 }
 
 /**
- * @param allowedSiteIds Sites the caller may see. `undefined` = no user context
- *                       (API-key auth), which applies no site filter. An EMPTY
- *                       array is a caller with no accessible sites; the route
- *                       answers that case before calling this function.
+ * @param allowedSiteIds REQUIRED — the viewer's readable ACTIVE sites, server derived. An empty list yields
+ *                       the empty summary. Anything that is not an array is refused at runtime too.
  */
 export async function getEnterpriseIndustrialSummary(
   orgId: string,
-  allowedSiteIds?: string[],
+  allowedSiteIds: readonly string[],
 ): Promise<EnterpriseIndustrialSummary> {
+  if (!Array.isArray(allowedSiteIds)) throw new TypeError("SUMMARY_SCOPE_REQUIRED");
+  if (allowedSiteIds.length === 0) return emptySummary(orgId);
   const prisma = await getPrisma();
 
   // Site count — always live (cheap). Scoped: the caller's ACCESSIBLE active
@@ -125,7 +146,7 @@ export async function getEnterpriseIndustrialSummary(
         where: {
           organizationId: orgId,
           status: "ACTIVE",
-          ...(allowedSiteIds ? { id: { in: allowedSiteIds } } : {}),
+          id: { in: [...allowedSiteIds] },
         },
       })
       .catch(() => 0);
@@ -160,8 +181,6 @@ export async function getEnterpriseIndustrialSummary(
     };
   }
 
-  const summary = bm.summary as BenchmarkSummary;
-
   // Compute KPI/risk means from the latest benchmark's child rows, narrowed to
   // the caller's accessible sites.
   let avgOrgRiskScore:   number | null = null;
@@ -169,10 +188,9 @@ export async function getEnterpriseIndustrialSummary(
   let avgOrgHealthScore: number | null = null;
   let sitesRanked = 0;
   let sitesCompared = 0;
-  // Default to the stored ORG-WIDE values; both are replaced below whenever a
-  // site scope applies.
-  let highestRiskSiteId: string | null = summary.highestRiskSiteId;
-  let patternCount = summary.patternCount;
+  // Never the stored ORG-WIDE values: both are recomputed within the scope below.
+  let highestRiskSiteId: string | null = null;
+  let patternCount = 0;
 
   if (prisma) {
     const db = prisma as unknown as Record<string, unknown>;
@@ -206,13 +224,10 @@ export async function getEnterpriseIndustrialSummary(
     avgOrgAvailability  = mean(avails);
     avgOrgHealthScore   = mean(healths);
 
-    if (allowedSiteIds) {
-      // Both of these come from the org-wide stored summary and must not be
-      // reported to a scoped caller: one NAMES a possibly-inaccessible site, the
-      // other counts patterns the caller cannot open.
-      highestRiskSiteId = highestRiskSiteIdFrom(riskRows);
-      patternCount      = await scopedPatternCount(db, bm.id, allowedSiteIds);
-    }
+    // The stored org-wide summary would NAME a possibly-inaccessible site and count patterns the caller
+    // cannot open; both are recomputed from the caller's own rows.
+    highestRiskSiteId = highestRiskSiteIdFrom(riskRows);
+    patternCount      = await scopedPatternCount(db, orgId, bm.id, allowedSiteIds);
   }
 
   return {

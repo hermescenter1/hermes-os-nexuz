@@ -1,75 +1,118 @@
-import { NextRequest, NextResponse }          from "next/server";
-import { requirePlatformAuth }               from "@/lib/api/auth";
-import { requireOrgActor }                   from "@/lib/org/context";
-import { requirePermission }                 from "@/lib/org/rbac";
-import { listRelations, createRelation } from "@/lib/digital-twin/relations";
-import { getNode }                           from "@/lib/digital-twin/nodes";
-import { recordAuditEvent, DT_AUDIT }        from "@/lib/audit/audit-service";
-import { meterIndustrialEvent }              from "@/lib/api/meter";
-import { ALL_RELATION_TYPES }               from "@/lib/digital-twin/types";
-import type { DigitalTwinRelationType }      from "@/lib/digital-twin/types";
+import { NextRequest, NextResponse }  from "next/server";
+import { requirePlatformAuth }          from "@/lib/api/auth";
+import { requireOrgActor }              from "@/lib/org/context";
+import { requirePermission }            from "@/lib/org/rbac";
+import { resolveSiteScope }          from "@/lib/digital-twin/scope";
+import { listRelationsPage, createRelation } from "@/lib/digital-twin/relations";
+import { getNode }                    from "@/lib/digital-twin/nodes";
+import { meterIndustrialEvent }       from "@/lib/api/meter";
+import { authorizeTwinSite, requireSessionAuth, twinAuthRefusal, type TwinCtx } from "@/lib/digital-twin/guard";
+import { parseJsonBody }              from "@/lib/digital-twin/request";
+import { TWIN_LIMITS, createRelationBody, idSchema } from "@/lib/digital-twin/schemas";
+import { twinErrorResponse, twinJsonError, twinNotFound, type TwinDomainError } from "@/lib/digital-twin/errors";
+import type { DigitalTwinRelationType } from "@/lib/digital-twin/types";
+
+/**
+ * One endpoint of a new relation: it must exist in this organisation AND sit at a
+ * site the caller may manage. Every way of failing the first two is `notFound()`.
+ */
+async function authorizeEndpoint(
+  req: NextRequest,
+  ctx: TwinCtx,
+  nodeId: string,
+  notFound: () => TwinDomainError,
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  const node = await getNode(nodeId, ctx.orgId);
+  if (!node) {
+    const e = notFound();
+    return { ok: false, response: twinJsonError(e.status, e.code, e.message) };
+  }
+  return authorizeTwinSite(req, ctx, node.siteId, "manage", notFound);
+}
+
+function optionalId(req: NextRequest, name: string): { ok: true; value?: string } | { ok: false } {
+  const raw = req.nextUrl.searchParams.get(name);
+  if (raw === null) return { ok: true };
+  const parsed = idSchema.safeParse(raw);
+  return parsed.success ? { ok: true, value: parsed.data } : { ok: false };
+}
 
 export async function GET(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-  const { ctx } = auth;
+  if ("error" in auth) return twinAuthRefusal(auth);
+  const sessionRefusal = requireSessionAuth(auth.ctx);
+  if (sessionRefusal) return sessionRefusal;
 
-  const member = await requireOrgActor(req, ctx.orgId);
-  if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
+  const member = await requireOrgActor(req, auth.ctx.orgId);
+  if ("error" in member) return twinAuthRefusal(member);
   const perm = requirePermission(member.ctx.role, "view_digital_twin");
-  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  if (!perm.ok) return twinAuthRefusal(perm);
+  const ctx: TwinCtx = { orgId: auth.ctx.orgId, userId: member.ctx.userId };
 
-  const sourceNodeId = req.nextUrl.searchParams.get("sourceNodeId") ?? undefined;
-  const targetNodeId = req.nextUrl.searchParams.get("targetNodeId") ?? undefined;
-  const relations    = await listRelations(ctx.orgId, { sourceNodeId, targetNodeId });
+  const source = optionalId(req, "sourceNodeId");
+  const target = optionalId(req, "targetNodeId");
+  if (!source.ok) return twinJsonError(400, "VALIDATION_FAILED", "sourceNodeId is invalid");
+  if (!target.ok) return twinJsonError(400, "VALIDATION_FAILED", "targetNodeId is invalid");
 
-  meterIndustrialEvent(ctx.orgId, "digital_twin_queries");
-  return NextResponse.json({ relations });
+  try {
+    const allowedSiteIds = await resolveSiteScope(ctx.userId, ctx.orgId);
+    const { relations, truncated } = await listRelationsPage(ctx.orgId, {
+      sourceNodeId: source.value,
+      targetNodeId: target.value,
+      allowedSiteIds,
+    });
+
+    meterIndustrialEvent(ctx.orgId, "digital_twin_queries");
+    return NextResponse.json({ relations, truncated });
+  } catch (err) {
+    return twinErrorResponse(err, "relations.list");
+  }
 }
 
 export async function POST(req: NextRequest) {
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-  const { ctx } = auth;
+  if ("error" in auth) return twinAuthRefusal(auth);
+  const sessionRefusal = requireSessionAuth(auth.ctx);
+  if (sessionRefusal) return sessionRefusal;
 
-  const member = await requireOrgActor(req, ctx.orgId);
-  if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
+  const member = await requireOrgActor(req, auth.ctx.orgId);
+  if ("error" in member) return twinAuthRefusal(member);
   const perm = requirePermission(member.ctx.role, "manage_digital_twin");
-  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  if (!perm.ok) return twinAuthRefusal(perm);
+  const ctx: TwinCtx = { orgId: auth.ctx.orgId, userId: member.ctx.userId };
 
-  const body = await req.json().catch(() => ({}));
-  const { sourceNodeId, targetNodeId, relationType, metadata } = body as Record<string, unknown>;
+  const body = await parseJsonBody(req, createRelationBody, TWIN_LIMITS.BODY_BYTES);
+  if (!body.ok) return body.response;
+  const input = body.data;
 
-  if (!sourceNodeId || typeof sourceNodeId !== "string") return NextResponse.json({ error: "sourceNodeId is required" }, { status: 400 });
-  if (!targetNodeId || typeof targetNodeId !== "string") return NextResponse.json({ error: "targetNodeId is required" }, { status: 400 });
-  if (!relationType || !ALL_RELATION_TYPES.includes(relationType as DigitalTwinRelationType)) {
-    return NextResponse.json({ error: `relationType must be one of: ${ALL_RELATION_TYPES.join(", ")}` }, { status: 400 });
+  try {
+    // Resolve and authorise each endpoint on its own, in a fixed order (source, then
+    // target), and refuse with that endpoint's own error. "Does not exist", "belongs
+    // to another organisation" and "sits at a site the caller cannot reach" must be
+    // the SAME answer — and, per endpoint, the same answer as each other. Refusing
+    // with a generic NODE_NOT_FOUND for the unreachable case (as an earlier version
+    // did) told a caller which of their ids were real nodes at sites they may not see.
+    const source = await authorizeEndpoint(req, ctx, input.sourceNodeId, twinNotFound.source);
+    if (!source.ok) return source.response;
+    const target = await authorizeEndpoint(req, ctx, input.targetNodeId, twinNotFound.target);
+    if (!target.ok) return target.response;
+
+    const relation = await createRelation({
+      organizationId: ctx.orgId,
+      sourceNodeId:   input.sourceNodeId,
+      targetNodeId:   input.targetNodeId,
+      relationType:   input.relationType as DigitalTwinRelationType,
+      metadata:       input.metadata,
+      actorUserId:    ctx.userId,
+    });
+    if (!relation) {
+      const e = twinNotFound.unavailable();
+      return twinJsonError(e.status, e.code, e.message);
+    }
+
+    meterIndustrialEvent(ctx.orgId, "digital_twin_relations");
+    return NextResponse.json({ relation }, { status: 201 });
+  } catch (err) {
+    return twinErrorResponse(err, "relations.create");
   }
-
-  // Cross-tenant edge prevention: both nodes must belong to this org
-  const [src, tgt] = await Promise.all([
-    getNode(sourceNodeId as string, ctx.orgId),
-    getNode(targetNodeId as string, ctx.orgId),
-  ]);
-  if (!src) return NextResponse.json({ error: "sourceNode not found in this organization" }, { status: 404 });
-  if (!tgt) return NextResponse.json({ error: "targetNode not found in this organization" }, { status: 404 });
-
-  const relation = await createRelation({
-    organizationId: ctx.orgId,
-    sourceNodeId:   sourceNodeId as string,
-    targetNodeId:   targetNodeId as string,
-    relationType:   relationType as DigitalTwinRelationType,
-    metadata:       metadata as Record<string, unknown> | undefined,
-  });
-  if (!relation) return NextResponse.json({ error: "Failed to create relation (may be duplicate)" }, { status: 422 });
-
-  meterIndustrialEvent(ctx.orgId, "digital_twin_relations");
-  recordAuditEvent({
-    action:     DT_AUDIT.RELATION_CREATED,
-    entityType: "digital_twin",
-    userId:     ctx.userId ?? undefined,
-    entityId:   relation.id,
-    metadata:   { relationType, sourceNodeId, targetNodeId, organizationId: ctx.orgId },
-  });
-  return NextResponse.json({ relation }, { status: 201 });
 }

@@ -8,7 +8,8 @@
  */
 
 import { getFailureKnowledge }      from "./failures";
-import { getRootCauseCandidates }   from "./rootcauses";
+import type { GraphViewerScope }    from "@/lib/knowledge-graph/visibility";
+import { getRootCauseCandidates, resolveAuthorizedAsset } from "./rootcauses";
 import { getRecommendedProcedures } from "./procedures";
 import { assembleKnowledgeEvidence } from "./evidence";
 import type {
@@ -29,15 +30,21 @@ export interface KnowledgeRecommendationBundle {
 export async function buildKnowledgeRecommendations(
   organizationId: string,
   assetId:        string,
-  assetType?:     string,
-  symptoms?:      string[],
+  assetType:      string | undefined,
+  symptoms:       string[] | undefined,
+  scope:          GraphViewerScope | null,
 ): Promise<KnowledgeRecommendationBundle> {
+  // Slice C (IR-04): root-cause candidates read the asset's indicators, so they need an asset proven
+  // readable through the caller's scope; no scope (or another organisation's) means none.
+  const authorizedAsset = scope !== null && scope.organizationId === organizationId
+    ? await resolveAuthorizedAsset(organizationId, assetId, scope.allowedSiteIds)
+    : null;
   const [failureKnowledge, rootCauseCandidates, procedureRecommendations, assembledEvidence] =
     await Promise.all([
-      getFailureKnowledge(organizationId, assetId, assetType, symptoms),
-      getRootCauseCandidates(organizationId, assetId, assetType),
+      getFailureKnowledge(organizationId, assetId, assetType, symptoms, scope),
+      authorizedAsset ? getRootCauseCandidates(organizationId, authorizedAsset) : Promise.resolve([]),
       getRecommendedProcedures(organizationId, assetId, assetType),
-      assembleKnowledgeEvidence(organizationId, assetId),
+      authorizedAsset && scope ? assembleKnowledgeEvidence(organizationId, authorizedAsset, scope.allowedSiteIds) : Promise.resolve([]),
     ]);
 
   return {

@@ -10,6 +10,8 @@
  */
 
 import { getPrisma }       from "@/lib/db/prisma";
+import type { GraphViewerScope } from "@/lib/knowledge-graph/visibility";
+import { loadVisibleCaseRows } from "./case-visibility";
 import type { KnowledgeContext, ArticleRecord, ProcedureRecord, FailureModeRecord, CaseRecord } from "./types";
 import { _rowToProc, _rowToCase, _rowToFM } from "./failures";
 
@@ -27,6 +29,8 @@ function rowToArticleShort(r: Record<string, unknown>): Pick<ArticleRecord, "id"
 export async function getKnowledgeContext(
   organizationId: string,
   assetId:        string,
+  /** RV-01: open cases go through the shared case visibility policy. `null` ⇒ no cases (fail closed). */
+  scope:          GraphViewerScope | null,
 ): Promise<KnowledgeContext> {
   const empty: KnowledgeContext = {
     assetId,
@@ -75,12 +79,13 @@ export async function getKnowledgeContext(
           })
         : Promise.resolve([]),
 
-      // Open cases linked to this asset (direct lookup, not via AssetKnowledgeLink)
-      (d.industrialEngineeringCase as AnyModel).findMany({
-        where:   { organizationId, assetId, status: { in: ["open", "resolved"] } },
-        orderBy: [{ severity: "desc" }, { updatedAt: "desc" }],
-        take:    10,
-      }),
+      // Open cases linked to this asset (direct lookup, not via AssetKnowledgeLink), visible cases only
+      scope !== null && scope.organizationId === organizationId
+        ? Promise.all([
+            loadVisibleCaseRows(d, scope, { assetId, status: "open", limit: 10 }),
+            loadVisibleCaseRows(d, scope, { assetId, status: "resolved", limit: 10 }),
+          ]).then(([open, resolved]) => [...open, ...resolved].slice(0, 10))
+        : Promise.resolve([] as Record<string, unknown>[]),
     ]);
 
     return {

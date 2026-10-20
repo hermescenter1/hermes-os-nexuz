@@ -27,11 +27,14 @@ import { listAssets }               from "@/lib/industrial/assets";
 import { detectDataQualityWarnings } from "@/lib/digital-twin/analytics";
 import { getAssetGraph }            from "@/lib/digital-twin/graph";
 import { escapeUntrustedData }      from "./safety";
+import { effectiveSiteIds, type CopilotScope } from "./scope";
 import type { CopilotInsightRecord, CopilotInsightType, CopilotInsightSeverity } from "./types";
 
 // Named threshold constants with units
 export const AVAILABILITY_LOW_PCT = 80;    // % availability below this = "abnormal_kpi"
 export const ALARM_RATE_HIGH      = 0.25;  // fraction (25%) alarm rate above this = "frequent_alarms"
+/** Server ceiling of assets examined per insight run (newest first, `id` tie-break). Not client-controllable. */
+export const INSIGHT_MAX_ASSETS   = 50;
 
 type InsightModel = {
   create:   (a: unknown) => Promise<Record<string, unknown>>;
@@ -62,19 +65,31 @@ async function persistInsight(
   };
 }
 
+/**
+ * Slice C (IR-03): runs over the sites of a server-built {@link CopilotScope} only — the asset's site, the
+ * selected site, or the actor's readable ACTIVE sites. It used to list every asset of the organisation when
+ * no site was given, and to accept any site id the client sent.
+ */
 export async function generateInsights(
-  organizationId: string,
-  siteId?:        string,
+  scope: CopilotScope,
 ): Promise<CopilotInsightRecord[]> {
+  const organizationId = scope.organizationId;
+  const sites          = effectiveSiteIds(scope).filter((s) => scope.siteIds.includes(s));
+  if (sites.length === 0) return [];
+  // The Digital Twin section needs an explicitly selected, authorised site.
+  const siteId = scope.siteId !== null && scope.siteIds.includes(scope.siteId) ? scope.siteId : undefined;
+
   const prisma = await getPrisma();
   if (!prisma) return [];
 
   const db       = prisma as unknown as Record<string, unknown>;
-  const assets   = await listAssets(organizationId, siteId ? { siteId } : undefined);
+  // Slice D2: bounded IN the query (it used to read every matching asset and slice to 50 in memory).
+  // Only assets of the scope's sites are read, so a hidden asset can never take a visible one's place.
+  const assets   = await listAssets(organizationId, { allowedSiteIds: sites, limit: INSIGHT_MAX_ASSETS });
   const range24h = getPeriodRange("last24Hours");
   const results: CopilotInsightRecord[] = [];
 
-  for (const asset of assets.slice(0, 50)) {  // cap at 50 assets per run
+  for (const asset of assets) {
     const assetName = escapeUntrustedData(asset.name);
 
     // ── stale telemetry ────────────────────────────────────────────────────
@@ -172,7 +187,7 @@ export async function generateInsights(
 
   // ── disconnected assets (Digital Twin) ────────────────────────────────────
   if (siteId) {
-    const graph = await getAssetGraph(organizationId, siteId);
+    const graph = await getAssetGraph(organizationId, siteId, sites);
     if (graph) {
       const knownAssetIds = new Set(assets.map((a) => a.id));
       const warnings      = detectDataQualityWarnings(graph, knownAssetIds);

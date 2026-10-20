@@ -13,9 +13,16 @@
  *
  * STALENESS:
  *   getLatestBenchmark() returns stale:true if computedAt > SNAPSHOT_STALE_HOURS old.
+ *
+ * SHARED SNAPSHOT (slice D1, MS-02). The benchmark is ONE organisation-wide snapshot that every reader
+ * projects through its own scope (./projection.ts). It is therefore always computed over EVERY active site
+ * of the organisation, derived here, server side — never over a caller's site list — and only a caller that
+ * may read every active site (OWNER/ADMIN, enforced by the route) may run it. A RUNNING or FAILED run is
+ * never "the latest"; the SUCCESS status and every child row are written in one transaction.
  */
 
 import { getPrisma }    from "@/lib/db/prisma";
+import { logInfraFailure } from "@/lib/logger/security-events";
 import { compareSites }  from "./comparison";
 import {
   KPI_PERIOD,
@@ -76,17 +83,17 @@ export async function getLatestBenchmark(orgId: string): Promise<BenchmarkRecord
   const db = prisma as unknown as Record<string, unknown>;
   const r = await (db.multiSiteBenchmark as unknown as BMModel).findFirst({
     where:   { organizationId: orgId, status: "SUCCESS" },
-    orderBy: { computedAt: "desc" },
+    orderBy: [{ computedAt: "desc" }, { id: "desc" }],
   });
   return r ? bmRow(r) : null;
 }
 
 /**
- * Phase 43: allowedSiteIds scopes the benchmark to the user's accessible sites.
- * Pass undefined only if caller has verified OWNER/ADMIN implicit access.
- * Pass [] for a user with no site access — returns a FAILED benchmark immediately.
+ * Computes and persists the organisation's shared benchmark over EVERY active site of the organisation.
+ * There is deliberately no site parameter: a partial run must never become the snapshot every reader sees.
+ * The caller must already have verified that the actor may read every active site (OWNER/ADMIN).
  */
-export async function runBenchmark(orgId: string, allowedSiteIds?: string[]): Promise<BenchmarkRecord> {
+export async function runBenchmark(orgId: string): Promise<BenchmarkRecord> {
   if (inFlight.has(orgId)) {
     throw Object.assign(new Error("Benchmark already in progress"), { code: "BENCHMARK_IN_FLIGHT" });
   }
@@ -102,21 +109,33 @@ export async function runBenchmark(orgId: string, allowedSiteIds?: string[]): Pr
 
   const startedAt = new Date();
 
-  // Create RUNNING record
-  const bmCreated = await bmModel.create({
-    data: {
-      organizationId: orgId,
-      status:         "RUNNING",
-      periodLabel:    KPI_PERIOD,
-      siteCount:      0,
-      summary:        {},
-      startedAt,
-    },
-  });
+  // Create RUNNING record. A failure here must release the per-org flag, or every later run is refused.
+  let bmCreated: Record<string, unknown>;
+  try {
+    bmCreated = await bmModel.create({
+      data: {
+        organizationId: orgId,
+        status:         "RUNNING",
+        periodLabel:    KPI_PERIOD,
+        siteCount:      0,
+        summary:        {},
+        startedAt,
+      },
+    });
+  } catch (err) {
+    inFlight.delete(orgId);
+    throw err;
+  }
   const bmId = bmCreated.id as string;
+  let committed = false;
+  // Captured when the child-row transaction commits, so a post-commit failure can still be answered
+  // with the values that were actually written.
+  let committedSiteCount = 0;
+  let committedSummary: unknown = {};
+  let committedAt = new Date();
 
   try {
-    const result = await compareSites(orgId, allowedSiteIds);
+    const result = await compareSites(orgId);
     if (!result) {
       await bmModel.update({
         where: { id: bmId },
@@ -209,10 +228,34 @@ export async function runBenchmark(orgId: string, allowedSiteIds?: string[]): Pr
         }
       });
 
+    // COMMITTED: from here on the run IS a success. Independent review S3-04: a failure of the read-back
+    // below used to fall into the catch and relabel the committed SUCCESS row as FAILED, losing the
+    // snapshot every reader uses. The post-commit failure is reported separately (logged, and surfaced to
+    // the caller by rethrowing only AFTER the state is left correct) and never rewrites the run state.
     inFlight.delete(orgId);
+    committed = true;
+    committedSiteCount = result.siteIds.length;
+    committedSummary = result.summary;
+    committedAt = completedAt;
+    // The committed row, or — when it cannot be read back — the values just written. Either way the run
+    // stays SUCCESS. The single guard that protects the committed state is `if (committed)` in the catch
+    // below; this read is deliberately NOT wrapped in its own catch, so that one guard is the control and
+    // a test can exercise it.
     const r = await bmModel.findFirst({ where: { id: bmId } });
-    return bmRow(r!);
+    return bmRow(r ?? {
+      id: bmId, organizationId: orgId, status: "SUCCESS", siteCount: result.siteIds.length,
+      summary: result.summary, errorMessage: null, startedAt, completedAt, computedAt: completedAt,
+    });
   } catch (err) {
+    if (committed) {
+      // POST-COMMIT. The run IS a success and its state must not be rewritten (independent review
+      // S3-04). The failure is reported on its own channel and the caller gets the committed result.
+      logInfraFailure("database", "multi_site.benchmark_post_commit", err);
+      return bmRow({
+        id: bmId, organizationId: orgId, status: "SUCCESS", siteCount: committedSiteCount,
+        summary: committedSummary, errorMessage: null, startedAt, completedAt: committedAt, computedAt: committedAt,
+      });
+    }
     const msg = err instanceof Error ? err.message : String(err);
     await bmModel.update({
       where: { id: bmId },

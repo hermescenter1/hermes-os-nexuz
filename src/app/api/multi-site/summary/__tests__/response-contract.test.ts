@@ -27,7 +27,7 @@ const MOCKED = [
   "@/lib/multi-site/summary",
   "@/lib/audit/audit-service",
   "@/lib/api/meter",
-  "@/lib/site/context",
+  "@/lib/multi-site/scope",
 ];
 
 const FULL_SUMMARY = {
@@ -62,8 +62,9 @@ function mockChain(over: {
   vi.doMock("@/lib/org/rbac", () => ({
     requirePermission: () => over.perm ?? { ok: true },
   }));
-  vi.doMock("@/lib/site/context", () => ({
-    getAllowedSiteIds: async () => over.sites ?? ["site_1", "site_2", "site_3"],
+  // The route's viewer scope (official allowed sites ∩ ACTIVE sites) is a separate, unit-tested module.
+  vi.doMock("@/lib/multi-site/scope", () => ({
+    resolveMultiSiteScope: async () => over.sites ?? ["site_1", "site_2", "site_3"],
   }));
   vi.doMock("@/lib/multi-site/summary", () => ({
     getEnterpriseIndustrialSummary: async () => FULL_SUMMARY,

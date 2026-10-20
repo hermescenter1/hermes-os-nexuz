@@ -5,6 +5,9 @@
  * coverageScore = (assetsWithLinks / assetCount) × 100.
  * No snapshot for this endpoint — data is cheap to compute live.
  *
+ * Scope (slice D1, MS-04): the viewer's readable ACTIVE sites only, and a case link counts only when the
+ * case is visible to the viewer under the canonical engineering-case policy.
+ *
  * Phase 42 — Multi-Site Industrial Intelligence.
  */
 
@@ -16,7 +19,8 @@ import { getSiteKnowledgeCoverage }           from "@/lib/multi-site/knowledge";
 import { getPrisma }                          from "@/lib/db/prisma";
 import { recordAuditEvent, MULTI_SITE_AUDIT } from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }               from "@/lib/api/meter";
-import { getAllowedSiteIds }                   from "@/lib/site/context";
+import { resolveMultiSiteScope }              from "@/lib/multi-site/scope";
+import { createGraphViewerScope, hasOrganizationLevelAccess } from "@/lib/knowledge-graph/visibility";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,21 +44,17 @@ export async function GET(req: NextRequest) {
   if (!prisma) return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
   const db = prisma as unknown as Record<string, unknown>;
 
-  // Phase 43: scope to user's accessible sites
-  const allowedSiteIds = member.ctx.userId
-    ? await getAllowedSiteIds(member.ctx.userId, ctx.orgId)
-    : undefined;
-
-  if (allowedSiteIds !== undefined && allowedSiteIds.length === 0) {
+  // The viewer's scope: official allowed sites ∩ ACTIVE sites of THIS organisation (server derived).
+  const allowedSiteIds = await resolveMultiSiteScope(member.ctx.userId, ctx.orgId);
+  if (allowedSiteIds.length === 0) {
     return NextResponse.json({ sites: [] });
   }
-
-  const siteWhere: Record<string, unknown> = { organizationId: ctx.orgId, status: "ACTIVE" };
-  if (allowedSiteIds) siteWhere.id = { in: allowedSiteIds };
+  // Organisation-level (no site, no asset) cases are visible only to OWNER/ADMIN — the canonical policy.
+  const scope = createGraphViewerScope(ctx.orgId, allowedSiteIds, hasOrganizationLevelAccess(member.ctx.role));
 
   const siteRows = await (db.industrialSite as unknown as SiteModel).findMany({
-    where:   siteWhere,
-    orderBy: { name: "asc" },
+    where:   { organizationId: ctx.orgId, status: "ACTIVE", id: { in: allowedSiteIds } },
+    orderBy: [{ name: "asc" }, { id: "asc" }],
     select:  { id: true, name: true },
   });
 
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
     siteAssetMap.get(sid)?.push(a.id as string);
   }
 
-  const coverage = await getSiteKnowledgeCoverage(ctx.orgId, siteMap, siteAssetMap);
+  const coverage = await getSiteKnowledgeCoverage(scope, siteMap, siteAssetMap);
 
   recordAuditEvent({
     userId:     ctx.userId ?? undefined,
