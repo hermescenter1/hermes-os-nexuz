@@ -392,6 +392,12 @@
       "ownerRole": "DNS/TLS recovery owner"
     },
     {
+      "item": "deploy/nginx/00-observability.conf",
+      "sourceClass": "REPOSITORY_MANAGED",
+      "recoverySource": "Git",
+      "ownerRole": "DNS/TLS recovery owner"
+    },
+    {
       "item": "TLS certificates (/etc/letsencrypt)",
       "sourceClass": "REGENERATED",
       "recoverySource": "Certbot re-issue (ACME) — deploy/ssl/README.md",
@@ -488,5 +494,5 @@
       "ownerRole": "Upload recovery owner"
     }
   ],
-  "inventorySha256": "ae6b799f8485c86fa110758f974d2bf7b37a7a5b000bd789341ce176fc83be8a"
+  "inventorySha256": "f50699597707a8cc6535956feb7e5a55af80648c18adc3e50b22003196313431"
 }

@@ -15,7 +15,16 @@ async function model(): Promise<NotificationModel | null> {
   return db ? ((db as Record<string, unknown>).notification as NotificationModel) : null;
 }
 
-function rowToNotification(r: Record<string, unknown>): Notification {
+/**
+ * Map a persisted row to the shape every consumer sees.
+ *
+ * EXPORTED so a caller that must create a notification inside its OWN
+ * transaction — the executive delivery ledger, which writes the notification
+ * and the record of who was told atomically — can still broadcast exactly
+ * what the service broadcasts, instead of keeping a second mapper that
+ * drifts from this one.
+ */
+export function rowToNotification(r: Record<string, unknown>): Notification {
   return {
     id:        String(r.id),
     userId:    String(r.userId),

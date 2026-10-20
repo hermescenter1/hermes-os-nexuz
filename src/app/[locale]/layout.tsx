@@ -49,7 +49,6 @@ export async function generateMetadata({
   const t  = await getTranslations({ locale, namespace: "meta" });
   const title       = t("title");
   const description = t("description");
-  const keywords    = t.raw("keywords") as string | undefined;
 
   const canonicalUrl  = `${BASE_URL}/${locale}`;
   // hreflang alternates — one entry per ACTIVE locale plus x-default.
@@ -70,7 +69,8 @@ export async function generateMetadata({
       template: `%s | ${SITE_NAME}`,
     },
     description,
-    ...(keywords ? { keywords } : {}),
+    // `meta keywords` is deliberately not emitted: search engines ignore it,
+    // while real query relevance must be established by visible, useful copy.
     // PHASE 113 — author/creator/publisher are all the COMPANY, read from the
     // one canonical constant. They previously carried a hard-coded short form
     // of the retired company name, and `publisher` carried the PRODUCT name,
