@@ -10,6 +10,7 @@ import { JsonLd }                 from "@/components/seo/JsonLd";
 import { BASE_URL }               from "@/lib/seo/config";
 import { articleLanguageForLocale, langTagForArticleLanguage, localeForArticleLanguage } from "@/lib/articles/locale";
 import { getPublicArticleLanguagesBySlug, resolveArticleContentLocales } from "@/lib/articles/seo";
+import { articleRedirectPath } from "@/lib/articles/slug";
 import type { ArticleDetail }     from "@/lib/articles/types";
 
 /**
@@ -139,7 +140,7 @@ export default async function ArticleDetailPage({
   if (requestedLanguage && article.language !== requestedLanguage) {
     const servedLocale = localeForArticleLanguage(article.language);
     if (!servedLocale) notFound();
-    permanentRedirect(`/${servedLocale}/articles/${article.slug}`);
+    permanentRedirect(articleRedirectPath(servedLocale, article.slug));
   }
 
   // Do not spend a feed query on a request that is about to redirect.

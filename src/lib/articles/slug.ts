@@ -68,3 +68,18 @@ export function normalizeArticleSlug(raw: unknown): string | null {
 
   return value;
 }
+
+
+/**
+ * Build the redirect target for a persisted article slug.
+ *
+ * `permanentRedirect()` accepts a URL string, not a Next.js `Link` object. A
+ * persisted Persian slug can legally contain characters such as `؛` and `،`;
+ * passing those raw characters to the redirect primitive made locale-fallback
+ * requests fail with a 500 in the deployed runtime. Encode the path *segment*
+ * exactly once here. The database stores decoded NFC text, so callers must
+ * never feed this helper an already-encoded route parameter.
+ */
+export function articleRedirectPath(locale: string, persistedSlug: string): string {
+  return `/${locale}/articles/${encodeURIComponent(persistedSlug)}`;
+}
