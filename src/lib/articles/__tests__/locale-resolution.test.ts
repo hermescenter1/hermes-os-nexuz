@@ -108,6 +108,7 @@ describe("the detail route resolves by locale, with a legacy fallback", () => {
     expect(db).toContain("row ??= await articleModel.findFirst({ where: { slug: lookupSlug }, include })");
     expect(page).toContain("article.language !== requestedLanguage");
     expect(page).toContain("localeForArticleLanguage(article.language)");
+    expect(page).toContain("articleRedirectPath(servedLocale, article.slug)");
     expect(page).toContain("permanentRedirect");
   });
 
