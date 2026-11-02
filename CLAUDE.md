@@ -50,6 +50,10 @@ Do not introduce a new framework, database, ORM, authentication system,
 
 state-management library or UI framework unless explicitly requested.
 
+## Target Architecture
+
+برای تصمیم‌های معماری و ادامهٔ فازهای هرمس، بخش مرتبط [HERMES-TARGET-ARCHITECTURE.md](docs/architecture/HERMES-TARGET-ARCHITECTURE.md) و نقشهٔ راه معتبر را بررسی کن. توسعه به‌صورت مرحله‌ای و طبق درخواست مالک انجام می‌شود. تعارض معماری را پیش از تغییر گزارش کن.
+
 ## Communication
 
 - Respond to the project owner in Persian.
