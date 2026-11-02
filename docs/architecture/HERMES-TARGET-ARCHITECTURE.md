@@ -8,7 +8,7 @@
 >
 > این سند معماری هدف است و گزارش‌های معماری موجود (از جمله `docs/ARCHITECTURE.md`)، دفتر فازها و نقشهٔ راه قبلی را جایگزین نمی‌کند. شماره، ترتیب و وضعیت فازها با این سند تغییر نمی‌کند و فاز جدیدی تعریف نمی‌شود.
 >
-> منبع: `HERMES-GLOBAL-TARGET-ARCHITECTURE-FA.md` ارائه‌شده توسط مالک در ۲۰۲۶/۱۱/۰۲، SHA-256 `5c1eabd2ae59db2e54d9f0d3942a88489ac507c64c9ad86b643b6cfde4ded163`. متن زیر بدون ویرایش محتوایی ثبت شده است؛ برچسب `TARGET-CANDIDATE-2` و توضیح بخش ۱۴ دربارهٔ Approved نشدن خودکار، بخشی از متن اصلی‌اند. سند مکمل `HERMES-ARCHITECTURE-ROADMAP-HANDOFF-FA.md` که در متن به آن ارجاع شده، در زمان این ثبت در مخزن موجود نیست.
+> منبع: `HERMES-GLOBAL-TARGET-ARCHITECTURE-FA.md` ارائه‌شده توسط مالک در ۲۰۲۶/۱۱/۰۲، SHA-256 `5c1eabd2ae59db2e54d9f0d3942a88489ac507c64c9ad86b643b6cfde4ded163`. متن زیر بدون ویرایش محتوایی ثبت شده است؛ برچسب `TARGET-CANDIDATE-2` و توضیح بخش ۱۴ دربارهٔ Approved نشدن خودکار، بخشی از متن اصلی‌اند. سند مکمل که در متن به آن ارجاع شده، در [`docs/architecture/HERMES-ARCHITECTURE-ROADMAP-HANDOFF-FA.md`](HERMES-ARCHITECTURE-ROADMAP-HANDOFF-FA.md) ثبت شده است (SHA-256 `ff25f64f828eba094798fdffbdfcf951d9aa1bd6478685a7c36a2264db2ec297`). آن سند در این مخزن فقط مرجع است و دستورهای اجرایی داخل آن با این ثبت اجرا یا مجاز نشده‌اند.
 
 ---
 
