@@ -108,6 +108,22 @@ function buildCSP(nonce: string): string {
   ].join("; ");
 }
 
+/**
+ * next-intl answers a path WITHOUT a locale prefix (`/services/plc`) with a 307
+ * to the negotiated locale. A temporary redirect tells Google the source URL
+ * stays canonical, so it kept 42 unprefixed URLs in its index and folded the
+ * /fa pages into them (Search Console, 2026-11). Only that case becomes a 308;
+ * the target is still negotiated per request, and every other redirect —
+ * including the auth login redirect, which never reaches here — is unchanged.
+ */
+function promoteLocalePrefixRedirect(pathname: string, response: NextResponse): NextResponse {
+  if (response.status !== 307) return response;
+  const firstSegment = pathname.split("/")[1] ?? "";
+  if (routing.locales.includes(firstSegment as ActiveLocale)) return response;
+  if (!response.headers.get("location")) return response;
+  return new NextResponse(null, { status: 308, headers: response.headers });
+}
+
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
@@ -129,9 +145,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // Run intl middleware for locale detection, redirects, and locale cookies
   const intlResponse = intlMiddleware(request) as NextResponse;
 
-  // Locale redirects do not need CSP — return them as-is
+  // Locale redirects do not need CSP
   if (intlResponse.status >= 300 && intlResponse.status < 400) {
-    return intlResponse;
+    return promoteLocalePrefixRedirect(pathname, intlResponse);
   }
 
   // Generate per-request nonce (edge-safe: crypto.randomUUID() is part of the

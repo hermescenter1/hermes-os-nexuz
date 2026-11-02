@@ -614,12 +614,14 @@ export async function getUserArticles(userId: string): Promise<ArticleListItem[]
 export async function incrementArticleViewCount(id: string): Promise<void> {
   const db = await getDb();
   if (!db) return;
+  // A page view is not an edit. `Article.updatedAt` is `@updatedAt`, so a
+  // Prisma `update` stamped the row as modified on EVERY view — and updatedAt
+  // feeds sitemap <lastmod>, Article.dateModified and article:modified_time,
+  // which then claimed every read article had changed "today". `@updatedAt` is
+  // applied by the client, not the database, so a raw increment leaves it alone.
   await (db as never as {
-    article: { update: (a: unknown) => Promise<unknown> };
-  }).article.update({
-    where: { id },
-    data:  { viewCount: { increment: 1 } },
-  });
+    $executeRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<number>;
+  }).$executeRaw`UPDATE "Article" SET "viewCount" = "viewCount" + 1 WHERE "id" = ${id}`;
 }
 
 // ── Moderation helpers ────────────────────────────────────────────────────────
