@@ -553,16 +553,26 @@ export async function getTagBySlug(slug: string): Promise<ArticleTag | null> {
 
 // ── Author articles ───────────────────────────────────────────────────────────
 
-export async function getAuthorArticles(handle: string): Promise<ArticleListItem[]> {
+/**
+ * An author's published articles in the language the given locale reads.
+ *
+ * Scoped strictly — no language fallback. The profile links every row as
+ * `/{locale}/articles/{slug}`, so an unscoped list published one link per
+ * edition under the WRONG prefix: Google crawled /en and /de URLs of Persian
+ * articles (each a redirect, or a 500 for a Persian slug) and listed them as
+ * "Page with redirect" and "Alternate page with proper canonical tag".
+ */
+export async function getAuthorArticles(handle: string, locale?: string): Promise<ArticleListItem[]> {
   const db = await getDb();
   if (db) {
     try {
       const rows = await (db as never as {
         article: { findMany: (a: unknown) => Promise<unknown[]> };
       }).article.findMany({
-        where: { status: "PUBLISHED", visibility: "PUBLIC", author: { handle } },
+        where: { status: "PUBLISHED", visibility: "PUBLIC", author: { handle }, ...languageClause(locale) },
         include: { author: true, category: true, tags: { include: { tag: true } } },
-        orderBy: { publishedAt: "desc" },
+        orderBy: [{ publishedAt: "desc" }, { id: "asc" }],
+        take: LIST_MAX,
       });
       return rows.map(r => {
         const d = deepTs(r) as Record<string, unknown>;

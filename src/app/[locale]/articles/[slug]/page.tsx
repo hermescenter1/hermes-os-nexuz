@@ -143,7 +143,9 @@ export default async function ArticleDetailPage({
   if (requestedLanguage && article.language !== requestedLanguage) {
     const servedLocale = localeForArticleLanguage(article.language);
     if (!servedLocale) notFound();
-    permanentRedirect(`/${servedLocale}/articles/${article.slug}`);
+    // Encoded: a Persian slug is not a valid HTTP header value, so the raw
+    // string made the Location header throw and the request answer 500.
+    permanentRedirect(`/${servedLocale}/articles/${encodeURIComponent(article.slug)}`);
   }
 
   // Do not spend a feed query on a request that is about to redirect.
