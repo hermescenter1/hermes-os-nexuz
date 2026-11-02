@@ -50,6 +50,14 @@ describe("getAuthorArticles", () => {
     expect(calls).toHaveLength(1);
   });
 
+  it("reads the list projection, never full article bodies", async () => {
+    await getAuthorArticles("editorial", "en");
+    expect(calls[0].include).toBeUndefined();
+    const select = calls[0].select as Record<string, unknown>;
+    expect(select.excerpt).toBe(true);
+    expect(select).not.toHaveProperty("content");
+  });
+
   it("is bounded and deterministically ordered", async () => {
     await getAuthorArticles("editorial", "en");
     expect(calls[0].take).toBeGreaterThan(0);

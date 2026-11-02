@@ -570,7 +570,10 @@ export async function getAuthorArticles(handle: string, locale?: string): Promis
         article: { findMany: (a: unknown) => Promise<unknown[]> };
       }).article.findMany({
         where: { status: "PUBLISHED", visibility: "PUBLIC", author: { handle }, ...languageClause(locale) },
-        include: { author: true, category: true, tags: { include: { tag: true } } },
+        // The list projection, never `include`: `include` loaded every full
+        // article body, and the profile serialised them all to the client —
+        // 5 MB of HTML on the editorial profile (live audit, 2026-11-02).
+        select: LIST_SELECT,
         orderBy: [{ publishedAt: "desc" }, { id: "asc" }],
         take: LIST_MAX,
       });
