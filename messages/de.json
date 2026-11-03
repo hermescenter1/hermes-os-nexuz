@@ -4793,6 +4793,12 @@
       "searchLabel": "Journal durchsuchen",
       "results": "{count} Ergebnisse",
       "entry": "Eintrag"
+    },
+    "pagination": {
+      "label": "Seiten des Artikelarchivs",
+      "previous": "Vorherige Seite",
+      "next": "Nächste Seite",
+      "page": "Seite {page}"
     }
   },
   "journalWriter": {

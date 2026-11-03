@@ -213,6 +213,71 @@ export async function getArticleFeed(locale?: string): Promise<ArticleFeed> {
   };
 }
 
+// ── Paginated archive ─────────────────────────────────────────────────────────
+
+/** Articles per page of the archive at `/{locale}/articles/latest`. */
+export const ARCHIVE_PAGE_SIZE = 24;
+
+export interface ArticleArchivePage {
+  items: ArticleListItem[];
+  page: number;
+  totalPages: number;
+  total: number;
+}
+
+/**
+ * One page of every published, public article in the locale's language,
+ * newest first.
+ *
+ * The feed above caps "latest" at 12, and nothing paginated past it, so most
+ * of the corpus was reachable only through the sitemap (live audit,
+ * 2026-11-03: 38 of 58 articles linked from no listing page). This is the
+ * crawlable archive behind it.
+ *
+ * Scoped to the locale's language with NO fallback: an /en archive listing
+ * Persian editions links them under the wrong prefix — the same cross-locale
+ * leak `getAuthorArticles` had. `id` breaks `publishedAt` ties so page
+ * boundaries are stable.
+ *
+ * Returns `null` when the database is unavailable or the read fails, so the
+ * caller can tell an outage from an empty archive — a page past the end is a
+ * 404, an outage must not be.
+ */
+export async function getArticleArchivePage(
+  locale: string,
+  page: number,
+): Promise<ArticleArchivePage | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const articleModel = (db as never as {
+      article: {
+        findMany: (a: unknown) => Promise<unknown[]>;
+        count: (a: unknown) => Promise<number>;
+      };
+    }).article;
+    const where = { status: "PUBLISHED", visibility: "PUBLIC", ...languageClause(locale) };
+    const [total, rows] = await Promise.all([
+      articleModel.count({ where }),
+      articleModel.findMany({
+        where,
+        select: LIST_SELECT,
+        orderBy: [{ publishedAt: "desc" }, { id: "asc" }],
+        skip: (page - 1) * ARCHIVE_PAGE_SIZE,
+        take: ARCHIVE_PAGE_SIZE,
+      }),
+    ]);
+    return {
+      items: rows.map(toListItem),
+      page,
+      total,
+      totalPages: Math.ceil(total / ARCHIVE_PAGE_SIZE),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function getPublicArticles(filters: ArticleFilters = {}): Promise<ArticleListItem[]> {
   const db = await getDb();
   if (db) {

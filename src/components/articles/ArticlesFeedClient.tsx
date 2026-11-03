@@ -3,9 +3,10 @@
 import { useState, useMemo } from "react";
 import Link                  from "next/link";
 import { usePathname }       from "next/navigation";
-import { useTranslations }   from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ArticleListItem, ArticleAuthorProfile, ArticleCategory, ArticleFeed } from "@/lib/articles/types";
-import { formatDate } from "@/lib/i18n/format";
+import { archivePageHref } from "@/lib/articles/archive-page";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
 
 // ── Persian content overlay map (slug → FA title/subtitle/excerpt) ───────────
 // NOTE: This is localized ARTICLE CONTENT for seed/mock articles (not UI chrome),
@@ -537,18 +538,82 @@ function ViewHeader({ view, articleCount, isFa }: {
   );
 }
 
+// ── Archive pagination ────────────────────────────────────────────────────────
+
+export interface ArchivePagination {
+  page: number;
+  totalPages: number;
+  total: number;
+  /** Locale-prefixed archive path, e.g. "/de/articles/latest". */
+  basePath: string;
+}
+
+/** Page numbers to link: the first, the last and two either side of the current one. */
+function pageWindow(page: number, totalPages: number): number[] {
+  const pages = new Set<number>([1, totalPages]);
+  for (let n = page - 2; n <= page + 2; n++) {
+    if (n >= 1 && n <= totalPages) pages.add(n);
+  }
+  return [...pages].sort((a, b) => a - b);
+}
+
+/**
+ * Server-rendered `<a href>` links, not buttons: the archive pages exist so
+ * crawlers can reach every article, and only real links are followed.
+ */
+function ArchivePaginationNav({ page, totalPages, basePath, locale }: ArchivePagination & { locale: string }) {
+  const t = useTranslations("journal.pagination");
+  if (totalPages <= 1) return null;
+  const chip = "text-xs px-3.5 py-1.5 rounded-full border transition-all font-mono";
+  const idle = `${chip} border-line/60 text-muted hover:border-signal/30 hover:text-ink`;
+  const pages = pageWindow(page, totalPages);
+
+  return (
+    <nav aria-label={t("label")} className="mt-10 flex flex-wrap items-center justify-center gap-2">
+      {page > 1 && (
+        <Link href={archivePageHref(basePath, page - 1)} rel="prev" className={idle}>
+          {t("previous")}
+        </Link>
+      )}
+      {pages.map((n, i) => (
+        <span key={n} className="contents">
+          {i > 0 && n - pages[i - 1] > 1 && <span className="text-metadata text-xs" aria-hidden="true">…</span>}
+          {n === page ? (
+            <span aria-current="page" className={`${chip} border-signal text-signal bg-signal/8 font-semibold`}>
+              {formatNumber(n, locale)}
+            </span>
+          ) : (
+            <Link href={archivePageHref(basePath, n)} className={idle} aria-label={t("page", { page: n })}>
+              {formatNumber(n, locale)}
+            </Link>
+          )}
+        </span>
+      ))}
+      {page < totalPages && (
+        <Link href={archivePageHref(basePath, page + 1)} rel="next" className={idle}>
+          {t("next")}
+        </Link>
+      )}
+    </nav>
+  );
+}
+
 // ── Main Feed Component ───────────────────────────────────────────────────────
 
 interface Props {
   feed: ArticleFeed;
   view?: "feed" | "trending" | "latest" | "editors-picks" | "case-studies";
+  /** Present only on the paginated archive (`/articles/latest`). */
+  pagination?: ArchivePagination;
 }
 
-export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
+export function ArticlesFeedClient({ feed, view = "feed", pagination }: Props) {
   const t = useTranslations("journal");
   const pathname = usePathname();
-  const isFa   = pathname.startsWith("/fa");
-  const locale = isFa ? "fa" : "en";
+  // The request locale, not a "/fa or else en" guess from the path: that guess
+  // sent every German listing's links to /en.
+  const locale = useLocale();
+  const isFa   = locale === "fa";
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("ALL");
 
@@ -654,7 +719,7 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
 
       {/* View header (sub-views) */}
       {view !== "feed" && (
-        <ViewHeader view={view} articleCount={articles.length} isFa={isFa} />
+        <ViewHeader view={view} articleCount={pagination?.total ?? articles.length} isFa={isFa} />
       )}
 
       <div className="max-w-[1400px] mx-auto px-6 py-8">
@@ -731,6 +796,8 @@ export function ArticlesFeedClient({ feed, view = "feed" }: Props) {
                 {articles.map(a => <ArticleCard key={a.id} article={a} locale={locale} isFa={isFa} />)}
               </div>
             )}
+
+            {pagination && <ArchivePaginationNav {...pagination} locale={locale} />}
           </div>
 
           {/* Sidebar (feed view only) */}

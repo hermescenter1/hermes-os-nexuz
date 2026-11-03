@@ -147,7 +147,8 @@ describe("list reads never load article bodies", () => {
     // An unbounded findMany over a growing public corpus is a latent full scan.
     expect(db).toContain("const LIST_MAX");
     const listingReads = db.match(/select: LIST_SELECT/g) ?? [];
-    const takes = db.match(/take: (LIST_MAX|Math\.min\()/g) ?? [];
+    // ARCHIVE_PAGE_SIZE bounds the paginated archive read (one page per query).
+    const takes = db.match(/take: (LIST_MAX|ARCHIVE_PAGE_SIZE|Math\.min\()/g) ?? [];
     expect(listingReads.length).toBeGreaterThan(0);
     expect(takes.length).toBeGreaterThanOrEqual(listingReads.length - 1); // getPublicArticles uses a clamped limit
   });

@@ -4793,6 +4793,12 @@
       "searchLabel": "جست‌وجو در ژورنال",
       "results": "{count} نتیجه",
       "entry": "مدخل"
+    },
+    "pagination": {
+      "label": "صفحه‌های آرشیو مقالات",
+      "previous": "صفحهٔ قبل",
+      "next": "صفحهٔ بعد",
+      "page": "صفحهٔ {page}"
     }
   },
   "journalWriter": {
