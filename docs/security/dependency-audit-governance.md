@@ -319,3 +319,72 @@ was touched in this lane.
   does **not** prove a real TLS handshake against a real SMTP server. There is no
   socket-level SMTP integration test in this repository, and that gap is not
   closed here.
+
+---
+
+## 9. Addendum 2026-11-02 — the braces advisory was withdrawn; the register is empty
+
+This section is additive. §1–§8 above describe the state recorded on 2026-10-03
+and are left as written; where they say "seven" accepted findings, read them as
+history.
+
+### What happened
+
+`GHSA-vfj7-8cjw-p6xm` was **withdrawn** from the GitHub Advisory Database on
+2026-10-23 (`withdrawn_at` 2026-10-23T12:53:02Z). From then on `npm audit` no
+longer reported `braces` or any of its six inherited parents, and the gate did
+exactly what §5 detail 3 says it must: all seven entries failed as
+`STALE_OR_ORPHANED_EXCEPTION`. They also reached their expiry on 2026-11-02.
+Renewing them was not an option — an entry that matches no live finding fails
+whatever its date.
+
+**Decision (owner, 2026-11-02): delete all seven entries.** The register
+`docs/security/dependency-audit-exceptions.json` now holds `"exceptions": []`.
+
+### What this is not
+
+The seven findings are **NOT fixed**. `braces` 3.0.3, `micromatch` 4.0.8,
+`chokidar` 3.6.0, `fast-glob` 3.3.1/3.3.3, `tailwindcss` 3.4.17,
+`@next/eslint-plugin-next` 15.5.19 and `eslint-config-next` 15.5.19 are unchanged.
+They left the audit because the advisory was withdrawn, not because anything
+moved. With the entries deleted there is no dormant authorization left: if a
+real advisory reaches these packages again it is an ordinary `UNAPPROVED_HIGH`.
+The Tailwind 4 and Next ESLint lanes in §7 are no longer driven by this
+advisory, but remain reasonable maintenance work.
+
+### HIGH findings cleared in the same lane
+
+Three new HIGH findings had appeared in the live audit; each was cleared by an
+in-range lockfile update, with `package.json` unchanged:
+
+| package | before | after | graph | advisories |
+|---|---|---|---|---|
+| `zod` | 4.4.3 | **4.6.7** | production | `GHSA-mrhx-c7xc-m3w5` (`<4.6.6`) |
+| `undici` | 7.30.0 | **7.30.1** | dev, via `jsdom` | 8 advisories `<7.30.1` |
+| `vite` (nested in `vitest`) | 8.0.16 | **8.3.5** | dev | `GHSA-587h-7wmj-h5pm` + 4 lower (`<=8.1.5`) |
+
+`npm update vite` does not move the copy nested under `vitest`; it was
+re-resolved by dropping that one lockfile entry and running `npm install`. The
+update carries vite's own `rolldown` 1.0.3 → 1.2.16 and `lightningcss`
+1.32 → 1.33; `rolldown` 1.2.16 no longer publishes a wasm32-wasi binding.
+
+**Result: 0 critical and 0 high in both the production and the full tree, and
+no accepted HIGH.** The gate is now equivalent to zero-HIGH enforcement for as
+long as the register stays empty; the exception mechanism itself is unchanged.
+
+### Evidence and tests
+
+- `docs/security/phase99-dependency-governed-retest-r2.json` — additive revision
+  2 of the governed retest record. Revision 1
+  (`phase99-dependency-governed-retest.json`) is byte-identical and pinned by
+  sha256; R2 accounts for each of its seven acceptances as
+  `STALE_EXCEPTION_DELETED_NOT_FIXED` and lists the three cleared HIGH findings.
+- `scripts/__tests__/phase99-dependency-governed-retest.test.ts` now verifies R2
+  against the live audit, including that the withdrawn advisory and every
+  cleared advisory are absent and that every resolved copy of the cleared
+  packages is at or above its safe boundary.
+- `scripts/__tests__/dependency-audit-gate.test.ts` runs its behavioural tests
+  against a frozen, hash-pinned copy of the 2026-10-03 register
+  (`scripts/__tests__/fixtures/dependency-audit-exceptions.2026-10-03.json`),
+  so every refusal path stays proven; its committed-register section now
+  asserts the register is empty and that a returning braces HIGH is unapproved.
