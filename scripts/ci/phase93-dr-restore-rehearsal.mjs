@@ -8,9 +8,19 @@
  * Point (data-integrity) is exact: not one row is lost or mutated.
  *
  * Mirrors the production scripts' pg_dump/pg_restore flags EXACTLY:
- *   backup  : pg_dump  --format=custom --no-acl --no-owner   (backup-postgres.sh:27-33)
- *   verify  : pg_restore --list                              (verify-backup.sh:22)
- *   restore : DROP DATABASE + CREATE + pg_restore --no-acl --no-owner (restore-postgres.sh)
+ *   backup  : pg_dump  --format=custom --no-acl --no-owner   (backup-postgres.sh)
+ *   verify  : pg_restore --list  < dump                      (verify-backup.sh)
+ *   restore : DROP DATABASE + CREATE + pg_restore --no-acl --no-owner < dump (restore-postgres.sh)
+ *
+ * Client tools. Production runs pg_dump/pg_restore with `docker exec` INSIDE the
+ * pgvector/pgvector:pg16 container, so client and server major versions always
+ * match. When PG_CLIENT_CONTAINER names a container (CI passes the service
+ * container id), this rehearsal does the same: the dump streams over stdout and
+ * the restore reads it on stdin, exactly like the production scripts. Without it
+ * the host's pg_dump/pg_restore are used. Either way the client major version
+ * must equal the server major version (phase93_dr_client_matches_server): a newer
+ * pg_dump writes settings an older server rejects (pg17+ emits
+ * `SET transaction_timeout`, unknown to pg16), and that is not what production runs.
  *
  * Procedure:
  *   1. Create an isolated PRIMARY database; `prisma migrate deploy` → full schema.
@@ -36,7 +46,7 @@
  */
 
 import { execSync, execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { closeSync, mkdtempSync, openSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -53,6 +63,9 @@ if (!MAINT) {
 // Essential tables asserted by scripts/verify-backup.sh — the backup is only
 // considered valid if all four survive the round trip.
 const ESSENTIAL = ["Organization", "User", "IndustrialSite", "IndustrialAsset"];
+
+// Container that provides pg_dump/pg_restore (see the header). Empty = host tools.
+const PG_CLIENT_CONTAINER = process.env.PG_CLIENT_CONTAINER ?? "";
 
 const PRIMARY_DB = "hermes_phase93_dr_primary";
 const RESTORE_DB = "hermes_phase93_dr_restore";
@@ -111,6 +124,40 @@ async function rowCountMap(url) {
   }
 }
 
+// URL the client tool dials. Inside the server's own container the server is on
+// localhost:5432 whatever port the host maps it to.
+function toolUrl(url) {
+  if (!PG_CLIENT_CONTAINER) return url;
+  const u = new URL(url);
+  u.hostname = "localhost";
+  u.port = "5432";
+  return u.toString();
+}
+
+// Run pg_dump/pg_restore on the host or inside PG_CLIENT_CONTAINER. `stdin` and
+// `stdout` are file paths; the dump is always streamed, never a container path.
+function pgTool(tool, args, { stdin, stdout, encoding } = {}) {
+  const [file, argv] = PG_CLIENT_CONTAINER
+    ? ["docker", ["exec", "-i", PG_CLIENT_CONTAINER, tool, ...args]]
+    : [tool, args];
+  const inFd = stdin ? openSync(stdin, "r") : null;
+  const outFd = stdout ? openSync(stdout, "w") : null;
+  try {
+    return execFileSync(file, argv, {
+      encoding,
+      stdio: [inFd ?? "ignore", outFd ?? (encoding ? "pipe" : "inherit"), "inherit"],
+    });
+  } finally {
+    if (inFd !== null) closeSync(inFd);
+    if (outFd !== null) closeSync(outFd);
+  }
+}
+
+function majorOf(versionText) {
+  const m = /\(PostgreSQL\)\s+(\d+)/.exec(versionText);
+  return m ? Number(m[1]) : NaN;
+}
+
 function mapsEqual(a, b) {
   const ak = Object.keys(a).sort();
   const bk = Object.keys(b).sort();
@@ -127,6 +174,23 @@ const DUMP = join(workDir, `hermes_${PRIMARY_DB}.dump`);
 const DAY = 24 * 60 * 60 * 1000;
 
 try {
+  // 0. Client tools must be the server's major version (see the header).
+  {
+    const serverNum = await withAdmin(async (admin) =>
+      Number((await admin.query("SHOW server_version_num")).rows[0].server_version_num),
+    );
+    const serverMajor = Math.floor(serverNum / 10000);
+    const dumpMajor = majorOf(pgTool("pg_dump", ["--version"], { encoding: "utf8" }));
+    const restoreMajor = majorOf(pgTool("pg_restore", ["--version"], { encoding: "utf8" }));
+    console.log(
+      `RESULT phase93_dr_versions=server:${serverMajor},pg_dump:${dumpMajor},pg_restore:${restoreMajor},` +
+        `tools:${PG_CLIENT_CONTAINER ? "container" : "host"}`,
+    );
+    const matches = dumpMajor === serverMajor && restoreMajor === serverMajor;
+    check("phase93_dr_client_matches_server", matches);
+    if (!matches) throw new Error("pg client major version differs from the server");
+  }
+
   // 1. Isolated PRIMARY database with the full, current schema.
   await withAdmin((admin) => recreateDb(admin, PRIMARY_DB));
   execSync("npx --no-install prisma migrate deploy", {
@@ -168,14 +232,12 @@ try {
   check("phase93_dr_snapshot_nonempty", seededAuditBefore >= 4);
 
   // 4. BACKUP — identical flags to scripts/backup-postgres.sh.
-  execFileSync(
-    "pg_dump",
-    [PRIMARY_URL, "--format=custom", "--no-acl", "--no-owner", "-f", DUMP],
-    { stdio: "inherit" },
-  );
+  pgTool("pg_dump", [toolUrl(PRIMARY_URL), "--format=custom", "--no-acl", "--no-owner"], {
+    stdout: DUMP,
+  });
 
   // 5. VERIFY the artifact — identical to scripts/verify-backup.sh (pg_restore --list).
-  const toc = execFileSync("pg_restore", ["--list", DUMP], { encoding: "utf8" });
+  const toc = pgTool("pg_restore", ["--list"], { stdin: DUMP, encoding: "utf8" });
   check(
     "phase93_dr_backup_verifiable",
     ESSENTIAL.every((t) => toc.includes(`TABLE ${t} `) || toc.includes(`TABLE public ${t} `) || toc.includes(` ${t} `)),
@@ -186,11 +248,7 @@ try {
 
   // 7. RESTORE and MEASURE RTO — identical flags to scripts/restore-postgres.sh.
   const t0 = process.hrtime.bigint();
-  execFileSync(
-    "pg_restore",
-    ["--no-acl", "--no-owner", "-d", RESTORE_URL, DUMP],
-    { stdio: "inherit" },
-  );
+  pgTool("pg_restore", ["--no-acl", "--no-owner", "-d", toolUrl(RESTORE_URL)], { stdin: DUMP });
   const rtoMs = Number(process.hrtime.bigint() - t0) / 1e6;
   console.log(`RESULT phase93_dr_rto_ms=${Math.round(rtoMs)}`);
   check("phase93_dr_rto_measured", rtoMs > 0);
@@ -239,7 +297,7 @@ try {
 
   // 11. FRESH-database restore path (restore into a brand-new empty DB).
   await withAdmin((admin) => recreateDb(admin, FRESH_DB));
-  execFileSync("pg_restore", ["--no-acl", "--no-owner", "-d", FRESH_URL, DUMP], { stdio: "inherit" });
+  pgTool("pg_restore", ["--no-acl", "--no-owner", "-d", toolUrl(FRESH_URL)], { stdin: DUMP });
   {
     const c = new pg.Client({ connectionString: FRESH_URL });
     await c.connect();
