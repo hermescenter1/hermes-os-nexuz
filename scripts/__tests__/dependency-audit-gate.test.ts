@@ -13,7 +13,10 @@
  *   2. the child-process boundary — exit codes, signals, spawn errors, timeouts,
  *      truncated output and stderr, none of which may produce a PASS;
  *   3. the committed exception manifest, which must be narrow, dated, owned,
- *      dev-only, one-to-one and free of wildcards or path tricks;
+ *      dev-only, one-to-one and free of wildcards or path tricks — and which
+ *      has been EMPTY since the braces advisory was withdrawn (2026-10-23);
+ *      the behavioural tests therefore run against a frozen, hash-pinned copy
+ *      of the 2026-10-03 register, the last real non-empty one;
  *   4. the wiring — that CI calls the gate rather than deciding from a raw
  *      `npm audit` exit code, and that the gate has not been quietly weakened.
  *
@@ -21,6 +24,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -61,7 +65,16 @@ interface ExceptionManifest {
   [key: string]: unknown;
 }
 
-const MANIFEST = JSON.parse(read(MANIFEST_RELATIVE_PATH)) as ExceptionManifest;
+/**
+ * The behavioural fixture: a byte-for-byte copy of the committed register as it
+ * stood from 2026-10-03 until 2026-11-02 — seven dev-only entries for the braces
+ * chain. It is pinned by hash so it cannot drift into whatever makes a test pass.
+ */
+const FIXTURE_MANIFEST_PATH = "scripts/__tests__/fixtures/dependency-audit-exceptions.2026-10-03.json";
+const FIXTURE_MANIFEST_SHA256 = "8758f2577db9d59d73f973ba6195f09ce40334f4fe346127b20ad54d6b87e5ad";
+const MANIFEST = JSON.parse(read(FIXTURE_MANIFEST_PATH)) as ExceptionManifest;
+/** The register CI actually evaluates. */
+const COMMITTED_MANIFEST = JSON.parse(read(MANIFEST_RELATIVE_PATH)) as ExceptionManifest;
 const TODAY = "2026-10-03";
 
 /** Values that name no real Gregorian date. Most are well-shaped yyyy-mm-dd. */
@@ -502,7 +515,7 @@ describe("paths are corroborated against the installed lockfile graph", () => {
   it("agrees with the REAL committed lockfile for every accepted path", () => {
     const idx = indexLockfile(JSON.parse(read("package-lock.json")));
     expect(idx.ok).toBe(true);
-    for (const e of MANIFEST.exceptions) {
+    for (const e of COMMITTED_MANIFEST.exceptions) {
       for (const p of e.paths) {
         expect(idx.nodes.has(p), `${p} must exist in the installed lockfile graph`).toBe(true);
         expect(idx.nodes.get(p)).toMatchObject({ name: e.package, dev: true });
@@ -946,13 +959,68 @@ describe("the manifest cannot be widened", () => {
 
 describe("the committed manifest is narrow, owned and dated", () => {
   it("validates as written", () => {
+    const v = validateManifest(COMMITTED_MANIFEST);
+    expect(v.errors).toEqual([]);
+    expect(v.ok).toBe(true);
+    expect(COMMITTED_MANIFEST.schemaVersion).toBe(MANIFEST_SCHEMA_VERSION);
+  });
+
+  it("is empty since the braces advisory was withdrawn, so no HIGH is accepted at all", () => {
+    // GHSA-vfj7-8cjw-p6xm was withdrawn on 2026-10-23 and its seven entries were
+    // deleted as stale on 2026-11-02. Adding an entry is a reviewed change to
+    // this assertion, the register and the governed retest record together.
+    expect(COMMITTED_MANIFEST.exceptions).toEqual([]);
+  });
+
+  it("with the empty register, a clean audit PASSES and a returning braces HIGH is unapproved", () => {
+    const clean = run(auditPayload({}), cleanProductionAudit(), COMMITTED_MANIFEST);
+    expect(clean.verdict).toBe("PASS");
+    expect(clean.accepted).toEqual([]);
+
+    // The deleted entries leave no dormant authorization behind: the old finding
+    // coming back inherits nothing and fails as an ordinary UNAPPROVED_HIGH.
+    const back = run(approvedResidualAudit(), cleanProductionAudit(), COMMITTED_MANIFEST);
+    expect(back.verdict).toBe("FAIL");
+    expect(codes(back)).toContain("UNAPPROVED_HIGH");
+    expect(back.accepted).toEqual([]);
+  });
+
+  it("every committed entry, if any, is dev-only, owned and points at the governance lanes", () => {
+    for (const e of COMMITTED_MANIFEST.exceptions) {
+      expect(e.devOnly).toBe(true);
+      expect(e.owner).toBe("ZHARFA Engineering");
+      expect(e.futureRemediation).toContain("dependency-audit-governance");
+    }
+  });
+
+  it("names no production dependency", () => {
+    const prodDeps = new Set(Object.keys(JSON.parse(read("package.json")).dependencies ?? {}));
+    for (const e of COMMITTED_MANIFEST.exceptions) {
+      expect(prodDeps.has(e.package), `${e.package} is a production dependency`).toBe(false);
+    }
+  });
+
+  it("carries no secret-shaped or environment data", () => {
+    const raw = read(MANIFEST_RELATIVE_PATH);
+    expect(raw).not.toMatch(/(password|secret|token|api[_-]?key|postgres(ql)?:\/\/|redis:\/\/)/i);
+    expect(raw).not.toMatch(/process\.env/);
+  });
+});
+
+describe("the frozen 2026-10-03 fixture the behavioural tests run against", () => {
+  it("is byte-identical to the register it was copied from", () => {
+    const sha = createHash("sha256").update(read(FIXTURE_MANIFEST_PATH).replace(/\r\n/g, "\n")).digest("hex");
+    expect(sha).toBe(FIXTURE_MANIFEST_SHA256);
+  });
+
+  it("validates as written", () => {
     const v = validateManifest(MANIFEST);
     expect(v.errors).toEqual([]);
     expect(v.ok).toBe(true);
     expect(MANIFEST.schemaVersion).toBe(MANIFEST_SCHEMA_VERSION);
   });
 
-  it("accepts exactly the seven dev-only packages of one root advisory", () => {
+  it("holds exactly the seven dev-only packages of one root advisory", () => {
     expect(MANIFEST.exceptions).toHaveLength(7);
     expect(MANIFEST.exceptions.map((e) => e.package).sort()).toEqual([
       "@next/eslint-plugin-next",
@@ -971,19 +1039,6 @@ describe("the committed manifest is narrow, owned and dated", () => {
       expect(e.expires).toBe("2026-11-02");
       expect(e.futureRemediation).toContain("dependency-audit-governance");
     }
-  });
-
-  it("names no production dependency", () => {
-    const prodDeps = new Set(Object.keys(JSON.parse(read("package.json")).dependencies ?? {}));
-    for (const e of MANIFEST.exceptions) {
-      expect(prodDeps.has(e.package), `${e.package} is a production dependency`).toBe(false);
-    }
-  });
-
-  it("carries no secret-shaped or environment data", () => {
-    const raw = read(MANIFEST_RELATIVE_PATH);
-    expect(raw).not.toMatch(/(password|secret|token|api[_-]?key|postgres(ql)?:\/\/|redis:\/\/)/i);
-    expect(raw).not.toMatch(/process\.env/);
   });
 });
 
