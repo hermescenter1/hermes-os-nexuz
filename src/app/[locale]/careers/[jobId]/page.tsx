@@ -1,3 +1,4 @@
+import { notFound }           from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { JobDetailClient }    from "@/components/careers/JobDetailClient";
 import { JsonLd }             from "@/components/seo/JsonLd";
@@ -95,7 +96,13 @@ export default async function JobDetailPage({
   // describes, in the server-rendered HTML. "UNAVAILABLE" (store unreachable)
   // is left undefined so the client fetch and its outage state still apply.
   const detail = await getPublicJobDetail(jobId, locale);
-  const initialDetail = detail === "UNAVAILABLE" ? undefined : (detail ?? "not-found");
+  // `null` is the store's definite answer that no eligible posting with a
+  // complete translation for this locale exists: a real 404. Rendering the
+  // client's "not found" state instead answered 200 (a soft 404, live
+  // 2026-11-03). "UNAVAILABLE" stays a rendered outage state; it is not proof
+  // of absence.
+  if (detail === null) notFound();
+  const initialDetail = detail === "UNAVAILABLE" ? undefined : detail;
 
   return (
     <>
