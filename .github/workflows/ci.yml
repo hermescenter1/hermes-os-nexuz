@@ -324,11 +324,19 @@ jobs:
       - name: Generate Prisma client
         run: npx --no-install prisma generate
 
-      - name: Show pg_dump / pg_restore client version (must be >= pg16 server)
-        run: pg_dump --version && pg_restore --version
+      # The runner image's own pg_dump/pg_restore drift ahead of the pg16 server
+      # (pg17+ writes `SET transaction_timeout`, which pg16 rejects on restore).
+      # Production runs the tools inside the pgvector:pg16 container with
+      # `docker exec`, so the rehearsal does the same via the service container.
+      - name: Show pg_dump / pg_restore client version (must equal the pg16 server major)
+        run: |
+          docker exec "${{ job.services.postgres.id }}" pg_dump --version
+          docker exec "${{ job.services.postgres.id }}" pg_restore --version
 
       - name: Disaster-recovery restore rehearsal (backup → restore → integrity + RTO)
         run: node scripts/ci/phase93-dr-restore-rehearsal.mjs
+        env:
+          PG_CLIENT_CONTAINER: ${{ job.services.postgres.id }}
 
   # ---------------------------------------------------------------------------
   # PHASE 95 — offline AI governance & model assurance evaluation.
