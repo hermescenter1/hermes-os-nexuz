@@ -308,6 +308,12 @@ describe("de.json — Phase 86C1 translation audit", () => {
     // contamination; no allowlist entry was needed, because no DE leaf is
     // identical to its EN counterpart.
     "cookiePolicy",
+    // LEGAL PAGES LOCALE - the Privacy Policy, Terms of Service and GDPR rights
+    // pages (legalPages). 76 leaves, a faithful German translation of copy that
+    // was hard-coded English in privacy/terms/gdpr page.tsx and the shared
+    // LegalPageShell, so /de and /fa served English legal text. Zero DE==EN
+    // (e.g. "Artikel {n}", "Fassung {version}"); no allowlist entry was needed.
+    "legalPages",
     // EXECUTIVE DASHBOARD - the Executive Management Center (executive).
     // 115 leaves, genuinely German throughout; zero DE==EN and zero FA==EN, so
     // every leaf reconciles as a translation and no allowlist entry was needed.

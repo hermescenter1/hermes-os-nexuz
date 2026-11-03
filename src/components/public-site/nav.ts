@@ -121,6 +121,9 @@ export const PUBLIC_FOOTER_COLUMNS: readonly PublicFooterColumn[] = [
       { labelKey: "platformOverview", href: "/platform" },
       { labelKey: "architecture",     href: "/architecture" },
       { labelKey: "services",         href: "/services" },
+      // The pricing page was in the sitemap but linked from nowhere on the
+      // site (an orphan in the 2026-11 technical audit, target T22).
+      { labelKey: "pricing",          href: "/pricing" },
     ],
   },
   {

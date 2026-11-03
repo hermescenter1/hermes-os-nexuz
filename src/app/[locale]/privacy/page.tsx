@@ -1,8 +1,10 @@
+import type { ReactNode } from "react";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { LegalPageShell } from "@/components/compliance/LegalPageShell";
 import { PublicPageShell } from "@/components/public-site";
 import { Link }           from "@/i18n/navigation";
 import { buildMetadata }  from "@/lib/seo/metadata";
+import { CONTACT_EMAIL, SITE_NAME } from "@/lib/seo/config";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -11,52 +13,76 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return buildMetadata({ locale, path: "/privacy", title: p.privacy.title, description: p.privacy.description, keywords: p.privacy.keywords });
 }
 
+const H2 = "font-mono text-base font-semibold text-ink mb-2";
+const LIST = "list-disc list-inside space-y-1.5 text-ink/80";
+
 export default async function PrivacyPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  // The copy lives in `legalPages.privacy` for fa/en/de; it was hard-coded
+  // English, so /fa/privacy and /de/privacy served English text.
+  const t = await getTranslations({ locale, namespace: "legalPages.privacy" });
+  const strong = (c: ReactNode) => <strong>{c}</strong>;
+  const rich = (key: string) => t.rich(key, { strong, site: SITE_NAME });
 
   return (
     <PublicPageShell ambient={1}>
-      <LegalPageShell title="Privacy Policy" eyebrow="HERMES OS · LEGAL" version="1.0" effective="June 2026">
+      <LegalPageShell title={t("title")} eyebrow={t("eyebrow")} version="1.0" effective={t("effective")}>
         <section>
-          <h2 className="font-mono text-base font-semibold text-ink mb-2">1. Introduction</h2>
-          <p>Hermes OS (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) operates an enterprise industrial intelligence and operational management platform. This Privacy Policy explains how we collect, use, store, and protect personal data in compliance with the General Data Protection Regulation (GDPR) and applicable data protection laws.</p>
+          <h2 className={H2}>{t("introTitle")}</h2>
+          <p>{t("introBody", { site: SITE_NAME })}</p>
         </section>
         <section>
-          <h2 className="font-mono text-base font-semibold text-ink mb-2">2. Data We Collect</h2>
-          <ul className="list-disc list-inside space-y-1.5 text-ink/80">
-            <li><strong>Account Data:</strong> Name, email address, password hash, role, organization membership.</li>
-            <li><strong>Usage Data:</strong> Pages visited, feature interactions, session duration, IP address, browser type.</li>
-            <li><strong>Industrial Data:</strong> Telemetry records, asset health data, copilot conversations (organization-owned).</li>
-            <li><strong>Candidate Data:</strong> CV information, work history, application status, interview records. See the <Link href="/careers/privacy" className="text-signal hover:underline">Candidate Privacy Notice</Link> for how applications are screened, decided and retained.</li>
-            <li><strong>Academy Data:</strong> Course progress, quiz attempts, certification records.</li>
-            <li><strong>Consent Records:</strong> Timestamped log of all consent grants and withdrawals.</li>
+          <h2 className={H2}>{t("collectTitle")}</h2>
+          <ul className={LIST}>
+            <li>{rich("collectAccount")}</li>
+            <li>{rich("collectUsage")}</li>
+            <li>{rich("collectIndustrial")}</li>
+            <li>
+              {t.rich("collectCandidate", {
+                strong,
+                link: (c) => <Link href="/careers/privacy" className="text-signal hover:underline">{c}</Link>,
+              })}
+            </li>
+            <li>{rich("collectAcademy")}</li>
+            <li>{rich("collectConsent")}</li>
           </ul>
         </section>
         <section>
-          <h2 className="font-mono text-base font-semibold text-ink mb-2">3. Legal Basis for Processing</h2>
-          <ul className="list-disc list-inside space-y-1.5 text-ink/80">
-            <li><strong>Contract:</strong> Processing your account data to deliver the Hermes OS platform.</li>
-            <li><strong>Consent:</strong> Analytics cookies, marketing communications (withdrawable at any time).</li>
-            <li><strong>Legitimate Interests:</strong> Security monitoring, fraud prevention, system performance.</li>
-            <li><strong>Legal Obligation:</strong> Compliance records, audit trails.</li>
+          <h2 className={H2}>{t("basisTitle")}</h2>
+          <ul className={LIST}>
+            <li>{rich("basisContract")}</li>
+            <li>{rich("basisConsent")}</li>
+            <li>{rich("basisInterests")}</li>
+            <li>{rich("basisObligation")}</li>
           </ul>
         </section>
         <section>
-          <h2 className="font-mono text-base font-semibold text-ink mb-2">4. Data Retention</h2>
-          <p>Active account data is retained for the duration of the account. Deleted account data is purged within 30 days of a verified deletion request. Audit logs are retained for 7 years for legal compliance. Cookie consent records are retained for 2 years.</p>
+          <h2 className={H2}>{t("retentionTitle")}</h2>
+          <p>{t("retentionBody")}</p>
         </section>
         <section>
-          <h2 className="font-mono text-base font-semibold text-ink mb-2">5. Your Rights</h2>
-          <p>Under GDPR you have the right to: access your data, correct inaccuracies, request erasure, restrict processing, data portability, and object to processing. Exercise these rights via our <Link href="/data-request" className="text-signal hover:underline">Data Request Center</Link>.</p>
+          <h2 className={H2}>{t("rightsTitle")}</h2>
+          <p>
+            {t.rich("rightsBody", {
+              link: (c) => <Link href="/data-request" className="text-signal hover:underline">{c}</Link>,
+            })}
+          </p>
         </section>
         <section>
-          <h2 className="font-mono text-base font-semibold text-ink mb-2">6. Data Security</h2>
-          <p>All data is encrypted at rest (AES-256) and in transit (TLS 1.3). Passwords are never stored in plaintext — only bcrypt hashes. Access is controlled by role-based authorization. Security events are logged and monitored.</p>
+          <h2 className={H2}>{t("securityTitle")}</h2>
+          <p>{t("securityBody")}</p>
         </section>
         <section>
-          <h2 className="font-mono text-base font-semibold text-ink mb-2">7. Contact</h2>
-          <p>Data Protection Officer: <span className="text-ink">privacy@hermes-os.io</span></p>
+          <h2 className={H2}>{t("contactTitle")}</h2>
+          <p>
+            {t.rich("contactBody", {
+              // The canonical corporate contact; the page used to name an
+              // address on a domain the company does not use.
+              email: CONTACT_EMAIL,
+              mail: (c) => <span className="text-ink" dir="ltr">{c}</span>,
+            })}
+          </p>
         </section>
       </LegalPageShell>
     </PublicPageShell>

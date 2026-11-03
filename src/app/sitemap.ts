@@ -134,6 +134,9 @@ const STATIC_PATHS = [
   { path: "/vendors",       priority: 0.9,  changeFreq: "weekly"  as const },
   { path: "/vendors/apply", priority: 0.7,  changeFreq: "monthly" as const },
   { path: "/contact",       priority: 0.7,  changeFreq: "yearly"  as const },
+  // Indexable, self-canonical and linked from the homepage and footer, but it
+  // was never advertised here (2026-11 technical audit, target T21).
+  { path: "/demo",          priority: 0.7,  changeFreq: "monthly" as const },
   { path: "/about",         priority: 0.7,  changeFreq: "yearly"  as const },
   { path: "/privacy",       priority: 0.5,  changeFreq: "yearly"  as const },
   { path: "/terms",         priority: 0.5,  changeFreq: "yearly"  as const },
