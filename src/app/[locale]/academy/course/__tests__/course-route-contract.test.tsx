@@ -128,6 +128,14 @@ function seed() {
   ];
 }
 
+/** Title text, whether it is a plain string or a `{ absolute }` template opt-out. */
+function titleText(title: unknown): string {
+  if (typeof title === "object" && title !== null && "absolute" in title) {
+    return String((title as { absolute: unknown }).absolute);
+  }
+  return String(title);
+}
+
 type Meta = {
   title?: unknown;
   description?: unknown;
@@ -247,8 +255,8 @@ describe("C - a confirmed public course keeps its real identity", () => {
     expect(m.alternates?.canonical).toBe(
       `https://hermesnovin.com/en/academy/course/${PUBLIC_ID}`,
     );
-    expect(String(m.title)).toContain(PUBLIC_TITLE);
-    expect(String(m.title)).not.toBe(FALLBACK_TITLE);
+    expect(titleText(m.title)).toContain(PUBLIC_TITLE);
+    expect(titleText(m.title)).not.toBe(FALLBACK_TITLE);
     expect(m.description).toBe(PUBLIC_DESC);
   });
 

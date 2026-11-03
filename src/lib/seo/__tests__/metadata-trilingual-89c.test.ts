@@ -17,6 +17,14 @@ import de from "../../../../messages/de.json";
 type Cat = typeof en;
 const CATALOGS: Record<string, Cat> = { fa: fa as Cat, en: en as Cat, de: de as Cat };
 
+/** Title text, whether it is a plain string or a `{ absolute }` template opt-out. */
+function titleText(title: unknown): string {
+  if (typeof title === "object" && title !== null && "absolute" in title) {
+    return String((title as { absolute: unknown }).absolute);
+  }
+  return String(title);
+}
+
 // Importing route modules pulls in next-intl navigation + client components;
 // stub the navigation seams so metadata functions run standalone in node.
 vi.mock("@/i18n/navigation", () => ({
@@ -202,13 +210,13 @@ describe("89C — vendors directory metadata is localized", () => {
   it.each(["fa", "en", "de"] as const)("%s emits the catalog title", async (loc) => {
     const { generateMetadata } = await import("@/app/[locale]/vendors/page");
     const m = await generateMetadata({ params: P(loc) });
-    expect(String(m.title)).toBe(CATALOGS[loc].meta.pages.vendors.title);
+    expect(titleText(m.title)).toBe(CATALOGS[loc].meta.pages.vendors.title);
   });
 
   it("German directory metadata contains no English boilerplate", async () => {
     const { generateMetadata } = await import("@/app/[locale]/vendors/page");
     const m = await generateMetadata({ params: P("de") });
-    expect(String(m.title)).not.toContain("Vendor Directory");
+    expect(titleText(m.title)).not.toContain("Vendor Directory");
     expect(String(m.description)).not.toContain("Browse certified");
   });
 });
@@ -217,11 +225,11 @@ describe("89C — vendor profile metadata", () => {
   it("German page uses the German template; Persian page uses the Persian vendor name", async () => {
     const { generateMetadata } = await import("@/app/[locale]/vendors/[vendorId]/page");
     const deM = await generateMetadata({ params: Promise.resolve({ locale: "de", vendorId: "acme-automation" }) });
-    expect(String(deM.title)).toBe("Acme Automation — Anbieterprofil | Hermes OS");
+    expect(titleText(deM.title)).toBe("Acme Automation — Anbieterprofil | Hermes OS");
     expect(String(deM.description)).toContain("verifizierter Anbieterpartner");
     const faM = await generateMetadata({ params: Promise.resolve({ locale: "fa", vendorId: "acme-automation" }) });
-    expect(String(faM.title)).toContain("اکمه اتوماسیون");
-    expect(String(faM.title)).not.toContain("Vendor Profile");
+    expect(titleText(faM.title)).toContain("اکمه اتوماسیون");
+    expect(titleText(faM.title)).not.toContain("Vendor Profile");
   });
 });
 
@@ -229,8 +237,8 @@ describe("89C — demo, careers job, library article, academy fallback, privacy-
   it("demo drops the fa-else-en ternary: German gets German", async () => {
     const { generateMetadata } = await import("@/app/[locale]/demo/page");
     const m = await generateMetadata({ params: P("de") });
-    expect(String(m.title)).toBe(CATALOGS.de.meta.pages.demo.title);
-    expect(String(m.title)).not.toContain("Request Industrial Brain Demo");
+    expect(titleText(m.title)).toBe(CATALOGS.de.meta.pages.demo.title);
+    expect(titleText(m.title)).not.toContain("Request Industrial Brain Demo");
   });
 
   it("careers job title/keywords use the localized template on de", async () => {
@@ -246,10 +254,10 @@ describe("89C — demo, careers job, library article, academy fallback, privacy-
     const en = await generateMetadata({ params: Promise.resolve({ locale: "en", jobId: "job-db-1" }) });
     const de = await generateMetadata({ params: Promise.resolve({ locale: "de", jobId: "job-db-1" }) });
     const fa = await generateMetadata({ params: Promise.resolve({ locale: "fa", jobId: "job-db-1" }) });
-    expect(String(en.title)).toBe("SCADA Architect — Careers at Hermes OS");
-    expect(String(de.title)).toBe("SCADA-Architekt — Karriere bei Hermes OS");
-    expect(String(fa.title)).toBe("معمار اسکادا — فرصت‌های شغلی هرمس");
-    expect(new Set([String(en.title), String(de.title), String(fa.title)]).size).toBe(3);
+    expect(titleText(en.title)).toBe("SCADA Architect — Careers at Hermes OS");
+    expect(titleText(de.title)).toBe("SCADA-Architekt — Karriere bei Hermes OS");
+    expect(titleText(fa.title)).toBe("معمار اسکادا — فرصت‌های شغلی هرمس");
+    expect(new Set([titleText(en.title), titleText(de.title), titleText(fa.title)]).size).toBe(3);
     expect(en.description).toBe("Architect enterprise SCADA for industrial plants.");
     expect(de.description).toBe("Enterprise-SCADA für Industrieanlagen entwerfen.");
     expect(fa.description).toBe("طراحی اسکادای سازمانی برای کارخانه‌های صنعتی.");
@@ -260,17 +268,17 @@ describe("89C — demo, careers job, library article, academy fallback, privacy-
     // An id with no authoritative row keeps the localized not-found title AND
     // is refused indexing — a fixture-only page must never be advertised.
     const missing = await generateMetadata({ params: Promise.resolve({ locale: "de", jobId: "nope" }) });
-    expect(String(missing.title)).toBe("Stelle nicht gefunden");
+    expect(titleText(missing.title)).toBe("Stelle nicht gefunden");
     expect(missing.robots).toEqual({ index: false, follow: false });
 
     // B1.1 — a job translated ONLY in English is noindex on de/fa: no
     // canonical, no localized title, and NEVER an English fallback title.
     const deOfEnOnly = await generateMetadata({ params: Promise.resolve({ locale: "de", jobId: "job-en-only" }) });
     expect(deOfEnOnly.robots).toEqual({ index: false, follow: false });
-    expect(String(deOfEnOnly.title)).not.toContain("SCADA Architect");
+    expect(titleText(deOfEnOnly.title)).not.toContain("SCADA Architect");
     expect(deOfEnOnly.alternates?.canonical ?? undefined).toBeUndefined();
     const enOfEnOnly = await generateMetadata({ params: Promise.resolve({ locale: "en", jobId: "job-en-only" }) });
-    expect(String(enOfEnOnly.title)).toBe("SCADA Architect — Careers at Hermes OS");
+    expect(titleText(enOfEnOnly.title)).toBe("SCADA Architect — Careers at Hermes OS");
   });
 
   it("library article title suffix is localized; not-found title is localized", async () => {
@@ -278,23 +286,23 @@ describe("89C — demo, careers job, library article, academy fallback, privacy-
     const { KNOWLEDGE } = await import("@/lib/industrial/knowledge");
     const lib = KNOWLEDGE[0];
     const m = await generateMetadata({ params: Promise.resolve({ locale: "de", article: lib.id }) });
-    expect(String(m.title)).toContain("— Industrielle Wissensbibliothek");
-    expect(String(m.title)).not.toContain("Industrial Knowledge Library");
+    expect(titleText(m.title)).toContain("— Industrielle Wissensbibliothek");
+    expect(titleText(m.title)).not.toContain("Industrial Knowledge Library");
     const nf = await generateMetadata({ params: Promise.resolve({ locale: "fa", article: "missing" }) });
-    expect(String(nf.title)).toBe("مقاله یافت نشد");
+    expect(titleText(nf.title)).toBe("مقاله یافت نشد");
   });
 
   it("academy course DB-unavailable fallback is localized per locale", async () => {
     const { generateMetadata } = await import("@/app/[locale]/academy/course/[courseId]/page");
     const m = await generateMetadata({ params: Promise.resolve({ locale: "de", courseId: "c1" }) });
-    expect(String(m.title)).toBe(CATALOGS.de.meta.pages.academyCourse.fallbackTitle);
-    expect(String(m.title)).not.toContain("Industrial Course");
+    expect(titleText(m.title)).toBe(CATALOGS.de.meta.pages.academyCourse.fallbackTitle);
+    expect(titleText(m.title)).not.toContain("Industrial Course");
   });
 
   it("privacy-center no longer appends an English suffix", async () => {
     const { generateMetadata } = await import("@/app/[locale]/privacy-center/page");
     const m = await generateMetadata({ params: P("de") });
-    expect(String(m.title)).not.toContain("| Privacy Center");
+    expect(titleText(m.title)).not.toContain("| Privacy Center");
   });
 });
 
@@ -312,7 +320,7 @@ describe("89C — auth tab titles are localized (noindex preserved)", () => {
     const mod = await import(`@/app/[locale]/auth/${page}/page`);
     for (const loc of ["fa", "en", "de"] as const) {
       const m = await mod.generateMetadata({ params: P(loc) });
-      expect(String(m.title)).toBe((CATALOGS[loc].auth as Record<string, string>)[key]);
+      expect(titleText(m.title)).toBe((CATALOGS[loc].auth as Record<string, string>)[key]);
       expect(m.robots).toEqual({ index: false, follow: false });
     }
   });

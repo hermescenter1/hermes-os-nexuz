@@ -102,6 +102,25 @@ function resolveContentLocales(
 }
 
 /**
+ * A title that already names the brand — Latin "Hermes" or Persian "هرمس".
+ */
+const BRAND_IN_TITLE = /\bHermes\b|هرمس/i;
+
+/**
+ * The document `<title>` value for a page title.
+ *
+ * The locale layout applies the `%s | Hermes OS` template to every child
+ * segment. Most catalog titles already end in "— Hermes OS" (or the Persian
+ * brand), and the template then printed the brand twice — "Privacy Policy —
+ * Hermes OS | Hermes OS". A title that already carries the brand opts out of
+ * the template with an absolute title, as the homepage already did; a title
+ * without it keeps the template suffix.
+ */
+export function documentTitle(title: string): Metadata["title"] {
+  return BRAND_IN_TITLE.test(title) ? { absolute: title } : title;
+}
+
+/**
  * Build a complete Next.js Metadata object for any route.
  * Handles: canonical, hreflang, OG, Twitter, robots.
  */
@@ -154,7 +173,7 @@ export function buildMetadata(opts: BuildMetadataOptions): Metadata {
       : { type: ogType as "website" };
 
   return {
-    title,
+    title: documentTitle(title),
     description,
     metadataBase: new URL(BASE_URL),
     alternates: {
