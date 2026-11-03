@@ -434,13 +434,13 @@ describe("PublicFooter — link integrity", () => {
       (a) => a.textContent === en.publicSite.footer.links.platformOverview,
     )!;
     expect(platformLink.getAttribute("href")).toBe("/platform");
-    expect(container.querySelectorAll("footer nav a").length).toBe(17);
+    expect(container.querySelectorAll("footer nav a").length).toBe(18); // +1: /pricing (2026-11 audit, T22)
     // the expanded structure exposes every required destination
     const hrefs = Array.from(container.querySelectorAll("footer nav a")).map((a) => a.getAttribute("href"));
     for (const required of [
       "/services", "/architecture", "/industrial-brain", "/copilot", "/brain",
       "/library", "/academy", "/articles", "/vendors", "/careers", "/about",
-      "/contact", "/privacy", "/terms", "/cookies",
+      "/contact", "/privacy", "/terms", "/cookies", "/pricing",
     ]) {
       expect(hrefs, `footer must expose ${required}`).toContain(required);
     }

@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+// The canonical corporate contact; this note named an address on a domain the
+// company does not use.
+import { CORPORATE_EMAIL } from "@/lib/corporate/contact";
 
 type RequestType = "DATA_EXPORT" | "DATA_DELETION" | "CONSENT_WITHDRAWAL" | "ACCESS_REQUEST" | "CORRECTION_REQUEST";
 
@@ -98,7 +101,7 @@ export function DataRequestClient() {
           </button>
 
           <p className="text-[11px] text-muted text-center leading-relaxed">
-            {t("verifyNote")} <span className="text-ink">privacy@hermes-os.io</span>
+            {t("verifyNote")} <span className="text-ink" dir="ltr">{CORPORATE_EMAIL.support}</span>
           </p>
         </form>
       )}

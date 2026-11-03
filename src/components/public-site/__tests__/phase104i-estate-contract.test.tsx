@@ -124,6 +124,9 @@ describe("104-I1 — the footer preserves every registry destination", () => {
      */
     const REQUIRED_DESTINATIONS = [
       "/platform", "/architecture", "/services",
+      // 2026-11 technical audit (T22): /pricing was in the sitemap but linked
+      // from nowhere; the footer is now its internal link.
+      "/pricing",
       "/industrial-brain", "/brain", "/copilot",
       "/library", "/academy", "/articles", "/vendors",
       "/about", "/careers", "/contact", "/demo",
@@ -138,7 +141,7 @@ describe("104-I1 — the footer preserves every registry destination", () => {
     for (const href of expected) {
       expect(REQUIRED_DESTINATIONS, `unreviewed footer destination ${href}`).toContain(href);
     }
-    expect(expected.length).toBe(REQUIRED_DESTINATIONS.length);  // 5 columns / 17 links
+    expect(expected.length).toBe(REQUIRED_DESTINATIONS.length);  // 5 columns / 18 links
     const hrefs = [...m.container.querySelectorAll("footer a[href]")].map((a) => a.getAttribute("href"));
     for (const href of expected) {
       expect(hrefs, `missing footer destination ${href}`).toContain(`/en${href}`);
