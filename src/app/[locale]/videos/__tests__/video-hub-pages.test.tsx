@@ -501,10 +501,10 @@ describe("B — the watch page calls notFound() for anything not PUBLISHED + PUB
     await expect(renderWatch("Not A Slug!", ORG_A.slug)).rejects.toThrow(NOT_FOUND);
   });
 
-  // generateMetadata refuses with the same notFound() as the body. The body's
-  // refusal alone streamed after `videos/loading.tsx` had sent a 200 (a soft
-  // 404 on the live site); metadata resolves before the response starts. A
-  // thrown refusal also cannot leak any of the hidden row's editorial copy.
+  // generateMetadata refuses with the same notFound() as the body, so a thrown
+  // refusal cannot leak any of the hidden row's editorial copy. Whether that
+  // refusal reaches the client as a real 404 is a route-structure question
+  // (no `loading.tsx` above this page), guarded in soft-404-refusals.test.ts.
   it("generateMetadata refuses a slug that did not resolve with notFound()", async () => {
     const { generateMetadata } = await import("../[org]/[slug]/page");
     await expect(

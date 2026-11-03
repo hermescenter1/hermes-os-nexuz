@@ -8962,7 +8962,6 @@
       "label": "Category filter"
     },
     "states": {
-      "loading": "Loading the library…",
       "error": "The library could not be loaded",
       "errorHint": "The request failed before any data arrived, so nothing was changed.",
       "retry": "Try again",
