@@ -61,12 +61,13 @@ export default async function AuthorProfilePage({
 
   const [author, articles] = await Promise.all([
     getAuthorProfile(handle),
-    getAuthorArticles(handle),
+    getAuthorArticles(handle, locale),
   ]);
 
   if (!author || !author.isActive) notFound();
 
-  // Override the stale counter field with the real PUBLISHED + PUBLIC count.
+  // Override the stale counter field with the real PUBLISHED + PUBLIC count in
+  // this locale's language (the list is capped at the DAL's list ceiling).
   const authorWithRealCount = { ...author, articleCount: articles.length };
 
   // No `Person` entity is published for a retired identity: its `url` would be

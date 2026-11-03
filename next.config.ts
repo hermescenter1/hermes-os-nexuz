@@ -6,6 +6,20 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const nextConfig: NextConfig = {
   output: "standalone",
 
+  // Do not advertise the framework in an `X-Powered-By` response header.
+  poweredByHeader: false,
+
+  // Render <title>, canonical and hreflang inside <head> for EVERY user agent.
+  // Next 15 streams metadata into <body> unless the UA matches its
+  // "HTML-limited bots" list, and that list does not contain Googlebot itself
+  // (only Google-InspectionTool, AdsBot-Google, ...). Googlebot therefore read
+  // a canonical outside <head>, which Google ignores: Search Console reported
+  // the /fa pages as "Duplicate without user-selected canonical" while URL
+  // Inspection — served blocking metadata — looked correct. AI crawlers such
+  // as OAI-SearchBot, which do not run JavaScript, got the same body markup.
+  // Matching every UA turns metadata streaming off.
+  htmlLimitedBots: /.*/,
+
   // Trailing slash: Next.js default is false (no trailing slash).
   // Explicit declaration ensures consistent canonical URL generation.
   trailingSlash: false,
