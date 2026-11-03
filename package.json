@@ -78,7 +78,7 @@
     "framer-motion": "^12.40.0",
     "ioredis": "^5.11.1",
     "jose": "^6.2.3",
-    "next": "15.5.25",
+    "next": "15.5.28",
     "next-intl": "4.13.2",
     "nodemailer": "^10.0.13",
     "openai": "^6.43.0",
