@@ -176,7 +176,9 @@ describe("no media or voice surface leaks into anonymous navigation", () => {
     // PHASE 113-B concluded with NO navigation change. These two counts are the
     // cheapest way to notice if a later edit quietly adds or drops an entry.
     expect(PUBLIC_NAV_GROUPS.flatMap((g) => g.items).length).toBe(22);
-    expect(PUBLIC_FOOTER_COLUMNS.flatMap((c) => c.links).length).toBe(17);
+    // 18 since the 2026-11 technical audit (T22) gave the orphaned /pricing
+    // page its footer link; no media or voice entry was added.
+    expect(PUBLIC_FOOTER_COLUMNS.flatMap((c) => c.links).length).toBe(18);
   });
 
   it("a navigation label exists for the hub but is intentionally unused", () => {
