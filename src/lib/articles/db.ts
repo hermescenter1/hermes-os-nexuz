@@ -553,16 +553,29 @@ export async function getTagBySlug(slug: string): Promise<ArticleTag | null> {
 
 // ── Author articles ───────────────────────────────────────────────────────────
 
-export async function getAuthorArticles(handle: string): Promise<ArticleListItem[]> {
+/**
+ * An author's published articles in the language the given locale reads.
+ *
+ * Scoped strictly — no language fallback. The profile links every row as
+ * `/{locale}/articles/{slug}`, so an unscoped list published one link per
+ * edition under the WRONG prefix: Google crawled /en and /de URLs of Persian
+ * articles (each a redirect, or a 500 for a Persian slug) and listed them as
+ * "Page with redirect" and "Alternate page with proper canonical tag".
+ */
+export async function getAuthorArticles(handle: string, locale?: string): Promise<ArticleListItem[]> {
   const db = await getDb();
   if (db) {
     try {
       const rows = await (db as never as {
         article: { findMany: (a: unknown) => Promise<unknown[]> };
       }).article.findMany({
-        where: { status: "PUBLISHED", visibility: "PUBLIC", author: { handle } },
-        include: { author: true, category: true, tags: { include: { tag: true } } },
-        orderBy: { publishedAt: "desc" },
+        where: { status: "PUBLISHED", visibility: "PUBLIC", author: { handle }, ...languageClause(locale) },
+        // The list projection, never `include`: `include` loaded every full
+        // article body, and the profile serialised them all to the client —
+        // 5 MB of HTML on the editorial profile (live audit, 2026-11-02).
+        select: LIST_SELECT,
+        orderBy: [{ publishedAt: "desc" }, { id: "asc" }],
+        take: LIST_MAX,
       });
       return rows.map(r => {
         const d = deepTs(r) as Record<string, unknown>;
@@ -614,12 +627,14 @@ export async function getUserArticles(userId: string): Promise<ArticleListItem[]
 export async function incrementArticleViewCount(id: string): Promise<void> {
   const db = await getDb();
   if (!db) return;
+  // A page view is not an edit. `Article.updatedAt` is `@updatedAt`, so a
+  // Prisma `update` stamped the row as modified on EVERY view — and updatedAt
+  // feeds sitemap <lastmod>, Article.dateModified and article:modified_time,
+  // which then claimed every read article had changed "today". `@updatedAt` is
+  // applied by the client, not the database, so a raw increment leaves it alone.
   await (db as never as {
-    article: { update: (a: unknown) => Promise<unknown> };
-  }).article.update({
-    where: { id },
-    data:  { viewCount: { increment: 1 } },
-  });
+    $executeRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<number>;
+  }).$executeRaw`UPDATE "Article" SET "viewCount" = "viewCount" + 1 WHERE "id" = ${id}`;
 }
 
 // ── Moderation helpers ────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { notFound, permanentRedirect } from "next/navigation";
-import { setRequestLocale }       from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { getCurrentUser }         from "@/lib/auth/session";
 import { can }                    from "@/lib/auth/roles";
 import { getReactionSummary, isArticleSaved, listArticleComments } from "@/lib/articles/engagement";
@@ -7,7 +7,8 @@ import { getArticleDetailBySlug, getArticleFeed, incrementArticleViewCount } fro
 import { ArticleDetailClient }    from "@/components/articles/ArticleDetailClient";
 import { buildMetadata }          from "@/lib/seo/metadata";
 import { JsonLd }                 from "@/components/seo/JsonLd";
-import { BASE_URL }               from "@/lib/seo/config";
+import { BASE_URL, ORG_ID }       from "@/lib/seo/config";
+import { breadcrumbSchema }       from "@/lib/seo/schemas";
 import { articleLanguageForLocale, langTagForArticleLanguage, localeForArticleLanguage } from "@/lib/articles/locale";
 import { getPublicArticleLanguagesBySlug, resolveArticleContentLocales } from "@/lib/articles/seo";
 import { articleRedirectPath } from "@/lib/articles/slug";
@@ -89,9 +90,12 @@ export async function generateMetadata({
 export const dynamic = "force-dynamic";
 
 function buildArticleJsonLd(article: ArticleDetail, locale: string) {
+  const url = `${BASE_URL}/${locale}/articles/${article.slug}`;
   return {
     "@context": "https://schema.org",
     "@type":    "Article",
+    "@id":      `${url}#article`,
+    mainEntityOfPage: url,
     headline:   article.title,
     description: article.excerpt ?? "",
     // Absolute, per schema.org. Dropped from the emitted JSON when the article
@@ -103,14 +107,14 @@ function buildArticleJsonLd(article: ArticleDetail, locale: string) {
       name:    article.author.displayName,
       url:     `${BASE_URL}/${locale}/articles/author/${article.author.handle}`,
     },
-    publisher: {
-      "@type": "Organization",
-      name:    "Hermes Industrial Journal",
-      url:     BASE_URL,
-    },
+    // The publisher is the company entity the global @graph already defines on
+    // every page. A separately named "Hermes Industrial Journal" organisation
+    // with no @id split the entity in two and published an org with no logo,
+    // address or identifier.
+    publisher: { "@id": ORG_ID },
     datePublished:  article.publishedAt ?? undefined,
     dateModified:   article.updatedAt,
-    url:            `${BASE_URL}/${locale}/articles/${article.slug}`,
+    url,
     // The language the article is WRITTEN IN, from the row — not the route
     // locale, and no longer an EN-or-FA guess that silently mislabelled German.
     inLanguage:     langTagForArticleLanguage(article.language),
@@ -193,18 +197,30 @@ export default async function ArticleDetailPage({
     viewerUser = await getCurrentUser();
   } catch { /* anonymous reader */ }
 
-  // Three bounded reads in parallel. `isArticleSaved` is a single lookup on the
+  // Three bounded reads (plus two catalogue lookups) in parallel. `isArticleSaved` is a single lookup on the
   // ArticleSave composite key and returns false for an anonymous reader without
   // touching the database at all.
-  const [reactions, comments, saved] = await Promise.all([
+  const [reactions, comments, saved, tMeta, tJournal] = await Promise.all([
     getReactionSummary(article.id, viewerUser?.id ?? null),
     listArticleComments(article.id),
     isArticleSaved(article.id, viewerUser?.id ?? null),
+    // BreadcrumbList labels reuse the visible breadcrumb's existing keys.
+    getTranslations({ locale, namespace: "meta" }),
+    getTranslations({ locale, namespace: "journal" }),
   ]);
 
   return (
     <>
-      <JsonLd data={[buildArticleJsonLd(article, locale)]} />
+      <JsonLd
+        data={[
+          buildArticleJsonLd(article, locale),
+          breadcrumbSchema([
+            { name: tMeta("breadcrumbs.home"),           url: `${BASE_URL}/${locale}` },
+            { name: tJournal("detail.breadcrumbJournal"), url: `${BASE_URL}/${locale}/articles` },
+            { name: article.title,                        url: `${BASE_URL}/${locale}/articles/${article.slug}` },
+          ]),
+        ]}
+      />
       <ArticleDetailClient
         article={article}
         related={finalRelated}
