@@ -13,7 +13,7 @@ protocol tokens, and markup were preserved verbatim.
 
 | Term | Persian usage |
 |---|---|
-| Hermes OS | prose: «هرمس او‌اس»; ALL-CAPS eyebrow: «هرمس OS · …» (matches `industrialBrain.hero.eyebrow`) |
+| Hermes OS | «هرمس OS» everywhere — prose, titles and eyebrows (owner decision 2026-10-31: one spelling for brand-entity consistency in search; the former prose form «هرمس او‌اس» is retired) |
 | Industrial Brain, Hermes Copilot, Hermes Academy | product names — unchanged / transliterated per existing catalog |
 | PLC, HMI, SCADA, VFD, IPC, MCC, OPC UA, MQTT, Modbus TCP | protocols/abbreviations — unchanged |
 | CMMS, ERP, CRM, ATS, EDMS, RBAC, SEO, GDPR, GA4, GTM, DOM, PWA | acronyms — unchanged |

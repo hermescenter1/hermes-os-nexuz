@@ -201,8 +201,8 @@ describe("homepage title — brand duplication removed", () => {
   });
 
   it("FA: exactly one brand occurrence in the absolute document title", () => {
-    const title = (fa as unknown as typeof en).meta.title; // «هرمس او‌اس — …»
-    expect(countBrand(title, "هرمس او‌اس")).toBe(1);
+    const title = (fa as unknown as typeof en).meta.title; // «هرمس OS — …»
+    expect(countBrand(title, "هرمس OS")).toBe(1);
     expect(title.includes("Hermes OS")).toBe(false); // fully localized
   });
 
