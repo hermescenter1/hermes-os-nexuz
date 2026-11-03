@@ -144,7 +144,9 @@ describe("mediaHub — ICU arguments agree across the three languages", () => {
  * silently again.
  */
 describe("mediaHub — every catalog leaf is reached; nothing ships unused", () => {
-  const REACHED = 162;
+  // 161: `states.loading` was deleted with `videos/loading.tsx`, its only
+  // reader, which streamed a 200 before the watch page could answer 404.
+  const REACHED = 161;
 
   it("reaches exactly the leaves the shipped surfaces read", () => {
     expect(report.keys.length).toBe(REACHED);

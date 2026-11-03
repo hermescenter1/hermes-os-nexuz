@@ -8962,7 +8962,6 @@
       "label": "Rubrikenfilter"
     },
     "states": {
-      "loading": "Mediathek wird geladen …",
       "error": "Die Mediathek konnte nicht geladen werden",
       "errorHint": "Die Anfrage schlug fehl, bevor Daten eintrafen; es wurde nichts verändert.",
       "retry": "Erneut versuchen",
