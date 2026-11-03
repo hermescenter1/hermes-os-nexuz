@@ -12,3 +12,25 @@ export async function register(): Promise<void> {
     await import("./instrumentation.node");
   }
 }
+
+/**
+ * Next.js `onRequestError` hook: called for errors Next itself handles
+ * (uncaught render / route / action failures). Node runtime only; the privacy
+ * and cardinality rules live in `recordUnhandledRequestError`.
+ */
+export async function onRequestError(
+  error: unknown,
+  request: { path?: unknown; method?: unknown; headers?: unknown },
+  context: { routerKind?: unknown; routePath?: unknown; routeType?: unknown },
+): Promise<void> {
+  // Same pattern as register(): the NEXT_RUNTIME guard wraps the import so the
+  // Edge compilation drops the Node-only module (node:crypto) entirely.
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    try {
+      const { recordUnhandledRequestError } = await import("./lib/observability/request-error");
+      recordUnhandledRequestError(error, request, context);
+    } catch {
+      /* an error hook must never throw into Next.js */
+    }
+  }
+}

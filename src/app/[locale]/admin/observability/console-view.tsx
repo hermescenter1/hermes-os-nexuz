@@ -12,6 +12,8 @@ import {
   counterSeries,
   counterTotal,
   histogramStat,
+  httpLatencyOverall,
+  httpStatusClassSeries,
   summaryRows,
   sortBySeverityDesc,
   auditOutcomeDistribution,
@@ -30,7 +32,6 @@ import {
   Panel,
   BarSeries,
   DependencyCard,
-  NotInstrumentedPanel,
   PostureBanner,
   StatTile,
   StatusDot,
@@ -76,6 +77,9 @@ export async function ControlRoomView({ cid }: { locale: string; cid?: string })
   const sessionOps = counterSeries(m, "session_operations_total", "operation");
   const alertDelivery = counterSeries(m, "alert_delivery_total", "result");
   const auditOutcomes = auditOutcomeDistribution(model.audit.events);
+
+  const httpByClass = httpStatusClassSeries(m);
+  const httpLatency = httpLatencyOverall(m);
 
   const dbLatency = histogramStat(m, "dependency_latency_ms", "dependency", "database");
   const dbLatencyTone = latencyTone(dbLatency?.avgMs ?? null, 100, 500);
@@ -172,16 +176,18 @@ export async function ControlRoomView({ cid }: { locale: string; cid?: string })
             )}
           </Panel>
 
-          {/* HTTP request latency — NOT instrumented */}
-          <Panel id="http-latency" title={t("sections.httpLatency")} source="prometheus" observedAt={shortTime(model.generatedAt)}>
-            <NotInstrumentedPanel
-              title={t("notInstrumented.httpRequestLatency")}
-              statusLabel={t("notInstrumented.badge")}
-              explanation={t("notInstrumented.explanation")}
-              sourceLabel={t("labels.dataSource")}
-              sourceValue={t("notInstrumented.sourceValue")}
-              actionLabel={t("notInstrumented.action")}
-            />
+          {/* HTTP request latency — real, in-process (per-process, resets on restart) */}
+          <Panel id="http-latency" title={t("sections.httpLatency")} source="http_request_duration_ms" observedAt={shortTime(model.generatedAt)}>
+            {httpLatency ? (
+              <div className="grid grid-cols-2 gap-3">
+                <StatTile label={t("httpTelemetry.avg")} value={`${httpLatency.avgMs} ms`} tone="neutral" />
+                <StatTile label={t("httpTelemetry.samples")} value={String(httpLatency.count)} tone="neutral" />
+              </div>
+            ) : (
+              <p className="text-caption text-text-muted">{t("httpTelemetry.empty")}</p>
+            )}
+            <p className="mt-3 text-label-compact text-text-muted">{t("httpTelemetry.scope")}</p>
+            <p className="mt-1 text-label-compact text-text-muted">{t("httpTelemetry.limits")}</p>
           </Panel>
 
           {/* Errors by severity (real) */}
@@ -189,16 +195,11 @@ export async function ControlRoomView({ cid }: { locale: string; cid?: string })
             <BarSeries items={errorsBySeverity} emptyLabel={t("empties.noErrors")} ariaLabel={t("charts.errorsBySeverity")} />
           </Panel>
 
-          {/* HTTP request rate — NOT instrumented */}
-          <Panel id="http-rate" title={t("sections.httpRate")} source="prometheus" observedAt={shortTime(model.generatedAt)}>
-            <NotInstrumentedPanel
-              title={t("notInstrumented.httpRequestRate")}
-              statusLabel={t("notInstrumented.badge")}
-              explanation={t("notInstrumented.explanation")}
-              sourceLabel={t("labels.dataSource")}
-              sourceValue={t("notInstrumented.sourceValue")}
-              actionLabel={t("notInstrumented.action")}
-            />
+          {/* HTTP requests by status class — real, in-process, cumulative since process start */}
+          <Panel id="http-rate" title={t("sections.httpRate")} source="http_requests_total" observedAt={shortTime(model.generatedAt)}>
+            <BarSeries items={httpByClass} emptyLabel={t("httpTelemetry.empty")} ariaLabel={t("sections.httpRate")} />
+            <p className="mt-3 text-label-compact text-text-muted">{t("httpTelemetry.cumulative")}</p>
+            <p className="mt-1 text-label-compact text-text-muted">{t("httpTelemetry.scope")}</p>
           </Panel>
 
           {/* Security events by type (real, from the ring summary) */}

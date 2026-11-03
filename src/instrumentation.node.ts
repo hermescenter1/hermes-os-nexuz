@@ -12,6 +12,11 @@ import { executeAndMaybeAbort } from "@/lib/startup/validate";
 import { logger }               from "@/lib/logger";
 import "@/lib/events/auth/handlers";
 import "@/lib/events/system/handlers";
+import { installHttpTelemetry } from "@/lib/observability/http-telemetry";
+
+// Application-side HTTP request telemetry (read-only diagnostics_channel
+// subscription; see http-telemetry.ts). Never throws and never blocks startup.
+installHttpTelemetry();
 
 // Run startup checks on first load
 executeAndMaybeAbort();
