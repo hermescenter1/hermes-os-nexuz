@@ -6,14 +6,40 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  *
  * - `/careers/[jobId]` rendered the client's not-found state instead of calling
  *   `notFound()`.
- * - `/videos/[org]/[slug]` did call `notFound()`, but only in the page body,
- *   which `videos/loading.tsx` streams after the 200 status is already sent.
- *   The refusal now also happens in `generateMetadata`, which Next resolves
- *   before the response starts (`htmlLimitedBots`).
+ * - `/videos/[org]/[slug]` called `notFound()`, but `videos/loading.tsx`
+ *   wrapped it in a Suspense boundary, so the 200 status was streamed before
+ *   any `notFound()` ran. Moving the refusal into `generateMetadata` did NOT
+ *   help: live, it still answered 200. Only removing the boundary does.
  *
  * The outage branches must stay non-404: an unreachable store is not proof of
  * absence.
  */
+
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+
+/**
+ * Every directory from `[locale]` down to a route that answers an absent
+ * resource with `notFound()`. A `loading.tsx` in any of them makes Next stream
+ * the response before the page renders, which turns every refusal into a 200.
+ */
+const NOT_FOUND_ROUTES = [
+  ["videos", "[org]", "[slug]"],
+  ["careers", "[jobId]"],
+  ["articles", "[slug]"],
+  ["library", "[article]"],
+  ["academy", "course", "[courseId]"],
+];
+
+describe("no loading boundary above a route that must answer 404", () => {
+  it.each(NOT_FOUND_ROUTES.map((r) => [r.join("/"), r]))("/%s", (_label, segments) => {
+    const base = join(process.cwd(), "src", "app", "[locale]");
+    const dirs = [base, ...segments.map((_, i) => join(base, ...segments.slice(0, i + 1)))];
+    for (const dir of dirs) {
+      expect(existsSync(join(dir, "loading.tsx")), `${dir}/loading.tsx streams a 200 before notFound()`).toBe(false);
+    }
+  });
+});
 
 class NotFoundSignal extends Error {
   constructor() { super("NEXT_NOT_FOUND"); }

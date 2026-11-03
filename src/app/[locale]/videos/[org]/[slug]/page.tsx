@@ -65,12 +65,13 @@ export async function generateMetadata({
   const scope = await resolveVideoHubScope(org);
   const view = scope ? await loadVideoWatch({ scope, slug, routeLocale: locale }) : null;
   if (!view) {
-    // Refuse HERE, not only in the page body. `videos/loading.tsx` wraps this
-    // page in a Suspense boundary, so by the time the body's `notFound()` runs
-    // the 200 status has already been streamed and the refusal ships as a soft
-    // 404 (live, 2026-11-03). Metadata is resolved before the response starts
-    // (`htmlLimitedBots` in next.config.ts), so a `notFound()` here still sets
-    // a real 404 — and every reason still reads as the same 404.
+    // The same refusal as the page body, so no metadata is ever built for an
+    // unresolved asset. Every reason still reads as the same 404.
+    //
+    // The HTTP status depends on there being NO `loading.tsx` above this route:
+    // a loading boundary streams the 200 before any `notFound()` can run, here
+    // or in the body. That shipped as a soft 404 twice (live, 2026-11-03), and
+    // `videos/loading.tsx` was removed for it; see soft-404-refusals.test.ts.
     notFound();
   }
 
