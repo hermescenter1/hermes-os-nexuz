@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { normalizeArticleSlug } from "@/lib/articles/slug";
+import { articleRedirectPath, normalizeArticleSlug } from "@/lib/articles/slug";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 /**
@@ -189,6 +189,18 @@ describe("getArticleDetailBySlug — Unicode route resolution", () => {
   it("an encoded slash (%2F) is rejected before lookup (404)", async () => {
     const { getArticleDetailBySlug } = await load();
     expect(await getArticleDetailBySlug("foo%2Fbar")).toBeNull();
+  });
+});
+
+describe("articleRedirectPath — persisted Unicode slugs", () => {
+  it("encodes a Persian fallback target as one safe URL path segment", () => {
+    const slug = "آینده-هوش-مصنوعی-صنعتی؛-plc،-scada";
+    const path = articleRedirectPath("fa", slug);
+
+    expect(path).toBe(`/${"fa"}/articles/${encodeURIComponent(slug)}`);
+    expect(path).not.toContain("؛");
+    expect(path).not.toContain("،");
+    expect(decodeURIComponent(path.split("/").at(-1)!)).toBe(slug);
   });
 });
 
