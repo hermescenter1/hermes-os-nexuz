@@ -1,0 +1,226 @@
+{
+  "schemaVersion": 1,
+  "revision": 2,
+  "kind": "ADDITIVE_GOVERNED_DEPENDENCY_RETEST_EVIDENCE",
+  "note": "Additive record, revision 2. It does NOT rewrite the historical Phase 99 finding register (docs/security/phase99-findings.json), the retest sha256 pinned there, or revision 1 of this record (docs/security/phase99-dependency-governed-retest.json), whose sha256 it pins instead. It records the governed dependency-audit state after the braces advisory was withdrawn and its seven stale exceptions were deleted. Verified by scripts/__tests__/phase99-dependency-governed-retest.test.ts against the repository and the live npm audit, through scripts/ci/dependency-audit-gate.mjs. versionsAtRecording is recorded data from the lockfile on 2026-11-02, not a live pin.",
+  "baseCommit": "fba50b7cf778b84d398901184af40b4b786c1896",
+  "baseCommitMeaning": "The commit this lane was cut from (next 15.5.28). The state recorded here is that commit plus this lane: in-range lockfile updates for zod, undici and vitest's vite, and the emptied exception register.",
+  "recordedOn": "2026-11-02",
+  "ownerApproval": "Removal of the seven stale exceptions approved by the owner on 2026-11-02 (\"Yes, remove\").",
+  "historicalRetest": {
+    "path": "scripts/__tests__/phase99-dependency-remediation.test.ts",
+    "sha256": "bad1fd80088d5648b3ec79ea02a49615b474a1f8a2cc02dd015926f018fa2c1f",
+    "registerEvidenceHash": "bad1fd80088d5648b3ec79ea02a49615b474a1f8a2cc02dd015926f018fa2c1f",
+    "register": "docs/security/phase99-findings.json",
+    "findings": [
+      "P99-DEP-001",
+      "P99-DEP-002",
+      "P99-DEP-003",
+      "P99-DEP-004",
+      "P99-DEP-005",
+      "P99-DEP-006",
+      "P99-DEP-007",
+      "P99-DEP-013",
+      "P99-DEP-014"
+    ],
+    "status": "HISTORICAL_UNCHANGED"
+  },
+  "supersededRecord": {
+    "path": "docs/security/phase99-dependency-governed-retest.json",
+    "sha256": "258a80b62a0e8e432f5b6f13b16ab0cf240a057f3831b2a9a36ee79c72208434",
+    "acceptedDevOnlyHighCount": 7,
+    "status": "HISTORICAL_UNCHANGED"
+  },
+  "governedRetest": {
+    "path": "scripts/__tests__/phase99-dependency-governed-retest.test.ts",
+    "sha256": "414099e6a6b0c1453f50d294955cd3ec3b6812c1b97bc565af3a263459901b7e",
+    "gate": "scripts/ci/dependency-audit-gate.mjs",
+    "manifest": "docs/security/dependency-audit-exceptions.json"
+  },
+  "productionAudit": {
+    "critical": 0,
+    "high": 0
+  },
+  "fullTreeAudit": {
+    "critical": 0,
+    "high": 0
+  },
+  "acceptedDevOnlyHighCount": 0,
+  "acceptedDevOnlyHigh": [],
+  "expires": null,
+  "withdrawnAdvisory": {
+    "id": "GHSA-vfj7-8cjw-p6xm",
+    "withdrawnAt": "2026-10-23",
+    "source": "GitHub Advisory Database withdrawn_at 2026-10-23T12:53:02Z"
+  },
+  "withdrawnAcceptances": [
+    {
+      "package": "braces",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/braces"
+      ],
+      "inheritedFrom": [],
+      "versionsAtRecording": {
+        "node_modules/braces": "3.0.3"
+      },
+      "status": "STALE_EXCEPTION_DELETED_NOT_FIXED"
+    },
+    {
+      "package": "micromatch",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/micromatch"
+      ],
+      "inheritedFrom": [
+        "braces"
+      ],
+      "versionsAtRecording": {
+        "node_modules/micromatch": "4.0.8"
+      },
+      "status": "STALE_EXCEPTION_DELETED_NOT_FIXED"
+    },
+    {
+      "package": "chokidar",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/chokidar"
+      ],
+      "inheritedFrom": [
+        "braces"
+      ],
+      "versionsAtRecording": {
+        "node_modules/chokidar": "3.6.0"
+      },
+      "status": "STALE_EXCEPTION_DELETED_NOT_FIXED"
+    },
+    {
+      "package": "fast-glob",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/@next/eslint-plugin-next/node_modules/fast-glob",
+        "node_modules/fast-glob"
+      ],
+      "inheritedFrom": [
+        "micromatch"
+      ],
+      "versionsAtRecording": {
+        "node_modules/@next/eslint-plugin-next/node_modules/fast-glob": "3.3.1",
+        "node_modules/fast-glob": "3.3.3"
+      },
+      "status": "STALE_EXCEPTION_DELETED_NOT_FIXED"
+    },
+    {
+      "package": "tailwindcss",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/tailwindcss"
+      ],
+      "inheritedFrom": [
+        "chokidar",
+        "fast-glob",
+        "micromatch"
+      ],
+      "versionsAtRecording": {
+        "node_modules/tailwindcss": "3.4.17"
+      },
+      "status": "STALE_EXCEPTION_DELETED_NOT_FIXED"
+    },
+    {
+      "package": "@next/eslint-plugin-next",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/@next/eslint-plugin-next"
+      ],
+      "inheritedFrom": [
+        "fast-glob"
+      ],
+      "versionsAtRecording": {
+        "node_modules/@next/eslint-plugin-next": "15.5.19"
+      },
+      "status": "STALE_EXCEPTION_DELETED_NOT_FIXED"
+    },
+    {
+      "package": "eslint-config-next",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ],
+      "paths": [
+        "node_modules/eslint-config-next"
+      ],
+      "inheritedFrom": [
+        "@next/eslint-plugin-next"
+      ],
+      "versionsAtRecording": {
+        "node_modules/eslint-config-next": "15.5.19"
+      },
+      "status": "STALE_EXCEPTION_DELETED_NOT_FIXED"
+    }
+  ],
+  "remediatedHigh": [
+    {
+      "package": "zod",
+      "advisoryIds": [
+        "GHSA-mrhx-c7xc-m3w5"
+      ],
+      "paths": [
+        "node_modules/zod"
+      ],
+      "graph": "production",
+      "before": "4.4.3",
+      "after": "4.6.7",
+      "minimumSafe": "4.6.6"
+    },
+    {
+      "package": "undici",
+      "advisoryIds": [
+        "GHSA-2m5v-pch6-74hx",
+        "GHSA-4qv8-2p9j-2685",
+        "GHSA-4w7w-5xrc-9h26",
+        "GHSA-55wc-3pg8-jfw6",
+        "GHSA-9fm3-97px-rjf6",
+        "GHSA-f72v-6w45-q472",
+        "GHSA-qrxm-fqhp-jwvm",
+        "GHSA-xjj6-f33q-929c"
+      ],
+      "paths": [
+        "node_modules/undici"
+      ],
+      "graph": "dev",
+      "before": "7.30.0",
+      "after": "7.30.1",
+      "minimumSafe": "7.30.1"
+    },
+    {
+      "package": "vite",
+      "advisoryIds": [
+        "GHSA-587h-7wmj-h5pm",
+        "GHSA-698v-4r3x-3vcv",
+        "GHSA-9jrq-w75r-8gcw",
+        "GHSA-r825-w8mm-5pxw",
+        "GHSA-rq7h-c2jc-7f22"
+      ],
+      "paths": [
+        "node_modules/vitest/node_modules/vite"
+      ],
+      "graph": "dev",
+      "before": "8.0.16",
+      "after": "8.3.5",
+      "minimumSafe": "8.3.3"
+    }
+  ],
+  "notFixed": true,
+  "remediationSummary": "No HIGH finding is accepted any more, and the exception register is empty. The 7 braces-chain findings that revision 1 accepted temporarily until 2026-11-02 are NOT fixed: braces 3.0.3, micromatch, chokidar, fast-glob, tailwindcss 3.4.17, @next/eslint-plugin-next and eslint-config-next 15.5.19 are unchanged in the lockfile. They left the audit only because the root advisory GHSA-vfj7-8cjw-p6xm was withdrawn from the GitHub Advisory Database on 2026-10-23, so the gate reported their exceptions as STALE_OR_ORPHANED_EXCEPTION and they were deleted with the owner's approval; if a real advisory reaches these packages again it fails as an ordinary UNAPPROVED_HIGH. Separately, three live HIGH findings were cleared by in-range lockfile updates: zod 4.4.3 to 4.6.7 (production), undici 7.30.0 to 7.30.1 and vitest's vite 8.0.16 to 8.3.5 (dev). Production dependencies carry 0 critical and 0 high; the full tree carries 0 critical and 0 high. Moderate findings remain visible and non-blocking."
+}
