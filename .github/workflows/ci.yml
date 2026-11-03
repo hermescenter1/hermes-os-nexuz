@@ -76,13 +76,14 @@ jobs:
       # expiry, a stale/orphaned exception, and malformed audit output — which
       # BLOCKS with exit 2 rather than passing.
       #
-      # MORE PERMISSIVE for exactly one thing: the seven enumerated dev-only HIGH
-      # findings in docs/security/dependency-audit-exceptions.json, until
-      # 2026-11-02. That list cannot grow without a reviewed change to a
-      # committed file.
+      # MORE PERMISSIVE for exactly one thing: the enumerated dev-only HIGH
+      # findings in docs/security/dependency-audit-exceptions.json, until their
+      # expiry. That list cannot grow without a reviewed change to a committed
+      # file. It has been EMPTY since 2026-11-02 (the braces advisory was
+      # withdrawn; governance doc §9), so today nothing is accepted.
       #
       # Nothing is concealed — the full tree is audited and every finding is
-      # printed — and those seven are labelled ACCEPTED_TEMPORARY_DEV_ONLY_RISK,
+      # printed — and any accepted entry is labelled ACCEPTED_TEMPORARY_DEV_ONLY_RISK,
       # which means UNRESOLVED RISK, never "fixed".
       #
       # Exceptions live in docs/security/dependency-audit-exceptions.json and the
