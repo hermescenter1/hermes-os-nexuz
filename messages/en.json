@@ -4793,6 +4793,12 @@
       "searchLabel": "Search the Journal",
       "results": "{count} results",
       "entry": "Entry"
+    },
+    "pagination": {
+      "label": "Article archive pages",
+      "previous": "Previous page",
+      "next": "Next page",
+      "page": "Page {page}"
     }
   },
   "journalWriter": {
