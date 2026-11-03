@@ -501,22 +501,22 @@ describe("B — the watch page calls notFound() for anything not PUBLISHED + PUB
     await expect(renderWatch("Not A Slug!", ORG_A.slug)).rejects.toThrow(NOT_FOUND);
   });
 
-  it("generateMetadata refuses indexing for a slug that did not resolve", async () => {
+  // generateMetadata refuses with the same notFound() as the body. The body's
+  // refusal alone streamed after `videos/loading.tsx` had sent a 200 (a soft
+  // 404 on the live site); metadata resolves before the response starts. A
+  // thrown refusal also cannot leak any of the hidden row's editorial copy.
+  it("generateMetadata refuses a slug that did not resolve with notFound()", async () => {
     const { generateMetadata } = await import("../[org]/[slug]/page");
-    const meta = await generateMetadata({
-      params: params({ locale: "en", org: ORG_A.slug, slug: "secret-draft" }),
-    });
-    expect(meta.robots).toEqual({ index: false, follow: false });
-    // No editorial copy from the hidden row leaked into the tab title.
-    expect(JSON.stringify(meta)).not.toContain("Unreleased Draft");
+    await expect(
+      generateMetadata({ params: params({ locale: "en", org: ORG_A.slug, slug: "secret-draft" }) }),
+    ).rejects.toThrow(NOT_FOUND);
   });
 
-  it("generateMetadata refuses indexing for an unresolvable organization too", async () => {
+  it("generateMetadata refuses an unresolvable organization with notFound() too", async () => {
     const { generateMetadata } = await import("../[org]/[slug]/page");
-    const meta = await generateMetadata({
-      params: params({ locale: "en", org: "no-such-org", slug: "plc-basics" }),
-    });
-    expect(meta.robots).toEqual({ index: false, follow: false });
+    await expect(
+      generateMetadata({ params: params({ locale: "en", org: "no-such-org", slug: "plc-basics" }) }),
+    ).rejects.toThrow(NOT_FOUND);
   });
 });
 

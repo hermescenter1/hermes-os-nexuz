@@ -61,13 +61,17 @@ export async function generateMetadata({
   params: Promise<{ locale: string; org: string; slug: string }>;
 }) {
   const { locale, org, slug } = await params;
-  const t = await getTranslations({ locale, namespace: "mediaHub" });
 
   const scope = await resolveVideoHubScope(org);
   const view = scope ? await loadVideoWatch({ scope, slug, routeLocale: locale }) : null;
   if (!view) {
-    // Never index a page that did not resolve, and never describe why it did not.
-    return { title: t("states.notFound"), robots: { index: false, follow: false } };
+    // Refuse HERE, not only in the page body. `videos/loading.tsx` wraps this
+    // page in a Suspense boundary, so by the time the body's `notFound()` runs
+    // the 200 status has already been streamed and the refusal ships as a soft
+    // 404 (live, 2026-11-03). Metadata is resolved before the response starts
+    // (`htmlLimitedBots` in next.config.ts), so a `notFound()` here still sets
+    // a real 404 — and every reason still reads as the same 404.
+    notFound();
   }
 
   // The canonical URL is built from the PERSISTED organization and asset slugs,
