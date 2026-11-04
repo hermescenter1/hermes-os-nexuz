@@ -26,6 +26,7 @@ import type { ReactNode } from "react";
 import { setRequestLocale } from "next-intl/server";
 
 import { AppShell } from "@/components/app-shell";
+import { SectionMessages } from "@/i18n/SectionMessages";
 
 export default async function LiveOperationsLayout({
   children,
@@ -41,5 +42,9 @@ export default async function LiveOperationsLayout({
   // moves through — to the site, the asset, the alarm centre — not a full-bleed
   // workspace they enter and exit. Removing the sidebar here would cost them
   // exactly the navigation the page's evidence links assume.
-  return <AppShell>{children}</AppShell>;
+  return (
+    <SectionMessages section="live-operations">
+      <AppShell>{children}</AppShell>
+    </SectionMessages>
+  );
 }

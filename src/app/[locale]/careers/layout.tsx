@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import type { ReactNode }   from "react";
 import { PublicPageShell } from "@/components/public-site";
 import { buildMetadata }    from "@/lib/seo/metadata";
+import { SectionMessages } from "@/i18n/SectionMessages";
 
 export async function generateMetadata({
   params,
@@ -31,10 +32,12 @@ export default async function CareersLayout({
   setRequestLocale(locale);
 
   return (
-    <PublicPageShell visualMode="company" ambient={1}>
-      <div className="mx-auto max-w-screen-xl px-6 sm:px-8 pb-20">
-        {children}
-      </div>
-    </PublicPageShell>
+    <SectionMessages section="careers">
+      <PublicPageShell visualMode="company" ambient={1}>
+        <div className="mx-auto max-w-screen-xl px-6 sm:px-8 pb-20">
+          {children}
+        </div>
+      </PublicPageShell>
+    </SectionMessages>
   );
 }

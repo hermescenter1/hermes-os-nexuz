@@ -11,18 +11,21 @@ import { RequireCapability } from "@/components/auth/RequireCapability";
 import { AppShell }          from "@/components/app-shell";
 import { ErpSubNav }         from "@/components/business-operations";
 import { noIndexMetadata }   from "@/lib/seo/metadata";
+import { SectionMessages } from "@/i18n/SectionMessages";
 
 export const metadata = noIndexMetadata("ERP");
 
 export default function ErpLayout({ children }: { children: ReactNode }) {
   return (
-    <RequireCapability capability="admin">
-      <AppShell>
-        <ErpSubNav />
-        <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          {children}
-        </div>
-      </AppShell>
-    </RequireCapability>
+    <SectionMessages section="erp">
+      <RequireCapability capability="admin">
+        <AppShell>
+          <ErpSubNav />
+          <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            {children}
+          </div>
+        </AppShell>
+      </RequireCapability>
+    </SectionMessages>
   );
 }

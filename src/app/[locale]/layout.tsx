@@ -5,6 +5,7 @@ import { getMessages, setRequestLocale, getTranslations } from "next-intl/server
 import { headers }              from "next/headers";
 import localFont                from "next/font/local";
 import { routing, localeDirection, type Locale } from "@/i18n/routing";
+import { pickClientMessages }   from "@/i18n/client-messages";
 import { ACTIVE_LOCALES, DEFAULT_LOCALE as DEFAULT_ACTIVE_LOCALE, LOCALE_LANG_TAG } from "@/i18n/locales";
 import { CookieConsentBanner }  from "@/components/compliance/CookieConsentBanner";
 import { AnalyticsProvider }    from "@/components/analytics/AnalyticsProvider";
@@ -154,7 +155,10 @@ export default async function LocaleLayout({
   if (!routing.locales.includes(locale as Locale)) notFound();
 
   setRequestLocale(locale);
-  const messages = await getMessages();
+  // Only the shell's namespaces (cookie banner, error, not-found): every route
+  // section adds its own through `SectionMessages` in its layout. The whole
+  // catalog here put 450–500 KB of JSON into every page's RSC payload.
+  const messages = pickClientMessages(await getMessages());
   const dir      = localeDirection[locale as Locale];
 
   // Capture nonce (reading headers() also forces dynamic rendering — no cache stale mismatch)

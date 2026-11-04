@@ -4,6 +4,7 @@ import type { ReactNode }   from "react";
 import { setRequestLocale } from "next-intl/server";
 import { QueryProvider }    from "@/components/providers/QueryProvider";
 import { Shell }            from "@/components/engineering/Shell";
+import { SectionMessages } from "@/i18n/SectionMessages";
 
 export default async function EngineeringLayout({
   children,
@@ -16,8 +17,10 @@ export default async function EngineeringLayout({
   setRequestLocale(locale);
 
   return (
-    <QueryProvider>
-      <Shell>{children}</Shell>
-    </QueryProvider>
+    <SectionMessages section="engineering">
+      <QueryProvider>
+        <Shell>{children}</Shell>
+      </QueryProvider>
+    </SectionMessages>
   );
 }

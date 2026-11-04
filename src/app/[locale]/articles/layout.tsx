@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { getCurrentUser }  from "@/lib/auth/session";
 import { can }             from "@/lib/auth/roles";
 import { JournalShell }    from "@/components/articles/journal/JournalShell";
+import { SectionMessages } from "@/i18n/SectionMessages";
 
 // PHASE 104-F — this layout owns EVERY `/articles/*` route: the public
 // reading surfaces AND the authenticated author workspace AND the admin
@@ -24,8 +25,10 @@ export default async function ArticlesLayout({ children }: { children: ReactNode
   } catch { /* unauthenticated or auth not configured */ }
 
   return (
-    <JournalShell showAuth={isAuth} showEditorial={isAdmin} brandTitle={t("brandTitle")}>
-      {children}
-    </JournalShell>
+    <SectionMessages section="articles">
+      <JournalShell showAuth={isAuth} showEditorial={isAdmin} brandTitle={t("brandTitle")}>
+        {children}
+      </JournalShell>
+    </SectionMessages>
   );
 }
