@@ -28,6 +28,7 @@
 import { useCallback, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { track } from "@/lib/analytics/events";
 import {
   STAGE1_FIELD_ORDER,
   STAGE1_IDEMPOTENCY_HEADER,
@@ -116,6 +117,9 @@ export function Stage1ApplicationForm({ jobId, jobTitle, locale }: { jobId: stri
     }
 
     if (outcome.kind === "received") {
+      // Only after the server confirmed receipt. The job id and title are
+      // public; nothing the candidate typed is sent to analytics.
+      track.applyJob(jobId, jobTitle);
       // The details leave the page's memory once they are safely received.
       setForm(STAGE1_INITIAL_FORM);
       keyRef.current = null;
