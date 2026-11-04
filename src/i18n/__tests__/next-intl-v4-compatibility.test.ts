@@ -164,8 +164,13 @@ describe("next-intl v4 compatibility — client provider boundary", () => {
   const layoutSource = readSource("src", "app", "[locale]", "layout.tsx");
 
   it("keeps passing messages explicitly instead of relying on v4 inheritance", () => {
-    expect(layoutSource).toContain("const messages = await getMessages()");
+    // The locale layout passes the shell subset; each section layout passes its
+    // own subset through SectionMessages. Neither relies on v4 inheritance,
+    // which would ship the whole catalog.
+    expect(layoutSource).toContain("const messages = pickClientMessages(await getMessages())");
     expect(layoutSource).toContain("<NextIntlClientProvider messages={messages}>");
+    const sectionSource = readSource("src", "i18n", "SectionMessages.tsx");
+    expect(sectionSource).toContain("<NextIntlClientProvider messages={pickClientMessages(messages, section)}>");
   });
 
   it("keeps locale validation and request-locale pinning in the locale layout", () => {

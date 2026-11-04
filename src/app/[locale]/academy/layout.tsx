@@ -4,6 +4,7 @@ import { PublicPageShell } from "@/components/public-site";
 import { AcademySubNav }    from "@/components/academy/AcademySubNav";
 import { getCurrentUser }   from "@/lib/auth/session";
 import { buildMetadata }    from "@/lib/seo/metadata";
+import { SectionMessages } from "@/i18n/SectionMessages";
 
 export async function generateMetadata({
   params,
@@ -47,16 +48,18 @@ export default async function AcademyLayout({
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
   return (
-    <PublicPageShell ambient={2}>
-      <div className="mx-auto max-w-screen-2xl px-6 sm:px-8 pb-20">
-        <div className="page-header-premium">
-          <p className="eyebrow-label mb-2">{t("header.eyebrow")}</p>
-          <h1 className="type-page-title">{t("header.title")}</h1>
-          <p className="mt-2 type-secondary max-w-3xl">{t("header.lede")}</p>
+    <SectionMessages section="academy">
+      <PublicPageShell ambient={2}>
+        <div className="mx-auto max-w-screen-2xl px-6 sm:px-8 pb-20">
+          <div className="page-header-premium">
+            <p className="eyebrow-label mb-2">{t("header.eyebrow")}</p>
+            <h1 className="type-page-title">{t("header.title")}</h1>
+            <p className="mt-2 type-secondary max-w-3xl">{t("header.lede")}</p>
+          </div>
+          <AcademySubNav isAdmin={isAdmin} />
+          {children}
         </div>
-        <AcademySubNav isAdmin={isAdmin} />
-        {children}
-      </div>
-    </PublicPageShell>
+      </PublicPageShell>
+    </SectionMessages>
   );
 }

@@ -12,19 +12,22 @@ import { RequireCapability } from "@/components/auth/RequireCapability";
 import { AppShell }          from "@/components/app-shell";
 import { AssetsSubNav }      from "@/components/asset-maintenance";
 import { noIndexMetadata }   from "@/lib/seo/metadata";
+import { SectionMessages } from "@/i18n/SectionMessages";
 
 export const metadata = noIndexMetadata("Asset Registry");
 
 export default async function AssetsLayout({ children }: { children: ReactNode }) {
   const t = await getTranslations("assetMaintenance");
   return (
-    <RequireCapability capability="authoring">
-      <AppShell>
-        <AssetsSubNav ariaLabel={t("assets.eyebrow")} />
-        <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          {children}
-        </div>
-      </AppShell>
-    </RequireCapability>
+    <SectionMessages section="assets">
+      <RequireCapability capability="authoring">
+        <AppShell>
+          <AssetsSubNav ariaLabel={t("assets.eyebrow")} />
+          <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            {children}
+          </div>
+        </AppShell>
+      </RequireCapability>
+    </SectionMessages>
   );
 }

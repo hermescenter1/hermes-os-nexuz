@@ -17,6 +17,7 @@
     "test:phase92:postgres": "vitest run --config vitest.phase92-postgres.config.ts",
     "audit:retention": "node scripts/audit-retention.mjs",
     "audit:seo:live": "node scripts/seo/live-technical-audit.mjs",
+    "i18n:client-namespaces": "node scripts/i18n/client-namespaces.mjs",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",

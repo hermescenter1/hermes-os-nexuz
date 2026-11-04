@@ -55,6 +55,11 @@ vi.mock("@/components/academy/AcademySubNav", () => ({
   AcademySubNav: () => <nav data-testid="subnav" />,
 }));
 vi.mock("@/lib/auth/session", () => ({ getCurrentUser: async () => null }));
+// The client-message provider is an async server component that static markup
+// cannot render; its wiring is pinned in scripts/__tests__/client-namespaces.test.ts.
+vi.mock("@/i18n/SectionMessages", () => ({
+  SectionMessages: ({ children }: { children?: ReactNode }) => <>{children}</>,
+}));
 
 type LayoutFn = (a: {
   children: ReactNode;

@@ -11,17 +11,20 @@ import { getTranslations }   from "next-intl/server";
 import { RequireCapability } from "@/components/auth/RequireCapability";
 import { AppShell }          from "@/components/app-shell";
 import { EdmsSubNav }        from "@/components/engineering-documents";
+import { SectionMessages } from "@/i18n/SectionMessages";
 
 export default async function DocumentsLayout({ children }: { children: ReactNode }) {
   const t = await getTranslations("engineeringDocuments");
   return (
-    <RequireCapability capability="authoring">
-      <AppShell>
-        <EdmsSubNav ariaLabel={t("header.eyebrow")} />
-        <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          {children}
-        </div>
-      </AppShell>
-    </RequireCapability>
+    <SectionMessages section="documents">
+      <RequireCapability capability="authoring">
+        <AppShell>
+          <EdmsSubNav ariaLabel={t("header.eyebrow")} />
+          <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            {children}
+          </div>
+        </AppShell>
+      </RequireCapability>
+    </SectionMessages>
   );
 }

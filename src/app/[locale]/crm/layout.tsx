@@ -11,18 +11,21 @@ import { noIndexMetadata }   from "@/lib/seo/metadata";
 import { RequireCapability } from "@/components/auth/RequireCapability";
 import { AppShell }          from "@/components/app-shell";
 import { CrmSubNav }         from "@/components/crm-experience";
+import { SectionMessages } from "@/i18n/SectionMessages";
 
 export const metadata: Metadata = noIndexMetadata("CRM — Hermes OS");
 
 export default function CrmLayout({ children }: { children: React.ReactNode }) {
   return (
-    <RequireCapability capability="admin">
-      <AppShell>
-        <CrmSubNav />
-        <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          {children}
-        </div>
-      </AppShell>
-    </RequireCapability>
+    <SectionMessages section="crm">
+      <RequireCapability capability="admin">
+        <AppShell>
+          <CrmSubNav />
+          <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            {children}
+          </div>
+        </AppShell>
+      </RequireCapability>
+    </SectionMessages>
   );
 }

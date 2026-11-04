@@ -6,6 +6,10 @@
 // nav.items labels (already localized EN/FA/DE); i18n Link adds the locale
 // prefix exactly once; aria-current marks the active section. Rendered once per
 // module — desktop and mobile share the same DOM (no duplicated datasets).
+//
+// `useTranslations(namespace)` below takes one of the two typed namespaces, so
+// the client-message scan cannot read it from the call; it is declared here.
+// client-namespaces: assetOperations maintenanceOperations
 
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";

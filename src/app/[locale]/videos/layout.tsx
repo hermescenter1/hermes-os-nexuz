@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { PublicPageShell } from "@/components/public-site";
+import { SectionMessages } from "@/i18n/SectionMessages";
 
 /**
  * PHASE 102 — the PUBLIC Video Hub shell.
@@ -21,5 +22,9 @@ import { PublicPageShell } from "@/components/public-site";
  * repository, where ADR §11 put it.
  */
 export default function VideosLayout({ children }: { children: ReactNode }) {
-  return <PublicPageShell>{children}</PublicPageShell>;
+  return (
+    <SectionMessages section="videos">
+      <PublicPageShell>{children}</PublicPageShell>
+    </SectionMessages>
+  );
 }
