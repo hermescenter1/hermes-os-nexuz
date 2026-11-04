@@ -7,6 +7,7 @@ import { buildMetadata } from "@/lib/seo/metadata";
 import { KNOWLEDGE }     from "@/lib/industrial/knowledge";
 import { CASES, CASE_CONTENT_LOCALES } from "@/lib/industrial/cases";
 import { VENDORS }       from "@/lib/industrial/vendors";
+import { PageGuide }     from "@/components/PageGuide";
 
 export async function generateMetadata({
   params,
@@ -45,6 +46,7 @@ export default async function LibraryPage({
         </p>
       </div>
       <LibraryClient />
+      <PageGuide guideKey="library" />
 
       {/*
        * DISCOVERY-2D P1K — server-rendered discovery bridge.

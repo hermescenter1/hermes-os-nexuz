@@ -112,6 +112,21 @@ export default async function ServicesPage({
             ))}
           </div>
         </div>
+
+        {/* THIN-CONTENT lane — how the two groups above relate. Server-only
+            `services` namespace; no client payload. */}
+        <div className="mt-16 max-w-3xl">
+          <h2 className="font-display text-2xl font-bold text-ink">
+            {t("hubGuide.title")}
+          </h2>
+          <div className="mt-4 space-y-4">
+            {(t.raw("hubGuide.body") as string[]).map((paragraph) => (
+              <p key={paragraph} className="font-body text-base leading-relaxed text-muted">
+                {paragraph}
+              </p>
+            ))}
+          </div>
+        </div>
       </section>
     </PublicPageShell>
   );

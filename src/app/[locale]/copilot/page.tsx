@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { PublicPageShell } from "@/components/public-site";
 import { PageIntro }     from "@/components/PageIntro";
 import { CopilotClient } from "@/components/copilot/CopilotClient";
+import { PageGuide }     from "@/components/PageGuide";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -24,6 +25,7 @@ export default async function CopilotPage({
     <PublicPageShell>
       <PageIntro eyebrow={t("eyebrow")} title={t("title")} lede={t("lede")} />
       <CopilotClient />
+      <PageGuide guideKey="copilot" />
     </PublicPageShell>
   );
 }

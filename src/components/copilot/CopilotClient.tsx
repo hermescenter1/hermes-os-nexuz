@@ -133,7 +133,7 @@ export function CopilotClient() {
           { label: "Known %",        value: total > 0 ? `${nf.format(knownPct)}${pct}` : "—",                                    note: `${nf.format(known)} classified`, color: knownPct >= 70 ? "text-signal" : knownPct >= 40 ? "text-warn" : "text-ink" },
           { label: "Avg Confidence", value: total > 0 ? `${nf.format(avgConf)}${pct}` : "—",                                     note: "deterministic scoring",       color: avgConf >= 70 ? "text-signal" : avgConf >= 40 ? "text-warn" : "text-ink" },
           { label: "Guardrails",     value: nf.format(stats?.guardrailHits ?? 0),                                                 note: "blocked queries",             color: (stats?.guardrailHits ?? 0) > 0 ? "text-warn" : "text-ink" },
-          { label: "Domains",        value: String(KNOWLEDGE_DOMAINS.length),                                                     note: "query classifications",       color: "text-ink" },
+          { label: "Domains",        value: String(KNOWLEDGE_DOMAINS.length),                                                     note: "knowledge domains",           color: "text-ink" },
           { label: "Vendors",        value: String(VENDORS.length),                                                               note: "OEMs indexed",               color: "text-ink" },
         ].map((kpi) => (
           <div key={kpi.label} className="flex-1 min-w-[95px] px-4 py-4">
