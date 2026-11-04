@@ -140,33 +140,40 @@ Every statement was drawn from code or from catalog text already in the reposito
 6. **Cybersecurity boundary:** the copy says these controls are not a penetration test, a scanner or an IDS. The repository also records that no external security assessment has been completed (`docs/security/phase99-assurance-report.md`). That fact was **deliberately left out** of the public copy, because publishing it is the owner's decision.
 7. **"/library": German pages link to a case only where a German version exists.** This describes the current `CASE_CONTENT_LOCALES` behaviour.
 
-### B. Existing claims on the same pages that the repository does NOT back
+### B. Existing claims the repository did not back — corrected in this PR
 
-The new sections are honest, so some of them now sit next to older copy that contradicts them. These leaves were **not changed** in this PR (out of scope). Each one needs an owner decision:
+The owner asked for these to be corrected as well (2026-11-04).
 
-| Existing leaf | Current text (en) | Problem |
+- 48 existing leaves were rewritten in en, fa and de; the leaf count is unchanged.
+- Each new wording uses only the evidence in section 4.
+
+| Leaf(s) | Was (en) | Now (en) |
 |---|---|---|
-| `services.items.scadaHmi.points.one.desc` | "Live mimic diagrams of lines, tanks, and flows." | No mimic or live values exist; the new boundary says so on the same page |
-| `services.items.scadaHmi.points.three.desc` | "Surface what matters first…" | Alarm definitions only, no live prioritisation |
-| `services.items.cybersecurity.points.one.desc` | "segmentation, zones, and conduits at a glance" | Zones exist as data, but there is no conduit model and no posture view |
-| `services.items.industrialAi.points.two` | "Logic drafting — reviewable first draft of control logic" | No logic-generation code found |
-| `services.items.knowledgeCloud.points.one` | "Plain-language search" | Library search is substring matching (free text goes to Brain) |
-| `services.items.plc.points.two.desc` | "Siemens S7, ABB, and Schneider conventions" | Only Siemens has dedicated libraries; ABB and Schneider are name recognition only |
-| `services.items.plc.points.three.desc` | "Every change is … tracked" | Studio edits are not persisted |
-| `meta.pages.servicePlc` | "commissioning, and optimization" | No such service in code |
-| `meta.pages.serviceScadaHmi` | "Design, deploy… enterprise SCADA…", Wonderware / FactoryTalk keywords | Not backed |
-| `meta.pages.serviceCybersecurity` | "enterprise-grade industrial cybersecurity services" | No human service, no scanning |
-| `meta.pages.serviceKnowledgeCloud` | "tag libraries, alarm management, historian integration, AI-ready pipelines" | Not backed |
-| `meta.pages.serviceIndustrialAi` | "process optimization" | Not backed (anomaly detection is rule-based, "No ML") |
-| `meta.pages.brain` | "trained on industrial automation" | The engine is rule-based keyword matching, not trained |
-| `meta.pages.copilot` | "draft PLC logic… manage HMI" | Not backed |
-| `meta.pages.platform` | "combining SCADA, HMI, PLC" | Implies live connectivity; connectors are "foundation only" |
-| `brain` "Brain memory … Held in server session memory" | — | The public endpoint stores nothing; the panel is always empty |
-| `publicSite.platform.layers.intelligence.modules` | "Command Center" | No module has that name (closest: /dashboard/operations, /live-operations) |
-| `publicSite.platform.layers.security.modules` | "PLC · SCADA · OPC UA · MQTT" | Connectors are interfaces only; no protocol driver in `package.json` |
-| `copilot` KPI "Domains 9" | — | The classifier has 12 domains (the KPI counts `KNOWLEDGE_DOMAINS`) |
-| `architecture.note` / `architecture.future` | "Phase 2 gateways" | OT Edge enrolment and telemetry ingest exist; the wording needs reconciliation |
-| `industrialBrain.deploy.desc` | "Full integration with CMMS, EDMS, expert network…" | Not shown in this flow |
+| `services.items.plc.short` / `.lede` | "Ladder and structured text…" / "…version control logic…" | "IEC 61131-3 logic, validated and reviewed." / "Author logic for S7-1200, S7-1500 and generic IEC 61131-3 targets, and check it before anyone approves it." |
+| `services.items.plc.points.*` | Ladder & structured text; "Siemens S7, ABB, and Schneider conventions"; "Every change is … tracked" | Structured text (SCL); Siemens-first, other platforms use a generic IEC 61131-3 target; approval states, only a draft is editable |
+| `services.items.scadaHmi.short` / `.lede` | "Supervisory control…" / "…the supervisory layer that drives them" | Supervisory engineering; model and check screens, alarms and trends, and see gateway connectivity for each site |
+| `services.items.scadaHmi.points.*` | "Live mimic diagrams…"; HMI layouts in both directions; "Surface what matters first" | Project artefacts; trilingual RTL/LTR workspace; alarm definitions checked for a priority and an operator message |
+| `services.items.industrialAi.points.two` | "Logic drafting" | "Evidence you can check" |
+| `services.items.cybersecurity.short` / `.lede` / `.points.one` | "Posture and audit for OT networks"; "…harden the OT network"; "…zones, and conduits at a glance" | Gateway security, zone modelling and audit for OT data; control how OT data enters the platform; zone model with flagged conflicts |
+| `services.items.knowledgeCloud.lede` / `.points.one` / `.points.two.desc` | "…query in plain language"; "Plain-language search"; "Standards, components…" | Library that Hermes Brain cites; keyword search with filters; motors, contactors, MCCs, protection and drives |
+| `meta.pages.service{Plc,ScadaHmi,Cybersecurity,KnowledgeCloud,IndustrialAi}.*` | "commissioning, optimization"; "design, deploy… enterprise SCADA"; Wonderware/FactoryTalk; "enterprise-grade… services"; "historian integration, AI-ready pipelines"; "process optimization" | Titles, descriptions and keywords rewritten to the implemented capability; "Services" dropped from the titles |
+| `meta.pages.brain.description` | "…trained on industrial automation" | "…a deterministic engineering-analysis engine… with no language model" |
+| `meta.pages.copilot.description` | "draft PLC logic… manage HMI" | Explain alarms, classify faults, match field cases |
+| `meta.pages.platform.description` / `.keywords` | "combining SCADA, HMI, PLC…" / "PLC integration" | Evidence-to-action pipeline, with OT data entering through read-only gateways |
+| `publicSite.platform.layers.security.modules` | "… · PLC · SCADA · OPC UA · MQTT" | "… · OT Edge gateways · Engineering-export import · Telemetry ingest" |
+| `industrialBrain.deploy.desc` | "Full integration with CMMS, EDMS, expert network…" | Saved analyses become draft engineering cases reviewed by the organisation's own authors |
+| `brain.intel.memoryNote` | "Held in server session memory — V1 keeps no database." | "Public demo: analyses are computed on request and never stored, so this panel stays empty." |
+| `src/components/copilot/CopilotClient.tsx` KPI note | "Domains 9 · query classifications" | "Domains 9 · knowledge domains" (the panel lists the 9 knowledge domains; the classifier has 12) |
+
+Withdrawn after re-checking:
+
+- **"Command Center" is backed.** `nav.items.opsCenter` = "Operations Command Center" points at `/dashboard/operations` (`src/lib/navigation/site-nav.ts:50`). Unchanged.
+- **`architecture.note` / `architecture.future` ("Phase 2 gateways") is accurate.** OPC UA, Modbus and MQTT drivers do not exist yet (`src/lib/industrial/connectors/base.ts`), so "represented, not connected" is still true. Unchanged.
+
+Still open for the owner:
+
+- Whether ZHARFA sells human engineering services (see A.1). If it does, the "Services" framing and the meta titles can carry them again.
+- The Copilot KPI strip is hard-coded English in all locales (pre-existing). It needs localisation.
 
 ## 6. Follow-ups (not in this PR)
 

@@ -294,8 +294,8 @@
       },
       "platform": {
         "title": "Hermes OS Plattform — Architektur & Funktionsumfang",
-        "description": "Entdecken Sie die Plattformarchitektur von Hermes OS, die SCADA, HMI, PLC und KI zu einer einheitlichen industriellen Betriebsoberfläche vereint.",
-        "keywords": "Industrieplattform, SCADA-Architektur, PLC-Integration, KI-Betrieb, HMI-Design"
+        "description": "Entdecken Sie die Architektur von Hermes OS: eine nachvollziehbare Pipeline von Evidenz zu Maßnahme über Engineering-, Betriebs- und Geschäftsmodule, mit OT-Daten über nur lesende Gateways.",
+        "keywords": "Industrieplattform, SCADA-Architektur, erklärbare KI, OT Edge, industrieller Betrieb"
       },
       "seo": {
         "title": "SEO-Dashboard",
@@ -330,38 +330,38 @@
       },
       "brain": {
         "title": "Hermes Brain — Industrielle Wissens-Engine",
-        "description": "Hermes Brain ist eine domänenspezifische Wissens-Engine, trainiert auf industrieller Automatisierung: PLC-Logik, SCADA-Alarme, HMI-Design und OT-Cybersicherheit.",
+        "description": "Hermes Brain ist eine deterministische Engine für technische Analysen in der industriellen Automatisierung: PLC, SCADA, HMI, Antriebe, Sensoren und OT-Cybersicherheit — nachweisbasiert, ohne Sprachmodell.",
         "keywords": "industrielles KI-Brain, Wissens-Engine, PLC-KI, SCADA-Intelligenz, Wissensbasis Automatisierung, OT-KI"
       },
       "copilot": {
         "title": "Engineering Copilot — KI für Industrieingenieure",
-        "description": "Ein KI-Copilot, der die Sprache der Automatisierung spricht: PLC-Logik entwerfen, Alarme erklären, SCADA debuggen und HMI verwalten — auf Persisch und Englisch.",
+        "description": "Ein Engineering Copilot für die Automatisierung: Alarme erklären, Störungen zuordnen und Feldfälle für PLC-, SCADA- und HMI-Probleme abgleichen — deterministisch, auf Persisch und Englisch.",
         "keywords": "Engineering Copilot, KI für PLC, SCADA-KI-Assistent, industrieller KI-Copilot, Automatisierungs-KI, zweisprachige KI"
       },
       "serviceIndustrialAi": {
-        "title": "Services für industrielle KI-Integration — Hermes OS",
-        "description": "Bringen Sie KI-gestützte Intelligenz in Ihre industriellen Abläufe: vorausschauende Instandhaltung, Anomalieerkennung und Prozessoptimierung.",
-        "keywords": "Services industrielle KI, vorausschauende Instandhaltung, KI-Prozessoptimierung, IIoT-KI, Automatisierungsintelligenz"
+        "title": "Industrielle KI — deterministische Störungsanalyse | Hermes OS",
+        "description": "Deterministische, nachweisbasierte Störungsanalyse: Fachbereichszuordnung, Hersteller- und Fallabgleich, Konfidenzbewertung und Sicherheitsleitplanken — Entscheidungshilfe, niemals Steuerung.",
+        "keywords": "industrielle KI, Fehlerdiagnose, Ursachenanalyse, erklärbare KI, Entscheidungsunterstützung, Automatisierungsintelligenz"
       },
       "serviceCybersecurity": {
-        "title": "Industrielle Cybersicherheits-Services — OT-/ICS-Sicherheit",
-        "description": "Schützen Sie Ihr OT-Netzwerk, Ihre SCADA-Systeme und Ihre PLC-Infrastruktur mit industrieller Cybersicherheit auf Enterprise-Niveau.",
-        "keywords": "industrielle Cybersicherheit, OT-Sicherheit, ICS-Sicherheit, SCADA-Cybersicherheit, PLC-Netzwerksicherheit, OT/IT-Konvergenz"
+        "title": "Industrielle Cybersicherheit — OT-Gateway-Sicherheit & Audit",
+        "description": "Registrierte Gateways mit rotierbaren Zugangsdaten, signierte und gegen Wiedereinspielung geschützte Nachrichten, Zonenmodell importierter Netzwerkdaten, Zugriff nach Minimalprinzip und ein Audit-Protokoll.",
+        "keywords": "industrielle Cybersicherheit, OT-Sicherheit, ICS-Sicherheit, OT-Netzzonen, Gateway-Zugangsdaten, Audit-Protokoll"
       },
       "servicePlc": {
-        "title": "PLC-Engineering-Services — Siemens, Schneider, ABB",
-        "description": "Professionelle PLC-Programmierung, Inbetriebnahme und Optimierung für Siemens TIA Portal, Schneider Electric, ABB und weitere.",
-        "keywords": "PLC-Engineering-Services, Siemens TIA Portal, PLC-Programmierung, IEC 61131-3, Kontaktplan, Structured Text"
+        "title": "PLC-Engineering-Arbeitsbereich — Siemens S7 & IEC 61131-3",
+        "description": "PLC-Logik für Siemens S7-1200, S7-1500 und generische Ziele nach IEC 61131-3 erstellen und validieren — mit deterministischer Analyse von TIA-Portal-Exporten und Freigabe durch Ingenieure.",
+        "keywords": "PLC-Engineering, Siemens TIA Portal, S7-1500, PLC-Programmierung, IEC 61131-3, Structured Text"
       },
       "serviceScadaHmi": {
-        "title": "SCADA- & HMI-Engineering-Services — Prozessvisualisierung",
-        "description": "Enterprise-SCADA-Systeme und HMI-Panels für Fertigung, Öl & Gas und Versorgungsunternehmen entwerfen, implementieren und optimieren.",
-        "keywords": "SCADA-Engineering, HMI-Design, Wonderware, FactoryTalk, SCADA-Architektur, Prozessvisualisierung, Bedienbilder"
+        "title": "SCADA- & HMI-Engineering — Alarme, Bilder, Gateways",
+        "description": "HMI-Bilder, Faceplates, Alarme und Trends modellieren und validieren und Gateway-Konnektivität und Alarmdefinitionen je Standort im nur lesenden SCADA Control Room sehen.",
+        "keywords": "SCADA-Engineering, HMI-Design, Alarmmanagement, SCADA-Architektur, Bedienbilder, Faceplates"
       },
       "serviceKnowledgeCloud": {
-        "title": "Knowledge Cloud — Industrielle Datenintelligenz",
-        "description": "Verbinden Sie Ihre Anlagendaten mit einer strukturierten Wissensschicht: Tag-Bibliotheken, Alarmmanagement, Historian-Integration und KI-fähige Pipelines.",
-        "keywords": "industrielle Knowledge Cloud, Tag-Bibliothek, Historian-Integration, Alarmmanagement, Datenintelligenz, IIoT-Daten"
+        "title": "Knowledge Cloud — Technische Bibliothek für die Industrie",
+        "description": "Strukturierte Bibliotheken für SPS, SCADA und HMI, elektrische Systeme, Messtechnik, Protokolle, OT-Sicherheit und Instandhaltung sowie Feldfälle der Hersteller — zitiert von Hermes Brain.",
+        "keywords": "industrielle Wissensbasis, technische Bibliothek, SPS-Referenz, SCADA-Referenz, OT-Sicherheit, Feldfälle"
       },
       "serviceDigitalTwin": {
         "title": "Digitaler Zwilling — Hermes OS",
@@ -764,21 +764,21 @@
     "items": {
       "plc": {
         "name": "PLC-Programmierung",
-        "short": "Kontaktplan und strukturierter Text, erstellt und geprüft.",
+        "short": "Logik nach IEC 61131-3, validiert und geprüft.",
         "title": "PLC-Programmierung",
-        "lede": "Logik für die Steuerungen Ihrer Linien erstellen, prüfen und versionieren.",
+        "lede": "Logik für S7-1200, S7-1500 und generische Ziele nach IEC 61131-3 erstellen und prüfen, bevor jemand sie freigibt.",
         "points": {
           "one": {
-            "name": "Kontaktplan & strukturierter Text",
-            "desc": "Programmiert in den Sprachen, die Ihre Steuerungen bereits sprechen."
+            "name": "Strukturierter Text (SCL)",
+            "desc": "Logik in strukturiertem Text nach IEC 61131-3, geprüft gegen feste Validierungsregeln."
           },
           "two": {
-            "name": "Herstellerbewusst",
-            "desc": "Muster nach den Konventionen von Siemens S7, ABB und Schneider."
+            "name": "Siemens im Fokus",
+            "desc": "Eigene Profile für S7-1200 und S7-1500; andere Plattformen nutzen ein generisches Ziel nach IEC 61131-3."
           },
           "three": {
-            "name": "Geprüft und versioniert",
-            "desc": "Jede Änderung wird erklärt und nachverfolgt — nichts wird blind eingefügt."
+            "name": "Geprüft vor der Freigabe",
+            "desc": "Freigabestatus vom Entwurf bis zur Inbetriebnahme; bearbeitbar ist nur der Entwurf."
           }
         },
         "detail": {
@@ -816,21 +816,21 @@
       },
       "scadaHmi": {
         "name": "SCADA & HMI",
-        "short": "Leittechnik und Bedienbilder.",
+        "short": "Leittechnik-Engineering und Bedienbilder.",
         "title": "SCADA & HMI",
-        "lede": "Die Bilder, die Bediener beobachten, und die Leitebene dahinter — sauber aufgebaut.",
+        "lede": "Bilder, Alarme und Trends eines SCADA-Projekts modellieren und prüfen und die Gateway-Konnektivität je Standort sehen.",
         "points": {
           "one": {
-            "name": "Prozessvisualisierung",
-            "desc": "Live-Fließbilder von Linien, Tanks und Strömen."
+            "name": "Projektartefakte",
+            "desc": "HMI-Bilder, Faceplates, Trends und SCADA-Bereiche in einem Projekt modelliert."
           },
           "two": {
-            "name": "Bedienbilder",
-            "desc": "HMI-Layouts, die in beiden Schreibrichtungen korrekt lesbar sind."
+            "name": "Dreisprachiger Arbeitsbereich",
+            "desc": "Der Engineering-Arbeitsbereich ist auf Persisch, Englisch und Deutsch korrekt lesbar, von rechts nach links wie von links nach rechts."
           },
           "three": {
             "name": "Alarmbewusst",
-            "desc": "Das Wichtigste zuerst, in der Sprache des Bedieners."
+            "desc": "Alarmdefinitionen werden auf Priorität und Bedienermeldung geprüft, bevor sie einen Bediener erreichen."
           }
         },
         "detail": {
@@ -877,8 +877,8 @@
             "desc": "Symptom beschreiben — einen strukturierten Pfad zur Ursache erhalten."
           },
           "two": {
-            "name": "Logikentwurf",
-            "desc": "Aus einer Absicht wird ein prüfbarer erster Entwurf der Steuerungslogik."
+            "name": "Prüfbare Nachweise",
+            "desc": "Jede Antwort zeigt die passenden Fälle, die zitierten Referenzen und die Konfidenz dahinter."
           },
           "three": {
             "name": "Zweisprachig",
@@ -920,13 +920,13 @@
       },
       "cybersecurity": {
         "name": "Industrielle Cybersicherheit",
-        "short": "Lagebild und Audit für OT-Netzwerke.",
+        "short": "Gateway-Sicherheit, Zonenmodell und Audit für OT-Daten.",
         "title": "Industrielle Cybersicherheit",
-        "lede": "Das Operational-Technology-Netzwerk verstehen und härten, das Ihre Anlagen verbindet.",
+        "lede": "Steuern, wie OT-Daten in die Plattform gelangen — registrierte Gateways, signierte Nachrichten und zonenbewusste Analyse importierter Netzwerkdaten.",
         "points": {
           "one": {
-            "name": "Netzwerk-Lagebild",
-            "desc": "Segmentierung, Zonen und Conduits auf einen Blick."
+            "name": "Zonenmodell",
+            "desc": "Importierte Netzwerkdaten in Zonen gegliedert; widersprüchliche Zuordnungen werden gemeldet."
           },
           "two": {
             "name": "Audit-Trails",
@@ -974,15 +974,15 @@
         "name": "Knowledge Cloud",
         "short": "Ihre Elektro- und Automatisierungsreferenz.",
         "title": "Knowledge Cloud",
-        "lede": "Eine durchsuchbare Bibliothek für Elektro- und Automatisierungswissen, die Ihr Team in natürlicher Sprache abfragen kann.",
+        "lede": "Eine durchsuchbare Bibliothek für Elektro- und Automatisierungswissen, auf die sich Hermes Brain in seinen Analysen stützt.",
         "points": {
           "one": {
-            "name": "Suche in natürlicher Sprache",
-            "desc": "Eine Frage stellen, statt ein Stichwort zu raten."
+            "name": "Stichwortsuche",
+            "desc": "Titel, Zusammenfassungen und Schlagwörter durchsuchen, gefiltert nach Kategorie und Hersteller."
           },
           "two": {
             "name": "Elektrotechnische Referenz",
-            "desc": "Normen, Komponenten und Praxis an einem Ort."
+            "desc": "Motoren, Schütze, MCCs, Schutztechnik und Antriebe an einem Ort."
           },
           "three": {
             "name": "Zweisprachige Inhalte",
@@ -1675,7 +1675,7 @@
           },
           {
             "name": "Unterstützte Fachbereiche",
-            "desc": "Die Fachbereiche, die die Engine zuordnet, werden aufgelistet; die von Ihren Fragen betroffenen sind hervorgehoben."
+            "desc": "Die Wissensbereiche hinter der Engine werden aufgelistet; die von Ihren Fragen betroffenen sind hervorgehoben."
           },
           {
             "name": "Herstellerabdeckung",
@@ -2761,7 +2761,7 @@
       "memoryAvgConfidence": "Durchschnittliche Konfidenz",
       "memoryTopDomains": "Häufigste Domänen",
       "memoryGuardrails": "Schutzregel-Eingriffe",
-      "memoryNote": "Im Server-Sitzungsspeicher gehalten — V1 führt keine Datenbank.",
+      "memoryNote": "Öffentliche Demo: Analysen werden auf Anfrage berechnet und nie gespeichert, daher bleibt dieser Bereich leer.",
       "memoryEmpty": "In dieser Sitzung noch keine Analysen erfasst.",
       "memoryKnown": "Bekannte Analysen",
       "memoryUnknown": "Unbekannte Analysen"
@@ -5721,7 +5721,7 @@
     "deploy": {
       "eyebrow": "HERMES INDUSTRIAL",
       "title": "Industrial Brain für Ihr Unternehmen bereitstellen",
-      "desc": "Vollständige Integration mit CMMS, EDMS, Expertennetzwerk und industriellem Betrieb",
+      "desc": "Gespeicherte Analysen werden zu Entwürfen technischer Fälle, die die Autoren Ihrer Organisation prüfen, bevor etwas veröffentlicht wird.",
       "requestDemo": "Demo anfragen"
     },
     "workspace": {
@@ -7708,7 +7708,7 @@
         },
         "security": {
           "name": "Sicherheit · Integration & Edge",
-          "modules": "RBAC für Organisation & Standort · Mandantenisolation · Audit-Trail · PLC · SCADA · OPC UA · MQTT",
+          "modules": "RBAC für Organisation & Standort · Mandantenisolation · Audit-Trail · OT-Edge-Gateways · Import von Engineering-Exporten · Telemetrie-Eingang",
           "desc": "Die Grenzschicht, die jede Anfrage und jede Verbindung durchläuft."
         }
       },
