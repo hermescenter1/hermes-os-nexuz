@@ -780,6 +780,38 @@
             "name": "Geprüft und versioniert",
             "desc": "Jede Änderung wird erklärt und nachverfolgt — nichts wird blind eingefügt."
           }
+        },
+        "detail": {
+          "overview": [
+            "Die SPS-Entwicklung findet in Hermes OS im Automation Engineering Studio statt, einem Arbeitsbereich für angemeldete Ingenieure. Ein Projekt zielt auf eine Siemens S7-1200, eine S7-1500 oder eine generische Steuerung nach IEC 61131-3, und seine Logik wird gegen einen festen Satz von Prüfregeln geprüft: nicht aufgelöste oder doppelte Symbole, Befehle ohne Rückmeldung, fehlende technische Einheiten und ähnliche Mängel werden mit stabilen Diagnosecodes gemeldet.",
+            "Exportierte Engineering-Metadaten — Exporte aus TIA Portal, SPS, HMI und SCADA — lassen sich zur Analyse importieren. Eine deterministische Regel-Engine prüft die importierten Variablen, Alarme und Netzwerkdaten und hält jeden Befund zur Prüfung durch einen Ingenieur fest. Die Analyse liest den Export; sie verändert das Quellprojekt nie.",
+            "Jede Logikrevision trägt einen Freigabestatus — Entwurf, geprüft, freigegeben oder in Betrieb genommen —, und nur ein Entwurf lässt sich bearbeiten, sodass sich eine Version nach ihrer Prüfung nicht mehr ändern kann."
+          ],
+          "covers": [
+            {
+              "name": "Steuerungsziele",
+              "desc": "Profile für Siemens S7-1200 und S7-1500 sowie ein generisches Ziel nach IEC 61131-3 für andere Plattformen."
+            },
+            {
+              "name": "Statische Prüfung",
+              "desc": "Stabile Diagnosecodes für Symbol-, Rückmelde- und Einheitenfehler, bevor die Logik in die Prüfung geht."
+            },
+            {
+              "name": "Exportanalyse",
+              "desc": "Importierte Variablen-, Alarm- und Netzwerkmetadaten, geprüft durch deterministische, beratende Regeln."
+            },
+            {
+              "name": "Freigabestatus",
+              "desc": "Entwurf, geprüft, freigegeben und in Betrieb genommen — bearbeitbar ist nur der Entwurf."
+            }
+          ],
+          "boundary": "Hermes OS lädt niemals Code in eine Steuerung und wendet keine Änderung automatisch an. Studio-Projekte sind erstellt oder simuliert und nicht mit einer laufenden SPS verbunden; jeder Analysebefund ist beratend. Eine Änderung an einer realen Steuerung bleibt die Entscheidung eines qualifizierten Ingenieurs, und alles, was eine Sicherheits-SPS oder eine Sicherheitsfunktion berührt, ist auf die Prüfung durch einen Ingenieur für funktionale Sicherheit beschränkt.",
+          "related": [
+            "Artikel: Moderne SPS-Architektur für Großanlagen",
+            "Artikel: Kontaktplan oder strukturierter Text",
+            "Artikel: Nachweisgestützte SPS-Fehlersuche",
+            "Bibliothek: SPS-Grundlagen"
+          ]
         }
       },
       "scadaHmi": {
@@ -800,6 +832,38 @@
             "name": "Alarmbewusst",
             "desc": "Das Wichtigste zuerst, in der Sprache des Bedieners."
           }
+        },
+        "detail": {
+          "overview": [
+            "Das Leittechnik-Engineering beginnt in Hermes OS bei den Artefakten, aus denen ein SCADA-Projekt besteht: HMI-Bilder, Faceplates, Alarme, Trends, SCADA-Bereiche, Historian-Einstellungen und Berichte. Im Automation Engineering Studio wird jedes Artefakt modelliert und geprüft — ein Alarm ohne Priorität wird zum Beispiel gemeldet, bevor er einen Bediener erreicht.",
+            "Der SCADA Control Room ist die Betriebssicht auf dieselben Daten. Für jeden Standort, den ein Benutzer sehen darf, zeigt er, ob jedes Industrie-Gateway verbunden, eingeschränkt oder stumm ist — abgeleitet aus seiner letzten Meldung —, zusammen mit den importierten Alarmdefinitionen und den verwendeten Protokollen.",
+            "Importierte HMI- und SCADA-Exporte durchlaufen dieselbe deterministische Regel-Engine wie SPS-Metadaten, einschließlich einer Prüfung auf kritische Alarme ohne Bedienermeldung."
+          ],
+          "covers": [
+            {
+              "name": "Engineering-Artefakte",
+              "desc": "HMI-Bilder, Faceplates, Alarme, Trends, Bereiche, Historian- und Berichtsdefinitionen in einem Projektmodell."
+            },
+            {
+              "name": "Gateway-Konnektivität",
+              "desc": "Verbunden, eingeschränkt, nicht verbunden oder unbekannt — berechnet aus der letzten Meldung jedes Gateways."
+            },
+            {
+              "name": "Alarmdefinitionen",
+              "desc": "Konfigurierte Alarme mit Prioritäten und Meldetexten, geprüft durch beratende Regeln."
+            },
+            {
+              "name": "Standortbezogener Zugriff",
+              "desc": "Der Control Room prüft Organisation, Berechtigung und Standortfreigabe und verweigert den Zugriff, wenn eines davon fehlt."
+            }
+          ],
+          "boundary": "Der Control Room ist eine Ansicht, niemals ein Steuerpfad. Er sendet keinen Befehl, quittiert nichts in der Anlage und listet konfigurierte Alarme, keine gerade auslösenden. Live-Alarmströme, Live-SPS-Diagnosen und Anlagenbilder mit Live-Prozesswerten gehören nicht zum aktuellen Release.",
+          "related": [
+            "Artikel: Moderne SCADA-Architektur",
+            "Artikel: Hochleistungs-HMI-Design",
+            "Artikel: Alarmmanagement und Rationalisierung",
+            "Bibliothek: HMI-Gestaltung"
+          ]
         }
       },
       "industrialAi": {
@@ -820,6 +884,38 @@
             "name": "Zweisprachig",
             "desc": "Auf Persisch oder Englisch fragen; passende Antworten erhalten."
           }
+        },
+        "detail": {
+          "overview": [
+            "Die öffentlichen Analysewerkzeuge von Hermes OS arbeiten mit einer deterministischen Reasoning-Engine statt mit einem Sprachmodell. Sie beschreiben eine Störung in eigenen Worten — Anlage, Symptome, Alarme, letzte Änderungen —, und die Engine ordnet den technischen Fachbereich zu, erkennt den Hersteller, gleicht dokumentierte Feldfälle ab und ruft die passenden Wissensbibliotheken ab. Dieselbe Beschreibung liefert immer dasselbe Ergebnis.",
+            "Jedes Ergebnis trägt einen Konfidenzwert, der aus sichtbaren Nachweisen entsteht: der Fachbereichs- und Herstellerzuordnung, den gefundenen Fällen und dem stützenden Wissen. Ein Ingenieur sieht, warum die Engine zu ihrem Schluss kam und was sie nicht feststellen konnte; sind die Nachweise zu dünn, lautet die Antwort „unbekannt“ statt einer Vermutung.",
+            "Zwei öffentliche Werkzeuge machen die Engine zugänglich: Hermes Brain für technische Fragen im Freitext und Hermes Industrial Brain für strukturierte Störungsberichte mit Alarmen, Signalzuständen und einem sicheren Prüfpfad."
+          ],
+          "covers": [
+            {
+              "name": "Fachbereichszuordnung",
+              "desc": "Zwölf technische Fachbereiche, von SPS, SCADA und HMI bis zu Antrieben, Motoren, Sensoren, OT-Netzen, Cybersicherheit und Instandhaltung."
+            },
+            {
+              "name": "Hersteller- und Fallabgleich",
+              "desc": "Sieben indexierte Hersteller — Siemens, ABB, Schneider Electric, Phoenix Contact, Delta, Mitsubishi und Omron —, abgeglichen mit dokumentierten Feldfällen."
+            },
+            {
+              "name": "Nachweisbasierte Konfidenz",
+              "desc": "Ein Wert von 0 bis 100 aus Fachbereichs-, Hersteller-, Fall- und Nachweistreffern, ohne verborgene Schätzung dahinter."
+            },
+            {
+              "name": "Sicherheitsleitplanken",
+              "desc": "Anfragen, Verriegelungen zu umgehen, Schutzeinrichtungen außer Kraft zu setzen oder Ausgänge zu forcieren, werden abgelehnt, und jedes Ergebnis enthält einen Hinweis auf LOTO und Arbeitsfreigabe."
+            }
+          ],
+          "boundary": "Die Engine analysiert, sie handelt nicht. Sie sendet keinen Befehl an eine Maschine, schreibt nichts in eine SPS und kennzeichnet jedes Ergebnis als freigabepflichtig durch eine qualifizierte Person, bevor in der Anlage etwas geschieht. Analysen laufen auf Persisch oder Englisch; die deutsche Oberfläche zeigt die englische Analyse.",
+          "related": [
+            "Hermes Industrial Brain öffnen",
+            "Hermes Brain öffnen",
+            "Industrial Copilot öffnen",
+            "Artikel: Industrielle KI für die Fehlerdiagnose"
+          ]
         }
       },
       "cybersecurity": {
@@ -840,6 +936,38 @@
             "name": "OT-bewusst",
             "desc": "Gebaut für die Realität von Anlagennetzen, nicht für Büro-IT."
           }
+        },
+        "detail": {
+          "overview": [
+            "Industrielle Cybersicherheit ist in Hermes OS in die Art eingebaut, wie OT-Daten in die Plattform gelangen. Industrie-Gateways registrieren sich mit eigenen Zugangsdaten, die in einem eigenen Secret Store liegen, und diese Zugangsdaten lassen sich ohne Vor-Ort-Einsatz rotieren oder widerrufen. Jede Nachricht eines Gateways ist signiert und gegen Wiedereinspielung geprüft, und ein Gateway wird standardmäßig nur lesend registriert.",
+            "Importierte Netzwerkdaten werden in Zonen modelliert — Unternehmen, DMZ, Leitebene, Steuerungsebene, Feldebene und Sicherheit —, und eine deterministische Regel meldet widersprüchliche Zonenzuordnungen. Das Inventar entsteht ausschließlich aus importierten Engineering-Daten: Hermes OS scannt keine Geräte der Anlage, sondiert sie nicht und verbindet sich nicht mit ihnen.",
+            "Innerhalb der Plattform wird der Zugriff auf Organisations-, Berechtigungs- und Standortebene geprüft, und sicherheitsrelevante Aktionen werden in ein Audit-Protokoll geschrieben, das der Organisation und der auslösenden Anfrage zugeordnet ist."
+          ],
+          "covers": [
+            {
+              "name": "Lebenszyklus der Gateway-Zugangsdaten",
+              "desc": "Zugangsdaten registrieren, rotieren und widerrufen; jede Gateway-Nachricht ist signiert und gegen Wiedereinspielung geschützt."
+            },
+            {
+              "name": "Zonenmodell",
+              "desc": "Sechs Zonen von der Unternehmensebene bis zur Sicherheit, mit einer beratenden Regel für widersprüchliche Zuordnungen."
+            },
+            {
+              "name": "Zugriff nach Minimalprinzip",
+              "desc": "Eigene OT-Berechtigungen; Befunde prüfen dürfen nur Inhaber, Administratoren und Manager."
+            },
+            {
+              "name": "Audit-Protokoll",
+              "desc": "Plattformaktionen je Organisation erfasst, mit einer Korrelations-ID für jede Anfrage."
+            }
+          ],
+          "boundary": "Diese Maßnahmen schützen die Plattform Hermes OS und die Daten, die sie empfängt. Sie sind weder ein Penetrationstest noch ein Netzwerkscanner oder ein Angriffserkennungssystem für das Anlagennetz und ersetzen keine Sicherheitsbewertung Ihrer OT-Umgebung durch qualifizierte Fachleute.",
+          "related": [
+            "Artikel: Cybersicherheit für SPS und SCADA",
+            "Artikel: Ethernet-Segmentierung und VLAN-Entwurf",
+            "Artikel: Sichere Kommunikation zwischen SPS und SCADA",
+            "Gateway-Register von OT Edge"
+          ]
         }
       },
       "knowledgeCloud": {
@@ -860,6 +988,38 @@
             "name": "Zweisprachige Inhalte",
             "desc": "Persisch und Englisch, Seite an Seite."
           }
+        },
+        "detail": {
+          "overview": [
+            "Die Knowledge Cloud ist die technische Bibliothek, auf die sich Hermes Brain beruft. Ihre strukturierten Bibliotheken sind in sieben Kategorien gegliedert — SPS, SCADA und HMI, elektrische Systeme, Messtechnik, Industrieprotokolle, OT-Cybersicherheit und Instandhaltung — und werden durch dokumentierte Feldfälle zu den sieben Herstellern ergänzt, die die Engine indexiert.",
+            "Jeder Bibliothekseintrag nennt seine Kernpunkte, die durchzuführenden Prüfungen und Verweise auf verwandte Einträge und Fälle, sodass eine bei der Störungssuche gefundene Referenz zur nächsten relevanten führt statt in eine Sackgasse. Bibliothekseinträge erscheinen auf Persisch, Englisch und Deutsch; die Texte der Feldfälle liegen derzeit auf Persisch und Englisch vor.",
+            "Teams erweitern die Bibliothek innerhalb der Plattform: Neue Fälle und Wissensartikel beginnen als Entwurf, durchlaufen eine Prüfung, und Besuchern ohne Anmeldung werden nur veröffentlichte Datensätze angezeigt."
+          ],
+          "covers": [
+            {
+              "name": "Kategorisierte Bibliotheken",
+              "desc": "Von SPS-Grundlagen, S7-1200, S7-1500, Kontaktplan und strukturiertem Text bis zu OPC UA, Modbus TCP, MQTT, Netzsegmentierung und Ursachenanalyse."
+            },
+            {
+              "name": "Herstellerbezogene Feldfälle",
+              "desc": "Dokumentierte Fälle für jeden indexierten Hersteller, jeweils mit Symptomen, Grundursache und Lösung."
+            },
+            {
+              "name": "Suche und Filter",
+              "desc": "Nach Kategorie und Hersteller filtern und in Titeln, Zusammenfassungen und Schlagwörtern suchen."
+            },
+            {
+              "name": "Gelenkte Veröffentlichung",
+              "desc": "Entwürfe und Prüfungen bleiben in der Organisation; öffentlich erscheinen nur veröffentlichte Fälle und Artikel."
+            }
+          ],
+          "boundary": "Die Knowledge Cloud ist Referenzmaterial und ersetzt weder das Handbuch des Herstellers noch die Zeichnungen der Anlage oder das Urteil eines qualifizierten Ingenieurs. Die Bibliothekssuche gleicht Wörter in Titeln, Zusammenfassungen und Schlagwörtern ab; eine Frage im Freitext beantwortet Hermes Brain, das auf denselben Bibliotheken aufbaut.",
+          "related": [
+            "Technische Bibliothek durchsuchen",
+            "Hermes Brain fragen",
+            "Technisches Journal lesen",
+            "Herstellerseite Siemens"
+          ]
         }
       }
     },
@@ -1373,6 +1533,19 @@
           "title": "CRM an Ihrer Vertriebspipeline sehen"
         }
       }
+    },
+    "serviceChrome": {
+      "overviewLabel": "In der Praxis",
+      "coversLabel": "Was es umfasst",
+      "boundaryLabel": "Wo die Grenze liegt",
+      "relatedLabel": "Weiterführende Inhalte"
+    },
+    "hubGuide": {
+      "title": "Wie diese Seiten zusammenhängen",
+      "body": [
+        "Die fünf Seiten oben beschreiben, wie Hermes OS mit der operativen Ebene der Anlage arbeitet: Steuerungslogik, Bedienbilder und Alarme, Fehleranalyse, die Sicherheit von OT-Daten und die technische Referenz hinter all dem. Die Funktionsseiten darunter beschreiben die Plattformmodule — digitaler Zwilling, vorausschauende Instandhaltung, CMMS, Mehrstandortbetrieb, EDMS, ERP, OT Edge und CRM —, die ein gemeinsames Organisations-, Standort- und Zugriffsmodell teilen.",
+        "Jede Seite nennt dieselbe Grenze mit eigenen Worten: Hermes OS analysiert, dokumentiert und empfiehlt, sendet aber keine Steuerbefehle an Anlagen. Jede Seite verweist außerdem auf die Artikel und Werkzeuge, in denen ihr Thema vertieft wird."
+      ]
     }
   },
   "architecture": {
@@ -1444,6 +1617,90 @@
           "name": "Historian-Dienst",
           "desc": "Langzeit-Zeitreihenspeicher für Prozessdaten und Audits."
         }
+      }
+    },
+    "guides": {
+      "platform": {
+        "title": "Was jede Stufe der Pipeline leistet",
+        "lede": "Die Pipeline oben zeigt die Reihenfolge, in der Hermes OS eine Meldung aus der Anlage in eine Empfehlung verwandelt, die ein Ingenieur prüfen kann. Jede Stufe erscheint im Ergebnis, sodass nichts im Verborgenen entschieden wird.",
+        "stages": {
+          "data": "Die Eingabe: eine Störungsbeschreibung, die dazu gemeldeten Alarme und Signalzustände sowie die technischen Datensätze, die die Plattform bereits führt.",
+          "context": "Hersteller- und Gerätekontext aus der Meldung, damit die Analyse auf die richtige Gerätefamilie bezogen wird.",
+          "classification": "Der technische Fachbereich — SPS, SCADA, Antriebe, Sensoren, OT-Netz und weitere —, bewertet aus den Nachweisen; eine schwache Zuordnung bleibt unbekannt.",
+          "hypotheses": "Mögliche Ursachen, gereiht anhand passender Feldfälle und Wissensbibliotheken, statt einer einzigen als sicher dargestellten Antwort.",
+          "evidence": "Die Signale, Fälle und Referenzen, die jede Hypothese stützen oder ihr widersprechen — einschließlich dessen, was noch fehlt.",
+          "confidence": "Ein Wert, der nur aus den vorhandenen Nachweisen entsteht und in Stufen eingeteilt ist, damit der Ingenieur weiß, wie weit er dem Ergebnis trauen kann.",
+          "risk": "Eine Risikostufe, die durch die Sicherheitsklasse des Fachbereichs und durch dringende Anzeichen wie Feuer, Rauch oder Stromschlag steigt.",
+          "safeAction": "Nur lesende Prüfschritte für eine qualifizierte Person, mit Hinweisen auf LOTO und Arbeitsfreigabe; die Plattform kann sie nicht selbst ausführen.",
+          "report": "Ein technischer Bericht, der Beobachtetes, Abgeleitetes und noch Unbekanntes getrennt hält und zur Prüfung bereitsteht."
+        },
+        "boundaryTitle": "Was die Plattform nicht tut",
+        "boundary": "Hermes OS unterstützt Entscheidungen, trifft sie aber nicht. Keine Stufe der Pipeline gibt einen Steuerbefehl aus, schreibt in eine SPS oder hebt eine Verriegelung auf, und jede empfohlene Maßnahme braucht die Freigabe einer qualifizierten Person. Die Schichten darunter teilen ein Organisations- und Standortzugriffsmodell und ein Audit-Protokoll, sodass dieselben Regeln gelten, gleich aus welchem Modul eine Anfrage kommt."
+      },
+      "brain": {
+        "title": "Wie Hermes Brain zu einer Antwort kommt",
+        "lede": "Hermes Brain arbeitet deterministisch: Dieselbe Beschreibung ergibt immer dieselbe Analyse. Die folgenden Schritte laufen nacheinander ab, und jeder ist im Ergebnis sichtbar.",
+        "steps": [
+          {
+            "name": "Fachbereichserkennung",
+            "desc": "Gewichtete Schlagwörter ordnen das Problem einem von zwölf technischen Fachbereichen zu. Eine schwache Zuordnung wird als unbekannt gemeldet, statt in eine Kategorie gezwungen zu werden."
+          },
+          {
+            "name": "Herstellererkennung",
+            "desc": "Nennungen der sieben indexierten Hersteller — Siemens, ABB, Schneider Electric, Phoenix Contact, Delta, Mitsubishi und Omron — grenzen die Analyse auf deren Geräte und Fälle ein."
+          },
+          {
+            "name": "Fallabgleich",
+            "desc": "Dokumentierte Feldfälle werden nach Übereinstimmung bei Schlagwörtern, Hersteller und Fachbereich bewertet; die stärksten Treffer erscheinen mit der Analyse."
+          },
+          {
+            "name": "Wissensabruf",
+            "desc": "Die passenden Bibliotheken der Knowledge Cloud werden zitiert, sodass sich jede Empfehlung auf eine Referenz zurückführen lässt, die Sie öffnen können."
+          },
+          {
+            "name": "Konfidenz und Risiko",
+            "desc": "Die Konfidenz wird aus den gefundenen Nachweisen berechnet; die Risikostufe steigt bei sicherheitskritischen Fachbereichen und bei dringenden Anzeichen wie Rauch oder Feuer."
+          }
+        ],
+        "boundaryTitle": "Grenzen, die Sie kennen sollten",
+        "boundary": "Dieses öffentliche Werkzeug nutzt kein Sprachmodell und speichert nichts: Jede Analyse wird auf Anfrage berechnet und nicht abgelegt. Es liest Beschreibungen auf Persisch oder Englisch, lehnt Anfragen zur Umgehung von Sicherheitsfunktionen ab und sendet niemals einen Befehl an Anlagen. Betrachten Sie jedes Ergebnis als Entscheidungshilfe, die ein qualifizierter Ingenieur nach den Verfahren Ihres Standorts prüfen muss."
+      },
+      "copilot": {
+        "title": "Was der Industrial Copilot zeigt",
+        "lede": "Der Copilot nutzt dieselbe deterministische Engine wie Hermes Brain und zeigt zusätzlich die Fachbereiche, Hersteller und Sicherheitseigenschaften hinter jeder Analyse.",
+        "steps": [
+          {
+            "name": "Reasoning-Oberfläche",
+            "desc": "Beschreiben Sie Anlage, Symptome, Hersteller, Alarme und letzte Änderungen; die Analyse liefert Fachbereich, passende Fälle und zitiertes Wissen."
+          },
+          {
+            "name": "Unterstützte Fachbereiche",
+            "desc": "Die Fachbereiche, die die Engine zuordnet, werden aufgelistet; die von Ihren Fragen betroffenen sind hervorgehoben."
+          },
+          {
+            "name": "Herstellerabdeckung",
+            "desc": "Die sieben indexierten Hersteller werden angezeigt, sodass Sie sehen, welche Hersteller die Fallbibliothek abdeckt."
+          },
+          {
+            "name": "Systemstatus",
+            "desc": "Jede Komponente der Engine meldet ihren Zustand, auch die Teile, die simuliert oder geplant statt live sind."
+          },
+          {
+            "name": "Sicherheitseigenschaften",
+            "desc": "Nur lesend, deterministisch und nachweisbasiert: keine Steuerbefehle, keine SPS-Schreibzugriffe, und jede Empfehlung ist mit den zugrunde liegenden Daten verknüpft."
+          }
+        ],
+        "boundaryTitle": "Grenzen, die Sie kennen sollten",
+        "boundary": "Die Telemetrieanbindung auf dieser Seite ist simuliert, und eine Live-Verbindung zu einer SPS gehört nicht dazu: Der Copilot analysiert, was Sie beschreiben, nicht Live-Daten der Anlage. Anfragen zur Umgehung von Verriegelungen oder Sicherheitseinrichtungen werden blockiert, und jede Maßnahme an realen Anlagen bleibt eine Entscheidung qualifizierten Personals."
+      },
+      "library": {
+        "title": "Wie die Bibliothek aufgebaut ist",
+        "body": [
+          "Die Bibliothek ist die Referenzebene hinter Hermes Brain. Wissenseinträge sind nach Kategorien gegliedert — SPS, SCADA und HMI, elektrische Systeme, Messtechnik, Industrieprotokolle, OT-Cybersicherheit und Instandhaltung —, und jeder Eintrag nennt Kernpunkte, Prüfungen, verwandte Einträge und zugehörige Feldfälle.",
+          "Feldfälle dokumentieren Störungsmuster für die sieben Hersteller, die die Engine indexiert, jeweils mit Symptomen, Grundursache und Lösung. Herstellerseiten bündeln die Feldfälle jedes Herstellers an einem Ort.",
+          "Bibliothekseinträge erscheinen auf Persisch, Englisch und Deutsch. Die Texte der Feldfälle liegen derzeit auf Persisch und Englisch vor, daher verlinken deutsche Seiten einen Fall nur, wenn eine deutsche Fassung existiert.",
+          "Die Suche filtert nach Kategorie und Hersteller und gleicht Wörter in Titeln, Zusammenfassungen und Schlagwörtern ab. Für eine Frage in eigenen Worten nutzen Sie Hermes Brain, das in seiner Antwort dieselben Einträge zitiert."
+        ]
       }
     }
   },

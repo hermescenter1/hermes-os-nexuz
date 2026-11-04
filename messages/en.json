@@ -780,6 +780,38 @@
             "name": "Reviewed and versioned",
             "desc": "Every change is explained and tracked, not pasted blind."
           }
+        },
+        "detail": {
+          "overview": [
+            "PLC engineering in Hermes OS takes place in the Automation Engineering Studio, a signed-in workspace for engineers. A project targets a Siemens S7-1200, an S7-1500 or a generic IEC 61131-3 controller, and its logic is checked against a fixed set of validation rules: unresolved or duplicate symbols, commands without feedback, missing engineering units and similar defects are reported with stable diagnostic codes.",
+            "Exported engineering metadata — TIA Portal, PLC, HMI and SCADA exports — can be imported for analysis. A deterministic rule engine reviews the imported tags, alarms and network data and records each finding for an engineer to review. The analysis reads the export; it never changes the source project.",
+            "Each logic revision carries an approval state — draft, reviewed, approved or commissioned — and only a draft can be edited, so a version cannot change after someone has reviewed it."
+          ],
+          "covers": [
+            {
+              "name": "Controller targets",
+              "desc": "Siemens S7-1200 and S7-1500 profiles, plus a generic IEC 61131-3 target for other platforms."
+            },
+            {
+              "name": "Static validation",
+              "desc": "Stable diagnostic codes for symbol, feedback and unit defects, raised before the logic goes to review."
+            },
+            {
+              "name": "Export analysis",
+              "desc": "Imported tag, alarm and network metadata checked by deterministic, advisory rules."
+            },
+            {
+              "name": "Approval states",
+              "desc": "Draft, reviewed, approved and commissioned, with editing limited to drafts."
+            }
+          ],
+          "boundary": "Hermes OS never downloads code to a controller and never applies a change automatically. Studio projects are authored or simulated rather than connected to a live PLC, and every analysis finding is advisory. A change to a real controller remains the decision of a qualified engineer, and anything that touches a safety PLC or a safety function is limited to review by a functional-safety engineer.",
+          "related": [
+            "Article: Modern PLC architecture for large plants",
+            "Article: Ladder logic vs structured text",
+            "Article: Evidence-based PLC troubleshooting",
+            "Library: PLC fundamentals"
+          ]
         }
       },
       "scadaHmi": {
@@ -800,6 +832,38 @@
             "name": "Alarm-aware",
             "desc": "Surface what matters first, in the operator's language."
           }
+        },
+        "detail": {
+          "overview": [
+            "Supervisory engineering in Hermes OS starts from the artefacts a SCADA project is built from: HMI screens, faceplates, alarms, trends, SCADA areas, historian settings and reports. In the Automation Engineering Studio each artefact is modelled and checked — an alarm defined without a priority, for example, is reported before it reaches an operator.",
+            "The SCADA Control Room is the operations view of the same data. For every site a user is allowed to see, it shows whether each industrial gateway is connected, degraded or silent, worked out from when the gateway last reported, together with the imported alarm definitions and the protocols in use.",
+            "Imported HMI and SCADA exports go through the same deterministic rule engine as PLC metadata, including a check for critical alarms that have no operator message."
+          ],
+          "covers": [
+            {
+              "name": "Engineering artefacts",
+              "desc": "HMI screens, faceplates, alarms, trends, areas, historian and report definitions in one project model."
+            },
+            {
+              "name": "Gateway connectivity",
+              "desc": "Connected, degraded, not connected or unknown, computed from each gateway's last report."
+            },
+            {
+              "name": "Alarm definitions",
+              "desc": "Configured alarms with their priorities and messages, reviewed by advisory rules."
+            },
+            {
+              "name": "Site-scoped access",
+              "desc": "The Control Room checks organisation, permission and site grants, and refuses access when any of them is missing."
+            }
+          ],
+          "boundary": "The Control Room is a view, never a control path. It sends no command, acknowledges nothing on the plant and lists configured alarms, not alarms as they fire. Live alarm streams, live PLC diagnostics and screen mimics with live process values are not part of the current release.",
+          "related": [
+            "Article: Modern SCADA architecture",
+            "Article: High-performance HMI design",
+            "Article: Alarm management and rationalisation",
+            "Library: HMI design"
+          ]
         }
       },
       "industrialAi": {
@@ -820,6 +884,38 @@
             "name": "Bilingual",
             "desc": "Ask in Persian or English; get answers in kind."
           }
+        },
+        "detail": {
+          "overview": [
+            "The public analysis tools of Hermes OS run a deterministic reasoning engine rather than a language model. You describe a fault in your own words — equipment, symptoms, alarms, recent changes — and the engine classifies the engineering domain, detects the vendor, matches documented field cases and retrieves the knowledge libraries that apply. The same description always produces the same result.",
+            "Every result carries a confidence score built from visible evidence: the domain match, the vendor match, the matched cases and the supporting knowledge. An engineer can see why the engine reached its conclusion and what it could not establish, and when the evidence is too thin the answer is \"unknown\" rather than a guess.",
+            "Two public tools expose the engine: Hermes Brain for free-text engineering questions, and Hermes Industrial Brain for structured fault reports with alarms, signal states and a safe inspection path."
+          ],
+          "covers": [
+            {
+              "name": "Domain classification",
+              "desc": "Twelve engineering domains, from PLC, SCADA and HMI to drives, motors, sensors, OT networks, cybersecurity and maintenance."
+            },
+            {
+              "name": "Vendor and case matching",
+              "desc": "Seven indexed manufacturers — Siemens, ABB, Schneider Electric, Phoenix Contact, Delta, Mitsubishi and Omron — matched against documented field cases."
+            },
+            {
+              "name": "Evidence-based confidence",
+              "desc": "A 0–100 score assembled from domain, vendor, case and evidence matches, with no hidden estimate behind it."
+            },
+            {
+              "name": "Safety guardrails",
+              "desc": "Requests to bypass interlocks, defeat guards or force outputs are refused, and every result carries a lockout/tagout and permit-to-work notice."
+            }
+          ],
+          "boundary": "The engine analyses; it does not act. It sends no command to any machine, writes nothing to a PLC and marks every result as requiring approval by a qualified person before anything is done on the plant floor. Analyses run in Persian or English; the German interface shows the English analysis.",
+          "related": [
+            "Open Hermes Industrial Brain",
+            "Open Hermes Brain",
+            "Open the Industrial Copilot",
+            "Article: Industrial AI for fault diagnosis"
+          ]
         }
       },
       "cybersecurity": {
@@ -840,6 +936,38 @@
             "name": "OT-aware",
             "desc": "Built around the realities of plant networks, not office IT."
           }
+        },
+        "detail": {
+          "overview": [
+            "Industrial cybersecurity in Hermes OS is built into the way OT data enters the platform. Industrial gateways enrol with their own credentials, held in a dedicated secret store, and those credentials can be rotated or revoked without a site visit. Every message a gateway sends is signed and checked against replay, and a gateway is registered read-only by default.",
+            "Imported network data is modelled in zones — enterprise, DMZ, supervisory, control, field and safety — and a deterministic rule flags conflicting zone assignments. The inventory is built only from imported engineering data: Hermes OS does not scan, probe or connect to plant devices.",
+            "Inside the platform, access is checked at organisation, permission and site level, and security-relevant actions are written to an audit log tied to the organisation and to the request that caused them."
+          ],
+          "covers": [
+            {
+              "name": "Gateway credential lifecycle",
+              "desc": "Enrol, rotate and revoke gateway credentials; every gateway message is signed and replay-protected."
+            },
+            {
+              "name": "Zone model",
+              "desc": "Six zones from enterprise to safety, with an advisory rule for conflicting assignments."
+            },
+            {
+              "name": "Least-privilege access",
+              "desc": "Dedicated OT permissions; reviewing findings is limited to owners, administrators and managers."
+            },
+            {
+              "name": "Audit trail",
+              "desc": "Platform actions recorded per organisation, with a correlation ID for each request."
+            }
+          ],
+          "boundary": "These controls protect the Hermes OS platform and the data it receives. They are not a penetration test, a network scanner or an intrusion-detection system for the plant network, and they do not replace a security assessment of your OT environment by qualified specialists.",
+          "related": [
+            "Article: Cybersecurity for PLC and SCADA",
+            "Article: Ethernet segmentation and VLAN design",
+            "Article: Secure PLC-to-SCADA communication",
+            "OT Edge gateway registry"
+          ]
         }
       },
       "knowledgeCloud": {
@@ -860,6 +988,38 @@
             "name": "Bilingual content",
             "desc": "Persian and English, side by side."
           }
+        },
+        "detail": {
+          "overview": [
+            "Knowledge Cloud is the engineering library Hermes Brain cites. Its structured libraries are grouped into seven categories — PLC, SCADA and HMI, electrical systems, instrumentation, industrial protocols, OT cybersecurity and maintenance — and are joined by documented field cases for the seven manufacturers the engine indexes.",
+            "Each library entry sets out its key points, the verification checks to run and links to related entries and cases, so a reference found during a fault investigation leads to the next relevant one instead of a dead end. Library entries are published in Persian, English and German; field-case bodies are currently written in Persian and English.",
+            "Teams extend the library inside the platform: new cases and knowledge articles start as drafts, pass through review, and only published records are ever shown to visitors who are not signed in."
+          ],
+          "covers": [
+            {
+              "name": "Categorised libraries",
+              "desc": "From PLC fundamentals, S7-1200, S7-1500, ladder and structured text to OPC UA, Modbus TCP, MQTT, network segmentation and root-cause analysis."
+            },
+            {
+              "name": "Vendor field cases",
+              "desc": "Documented cases for each indexed manufacturer, each with symptoms, root cause and resolution."
+            },
+            {
+              "name": "Search and filters",
+              "desc": "Filter by category and vendor, and search across titles, summaries and keywords."
+            },
+            {
+              "name": "Governed publishing",
+              "desc": "Drafts and reviews stay inside the organisation; only published cases and articles appear publicly."
+            }
+          ],
+          "boundary": "Knowledge Cloud is reference material, not a substitute for the manufacturer's manual, the plant's own drawings or a qualified engineer's judgement. Library search matches words in titles, summaries and keywords; a free-text question is answered through Hermes Brain, which reasons over the same libraries.",
+          "related": [
+            "Browse the engineering library",
+            "Ask Hermes Brain",
+            "Read the engineering journal",
+            "Siemens vendor hub"
+          ]
         }
       }
     },
@@ -1373,6 +1533,19 @@
           "title": "See CRM on your sales pipeline"
         }
       }
+    },
+    "serviceChrome": {
+      "overviewLabel": "In practice",
+      "coversLabel": "What it covers",
+      "boundaryLabel": "Where the boundary is",
+      "relatedLabel": "Further reading"
+    },
+    "hubGuide": {
+      "title": "How these pages fit together",
+      "body": [
+        "The five pages at the top describe how Hermes OS works with the operational layer of the plant: controller logic, supervisory screens and alarms, fault reasoning, the security of OT data and the engineering reference behind all of them. The capability pages below describe the platform modules — digital twin, predictive maintenance, CMMS, multi-site operations, EDMS, ERP, OT edge and CRM — that share one organisation, site and access model.",
+        "Every page states the same boundary in its own terms: Hermes OS analyses, records and recommends, and it does not send control commands to equipment. Each page also links onward to the articles and tools where its topic is covered in depth."
+      ]
     }
   },
   "architecture": {
@@ -1444,6 +1617,90 @@
           "name": "Historian Service",
           "desc": "Long-term time-series storage for process data and audits."
         }
+      }
+    },
+    "guides": {
+      "platform": {
+        "title": "What each stage of the pipeline does",
+        "lede": "The pipeline above is the order in which Hermes OS turns a report from the plant floor into a recommendation an engineer can check. Each stage appears in the result, so nothing is decided out of sight.",
+        "stages": {
+          "data": "The input: a fault description, the alarms and signal states reported with it, and the engineering records the platform already holds.",
+          "context": "Vendor and equipment context found in the report, so the analysis is read against the right family of devices.",
+          "classification": "The engineering domain — PLC, SCADA, drives, sensors, OT network and others — scored from the evidence; a weak match stays unknown.",
+          "hypotheses": "Candidate causes ranked against matched field cases and knowledge libraries, rather than one answer presented as certain.",
+          "evidence": "The signals, cases and references that support or argue against each hypothesis, including what is still missing.",
+          "confidence": "A score built only from the evidence that is present, banded so the engineer knows how far to trust the result.",
+          "risk": "A risk level raised by the safety class of the domain and by urgent indicators such as fire, smoke or electric shock.",
+          "safeAction": "Read-only inspection steps for a qualified person, with lockout/tagout and permit-to-work reminders; the platform cannot carry them out.",
+          "report": "An engineering report that keeps what was observed, what was inferred and what is still unknown apart, ready for review."
+        },
+        "boundaryTitle": "What the platform does not do",
+        "boundary": "Hermes OS supports decisions; it does not take them. No stage of the pipeline issues a control command, writes to a PLC or overrides an interlock, and every recommended action needs approval by a qualified person. The layers below share one organisation and site access model and one audit trail, so the same rules apply whichever module a request comes from."
+      },
+      "brain": {
+        "title": "How Hermes Brain reaches an answer",
+        "lede": "Hermes Brain is deterministic: the same description always produces the same analysis. The steps below run in order, and each one is visible in the result.",
+        "steps": [
+          {
+            "name": "Domain detection",
+            "desc": "Weighted keywords place the problem in one of twelve engineering domains. A weak match is reported as unknown instead of being forced into a category."
+          },
+          {
+            "name": "Vendor detection",
+            "desc": "Mentions of the seven indexed manufacturers — Siemens, ABB, Schneider Electric, Phoenix Contact, Delta, Mitsubishi and Omron — narrow the analysis to that vendor's equipment and cases."
+          },
+          {
+            "name": "Case matching",
+            "desc": "Documented field cases are scored on keyword, vendor and domain overlap, and the strongest matches are shown with the analysis."
+          },
+          {
+            "name": "Knowledge retrieval",
+            "desc": "The relevant Knowledge Cloud libraries are cited, so every recommendation can be traced to a reference you can open."
+          },
+          {
+            "name": "Confidence and risk",
+            "desc": "Confidence is computed from the evidence found; the risk level rises for safety-critical domains and for urgent indicators such as smoke or fire."
+          }
+        ],
+        "boundaryTitle": "Limits you should know",
+        "boundary": "This public tool uses no language model and saves nothing: each analysis is computed on request and is not stored. It reads descriptions in Persian or English, refuses requests to bypass safety functions and never sends a command to equipment. Treat every result as decision support to be verified by a qualified engineer under your site's procedures."
+      },
+      "copilot": {
+        "title": "What the Industrial Copilot shows",
+        "lede": "The Copilot runs the same deterministic engine as Hermes Brain and adds a view of the domains, vendors and safety properties behind each analysis.",
+        "steps": [
+          {
+            "name": "Reasoning interface",
+            "desc": "Describe the equipment, symptoms, vendor, alarms and recent changes; the analysis returns the domain, matched cases and cited knowledge."
+          },
+          {
+            "name": "Supported domains",
+            "desc": "The domains the engine classifies are listed, and the ones your questions touch are highlighted."
+          },
+          {
+            "name": "Vendor coverage",
+            "desc": "The seven indexed manufacturers are shown, so you can see which vendors the case library covers."
+          },
+          {
+            "name": "System status",
+            "desc": "Each engine component reports its state, including the parts that are simulated or planned rather than live."
+          },
+          {
+            "name": "Safety properties",
+            "desc": "Read-only, deterministic and evidence-based: no control commands, no PLC writes, and every recommendation linked to the data behind it."
+          }
+        ],
+        "boundaryTitle": "Limits you should know",
+        "boundary": "Telemetry binding on this page is simulated and live PLC connectivity is not part of it: the Copilot analyses what you describe, not live plant data. Requests to bypass interlocks or safety devices are blocked, and any action on real equipment remains a decision for qualified personnel."
+      },
+      "library": {
+        "title": "How the library is organised",
+        "body": [
+          "The library is the reference layer behind Hermes Brain. Knowledge entries are grouped by category — PLC, SCADA and HMI, electrical systems, instrumentation, industrial protocols, OT cybersecurity and maintenance — and every entry lists its key points, verification checks, related entries and related field cases.",
+          "Field cases document fault patterns for the seven manufacturers the engine indexes, each with its symptoms, root cause and resolution. Vendor hubs gather each manufacturer's field cases in one place.",
+          "Library entries are published in Persian, English and German. Field-case bodies are currently written in Persian and English, so German pages link to a case only where a German version exists.",
+          "Search filters by category and vendor and matches words in titles, summaries and keywords. For a question in your own words, use Hermes Brain, which cites these same entries in its answer."
+        ]
       }
     }
   },

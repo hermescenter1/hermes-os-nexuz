@@ -4,6 +4,7 @@ import { PageIntro }    from "@/components/PageIntro";
 import { BrainClient }  from "@/components/brain/BrainClient";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { CapabilityLink } from "@/components/analytics/CapabilityLink";
+import { PageGuide }   from "@/components/PageGuide";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -40,6 +41,7 @@ export default async function BrainPage({
         </CapabilityLink>
       </div>
       <BrainClient />
+      <PageGuide guideKey="brain" />
     </PublicPageShell>
   );
 }

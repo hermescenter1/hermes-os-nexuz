@@ -38,6 +38,7 @@ export default async function PlatformPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("publicSite");
+  const guide = await getTranslations("architecture.guides.platform");
 
   const pipeline = PIPELINE_KEYS.map((key) => ({
     key,
@@ -65,6 +66,29 @@ export default async function PlatformPage({
             <SectionHeader id="platform-pipeline-title" title={t("platform.pipelineTitle")} />
             <IntelligenceFlow className="mt-8" stages={pipeline} />
             <PlatformArchitecture className="mt-12" />
+          </PublicPageContainer>
+        </PublicSection>
+
+        {/* THIN-CONTENT lane — what each pipeline stage does and what the
+            platform does not do. Copy lives in the server-only `architecture`
+            namespace so the client payload of /platform is unchanged. */}
+        <PublicSection tone="deep" aria-labelledby="platform-guide-title">
+          <PublicPageContainer>
+            <SectionHeader id="platform-guide-title" title={guide("title")} lede={guide("lede")} />
+            <dl className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {pipeline.map((stage) => (
+                <div key={stage.key} className="ds-glass-card rounded-lg p-5">
+                  <dt className="text-title-lg font-semibold text-text-primary">{stage.label}</dt>
+                  <dd className="mt-2.5 text-body-compact text-text-secondary">
+                    {guide(`stages.${stage.key}`)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <h3 className="mt-12 text-title-lg font-semibold text-text-primary">
+              {guide("boundaryTitle")}
+            </h3>
+            <p className="mt-3 max-w-3xl text-body-lg text-text-secondary">{guide("boundary")}</p>
           </PublicPageContainer>
         </PublicSection>
 
