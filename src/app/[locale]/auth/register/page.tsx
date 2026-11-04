@@ -4,13 +4,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   // the locale layout's title template appends the site suffix.
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "auth" });
-  return { title: t("requestAccessTitle"), robots: { index: false, follow: false } };
+  return { title: documentTitle(t("requestAccessTitle")), robots: { index: false, follow: false } };
 }
 
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link }                from "@/i18n/navigation";
 import { AuthExperienceShell } from "@/components/auth-experience";
 import { RegisterClient }      from "@/components/auth/RegisterClient";
+import { documentTitle } from "@/lib/seo/metadata";
 
 export default async function AuthRegisterPage({
   params,

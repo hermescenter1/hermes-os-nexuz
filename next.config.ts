@@ -3,6 +3,9 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
+/** One year, this host only — see the headers() note below. */
+export const HSTS_VALUE = "max-age=31536000";
+
 const nextConfig: NextConfig = {
   output: "standalone",
 
@@ -67,8 +70,16 @@ const nextConfig: NextConfig = {
 
   // Static security headers applied to all routes (Phase 45).
   // CSP is handled per-request in middleware (nonce-based) and is NOT set here.
-  // HSTS is set exclusively by Nginx (deploy/nginx/default.conf HTTPS block)
-  // to avoid sending it over HTTP during ACME challenges.
+  //
+  // HSTS is set HERE, in production only. It was documented as "set by Nginx",
+  // but production sits behind Cloudflare and no response carried the header
+  // (deploy.yml ships only the hermes-web image, never the Nginx config). ACME
+  // challenges never reach Next.js (Nginx answers them from its webroot), and a
+  // browser ignores Strict-Transport-Security on a plain-HTTP response
+  // (RFC 6797 §8.1), so the HTTP-proxied /api/health carrying it is inert.
+  // Deliberately NO includeSubDomains and NO preload: other hostnames under the
+  // zone (mail.hermesnovin.com and any not managed here) must not be pinned by
+  // a header this application cannot vouch for.
   async headers() {
     return [
       {
@@ -102,6 +113,9 @@ const nextConfig: NextConfig = {
             key:   "X-DNS-Prefetch-Control",
             value: "off",
           },
+          ...(process.env.NODE_ENV === "production"
+            ? [{ key: "Strict-Transport-Security", value: HSTS_VALUE }]
+            : []),
         ],
       },
     ];

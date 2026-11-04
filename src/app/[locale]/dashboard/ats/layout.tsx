@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import type { ReactNode }   from "react";
 import { AppShell }         from "@/components/app-shell";
 import { AtsSubNav }        from "@/components/ats/AtsSubNav";
+import { documentTitle } from "@/lib/seo/metadata";
 
 /*
  * GATE B.1 F03 (R3) — this layout renders the header on all five authorized ATS
@@ -20,7 +21,7 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "ats" });
   return {
-    title: t("metaTitle"),
+    title: documentTitle(t("metaTitle")),
     robots: { index: false, follow: false },
   };
 }
