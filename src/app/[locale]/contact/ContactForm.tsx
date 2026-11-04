@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { track } from "@/lib/analytics/events";
 
 type EnquiryType = "demo" | "sales" | "support" | "partner";
 
@@ -30,6 +31,10 @@ export function ContactForm() {
       `Name: ${name}\nCompany: ${company}\nEmail: ${email}\nPhone: ${phone}\nType: ${type}\n\n${message}`
     );
     window.open(`mailto:info@hermesnovin.com?subject=${subject}&body=${body}`, "_blank");
+    // The enquiry leaves through the visitor's mail client, so this records the
+    // hand-off, not a delivered message. Only the enquiry type is sent — never
+    // the name, company, email, phone or message.
+    track.contactForm(type);
     setSent(true);
   }
 

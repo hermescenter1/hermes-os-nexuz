@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { useTranslations } from "next-intl";
+import { track } from "@/lib/analytics/events";
 
 // ── Canonical option values ───────────────────────────────────────────────────
 //
@@ -140,6 +141,9 @@ export function DemoRequestForm({ locale }: Props) {
         // validation internals. The visitor gets a localized message instead.
         setError(t("errorGeneric"));
       } else {
+        // Fired only after the server confirmed the lead was stored. No form
+        // field is sent to analytics.
+        track.platformDemoRequest();
         setSuccess(true);
       }
     } catch {
