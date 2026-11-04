@@ -70,11 +70,49 @@ describe("sitemapPath", () => {
     expect(sitemapPath("/articles/%D8%A7-x")).toBe("/articles/%D8%A7-x");
   });
 
-  it("is the only way sitemap.ts builds a URL", () => {
+  it("sitemap.ts builds its entry URLs only through sitemapPath", () => {
     const src = readFileSync(join(REPO, "src", "app", "sitemap.ts"), "utf8");
     expect(src).toContain("const path = sitemapPath(rawPath);");
-    // Exactly one place assembles an entry URL, and it uses the encoded path.
     expect(src.match(/url:\s*`/g)).toHaveLength(1);
+  });
+
+  /*
+   * The first version of this fix only covered src/app/sitemap.ts. Journal
+   * articles and videos build their sitemap entries in their own modules, so
+   * production still served 8 raw Persian <loc> values after it shipped. These
+   * tests drive the real builders.
+   */
+  const PERSIAN = "/articles/راهنمای-جامع-plc؛-۲۰۲۶-mr2k5nx5k026";
+  const isEscaped = (u: string) => /^[\x21-\x7E]+$/.test(u);
+
+  it("article sitemap entries escape <loc> and every hreflang alternate", async () => {
+    const { articleSitemapEntries } = await import("@/lib/articles/seo");
+    const slug = PERSIAN.slice("/articles/".length);
+    const one = articleSitemapEntries([{ slug, lastModified: null, languages: ["fa"] }]);
+    expect(one).toHaveLength(1);
+    expect(one[0].url).toBe(`https://hermesnovin.com/fa${new URL(`https://x${PERSIAN}`).pathname}`);
+    const group = articleSitemapEntries([{ slug, lastModified: null, languages: ["fa", "en"] }]);
+    for (const entry of group) {
+      expect(isEscaped(entry.url)).toBe(true);
+      for (const alt of Object.values(entry.alternates?.languages ?? {})) {
+        expect(isEscaped(String(alt))).toBe(true);
+      }
+    }
+  });
+
+  it("media sitemap entries escape <loc> and every hreflang alternate", async () => {
+    const { mediaSitemapEntries } = await import("@/lib/media/seo");
+    const entries = mediaSitemapEntries([
+      { path: "/videos/acme/راه-اندازی-plc", lastModified: null, contentLocales: ["fa", "en"] },
+    ] as Parameters<typeof mediaSitemapEntries>[0]);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const entry of entries) {
+      expect(isEscaped(entry.url)).toBe(true);
+      expect(decodeURIComponent(entry.url)).toContain("/videos/acme/راه-اندازی-plc");
+      for (const alt of Object.values(entry.alternates?.languages ?? {})) {
+        expect(isEscaped(String(alt))).toBe(true);
+      }
+    }
   });
 });
 

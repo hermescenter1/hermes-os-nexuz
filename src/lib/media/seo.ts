@@ -50,6 +50,7 @@ import { schemaLanguageTag } from "@/lib/seo/schemas";
 import { isActiveLocale } from "@/i18n/locales";
 import { PUBLIC_AUDIENCE, mediaVisibilityWhere } from "./db";
 import { isMediaSkillLevel, isPubliclyReadable } from "./types";
+import { sitemapPath } from "@/lib/seo/sitemap-path";
 
 /* ── Public URL space ─────────────────────────────────────────────────────── */
 
@@ -639,9 +640,11 @@ export function mediaSitemapEntries(
       (LOCALES as readonly string[]).includes(l),
     );
     if (locales.length === 0) continue;
+    // Escaped exactly like the page canonical (see sitemap-path.ts).
+    const path = sitemapPath(item.path);
     for (const locale of locales) {
       entries.push({
-        url: `${BASE_URL}/${locale}${item.path}`,
+        url: `${BASE_URL}/${locale}${path}`,
         ...(item.lastModified ? { lastModified: item.lastModified } : {}),
         changeFrequency: "weekly" as const,
         priority,
@@ -649,7 +652,7 @@ export function mediaSitemapEntries(
           ? {
               alternates: {
                 languages: Object.fromEntries(
-                  locales.map((l) => [l, `${BASE_URL}/${l}${item.path}`]),
+                  locales.map((l) => [l, `${BASE_URL}/${l}${path}`]),
                 ),
               },
             }
