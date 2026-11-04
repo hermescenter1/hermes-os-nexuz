@@ -12,6 +12,7 @@ import { breadcrumbSchema }       from "@/lib/seo/schemas";
 import { articleLanguageForLocale, langTagForArticleLanguage, localeForArticleLanguage } from "@/lib/articles/locale";
 import { getPublicArticleLanguagesBySlug, resolveArticleContentLocales } from "@/lib/articles/seo";
 import { articleRedirectPath } from "@/lib/articles/slug";
+import { mergedArticleTarget } from "@/lib/articles/merged-editions";
 import type { ArticleDetail }     from "@/lib/articles/types";
 
 /**
@@ -29,6 +30,10 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const { locale, slug } = await params;
+  // Metadata is resolved before the page body renders, so an archived
+  // duplicate redirects here too rather than spending a lookup on it.
+  const merged = mergedArticleTarget(slug);
+  if (merged) permanentRedirect(articleRedirectPath(merged.locale, merged.slug));
   // Phase 106: resolve the edition this locale reads, so the title, description
   // and og: fields describe the page that is actually served — not a sibling
   // translation that happened to be found first.
@@ -130,6 +135,11 @@ export default async function ArticleDetailPage({
 }) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
+
+  // An accidentally duplicated article: send every URL of the archived copy to
+  // the kept edition (see merged-editions.ts) before touching the database.
+  const merged = mergedArticleTarget(slug);
+  if (merged) permanentRedirect(articleRedirectPath(merged.locale, merged.slug));
 
   const article = await getArticleDetailBySlug(slug, locale);
 

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { BASE_URL, LOCALES } from "@/lib/seo/config";
+import { sitemapPath } from "@/lib/seo/sitemap-path";
 import { KNOWLEDGE } from "@/lib/industrial/knowledge";
 import { CASES, CASE_CONTENT_LOCALES } from "@/lib/industrial/cases";
 import { VENDORS } from "@/lib/industrial/vendors";
@@ -163,13 +164,14 @@ const STATIC_PATHS = [
  * disagree about which translations exist.
  */
 function localeEntries(
-  path: string,
+  rawPath: string,
   priority: number,
   changeFreq: SitemapEntry["changeFrequency"],
   contentLocales: readonly string[] = LOCALES,
 ): SitemapEntry[] {
   const locales = contentLocales.filter((l) => (LOCALES as readonly string[]).includes(l));
   if (locales.length === 0) return [];
+  const path = sitemapPath(rawPath);
   return locales.map((locale) => ({
     url: `${BASE_URL}/${locale}${path}`,
     changeFrequency: changeFreq,

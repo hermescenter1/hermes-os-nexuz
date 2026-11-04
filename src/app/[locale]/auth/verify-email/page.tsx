@@ -4,12 +4,13 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   // the locale layout's title template appends the site suffix.
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "auth" });
-  return { title: t("verifyEmailTitle"), robots: { index: false, follow: false } };
+  return { title: documentTitle(t("verifyEmailTitle")), robots: { index: false, follow: false } };
 }
 
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { AuthExperienceShell } from "@/components/auth-experience";
 import { VerifyEmailClient }   from "@/components/auth/VerifyEmailClient";
+import { documentTitle } from "@/lib/seo/metadata";
 
 export default async function VerifyEmailPage({
   params,
