@@ -61,6 +61,13 @@ vi.mock("@/components/library/LibraryClient", () => ({
   LibraryClient: () => <div data-testid="library-client" />,
 }));
 
+// THIN-CONTENT lane: PageGuide is an async server component (it awaits its
+// own translations), which renderToStaticMarkup cannot resolve. It renders
+// prose only — no hrefs — so stubbing it leaves this test's subject intact.
+vi.mock("@/components/PageGuide", () => ({
+  PageGuide: () => <div data-testid="page-guide" />,
+}));
+
 import LibraryPage from "../page";
 
 function hrefs(html: string): string[] {
