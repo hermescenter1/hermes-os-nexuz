@@ -330,7 +330,7 @@
       },
       "brain": {
         "title": "Hermes Brain — Industrielle Wissens-Engine",
-        "description": "Hermes Brain ist eine deterministische Engine für technische Analysen in der industriellen Automatisierung: PLC, SCADA, HMI, Antriebe, Sensoren und OT-Cybersicherheit — nachweisbasiert, ohne Sprachmodell.",
+        "description": "Deterministische Analyse für PLC, SCADA, HMI, Antriebe, Sensoren und OT-Sicherheit. Öffentlich ohne Sprachmodell; Arbeitsbereiche können gelenkte KI ergänzen.",
         "keywords": "industrielles KI-Brain, Wissens-Engine, PLC-KI, SCADA-Intelligenz, Wissensbasis Automatisierung, OT-KI"
       },
       "copilot": {
@@ -1639,7 +1639,7 @@
       },
       "brain": {
         "title": "Wie Hermes Brain zu einer Antwort kommt",
-        "lede": "Hermes Brain arbeitet deterministisch: Dieselbe Beschreibung ergibt immer dieselbe Analyse. Die folgenden Schritte laufen nacheinander ab, und jeder ist im Ergebnis sichtbar.",
+        "lede": "Dieses öffentliche Werkzeug von Hermes Brain arbeitet deterministisch: Dieselbe Beschreibung ergibt immer dieselbe Analyse. Die folgenden Schritte laufen nacheinander ab, und jeder ist im Ergebnis sichtbar.",
         "steps": [
           {
             "name": "Fachbereichserkennung",
@@ -1667,7 +1667,7 @@
       },
       "copilot": {
         "title": "Was der Industrial Copilot zeigt",
-        "lede": "Der Copilot nutzt dieselbe deterministische Engine wie Hermes Brain und zeigt zusätzlich die Fachbereiche, Hersteller und Sicherheitseigenschaften hinter jeder Analyse.",
+        "lede": "Dieser öffentliche Copilot nutzt dieselbe deterministische Engine wie das öffentliche Werkzeug von Hermes Brain und zeigt zusätzlich die Fachbereiche, Hersteller und Sicherheitseigenschaften hinter jeder Analyse.",
         "steps": [
           {
             "name": "Reasoning-Oberfläche",

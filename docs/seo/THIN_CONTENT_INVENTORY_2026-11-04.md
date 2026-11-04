@@ -114,6 +114,7 @@ Every statement was drawn from code or from catalog text already in the reposito
 | OT permissions, findings review limited to OWNER / ADMIN / MANAGER | `src/lib/org/rbac.ts:84-91,214-221` |
 | Audit log per organisation with correlation ID | `prisma/schema.prisma` `AuditLog` and `src/lib/audit/audit-service.ts` |
 | Public Brain / Copilot engine deterministic, no LLM, no persistence | `src/app/api/copilot/demo/route.ts:10-24,96-105` |
+| Authenticated /api/brain can add governed LLM/RAG on top of the deterministic result (HERMES_EXTERNAL_AI_ENABLED + org policy), so the no-LLM claim is scoped to the public tool | `src/app/api/brain/route.ts:684-710`, `src/lib/services/brain-service.ts:8-14` |
 | 12 classifier domains; a weak match is unknown | `src/lib/services/types.ts:154-157` and `src/lib/industrial/brain-core.ts:79` |
 | 7 indexed vendors | `src/lib/industrial/vendors.ts:25-61` |
 | Case matching on keyword, vendor and domain | `src/lib/industrial/cases.ts:75-95` |
@@ -164,6 +165,8 @@ The owner asked for these to be corrected as well (2026-11-04).
 | `industrialBrain.deploy.desc` | "Full integration with CMMS, EDMS, expert network…" | Saved analyses become draft engineering cases reviewed by the organisation's own authors |
 | `brain.intel.memoryNote` | "Held in server session memory — V1 keeps no database." | "Public demo: analyses are computed on request and never stored, so this panel stays empty." |
 | `src/components/copilot/CopilotClient.tsx` KPI note | "Domains 9 · query classifications" | "Domains 9 · knowledge domains" (the panel lists the 9 knowledge domains; the classifier has 12) |
+
+Scoped after review (PR #181 review, owner-approved): `meta.pages.brain.description`, `architecture.guides.brain.lede` and `architecture.guides.copilot.lede` now say the PUBLIC tool is deterministic and model-free; organisation workspaces can add governed AI. All three meta descriptions are 154–160 characters.
 
 Withdrawn after re-checking:
 
