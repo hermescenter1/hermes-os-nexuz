@@ -42,6 +42,7 @@ import { BASE_URL, DEFAULT_LOCALE, LOCALES } from "@/lib/seo/config";
 import { isRetiredIdentityHandle } from "@/lib/seo/retired-identity";
 import { localeForArticleLanguage } from "./locale";
 import { normalizeArticleSlug } from "./slug";
+import { sitemapPath } from "@/lib/seo/sitemap-path";
 
 /** Hard ceiling on rows pulled into the sitemap. */
 export const ARTICLE_SITEMAP_MAX = 5000;
@@ -324,7 +325,7 @@ export async function listPublicAuthorSitemapItems(): Promise<AuthorSitemapItem[
  * lone self-referencing hreflang entry states nothing.
  */
 function localeEntries(
-  path: string,
+  rawPath: string,
   priority: number,
   changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"],
   lastModified: string | null,
@@ -332,6 +333,8 @@ function localeEntries(
 ): MetadataRoute.Sitemap {
   const locales = contentLocales.filter((l) => (LOCALES as readonly string[]).includes(l));
   if (locales.length === 0) return [];
+  // Escaped exactly like the page canonical (see sitemap-path.ts).
+  const path = sitemapPath(rawPath);
   return locales.map((locale) => ({
     url: `${BASE_URL}/${locale}${path}`,
     ...(lastModified ? { lastModified } : {}),
