@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, expectTypeOf, vi, beforeEach, afterEach } from "vitest";
 
 /**
  * PHASE 43 — the enterprise summary must be constrained to the caller's
@@ -75,10 +75,11 @@ function matches(row: Record<string, unknown>, where: Record<string, unknown>): 
  * workers. It passed locally and failed on CI (`expected 'bm_1' to be null`).
  * One permanent registration removes the race entirely.
  */
-const { getLatestBenchmarkMock, getLatestSnapshotMock, getPrismaMock } = vi.hoisted(() => ({
+const { getLatestBenchmarkMock, getLatestSnapshotMock, getPrismaMock, projectMock } = vi.hoisted(() => ({
   getLatestBenchmarkMock: vi.fn(),
   getLatestSnapshotMock:  vi.fn(),
   getPrismaMock:          vi.fn(),
+  projectMock:            vi.fn(),
 }));
 
 vi.mock("@/lib/knowledge-graph/builder", () => ({
@@ -92,6 +93,17 @@ vi.mock("../benchmarks", () => ({
 
 vi.mock("@/lib/db/prisma", () => ({
   getPrisma: (...a: unknown[]) => getPrismaMock(...a),
+}));
+
+/**
+ * The pattern count is the length of the viewer-safe PROJECTION (slice B / IR-02). Its real behaviour —
+ * live, policy-eligible cases on two or more of the viewer's sites — is proven against PostgreSQL in
+ * `pg/multi-site-visibility.pg.test.ts`; here only the summary's use of it is pinned. The stand-in keeps
+ * the one rule that matters to the count: a stored pattern is visible only if two of the caller's sites
+ * are among its sites.
+ */
+vi.mock("../projection", () => ({
+  projectPersistedPatterns: (...a: unknown[]) => projectMock(...a),
 }));
 
 /** The latest SUCCESS benchmark, whose stored summary is ORG-WIDE. */
@@ -113,6 +125,10 @@ beforeEach(() => {
 
   getLatestBenchmarkMock.mockReset();
   getLatestBenchmarkMock.mockResolvedValue(BENCHMARK);
+
+  projectMock.mockReset();
+  projectMock.mockImplementation(async (_db: unknown, _org: string, sites: string[], rows: { siteIds: string[] }[]) =>
+    rows.filter((r) => r.siteIds.filter((id) => sites.includes(id)).length >= 2));
 
   getPrismaMock.mockReset();
   getPrismaMock.mockResolvedValue({
@@ -147,7 +163,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function summarize(allowed?: string[]) {
+async function summarize(allowed: string[]) {
   const { getEnterpriseIndustrialSummary } = await import("../summary");
   return getEnterpriseIndustrialSummary(ORG, allowed);
 }
@@ -190,10 +206,14 @@ describe("enterprise summary — a member scoped to one of two sites", () => {
     expect(captured.kpi).toMatchObject({ siteId: { in: [ALLOWED] } });
   });
 
-  it("counts only patterns that involve an accessible site", async () => {
+  it("counts only the patterns the viewer-safe projection returns — not stored rows that merely touch an accessible site", async () => {
     const s = await summarize([ALLOWED]);
-    // The stored org-wide count is 2; only one pattern touches the allowed site.
-    expect(s.patternCount).toBe(1);
+    // The stored org-wide count is 2 and one stored pattern touches the allowed site, but a pattern is visible
+    // only with two readable sites: none is, so the card must not reveal that patterns elsewhere exist.
+    expect(s.patternCount).toBe(0);
+    expect(projectMock).toHaveBeenCalledTimes(1);
+    expect(projectMock).toHaveBeenCalledWith(expect.anything(), ORG, [ALLOWED], PATTERN_ROWS);
+    expect(captured.pattern).toMatchObject({ benchmarkId: "bm_1", organizationId: ORG });
   });
 
   it("does not fake scoping by adjusting siteCount alone", async () => {
@@ -210,7 +230,7 @@ describe("enterprise summary — a member scoped to one of two sites", () => {
       highestRisk:    s.riskSummary.highestRiskSiteId,
     }).toEqual({
       siteCount: 1, sitesRanked: 1, sitesCompared: 1,
-      avgRisk: 11, avgAvailability: 90, patternCount: 1, highestRisk: ALLOWED,
+      avgRisk: 11, avgAvailability: 90, patternCount: 0, highestRisk: ALLOWED,
     });
   });
 });
@@ -224,27 +244,48 @@ describe("enterprise summary — an OWNER/ADMIN holding every site", () => {
     expect(s.riskSummary.avgOrgRiskScore).toBe(51);      // mean(91, 11)
     expect(s.kpiSummary.avgOrgAvailability).toBe(70);    // mean(50, 90)
     expect(s.riskSummary.highestRiskSiteId).toBe(FORBIDDEN);
-    expect(s.patternCount).toBe(2);
+    // Only the pattern that spans two readable sites is visible, even to someone who can read both.
+    expect(s.patternCount).toBe(1);
   });
 });
 
-describe("enterprise summary — no user context (API-key auth)", () => {
-  it("applies NO site filter and keeps the stored org-wide summary fields", async () => {
-    const s = await summarize(undefined);
+describe("enterprise summary — the scope is mandatory (slice D1, MS-03)", () => {
+  it("the scope parameter is a required site list at compile time", async () => {
+    const { getEnterpriseIndustrialSummary } = await import("../summary");
+    expectTypeOf(getEnterpriseIndustrialSummary).parameter(1).toEqualTypeOf<readonly string[]>();
+    expectTypeOf(getEnterpriseIndustrialSummary).parameters.toEqualTypeOf<[orgId: string, allowedSiteIds: readonly string[]]>();
+  });
 
-    expect(s.siteCount).toBe(2);
-    expect(s.riskSummary.sitesRanked).toBe(2);
-    expect(s.riskSummary.avgOrgRiskScore).toBe(51);
-    // Unchanged behaviour: the stored benchmark values are used as before.
-    expect(s.riskSummary.highestRiskSiteId).toBe(FORBIDDEN);
-    expect(s.patternCount).toBe(2);
+  it("an omitted or non-array scope is refused at runtime and reads NOTHING — there is no unscoped path", async () => {
+    const { getEnterpriseIndustrialSummary } = await import("../summary");
+    // A future caller that bypasses the type (e.g. from untyped JavaScript) still gets nothing.
+    const untyped = getEnterpriseIndustrialSummary as unknown as (orgId: string, scope?: unknown) => Promise<unknown>;
+    for (const scope of [undefined, null, "site_allowed", { in: [ALLOWED] }]) {
+      await expect(untyped(ORG, scope), String(scope)).rejects.toThrow("SUMMARY_SCOPE_REQUIRED");
+    }
+    expect(getLatestBenchmarkMock).not.toHaveBeenCalled();
+    expect(captured).toEqual({});
+  });
 
-    // No siteId predicate was added to any query.
-    expect(captured.risk).not.toHaveProperty("siteId");
-    expect(captured.kpi).not.toHaveProperty("siteId");
-    expect(captured.siteCount).not.toHaveProperty("id");
-    // The extra pattern query is only issued when a scope applies.
-    expect(captured.pattern).toBeUndefined();
+  it("an EMPTY scope is the empty summary: no organisation figure, no benchmark claimed, nothing read", async () => {
+    const s = await summarize([]);
+    expect(s).toEqual({
+      organizationId: ORG, siteCount: 0, latestBenchmarkId: null, latestBenchmarkAt: null, benchmarkStale: false, stalenessWarning: null,
+      riskSummary: { sitesRanked: 0, highestRiskSiteId: null, avgOrgRiskScore: null },
+      kpiSummary: { sitesCompared: 0, avgOrgAvailability: null, avgOrgHealthScore: null },
+      patternCount: 0, knowledgeGraphStale: false, knowledgeGraphBuiltAt: null,
+    });
+    expect(getLatestBenchmarkMock).not.toHaveBeenCalled();
+    expect(getPrismaMock).not.toHaveBeenCalled();
+    expect(JSON.stringify(s)).not.toContain(FORBIDDEN);
+  });
+
+  it("the stored org-wide summary values are never reported, even to a caller holding every site", async () => {
+    getLatestBenchmarkMock.mockResolvedValue({ ...BENCHMARK, summary: { highestRiskSiteId: "site_elsewhere", patternCount: 99 } });
+    const s = await summarize([ALLOWED, FORBIDDEN]);
+    expect(s.riskSummary.highestRiskSiteId).toBe(FORBIDDEN);      // recomputed from the rows (91 > 11)
+    expect(s.patternCount).toBe(1);                                // the visible projection, not 99
+    expect(JSON.stringify(s)).not.toContain("site_elsewhere");
   });
 });
 
@@ -258,5 +299,66 @@ describe("enterprise summary — scoping survives the no-benchmark path", () => 
     expect(s.riskSummary.highestRiskSiteId).toBeNull();
     expect(s.patternCount).toBe(0);
     expect(JSON.stringify(s)).not.toContain(FORBIDDEN);
+  });
+});
+
+/**
+ * Independent review S3 (deterministic selection): when two accessible sites share the SAME
+ * `avgRiskScore`, the highest-risk site used to be whichever row the database happened to return
+ * first, so two reads of the SAME benchmark could name different sites. The lowest site id wins.
+ */
+describe("enterprise summary — the highest-risk site is deterministic on a tie", () => {
+  const TIE_A = "site-tie-a";
+  const TIE_B = "site-tie-b";
+
+  beforeEach(() => {
+    getPrismaMock.mockResolvedValue({
+      industrialSite: { count: async () => 2 },
+      siteRiskSnapshot: {
+        // Deliberately returned worst-id-first, so a "first wins" implementation picks TIE_B.
+        findMany: async () => [
+          { siteId: TIE_B, avgRiskScore: 77, dataStatus: "ok" },
+          { siteId: TIE_A, avgRiskScore: 77, dataStatus: "ok" },
+        ],
+      },
+      siteKPIComparison: { findMany: async () => [] },
+      crossSiteFailurePattern: { findMany: async () => [] },
+    });
+  });
+
+  it("picks the lowest site id, whatever order the rows arrive in", async () => {
+    const first = await summarize([TIE_A, TIE_B]);
+    expect(first.riskSummary.highestRiskSiteId).toBe(TIE_A);
+
+    // Reversed row order must not change the answer.
+    getPrismaMock.mockResolvedValue({
+      industrialSite: { count: async () => 2 },
+      siteRiskSnapshot: {
+        findMany: async () => [
+          { siteId: TIE_A, avgRiskScore: 77, dataStatus: "ok" },
+          { siteId: TIE_B, avgRiskScore: 77, dataStatus: "ok" },
+        ],
+      },
+      siteKPIComparison: { findMany: async () => [] },
+      crossSiteFailurePattern: { findMany: async () => [] },
+    });
+    const second = await summarize([TIE_A, TIE_B]);
+    expect(second.riskSummary.highestRiskSiteId).toBe(TIE_A);
+    expect(second.riskSummary.highestRiskSiteId).toBe(first.riskSummary.highestRiskSiteId);
+  });
+
+  it("a strictly higher score still wins, whatever the ids", async () => {
+    getPrismaMock.mockResolvedValue({
+      industrialSite: { count: async () => 2 },
+      siteRiskSnapshot: {
+        findMany: async () => [
+          { siteId: TIE_A, avgRiskScore: 50, dataStatus: "ok" },
+          { siteId: TIE_B, avgRiskScore: 90, dataStatus: "ok" },
+        ],
+      },
+      siteKPIComparison: { findMany: async () => [] },
+      crossSiteFailurePattern: { findMany: async () => [] },
+    });
+    expect((await summarize([TIE_A, TIE_B])).riskSummary.highestRiskSiteId).toBe(TIE_B);
   });
 });

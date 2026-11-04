@@ -1,12 +1,12 @@
 import { getPrisma }      from "@/lib/db/prisma";
+import { DT_AUDIT }       from "@/lib/audit/audit-service";
 import type { TwinLayoutRecord } from "./types";
+import { TWIN_LIMITS }    from "./schemas";
+import { twinNotFound }   from "./errors";
+import { auditInTx, runTwinTransaction, type TwinModel } from "./tx";
+import { lockActiveSitesForWrite } from "@/lib/site/write-locks";
 
-type LayoutModel = {
-  findMany:  (a: unknown) => Promise<Record<string, unknown>[]>;
-  findFirst: (a: unknown) => Promise<Record<string, unknown> | null>;
-  create:    (a: unknown) => Promise<Record<string, unknown>>;
-  update:    (a: unknown) => Promise<Record<string, unknown>>;
-};
+type LayoutModel = TwinModel;
 
 function rowToLayout(r: Record<string, unknown>): TwinLayoutRecord {
   return {
@@ -20,25 +20,38 @@ function rowToLayout(r: Record<string, unknown>): TwinLayoutRecord {
   };
 }
 
-export async function listLayouts(organizationId: string, siteId?: string): Promise<TwinLayoutRecord[]> {
+/**
+ * Layouts of an organisation, within the sites the caller may reach. `[]` =
+ * nothing (no read); a requested `siteId` narrows the allowed set and never
+ * replaces it.
+ *
+ * Slice D2: `allowedSiteIds` is REQUIRED. The unscoped `listLayouts`,
+ * `getLayout` and `updateLayout` exports had no caller (`updateLayout` also
+ * wrote outside a transaction, without the site check or an audit event) and
+ * were removed.
+ *
+ * `layoutData` is OPAQUE: the schema (`layoutDataSchema`) defines no node
+ * reference field, the server never interprets it, never resolves any value in
+ * it as a Digital Twin node and makes no authorisation decision on it. It is
+ * bounded (size, depth) and rejects prototype-pollution keys, nothing more.
+ */
+export async function listLayoutsPage(
+  organizationId: string,
+  siteId: string | undefined,
+  allowedSiteIds: readonly string[],
+): Promise<{ layouts: TwinLayoutRecord[]; truncated: boolean }> {
+  if (allowedSiteIds.length === 0) return { layouts: [], truncated: false };
+  if (siteId && !allowedSiteIds.includes(siteId)) return { layouts: [], truncated: false };
   const prisma = await getPrisma();
-  if (!prisma) return [];
-  const where: Record<string, unknown> = { organizationId };
-  if (siteId) where.siteId = siteId;
+  if (!prisma) return { layouts: [], truncated: false };
+  const where: Record<string, unknown> = { organizationId, siteId: siteId ?? { in: [...allowedSiteIds] } };
+  const limit = TWIN_LIMITS.LIST_LAYOUTS;
   const rows = await (prisma.digitalTwinLayout as unknown as LayoutModel).findMany({
     where,
-    orderBy: { updatedAt: "desc" },
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+    take: limit + 1,
   });
-  return rows.map(rowToLayout);
-}
-
-export async function getLayout(id: string, organizationId: string): Promise<TwinLayoutRecord | null> {
-  const prisma = await getPrisma();
-  if (!prisma) return null;
-  const r = await (prisma.digitalTwinLayout as unknown as LayoutModel).findFirst({
-    where: { id, organizationId },
-  });
-  return r ? rowToLayout(r) : null;
+  return { layouts: rows.slice(0, limit).map(rowToLayout), truncated: rows.length > limit };
 }
 
 export async function createLayout(params: {
@@ -46,33 +59,31 @@ export async function createLayout(params: {
   siteId:         string;
   name:           string;
   layoutData?:    Record<string, unknown>;
+  actorUserId?:   string | null;
 }): Promise<TwinLayoutRecord | null> {
-  const prisma = await getPrisma();
-  if (!prisma) return null;
-  const r = await (prisma.digitalTwinLayout as unknown as LayoutModel).create({
-    data: {
-      organizationId: params.organizationId,
-      siteId:         params.siteId,
-      name:           params.name,
-      layoutData:     params.layoutData ?? {},
-    },
-  });
-  return rowToLayout(r);
-}
+  const created = await runTwinTransaction(async (tx) => {
+    // DT-01 review F1: re-read the route's decision under FOR SHARE — the site
+    // must still be in this organisation AND ACTIVE when the layout is written.
+    const activeSites = await lockActiveSitesForWrite(tx, params.organizationId, [params.siteId]);
+    if (!activeSites.has(params.siteId)) throw twinNotFound.site();
 
-export async function updateLayout(id: string, organizationId: string, patch: {
-  name?:       string;
-  layoutData?: Record<string, unknown>;
-}): Promise<TwinLayoutRecord | null> {
-  const prisma = await getPrisma();
-  if (!prisma) return null;
-  const exists = await (prisma.digitalTwinLayout as unknown as LayoutModel).findFirst({
-    where: { id, organizationId },
+    const r = await tx.digitalTwinLayout.create({
+      data: {
+        organizationId: params.organizationId,
+        siteId:         params.siteId,
+        name:           params.name,
+        layoutData:     params.layoutData ?? {},
+      },
+    });
+    await auditInTx(tx, {
+      organizationId: params.organizationId,
+      userId:         params.actorUserId ?? null,
+      action:         DT_AUDIT.LAYOUT_UPDATED,
+      entityId:       String(r.id),
+      siteId:         params.siteId,
+      details:        { operation: "create" },
+    });
+    return r;
   });
-  if (!exists) return null;
-  const r = await (prisma.digitalTwinLayout as unknown as LayoutModel).update({
-    where: { id },
-    data:  patch,
-  });
-  return rowToLayout(r);
+  return created ? rowToLayout(created) : null;
 }

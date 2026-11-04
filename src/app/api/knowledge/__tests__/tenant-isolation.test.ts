@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockCaseScope, withCaseTx } from "./case-scope-fakes";
 import { NextRequest } from "next/server";
 
 /**
@@ -87,7 +88,7 @@ function engCase(id: string, organizationId: string, over: Row = {}): Row {
   return {
     id, organizationId, title: `Case ${id}`, titleNorm: `case ${id}`,
     symptoms: [], diagnosis: null, resolution: null, lessonsLearned: null,
-    assetTypes: [], assetId: null, siteId: null, failureModeId: null,
+    assetTypes: [], assetId: null, siteId: "site-A", failureModeId: null,
     keywords: [], status: "open", severity: "MEDIUM", reportedById: null,
     resolvedAt: null, createdAt: ISO, updatedAt: ISO, ...over,
   };
@@ -153,7 +154,10 @@ async function loadRoute(routePath: string, auth: AuthState, actorOrg = ORG_A) {
     },
   }));
 
-  vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => tables }));
+  // withCaseTx adds the interactive transaction slice E1's case writers run in (see case-scope-fakes.ts).
+  vi.doMock("@/lib/db/prisma", () => ({ getPrisma: async () => withCaseTx(tables) }));
+  // RV-01: case visibility is a database-side policy; see case-scope-fakes.ts for what is faked.
+  mockCaseScope(vi, () => tables.industrialEngineeringCase.rows);
 
   return import(routePath);
 }
@@ -243,7 +247,7 @@ describe("PATCH /api/knowledge/cases/[id] — cross-org isolation", () => {
     // Org B now holds no extra/duplicated record.
     expect(tables.industrialEngineeringCase.rows.filter((r) => r.organizationId === ORG_B)).toHaveLength(1);
     const writeArg = tables.industrialEngineeringCase.updateMany.mock.calls[0][0] as { where: Row; data: Row };
-    expect(writeArg.where).toEqual({ id: "case-A", organizationId: ORG_A });
+    expect(writeArg.where).toEqual({ id: "case-A", organizationId: ORG_A, siteId: "site-A", assetId: null });
     expect(writeArg.data).not.toHaveProperty("organizationId");
   });
 

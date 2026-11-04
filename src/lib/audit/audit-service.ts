@@ -422,6 +422,79 @@ export async function recordAuditEventOrThrow(
   });
 }
 
+/**
+ * DIGITAL TWIN SLICE 1 REPAIR (RV-04) — transaction-aware audit, in two steps.
+ *
+ * `recordAuditEventOrThrow` appends to the in-process ring buffer BEFORE the row
+ * is written. That is the right order for its callers (a failed write must still
+ * leave the running session able to see what was attempted), but it is the wrong
+ * one for a mutation that can still ROLL BACK: the buffer then holds an event
+ * with `outcome: "success"` for a change that never happened, and the readers
+ * that fall back to the buffer (`filterAuditEvents`, `findAuditEventsByCorrelation`
+ * when the database cannot be read — which is exactly when an audit write fails)
+ * would report that change as real.
+ *
+ * So the two halves are separated for callers that audit INSIDE a transaction:
+ *
+ *   1. `persistAuditEventInTx(input, tx)` — builds the canonical event and writes
+ *      the row on the caller's transaction client. It does NOT touch the buffer.
+ *      If it throws, the caller's transaction rolls back and nothing was published.
+ *   2. `publishAuditEvent(event)` — appends to the buffer. The caller invokes it
+ *      only AFTER the transaction has committed.
+ *
+ * The event shape and the persisted columns are identical to
+ * `recordAuditEventOrThrow`'s; that function is deliberately left untouched
+ * (the Phase 109 automation run and its tests depend on its ordering), so the
+ * ~10 lines of event construction are repeated here rather than shared.
+ */
+export async function persistAuditEventInTx(
+  input: AuditInput,
+  client: unknown,
+): Promise<AuditEvent> {
+  const event: AuditEvent = {
+    id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    userId: input.userId ?? null,
+    action: input.action,
+    entityType: input.entityType,
+    entityId: input.entityId ?? null,
+    metadata: input.metadata ?? {},
+    createdAt: now(),
+    organizationId: input.organizationId ?? null,
+    outcome: input.outcome ?? null,
+    correlationId: input.correlationId ?? null,
+  };
+
+  // Session mode has no durable store; there is nothing to write inside a
+  // transaction, and the caller publishes the event after it "commits".
+  if (getStorageMode() !== "database") return event;
+
+  const m = (client as Record<string, unknown> | null | undefined)?.auditLog as AuditModel | undefined;
+  // In database mode a missing model means the write cannot even be attempted —
+  // the case this function exists to surface (it must roll the caller back).
+  if (!m) throw new Error("AUDIT_MODEL_UNAVAILABLE");
+
+  await m.create({
+    data: {
+      userId: event.userId,
+      action: event.action,
+      entityType: event.entityType,
+      entityId: event.entityId,
+      metadata: event.metadata,
+      organizationId: event.organizationId,
+      outcome: event.outcome,
+      correlationId: event.correlationId,
+    },
+  });
+  return event;
+}
+
+/** Append an already-persisted event to the in-process buffer. Call it after COMMIT only. */
+export function publishAuditEvent(event: AuditEvent): void {
+  const buf = buffer();
+  buf.unshift(event);
+  if (buf.length > 500) buf.length = 500;
+}
+
 export async function recordAuditEvent(input: AuditInput): Promise<void> {
   const event: AuditEvent = {
     id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,

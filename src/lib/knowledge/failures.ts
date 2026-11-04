@@ -7,6 +7,8 @@
  */
 
 import { getPrisma }             from "@/lib/db/prisma";
+import type { GraphViewerScope } from "@/lib/knowledge-graph/visibility";
+import { loadVisibleCaseRows }  from "./case-visibility";
 import { normalizeText, tokenize } from "./normalize";
 import { confidenceFromWeight }  from "./types";
 import type {
@@ -23,7 +25,6 @@ type FMModel = {
 };
 type RCModel  = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
 type ProcModel = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
-type CaseModel = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
 
 function rowToFM(r: Record<string, unknown>): FailureModeRecord {
   return {
@@ -215,8 +216,10 @@ export async function updateFailureMode(
 export async function getFailureKnowledge(
   organizationId: string,
   assetId:        string,
-  assetType?:     string,
-  symptoms?:      string[],
+  assetType:      string | undefined,
+  symptoms:       string[] | undefined,
+  /** RV-01: the related cases go through the shared case visibility policy. `null` ⇒ no cases (fail closed). */
+  scope:          GraphViewerScope | null,
 ): Promise<FailureKnowledgeResult> {
   const empty: FailureKnowledgeResult = {
     assetId, failureModes: [], rootCauses: [], procedures: [], relatedCases: [], evidence: [],
@@ -283,12 +286,8 @@ export async function getFailureKnowledge(
 
     // 5. Cases referencing these failure modes
     let relatedCases: CaseRecord[] = [];
-    if (fmIds.length > 0) {
-      const caseRows = await (d.industrialEngineeringCase as CaseModel).findMany({
-        where:   { organizationId, failureModeId: { in: fmIds } },
-        orderBy: { updatedAt: "desc" },
-        take:    20,
-      });
+    if (fmIds.length > 0 && scope !== null && scope.organizationId === organizationId) {
+      const caseRows = await loadVisibleCaseRows(d, scope, { failureModeIds: fmIds, limit: 20 });
       relatedCases = caseRows.map(rowToCase);
     }
 

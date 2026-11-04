@@ -10,9 +10,9 @@
  * pre-computed output tables (KPIRecord, AssetRiskScore, AssetHealthHistory,
  * AssetKnowledgeLink, IndustrialEngineeringCase).
  *
- * ACCESS MODEL: orgId always from authenticated context. Phase 43: compareSites()
- * accepts allowedSiteIds (from getAllowedSiteIds()) to scope to the user's sites.
- * OWNER/ADMIN pass undefined → full org access. Others pass their explicit site list.
+ * ACCESS MODEL: orgId always from authenticated context. The comparison feeds the organisation's SHARED
+ * benchmark snapshot, so it always covers every ACTIVE site of the organisation (slice D1, MS-02); readers
+ * narrow it to their own scope at read time (./projection.ts). There is no caller-supplied site list.
  */
 
 import { getPrisma }             from "@/lib/db/prisma";
@@ -20,6 +20,7 @@ import { compareSiteKPIs }       from "./kpis";
 import { rankSitesByRisk }       from "./risk";
 import { findCrossSiteFailurePatterns } from "./failure-patterns";
 import { getSiteKnowledgeCoverage }    from "./knowledge";
+import { createGraphViewerScope }      from "@/lib/knowledge-graph/visibility";
 import type {
   SiteKPIData,
   SiteRiskData,
@@ -74,27 +75,18 @@ function buildSummary(
 }
 
 /**
- * Phase 43: allowedSiteIds scopes comparison to the caller's accessible sites.
- *   - undefined  → OWNER/ADMIN full access: all ACTIVE sites in org
- *   - string[]   → explicit allowed set (may be empty → returns null immediately)
+ * Every ACTIVE site of the organisation (server-derived). Returns null when there is none.
  */
 export async function compareSites(
-  orgId:          string,
-  allowedSiteIds?: string[],
+  orgId: string,
 ): Promise<ComparisonResult | null> {
-  // Zero-sites case: user has no accessible sites — return null, never 500
-  if (allowedSiteIds !== undefined && allowedSiteIds.length === 0) return null;
-
   const prisma = await getPrisma();
   if (!prisma) return null;
   const db = prisma as unknown as Record<string, unknown>;
 
-  const siteWhere: Record<string, unknown> = { organizationId: orgId, status: "ACTIVE" };
-  if (allowedSiteIds !== undefined) siteWhere.id = { in: allowedSiteIds };
-
   const siteRows = await (db.industrialSite as unknown as SiteModel).findMany({
-    where:   siteWhere,
-    orderBy: { name: "asc" },
+    where:   { organizationId: orgId, status: "ACTIVE" },
+    orderBy: [{ name: "asc" }, { id: "asc" }],
     select:  { id: true, name: true },
   });
 
@@ -121,7 +113,8 @@ export async function compareSites(
     compareSiteKPIs(orgId, siteMap, siteAssetMap),
     rankSitesByRisk(orgId, siteMap, siteAssetMap),
     findCrossSiteFailurePatterns(orgId, siteIds),
-    getSiteKnowledgeCoverage(orgId, siteMap, siteAssetMap),
+    // The shared snapshot is computed with organisation-level case visibility over every active site.
+    getSiteKnowledgeCoverage(createGraphViewerScope(orgId, siteIds, true), siteMap, siteAssetMap),
   ]);
 
   const summary = buildSummary(risk, kpis, patterns);

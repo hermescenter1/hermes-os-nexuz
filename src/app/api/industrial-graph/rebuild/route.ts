@@ -14,6 +14,8 @@ import { requirePlatformAuth }                       from "@/lib/api/auth";
 import { requireOrgActor }                           from "@/lib/org/context";
 import { requirePermission }                         from "@/lib/org/rbac";
 import { rebuildKnowledgeGraph, isRebuildInFlight }  from "@/lib/knowledge-graph/builder";
+import { getKnowledgeGraph }                         from "@/lib/knowledge-graph/query";
+import { hasOrganizationLevelAccess, resolveGraphViewerScope } from "@/lib/knowledge-graph/visibility";
 import { recordAuditEvent, KNOWLEDGE_GRAPH_AUDIT }   from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }                      from "@/lib/api/meter";
 
@@ -50,7 +52,19 @@ export async function POST(req: NextRequest) {
       metadata:   { organizationId: ctx.orgId, ...summary },
     });
 
-    return NextResponse.json({ success: true, summary });
+    // RV-01: the rebuild is organisation-wide, but its COUNTS describe the whole organisation. Only an
+    // actor who may read every active site (OWNER/ADMIN) receives them; a site-limited MANAGER gets the
+    // counts of the graph it is entitled to see (computed after authorisation) and no organisation-wide
+    // figure (orphansRemoved, buildDurationMs). The audit event above keeps the full summary server side.
+    if (hasOrganizationLevelAccess(member.ctx.role)) {
+      return NextResponse.json({ success: true, summary });
+    }
+    const scope   = await resolveGraphViewerScope(member.ctx.userId, ctx.orgId, member.ctx.role);
+    const visible = await getKnowledgeGraph(scope);
+    return NextResponse.json({
+      success: true,
+      summary: { nodeCount: visible.nodeCount, edgeCount: visible.edgeCount, snapshotId: summary.snapshotId },
+    });
   } catch (err) {
     const code = (err as { code?: string }).code;
     if (code === "REBUILD_IN_FLIGHT") {

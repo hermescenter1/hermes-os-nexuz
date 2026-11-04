@@ -1,49 +1,82 @@
-import { NextRequest, NextResponse }          from "next/server";
-import { requirePlatformAuth }               from "@/lib/api/auth";
-import { requireOrgActor }                   from "@/lib/org/context";
-import { requirePermission }                 from "@/lib/org/rbac";
-import { getRelation, updateRelation }       from "@/lib/digital-twin/relations";
-import { recordAuditEvent, DT_AUDIT }        from "@/lib/audit/audit-service";
+import { NextRequest, NextResponse }  from "next/server";
+import { requirePlatformAuth }          from "@/lib/api/auth";
+import { requireOrgActor }              from "@/lib/org/context";
+import { requirePermission }            from "@/lib/org/rbac";
+import { getRelationWithSites, updateRelation } from "@/lib/digital-twin/relations";
+import { authorizeTwinSites, requireSessionAuth, twinAuthRefusal, type TwinCtx } from "@/lib/digital-twin/guard";
+import { parseJsonBody }              from "@/lib/digital-twin/request";
+import { TWIN_LIMITS, idSchema, patchRelationBody } from "@/lib/digital-twin/schemas";
+import { twinErrorResponse, twinJsonError, twinNotFound } from "@/lib/digital-twin/errors";
 
 type Params = { params: Promise<{ id: string }> };
 
+const notFound = () => {
+  const e = twinNotFound.relation();
+  return twinJsonError(e.status, e.code, e.message);
+};
+
 export async function GET(req: NextRequest, { params }: Params) {
-  const { id } = await params;
+  const { id: rawId } = await params;
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-  const { ctx } = auth;
+  if ("error" in auth) return twinAuthRefusal(auth);
+  const sessionRefusal = requireSessionAuth(auth.ctx);
+  if (sessionRefusal) return sessionRefusal;
 
-  const member = await requireOrgActor(req, ctx.orgId);
-  if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
+  const member = await requireOrgActor(req, auth.ctx.orgId);
+  if ("error" in member) return twinAuthRefusal(member);
   const perm = requirePermission(member.ctx.role, "view_digital_twin");
-  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  if (!perm.ok) return twinAuthRefusal(perm);
+  const ctx: TwinCtx = { orgId: auth.ctx.orgId, userId: member.ctx.userId };
 
-  const relation = await getRelation(id, ctx.orgId);
-  if (!relation) return NextResponse.json({ error: "Relation not found" }, { status: 404 });
-  return NextResponse.json({ relation });
+  const idParsed = idSchema.safeParse(rawId);
+  if (!idParsed.success) return notFound();
+
+  try {
+    const found = await getRelationWithSites(idParsed.data, ctx.orgId);
+    if (!found) return notFound();
+
+    // The relation is visible only if the caller can reach BOTH endpoint sites.
+    const sites = await authorizeTwinSites(req, ctx, found.siteIds, "view", twinNotFound.relation);
+    if (!sites.ok) return sites.response;
+    return NextResponse.json({ relation: found.relation });
+  } catch (err) {
+    return twinErrorResponse(err, "relations.get");
+  }
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
-  const { id } = await params;
+  const { id: rawId } = await params;
   const auth = await requirePlatformAuth(req);
-  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-  const { ctx } = auth;
+  if ("error" in auth) return twinAuthRefusal(auth);
+  const sessionRefusal = requireSessionAuth(auth.ctx);
+  if (sessionRefusal) return sessionRefusal;
 
-  const member = await requireOrgActor(req, ctx.orgId);
-  if ("error" in member) return NextResponse.json({ error: member.error }, { status: member.status });
+  const member = await requireOrgActor(req, auth.ctx.orgId);
+  if ("error" in member) return twinAuthRefusal(member);
   const perm = requirePermission(member.ctx.role, "manage_digital_twin");
-  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  if (!perm.ok) return twinAuthRefusal(perm);
+  const ctx: TwinCtx = { orgId: auth.ctx.orgId, userId: member.ctx.userId };
 
-  const body     = await req.json().catch(() => ({}));
-  const relation = await updateRelation(id, ctx.orgId, { metadata: body.metadata });
-  if (!relation) return NextResponse.json({ error: "Relation not found" }, { status: 404 });
+  const idParsed = idSchema.safeParse(rawId);
+  if (!idParsed.success) return notFound();
 
-  recordAuditEvent({
-    action:     DT_AUDIT.RELATION_UPDATED,
-    entityType: "digital_twin",
-    userId:     ctx.userId ?? undefined,
-    entityId:   id,
-    metadata:   { organizationId: ctx.orgId },
-  });
-  return NextResponse.json({ relation });
+  const body = await parseJsonBody(req, patchRelationBody, TWIN_LIMITS.BODY_BYTES);
+  if (!body.ok) return body.response;
+
+  try {
+    const found = await getRelationWithSites(idParsed.data, ctx.orgId);
+    if (!found) return notFound();
+
+    const sites = await authorizeTwinSites(req, ctx, found.siteIds, "manage", twinNotFound.relation);
+    if (!sites.ok) return sites.response;
+
+    const relation = await updateRelation(idParsed.data, ctx.orgId, { metadata: body.data.metadata }, ctx.userId);
+    if (!relation) {
+      const e = twinNotFound.unavailable();
+      return twinJsonError(e.status, e.code, e.message);
+    }
+    return NextResponse.json({ relation });
+  } catch (err) {
+    return twinErrorResponse(err, "relations.update");
+  }
 }

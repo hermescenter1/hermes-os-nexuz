@@ -17,7 +17,7 @@ import { emptyEnterpriseSummary }               from "@/lib/multi-site/summary-c
 import type { EnterpriseSummaryResponse }        from "@/lib/multi-site/summary-contract";
 import { recordAuditEvent, MULTI_SITE_AUDIT }   from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }                 from "@/lib/api/meter";
-import { getAllowedSiteIds }                     from "@/lib/site/context";
+import { resolveMultiSiteScope }                  from "@/lib/multi-site/scope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,10 +34,9 @@ export async function GET(req: NextRequest) {
 
   meterIndustrialEvent(ctx.orgId, "enterprise_summary_queries");
 
-  // Phase 43: scope summary to user's accessible sites
-  const allowedSiteIds = member.ctx.userId
-    ? await getAllowedSiteIds(member.ctx.userId, ctx.orgId)
-    : undefined;
+  // Phase 43: scope summary to user's accessible sites — official allowed sites ∩ ACTIVE sites of THIS
+  // organisation (server derived; a grant on an inactive site contributes nothing).
+  const allowedSiteIds = await resolveMultiSiteScope(member.ctx.userId, ctx.orgId);
 
   // ZERO ACCESSIBLE SITES — a controlled EMPTY result, not a second response
   // shape. This branch used to answer `{ data: null, reason, siteCount: 0 }`,
@@ -46,7 +45,7 @@ export async function GET(req: NextRequest) {
   // page. It now returns the SAME contract as every other 200, with every
   // metric honestly empty (counts 0, measurements null, no benchmark claimed)
   // and `noAccessibleSites: true` so the client can render its empty state.
-  if (allowedSiteIds !== undefined && allowedSiteIds.length === 0) {
+  if (allowedSiteIds.length === 0) {
     return NextResponse.json(emptyEnterpriseSummary(ctx.orgId) satisfies EnterpriseSummaryResponse);
   }
 
@@ -55,8 +54,8 @@ export async function GET(req: NextRequest) {
   // endpoint the one Phase 43 read surface that was not actually site-scoped: a
   // member granted one site still received org-wide means, an org-wide site
   // count and pattern count, and `highestRiskSiteId` — which NAMES a site they
-  // may not access. `undefined` (API-key auth, no user context) applies no
-  // filter, exactly as before.
+  // may not access. The scope is mandatory (slice D1, MS-03): there is no
+  // unscoped path — every caller passes the server-derived active-site scope.
   const summary = await getEnterpriseIndustrialSummary(ctx.orgId, allowedSiteIds);
 
   recordAuditEvent({

@@ -3,7 +3,8 @@ import { requirePlatformAuth }                   from "@/lib/api/auth";
 import { requireOrgActor }                       from "@/lib/org/context";
 import { requirePermission }                     from "@/lib/org/rbac";
 import { getFailureMode, updateFailureMode }     from "@/lib/knowledge/failures";
-import { getRootCauseCandidates }                from "@/lib/knowledge/rootcauses";
+import { getRootCauseCandidates, resolveAuthorizedAsset } from "@/lib/knowledge/rootcauses";
+import { resolveGraphViewerScope }               from "@/lib/knowledge-graph/visibility";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,15 +24,20 @@ export async function GET(
   if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   const { searchParams } = new URL(req.url);
-  const assetId = searchParams.get("assetId") ?? undefined;
+  const assetId = searchParams.get("assetId");
 
   const failureMode = await getFailureMode(ctx.orgId, id);
   if (!failureMode) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (assetId === null) return NextResponse.json({ failureMode, rootCauseCandidates: [] });
 
-  const candidates = assetId
-    ? await getRootCauseCandidates(ctx.orgId, assetId)
-    : [];
+  // Slice C (IR-04): the asset is authorised BEFORE any of its indicators is read — it must be this
+  // organisation's and stand on one of the caller's readable ACTIVE sites. A hidden, inactive, foreign,
+  // missing or malformed asset id gets the SAME 404 as a missing failure mode.
+  const scope = await resolveGraphViewerScope(member.ctx.userId, ctx.orgId, member.ctx.role);
+  const asset = await resolveAuthorizedAsset(ctx.orgId, assetId, scope.allowedSiteIds);
+  if (!asset) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  const candidates = await getRootCauseCandidates(ctx.orgId, asset, { failureModeId: failureMode.id });
   return NextResponse.json({ failureMode, rootCauseCandidates: candidates });
 }
 

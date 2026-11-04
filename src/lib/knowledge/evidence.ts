@@ -12,12 +12,20 @@
 
 import { getPrisma }            from "@/lib/db/prisma";
 import { getConnectedAssets }   from "@/lib/digital-twin/graph";
+import type { AuthorizedAsset } from "./rootcauses";
 import type { KnowledgeEvidence } from "./types";
 
+/**
+ * Slice D2: evidence is assembled only for an {@link AuthorizedAsset} — an asset proven to be the
+ * organisation's and to stand on one of the caller's readable ACTIVE sites — and the Digital Twin
+ * neighbour count is limited to `allowedSiteIds`. A client-supplied asset id never reaches these reads.
+ */
 export async function assembleKnowledgeEvidence(
   organizationId: string,
-  assetId:        string,
+  asset:          AuthorizedAsset,
+  allowedSiteIds: readonly string[],
 ): Promise<KnowledgeEvidence[]> {
+  const assetId = asset.id;
   const evidence: KnowledgeEvidence[] = [];
   const db = await getPrisma();
   if (!db) return evidence;
@@ -74,16 +82,18 @@ export async function assembleKnowledgeEvidence(
   try {
     type NodeModel = { findFirst: (a: unknown) => Promise<Record<string, unknown> | null> };
     const node = await (d.digitalTwinNode as unknown as NodeModel).findFirst({
-      where: { organizationId, assetId },
+      where:   { organizationId, assetId, siteId: { in: [...allowedSiteIds] } },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     });
     if (node) {
       const nodeId = node.id as string;
-      const connectedNodes = await getConnectedAssets(nodeId, organizationId).catch(() => []);
-      if (connectedNodes.length > 0) {
+      const connected = await getConnectedAssets(nodeId, organizationId, allowedSiteIds)
+        .catch(() => ({ nodes: [], truncated: false }));
+      if (connected.nodes.length > 0) {
         evidence.push({
           type:      "asset",
           assetId,
-          description: `${connectedNodes.length} connected asset(s) in Digital Twin — Phase 36`,
+          description: `${connected.nodes.length}${connected.truncated ? "+" : ""} connected asset(s) in Digital Twin — Phase 36`,
         });
       }
     }

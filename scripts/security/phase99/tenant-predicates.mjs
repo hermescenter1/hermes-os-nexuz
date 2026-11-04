@@ -342,14 +342,14 @@ export const TENANT_REVIEW_ALLOWLIST = [
     method: "POST",
     dimension: "SITE",
     mechanism:
-      "sendMessage gates on copilotConversation.findFirst({ id, organizationId }) with the server-derived organization; siteId only narrows listAssets/getAssetGraph, which always AND the same organizationId. No cross-tenant reach.",
+      "authorizeCopilotSelectors (src/lib/copilot/scope.ts) accepts the body siteId only if it is one of the actor's readable ACTIVE sites (getAllowedSiteIds intersected with the organization's ACTIVE IndustrialSite rows) and loads a body assetId inside the organization on one of those sites; anything else is one 404 before the engine runs. sendMessage then requires the conversation to be the actor's own ({ id, organizationId, userId }). Proven by src/lib/copilot/__tests__/pg/copilot-site-scope.pg.test.ts.",
   },
   {
     apiPath: "/api/copilot/query",
     method: "POST",
     dimension: "SITE",
     mechanism:
-      "generateInsights calls listAssets(orgId, { siteId }), whose predicate always carries the server-derived organizationId. The organization comes from requirePlatformAuth plus requireOrgActor, never from the body.",
+      "authorizeCopilotSelectors (src/lib/copilot/scope.ts) accepts the body siteId only if it is one of the actor's readable ACTIVE sites (getAllowedSiteIds intersected with the organization's ACTIVE IndustrialSite rows) and derives an asset's site from the row; a hidden, inactive, foreign or missing selector is one 404 before the engine runs, and generateInsights reads listAssets(orgId, { allowedSiteIds }) only. Proven by src/lib/copilot/__tests__/pg/copilot-site-scope.pg.test.ts.",
   },
   {
     apiPath: "/api/digital-twin/graph",
@@ -360,21 +360,9 @@ export const TENANT_REVIEW_ALLOWLIST = [
   },
   {
     apiPath: "/api/digital-twin/layout",
-    method: "GET",
-    dimension: "SITE",
-    mechanism: "listLayouts filters on the server-derived organizationId; siteId only narrows within that tenant.",
-  },
-  {
-    apiPath: "/api/digital-twin/layout",
     method: "POST",
     dimension: "SITE",
     mechanism: "createLayout stamps organizationId from the resolved context, so a client-supplied siteId cannot move the row into another tenant.",
-  },
-  {
-    apiPath: "/api/digital-twin/nodes",
-    method: "GET",
-    dimension: "SITE",
-    mechanism: "listNodes filters on the server-derived organizationId; siteId only narrows within that tenant.",
   },
   {
     apiPath: "/api/digital-twin/nodes",

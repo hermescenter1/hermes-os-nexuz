@@ -19,6 +19,8 @@
  * No AI, no embeddings, no Postgres full-text.
  */
 
+import type { GraphViewerScope } from "@/lib/knowledge-graph/visibility";
+import { loadVisibleCaseRows } from "./case-visibility";
 import { getPrisma }       from "@/lib/db/prisma";
 import { normalizeText, tokenize } from "./normalize";
 import {
@@ -86,11 +88,17 @@ function scoreText(
   return { score, reasons };
 }
 
+/**
+ * `scope` decides which ENGINEERING CASES may appear (RV-01): they go through the same visibility
+ * policy as the case routes. `null` means "no case scope" and cases are then omitted (fail closed) —
+ * callers that never ask for cases (e.g. the article search) pass `null`.
+ */
 export async function searchKnowledge(
   organizationId: string,
   query:          string,
-  types?:         Array<"article" | "failureMode" | "procedure" | "case">,
-  limit           = 20,
+  types:          Array<"article" | "failureMode" | "procedure" | "case"> | undefined,
+  limit:          number,
+  scope:          GraphViewerScope | null,
 ): Promise<KnowledgeSearchResult[]> {
   if (!query.trim()) return [];
 
@@ -186,12 +194,8 @@ export async function searchKnowledge(
         : Promise.resolve(),
 
       // Cases
-      include.includes("case")
-        ? (d.industrialEngineeringCase as AnyModel).findMany({
-            where:   { organizationId },
-            orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
-            take:    300,
-          }).then((rows) => {
+      include.includes("case") && scope !== null && scope.organizationId === organizationId
+        ? loadVisibleCaseRows(d, scope, { limit: 300 }).then((rows) => {
             for (const r of rows) {
               const c = _rowToCase(r);
               const { score, reasons } = scoreText(

@@ -15,7 +15,9 @@
  */
 
 import { getPrisma }                  from "@/lib/db/prisma";
+import { logInfraFailure }            from "@/lib/logger/security-events";
 import { getLatestSnapshot, isStaleSince } from "./builder";
+import { applyVisibility, loadVisibleEntitySets, type GraphViewerScope } from "./visibility";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -123,24 +125,73 @@ function rowToEdge(r: Record<string, unknown>): IGEdgeRecord {
 
 // ── Bulk load ─────────────────────────────────────────────────────────────────
 
-async function loadOrgGraph(
-  orgId: string,
+/**
+ * The ONLY way a query reads the graph: the organisation's cached nodes/edges, reduced to
+ * what `scope` may see (see ./visibility.ts) BEFORE anything is traversed, counted or
+ * explained. Nothing in this module can be handed an unscoped graph.
+ *
+ * Fails closed: any error (database, policy resolution) returns null, which every public
+ * function turns into an empty result — never into the unfiltered graph.
+ */
+/**
+ * One already-authorised scoped graph, reusable within ONE request (independent review S2-03). It
+ * carries the scope it was resolved for; passing it to a query that runs with a different scope is
+ * refused (fail closed), so it can never widen a later answer.
+ */
+export interface ScopedGraphContext {
+  readonly scope: GraphViewerScope;
+  readonly graph: { nodes: IGNodeRecord[]; edges: IGEdgeRecord[] } | null;
+  readonly staleness: IGStaleness;
+}
+
+/**
+ * Resolves the scoped graph and the staleness ONCE so a request that needs several views of the same
+ * graph (e.g. `/root-causes/[id]`: subgraph + explanation + evidence path) resolves the visible entity
+ * sets a single time instead of once per view.
+ */
+export async function loadScopedGraphContext(scope: GraphViewerScope): Promise<ScopedGraphContext> {
+  const [graph, staleness] = await Promise.all([loadScopedGraph(scope), getStaleness(scope.organizationId)]);
+  return { scope, graph, staleness };
+}
+
+const sameScope = (a: GraphViewerScope, b: GraphViewerScope): boolean =>
+  a === b || (a.organizationId === b.organizationId
+    && a.organizationLevelAccess === b.organizationLevelAccess
+    && a.allowedSiteIds.length === b.allowedSiteIds.length
+    && [...a.allowedSiteIds].sort().join("\u0000") === [...b.allowedSiteIds].sort().join("\u0000"));
+
+/** The context's graph if it belongs to this scope, otherwise a fresh resolution for this scope. */
+async function graphFor(
+  scope: GraphViewerScope,
+  ctx: ScopedGraphContext | undefined,
+): Promise<[{ nodes: IGNodeRecord[]; edges: IGEdgeRecord[] } | null, IGStaleness]> {
+  if (ctx && sameScope(ctx.scope, scope)) return [ctx.graph, ctx.staleness];
+  return Promise.all([loadScopedGraph(scope), getStaleness(scope.organizationId)]);
+}
+
+async function loadScopedGraph(
+  scope: GraphViewerScope,
 ): Promise<{ nodes: IGNodeRecord[]; edges: IGEdgeRecord[] } | null> {
   const db = await getPrisma();
   if (!db) return null;
   try {
-    const [nodeRows, edgeRows] = await Promise.all([
-      rawModel(db, "industrialKnowledgeGraphNode").findMany({ where: { organizationId: orgId } }),
-      rawModel(db, "industrialKnowledgeGraphEdge").findMany({ where: { organizationId: orgId } }),
+    const raw = db as unknown as Record<string, unknown>;
+    const [nodeRows, edgeRows, visible] = await Promise.all([
+      rawModel(db, "industrialKnowledgeGraphNode").findMany({ where: { organizationId: scope.organizationId } }),
+      rawModel(db, "industrialKnowledgeGraphEdge").findMany({ where: { organizationId: scope.organizationId } }),
+      loadVisibleEntitySets(raw, scope),
     ]);
-    return { nodes: nodeRows.map(rowToNode), edges: edgeRows.map(rowToEdge) };
-  } catch { return null; }
+    return applyVisibility({ nodes: nodeRows.map(rowToNode), edges: edgeRows.map(rowToEdge) }, scope.organizationId, visible);
+  } catch (err) {
+    logInfraFailure("database", "knowledge_graph.load_scoped_graph", err);
+    return null;
+  }
 }
 
 // ── Staleness helper ──────────────────────────────────────────────────────────
 
-async function getStaleness(orgId: string): Promise<IGStaleness> {
-  const snap = await getLatestSnapshot(orgId);
+async function getStaleness(organizationId: string): Promise<IGStaleness> {
+  const snap = await getLatestSnapshot(organizationId);
   const lastBuiltAt = snap?.createdAt ?? null;
   const stale = isStaleSince(lastBuiltAt);
   return {
@@ -188,8 +239,9 @@ function bfsSubgraph(
 
     for (const edge of adj.get(id) ?? []) {
       const neighbor = edge.sourceNodeId === id ? edge.targetNodeId : edge.sourceNodeId;
+      if (!nodeMap.has(neighbor)) continue;       // never keep an edge whose far end is not in the (visible) node set
       visitedEdges.add(edge.id);
-      if (!visitedNodes.has(neighbor) && nodeMap.has(neighbor)) {
+      if (!visitedNodes.has(neighbor)) {
         visitedNodes.add(neighbor);
         queue.push({ id: neighbor, depth: depth + 1 });
       }
@@ -277,36 +329,21 @@ function dijkstraPath(
 // ── Public query functions ────────────────────────────────────────────────────
 
 /**
- * Full org graph (all nodes and edges). Always returns results; includes staleness.
+ * The graph the viewer is entitled to (nodes, edges, counts), with staleness.
  *
- * Phase 43 site isolation: when allowedAssetIds is provided, ASSET nodes are
- * filtered to those whose entityId is in allowedAssetIds. Non-ASSET nodes
- * (FAILURE_MODE, ROOT_CAUSE, PROCEDURE, etc.) remain visible — they are
- * org-level knowledge, not site-scoped. Edges to/from filtered ASSET nodes are
- * removed (no dangling edges). Pass undefined for OWNER/ADMIN full-access paths.
+ * RV-01: every node type is authorised against its live owner and every edge against both
+ * endpoints (./visibility.ts). Counts and `*ByType` are computed from the visible graph only,
+ * so they cannot reveal what was hidden. A viewer with no site gets only the organisation-level
+ * catalogue.
  */
-export async function getKnowledgeGraph(
-  orgId:          string,
-  allowedAssetIds?: Set<string>,
-): Promise<IGGraphResult> {
+export async function getKnowledgeGraph(scope: GraphViewerScope): Promise<IGGraphResult> {
   const [graph, staleness] = await Promise.all([
-    loadOrgGraph(orgId),
-    getStaleness(orgId),
+    loadScopedGraph(scope),
+    getStaleness(scope.organizationId),
   ]);
 
-  let nodes = graph?.nodes ?? [];
-  let edges = graph?.edges ?? [];
-
-  // Site isolation filter: remove ASSET nodes not in allowedAssetIds
-  if (allowedAssetIds !== undefined) {
-    nodes = nodes.filter(
-      n => n.nodeType !== "ASSET" || allowedAssetIds.has(n.entityId),
-    );
-    const allowedNodeIds = new Set(nodes.map(n => n.id));
-    edges = edges.filter(
-      e => allowedNodeIds.has(e.sourceNodeId) && allowedNodeIds.has(e.targetNodeId),
-    );
-  }
+  const nodes = graph?.nodes ?? [];
+  const edges = graph?.edges ?? [];
 
   const nodesByType: Record<string, number> = {};
   const edgesByType: Record<string, number> = {};
@@ -318,11 +355,11 @@ export async function getKnowledgeGraph(
 
 /** Subgraph rooted at an ASSET node (via entityId = assetId). */
 export async function getAssetKnowledgeGraph(
-  orgId:    string,
+  scope:    GraphViewerScope,
   assetId:  string,
   maxDepth = DEFAULT_MAX_DEPTH,
 ): Promise<IGSubgraphResult> {
-  const [graph, staleness] = await Promise.all([loadOrgGraph(orgId), getStaleness(orgId)]);
+  const [graph, staleness] = await Promise.all([loadScopedGraph(scope), getStaleness(scope.organizationId)]);
   if (!graph) return { rootNode: null, nodes: [], edges: [], staleness };
 
   const nodeMap = new Map(graph.nodes.map(n => [n.id, n]));
@@ -336,11 +373,11 @@ export async function getAssetKnowledgeGraph(
 
 /** Subgraph rooted at a FAILURE_MODE node. */
 export async function getFailureModeGraph(
-  orgId:         string,
+  scope:         GraphViewerScope,
   failureModeId: string,
   maxDepth = DEFAULT_MAX_DEPTH,
 ): Promise<IGSubgraphResult> {
-  const [graph, staleness] = await Promise.all([loadOrgGraph(orgId), getStaleness(orgId)]);
+  const [graph, staleness] = await Promise.all([loadScopedGraph(scope), getStaleness(scope.organizationId)]);
   if (!graph) return { rootNode: null, nodes: [], edges: [], staleness };
 
   const nodeMap = new Map(graph.nodes.map(n => [n.id, n]));
@@ -354,11 +391,11 @@ export async function getFailureModeGraph(
 
 /** Subgraph rooted at a PROCEDURE node (shows what failure modes it mitigates). */
 export async function getProcedureImpactGraph(
-  orgId:       string,
+  scope:       GraphViewerScope,
   procedureId: string,
   maxDepth = DEFAULT_MAX_DEPTH,
 ): Promise<IGSubgraphResult> {
-  const [graph, staleness] = await Promise.all([loadOrgGraph(orgId), getStaleness(orgId)]);
+  const [graph, staleness] = await Promise.all([loadScopedGraph(scope), getStaleness(scope.organizationId)]);
   if (!graph) return { rootNode: null, nodes: [], edges: [], staleness };
 
   const nodeMap = new Map(graph.nodes.map(n => [n.id, n]));
@@ -372,11 +409,13 @@ export async function getProcedureImpactGraph(
 
 /** Subgraph rooted at a ROOT_CAUSE node. */
 export async function getRootCauseGraph(
-  orgId:       string,
+  scope:       GraphViewerScope,
   rootCauseId: string,
   maxDepth = DEFAULT_MAX_DEPTH,
+  /** Optional already-resolved graph for THIS scope (see {@link loadScopedGraphContext}). */
+  ctx?:        ScopedGraphContext,
 ): Promise<IGSubgraphResult> {
-  const [graph, staleness] = await Promise.all([loadOrgGraph(orgId), getStaleness(orgId)]);
+  const [graph, staleness] = await graphFor(scope, ctx);
   if (!graph) return { rootNode: null, nodes: [], edges: [], staleness };
 
   const nodeMap = new Map(graph.nodes.map(n => [n.id, n]));
@@ -390,18 +429,23 @@ export async function getRootCauseGraph(
 
 /**
  * Find the strongest-evidence path between two nodes using Dijkstra.
+ * The search runs over the viewer's VISIBLE graph only: it can neither start at, end at,
+ * nor pass through a node the viewer may not see, and a hidden endpoint answers exactly
+ * like one that does not exist (`found: false`).
  * "Shortest" here means the path with the highest cumulative evidence weight
  * (lowest cumulative cost = 1 − weight), not fewest hops.
  * Directed edges are only traversed source → target;
  * CONNECTED_TO and RELATED_TO are bidirectional.
  */
 export async function findShortestEvidencePath(
-  orgId:        string,
+  scope:        GraphViewerScope,
   sourceNodeId: string,
   targetNodeId: string,
   maxDepth = DEFAULT_MAX_DEPTH,
+  /** Optional already-resolved graph for THIS scope (see {@link loadScopedGraphContext}). */
+  ctx?:         ScopedGraphContext,
 ): Promise<IGPathResult> {
-  const [graph, staleness] = await Promise.all([loadOrgGraph(orgId), getStaleness(orgId)]);
+  const [graph, staleness] = await graphFor(scope, ctx);
 
   if (!graph) {
     return { found: false, path: [], totalCost: 0, evidenceSummary: [], staleness };

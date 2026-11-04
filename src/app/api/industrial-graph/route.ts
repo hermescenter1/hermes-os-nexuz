@@ -13,10 +13,9 @@ import { requirePlatformAuth }                  from "@/lib/api/auth";
 import { requireOrgActor }                      from "@/lib/org/context";
 import { requirePermission }                    from "@/lib/org/rbac";
 import { getKnowledgeGraph }                    from "@/lib/knowledge-graph/query";
+import { resolveGraphViewerScope }              from "@/lib/knowledge-graph/visibility";
 import { recordAuditEvent, KNOWLEDGE_GRAPH_AUDIT } from "@/lib/audit/audit-service";
 import { meterIndustrialEvent }                 from "@/lib/api/meter";
-import { getAllowedSiteIds }                     from "@/lib/site/context";
-import { getPrisma }                             from "@/lib/db/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,27 +32,10 @@ export async function GET(req: NextRequest) {
 
   meterIndustrialEvent(ctx.orgId, "knowledge_graph_queries");
 
-  // Phase 43: resolve allowed sites, then filter ASSET nodes to prevent cross-site leaks
-  const allowedSiteIds = await getAllowedSiteIds(member.ctx.userId, ctx.orgId);
-  let allowedAssetIds: Set<string> | undefined;
-
-  if (allowedSiteIds.length > 0) {
-    const db = await getPrisma();
-    if (db) {
-      type AssetM = { findMany: (a: unknown) => Promise<Record<string, unknown>[]> };
-      const rows = await (db as unknown as Record<string, unknown>).industrialAsset as unknown as AssetM;
-      const assets = await rows.findMany({
-        where:  { organizationId: ctx.orgId, siteId: { in: allowedSiteIds } },
-        select: { id: true },
-      });
-      allowedAssetIds = new Set(assets.map(a => String(a.id)));
-    }
-  } else {
-    // No accessible sites → empty asset set → ASSET nodes removed from graph
-    allowedAssetIds = new Set<string>();
-  }
-
-  const result = await getKnowledgeGraph(ctx.orgId, allowedAssetIds);
+  // RV-01: the viewer's scope comes from the authenticated user + active organisation ONLY
+  // (never from a query parameter), and EVERY node type and edge is authorised against it.
+  const scope  = await resolveGraphViewerScope(member.ctx.userId, ctx.orgId, member.ctx.role);
+  const result = await getKnowledgeGraph(scope);
 
   recordAuditEvent({
     userId:     ctx.userId ?? undefined,
